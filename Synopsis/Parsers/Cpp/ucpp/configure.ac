@@ -69,12 +69,11 @@ dnl of the list.
     fi
     CFLAGS="-D_REENTRANT $CFLAGS"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS -lpthread"
+    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 *)
-    CFLAGS="-pthread $CFLAGS -fPIC"
-    CXXFLAGS="-pthread $CXXFLAGS -fPIC"
-    LDFLAGS="-pthread $LDFLAGS"
+    CFLAGS="$CFLAGS -fPIC"
+    CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 esac
 

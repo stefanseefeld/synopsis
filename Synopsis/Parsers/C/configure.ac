@@ -69,11 +69,10 @@ dnl of the list.
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS -lpthread"
+    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 *)
-    CXXFLAGS="-pthread $CXXFLAGS -fPIC"
-    LDFLAGS="-pthread $LDFLAGS"
+    CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 esac
 

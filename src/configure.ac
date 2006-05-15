@@ -60,7 +60,6 @@ case `uname -s` in
 CYGWIN*)
     LIBEXT=".dll"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    LIBS="$LIBS -lpthread"
     if test `$PYTHON -c "import os; print os.name"` = nt; then
       if test "$CXX" = "g++"; then
         CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
@@ -72,8 +71,7 @@ CYGWIN*)
     ;;
 *)
     LIBEXT=".so"
-    CXXFLAGS="-pthread $CXXFLAGS -fPIC"
-    LDFLAGS="-pthread $LDFLAGS"
+    CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 esac
 
