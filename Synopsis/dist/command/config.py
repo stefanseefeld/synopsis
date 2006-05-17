@@ -24,7 +24,9 @@ class config(build_ext):
         ('disable-gc', None,
          "whether or not to build the C++ parser with the garbage collector"),
         ('with-gc-prefix=', None,
-         "the prefix to the garbage collector.")]
+         "the prefix to the garbage collector."),
+        ('with-boost-prefix=', None,
+         "the prefix to the boost libraries.")]
     boolean_options = build_ext.boolean_options[:] + ['disable-gc']
 
     def initialize_options(self):
@@ -33,6 +35,7 @@ class config(build_ext):
         build_ext.initialize_options(self)
         self.disable_gc = 0
         self.with_gc_prefix = ''
+        self.with_boost_prefix = ''
 
     def finalize_options(self):
 
@@ -128,6 +131,8 @@ class config(build_ext):
             command += ' --disable-gc'
         elif self.with_gc_prefix:
             command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
+        if self.with_boost_prefix:
+            command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
         command += ' %s'%args
         self.announce(command)
         # Work around a hack in distutils.spawn by an even more evil hack:
