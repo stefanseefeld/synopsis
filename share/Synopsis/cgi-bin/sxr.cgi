@@ -39,7 +39,7 @@ class Handler(object):
 </html>"""
 
         self.template = template.split("@CONTENT@")
-        self.src_url = os.environ.get('SXR_SRC_URL', '.')
+        self.src_url = os.environ.get('SXR_SRC_URL', '')
         self.cgi_url = os.environ.get('SXR_CGI_URL', '.')
 
         path = os.environ.get('PATH_INFO', '/').split('/')

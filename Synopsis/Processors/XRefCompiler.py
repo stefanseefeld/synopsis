@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import AST, Type, Util
 
 import os.path, string, cPickle, urllib
@@ -35,6 +35,7 @@ class XRefCompiler(Processor):
    def process(self, ast, **kwds):
       
       self.set_parameters(kwds)
+      if not self.prefix: raise MissingArgument('prefix')
       self.ast = self.merge_input(ast)
 
       def prefix(filename):

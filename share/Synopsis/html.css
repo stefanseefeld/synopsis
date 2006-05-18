@@ -7,7 +7,7 @@ body
 }
 :link { color: #770000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
-:active { color: #800000; text-decoration: none;}
+
 span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
 span.name { font-weight: bold; }
