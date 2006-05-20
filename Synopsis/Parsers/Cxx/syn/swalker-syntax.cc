@@ -32,7 +32,7 @@ void SWalker::visit(PTree::ReturnStatement *node)
   if (!my_links) return;
 
   // Link 'return' keyword
-  my_links->span(PTree::first(node), "file-keyword");
+  my_links->span(PTree::first(node), "keyword");
 
   // Translate the body of the return, if present
   if (PTree::length(node) == 3) translate(PTree::second(node));
@@ -393,7 +393,7 @@ void SWalker::visit(PTree::IfStatement *node)
 {
   STrace trace("SWalker::visit(IfStatement*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   // Start a temporary namespace, in case expr is a declaration
   my_builder->start_namespace("if", NamespaceUnique);
   // Parse expression
@@ -408,7 +408,7 @@ void SWalker::visit(PTree::IfStatement *node)
   my_builder->end_namespace();
   if (PTree::length(node) == 7)
   {
-    if (my_links) my_links->span(PTree::nth(node, 5), "file-keyword");
+    if (my_links) my_links->span(PTree::nth(node, 5), "keyword");
     AST::Namespace* ns = my_builder->start_namespace("else", NamespaceUnique);
     ns->declarations().insert(ns->declarations().begin(), decls.begin(), decls.end());
     // Translate else statement, same deal as above
@@ -423,7 +423,7 @@ void SWalker::visit(PTree::SwitchStatement *node)
 {
   STrace trace("SWalker::visit(SwitchStatement*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   my_builder->start_namespace("switch", NamespaceUnique);
   // Parse expression
   translate(PTree::third(node));
@@ -439,7 +439,7 @@ void SWalker::visit(PTree::CaseStatement *node)
 {
   STrace trace("SWalker::visit(Case*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
   translate(PTree::nth(node, 3));
 }
@@ -448,7 +448,7 @@ void SWalker::visit(PTree::DefaultStatement *node)
 {
   STrace trace("SWalker::visit(DefaultStatement*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   translate(PTree::third(node));
 }
 
@@ -456,14 +456,14 @@ void SWalker::visit(PTree::BreakStatement *node)
 {
   STrace trace("SWalker::visit(Break*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
 }
 
 void SWalker::visit(PTree::ForStatement *node)
 {
   STrace trace("SWalker::visit(For*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   my_builder->start_namespace("for", NamespaceUnique);
   // Parse expressions
   translate(PTree::third(node));
@@ -482,7 +482,7 @@ void SWalker::visit(PTree::WhileStatement *node)
 {
   STrace trace("SWalker::visit(While*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   my_builder->start_namespace("while", NamespaceUnique);
   // Parse expression
   translate(PTree::third(node));
@@ -531,7 +531,7 @@ void SWalker::visit(PTree::TryStatement *node)
 {
   STrace trace("SWalker::visit(Try*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   my_builder->start_namespace("try", NamespaceUnique);
   translate(PTree::second(node));
   my_builder->end_namespace();
@@ -539,7 +539,7 @@ void SWalker::visit(PTree::TryStatement *node)
   {
     // [ catch ( arg ) [{}] ]
     PTree::Node *catch_node = PTree::nth(node, n);
-    if (my_links) my_links->span(PTree::first(catch_node), "file-keyword");
+    if (my_links) my_links->span(PTree::first(catch_node), "keyword");
     my_builder->start_namespace("catch", NamespaceUnique);
     PTree::Node *arg = PTree::third(catch_node);
     if (PTree::length(arg) == 2)
@@ -614,7 +614,7 @@ void SWalker::visit(PTree::Kwd::This *node)
 {
   STrace trace("SWalker::visit(This*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(node, "file-keyword");
+  if (my_links) my_links->span(node, "keyword");
   // Set my_type to type of 'this', stored in the name lookup for this func
   my_type = my_lookup->lookupType("this");
 }
@@ -672,8 +672,8 @@ void SWalker::visit(PTree::DoStatement *node)
   if (my_links)
   {
     find_comments(node);
-    my_links->span(PTree::first(node), "file-keyword");
-    my_links->span(PTree::third(node), "file-keyword");
+    my_links->span(PTree::first(node), "keyword");
+    my_links->span(PTree::third(node), "keyword");
   }
   // Translate block
   my_builder->start_namespace("do", NamespaceUnique);
@@ -692,7 +692,7 @@ void SWalker::visit(PTree::ContinueStatement *node)
 {
   STrace trace("SWalker::visit(Continue*) NYI");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
 }
 
 void SWalker::visit(PTree::GotoStatement *node)
@@ -737,7 +737,7 @@ void SWalker::visit(PTree::ThrowExpr *node)
 {
   STrace trace("SWalker::visit(Throw*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
 }
 
@@ -745,7 +745,7 @@ void SWalker::visit(PTree::SizeofExpr *node)
 {
   STrace trace("SWalker::visit(Sizeof*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   // TODO: find the type for highlighting, and figure out what the ??? is
   my_type = my_lookup->lookupType("int");
 }
@@ -773,7 +773,7 @@ void SWalker::visit(PTree::DeleteExpr *node)
 {
   STrace trace("SWalker::visit(DeleteExpr*)");
   if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
 }
 

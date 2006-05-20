@@ -84,7 +84,7 @@ AST::SourceFile *import_source_file(PyObject *ast,
   Py_DECREF(files);
   if (!py_source_file) return sourcefile; // the given file wasn't preprocessed into the AST
 
-  PyObject *macro_calls = PyObject_CallMethod(py_source_file, "macro_calls", "");
+  PyObject *macro_calls = PyObject_GetAttrString(py_source_file, "macro_calls");
   if (macro_calls)
   {
     PyObject *lines = PyDict_Keys(macro_calls);
