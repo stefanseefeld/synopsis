@@ -155,16 +155,20 @@ class Javadoc(Formatter):
 
         content = ''
         params = [b for b in blocks if b.tag == 'param']
+        def row(dt, dd):
+            return entity('tr',
+                          entity('th', dt, Class='dt') +
+                          entity('td', dd, Class='dd'))
         if params:
             content += div('tag-heading',"Parameters:")
-            dl = entity('dl', ''.join([entity('dt', p.arg) + entity('dd', p.body)
-                                       for p in params]))
+            dl = entity('table', ''.join([row(p.arg, p.body) for p in params]),
+                        Class='dl')
             content += div('tag-section', dl)
         kwds = [b for b in blocks if b.tag == 'keyword']
         if kwds:
             content += div('tag-heading',"Keywords:")
-            dl = entity('dl', ''.join([entity('dt', k.arg) + entity('dd', k.body)
-                                       for k in kwds]))
+            dl = entity('dl', ''.join([row( k.arg, k.body) for k in kwds]),
+                        Class='dl')
             content += div('tag-section', dl)
         return content
 

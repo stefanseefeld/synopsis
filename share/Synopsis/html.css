@@ -17,6 +17,19 @@ span.name { font-weight: bold; }
   font-weight: bold;
 }
 
+.tag-section
+{ 
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.tag-section th.dt
+{ 
+  font-weight: normal;
+  font-style: italic;
+  padding-right: 20px;
+}
+
 table.form
 {
   background-color: #aaaaaa;
