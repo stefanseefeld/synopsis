@@ -900,7 +900,7 @@ bool Parser::template_decl(PTree::Node *&decl)
 
   my_comments = wrap_comments(my_lexer.get_comments());
   if(!template_decl2(tdecl, kind)) return false;
-  if (kind == tdk_decl) my_in_template_decl = true;
+  if (kind == tdk_decl || kind == tdk_specialization) my_in_template_decl = true;
   bool success = declaration(body);
   my_in_template_decl = false;
   if (!success) return false;
@@ -4942,7 +4942,7 @@ void Parser::skip_to(Token::Type token)
   while(true)
   {
     Token::Type t = my_lexer.look_ahead(0);
-    if(t == token || t == '\0') break;
+    if(t == token || t == '\0' || t == Token::BadToken) break;
     else my_lexer.get_token(tk);
   }
 }
