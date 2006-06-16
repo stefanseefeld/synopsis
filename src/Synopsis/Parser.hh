@@ -328,6 +328,8 @@ private:
   //.   sizeof ( type-id )
   bool sizeof_expr(PTree::Node *&);
 
+  bool offsetof_expr(PTree::Node *&);
+
   //. typeid-expression:
   //.   typeid ( type-id )
   //.   typeid ( expression )

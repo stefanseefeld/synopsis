@@ -3636,6 +3636,38 @@ bool Parser::sizeof_expr(PTree::Node *&exp)
   return true;
 }
 
+bool Parser::offsetof_expr(PTree::Node *&exp)
+{
+  Trace trace("Parser::offsetof_expr", Trace::PARSING);
+  Token tk;
+
+  if(my_lexer.get_token(tk) != Token::OFFSETOF) return false;
+  if(my_lexer.look_ahead(0) != '(') return false;
+  Token op;
+  my_lexer.get_token(op);
+  PTree::Node *type = 0;
+  if(!type_id(type)) return false;
+  if(my_lexer.look_ahead(0) != ',') return false;
+  Token comma;
+  my_lexer.get_token(comma);
+  PTree::Node *member = 0;
+  PTree::Encoding encoding;
+  // allowed syntax is:
+  //   id-expression
+  //   offsetof-member-designator . id-expression
+  //   offsetof-member-designator [ expression ]
+  // Quick hack: only look for expression.
+  if(!expression(member)) return false;
+  if(my_lexer.look_ahead(0) != ')') return false;
+  Token cp;
+  my_lexer.get_token(cp);
+  exp = new PTree::OffsetofExpr(new PTree::Atom(tk),
+				PTree::list(new PTree::Atom(op), type,
+					    new PTree::Atom(comma), member,
+					    new PTree::Atom(cp)));
+  return true;
+}
+
 //. typeid-expression:
 //.   typeid ( type-id )
 //.   typeid ( expression )
@@ -4033,6 +4065,10 @@ bool Parser::primary_expr(PTree::Node *&exp)
       exp = new PTree::ParenExpr(new PTree::Atom(tk),
 				 PTree::list(exp2, new PTree::Atom(tk2)));
       return true;
+    }
+    case Token::OFFSETOF:
+    {
+      return offsetof_expr(exp);
     }
     default:
       // FIXME: We need symbol lookup here to figure out whether we

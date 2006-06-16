@@ -115,6 +115,7 @@ void Visitor::visit(CastExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(UnaryExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(ThrowExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(SizeofExpr *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(OffsetofExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TypeidExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TypeofExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(NewExpr *l) { visit(static_cast<List *>(l));}

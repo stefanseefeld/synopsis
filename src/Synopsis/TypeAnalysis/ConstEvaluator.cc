@@ -215,24 +215,30 @@ void ConstEvaluator::visit(UnaryExpr *node)
 {
   Node *op = node->car();
   Node *expr = node->cdr()->car();
-  assert(op->is_atom() && op->length() == 1);
+  assert(op->is_atom() && op->length() >=2);
   if (!evaluate(expr, my_value)) return;
 
-  switch (*op->position()) // '*' and '&' do not apply to constant expressions
-  {
-    case '+': break; 
-    case '-':
-      my_value = -my_value;
-      break;
-    case '!': 
-      my_value = !my_value;
-      break;
-    case '~': 
-      my_value = ~my_value;
-      break;
-    default:
-      my_valid = false;
-  }
+  if (op->length() == 1)
+    switch (*op->position()) // '*' and '&' do not apply to constant expressions
+    {
+      case '+': break; 
+      case '-':
+        my_value = -my_value;
+        break;
+      case '!': 
+        my_value = !my_value;
+        break;
+      case '~': 
+        my_value = ~my_value;
+        break;
+      default:
+        my_valid = false;
+    }
+  else if (*op->position() == '+' && op->position()[1] == '+')
+    ++my_value;
+  else if (*op->position() == '-' && op->position()[1] == '-')
+    --my_value;
+  else my_valid = false;
 }
 
 void ConstEvaluator::visit(CondExpr *node)

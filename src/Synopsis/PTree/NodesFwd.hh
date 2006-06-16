@@ -127,6 +127,7 @@ class CastExpr;
 class UnaryExpr;
 class ThrowExpr;
 class SizeofExpr;
+class OffsetofExpr;
 class TypeidExpr;
 class TypeofExpr;
 class NewExpr;

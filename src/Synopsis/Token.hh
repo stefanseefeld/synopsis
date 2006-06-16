@@ -124,6 +124,7 @@ struct Token
     FOR,
     GOTO,
     IF,
+    OFFSETOF,
     RETURN,
     SIZEOF,
     SWITCH,

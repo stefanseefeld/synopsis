@@ -83,6 +83,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__alignof__"] = Token::SIZEOF;
     my_keywords["__asm__"] = Token::ATTRIBUTE;
     my_keywords["__attribute__"] = Token::ATTRIBUTE;
+    my_keywords["__builtin_offsetof"] = Token::OFFSETOF;
     my_keywords["__builtin_va_arg"] = Token::EXTENSION; // Is this correct ?
     my_keywords["__complex__"] = Token::Ignore;
     my_keywords["__const"] = Token::CONST;
@@ -589,7 +590,7 @@ Token::Type Lexer::screen(const char *identifier, size_t length)
 Token::Type Lexer::read_separator(char c, unsigned long top)
 {
   char c1 = my_buffer->get();
-
+  if (c1 == '\0') return Token::BadToken;
   my_token.length = 2;
   if(c1 == '=')
   {

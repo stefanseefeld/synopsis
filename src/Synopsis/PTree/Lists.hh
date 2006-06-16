@@ -414,6 +414,12 @@ public:
   SizeofExpr(Node *p, Node *q) : ExpressionT<SizeofExpr>(p, q) {} 
 };
 
+class OffsetofExpr : public ExpressionT<OffsetofExpr> 
+{
+public:
+  OffsetofExpr(Node *p, Node *q) : ExpressionT<OffsetofExpr>(p, q) {} 
+};
+
 class TypeidExpr : public ExpressionT<TypeidExpr> 
 {
 public:
