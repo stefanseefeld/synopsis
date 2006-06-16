@@ -29,12 +29,13 @@ public:
 private:
   typedef std::stack<AST::Scope> ScopeStack;
 
-  virtual void visit(PTree::List *node);
-  virtual void visit(PTree::Declarator *decl);
-  virtual void visit(PTree::Declaration *decl);
-  virtual void visit(PTree::ClassSpec *class_spec);
-  virtual void visit(PTree::EnumSpec *enum_spec);
-  virtual void visit(PTree::Typedef *typed);
+  virtual void visit(PTree::List *);
+  virtual void visit(PTree::Declarator *);
+  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::FunctionDefinition *);
+  virtual void visit(PTree::ClassSpec *);
+  virtual void visit(PTree::EnumSpec *);
+  virtual void visit(PTree::Typedef *);
 
   void translate_parameters(PTree::Node *,
 			    AST::TypeList, AST::Function::Parameters &);

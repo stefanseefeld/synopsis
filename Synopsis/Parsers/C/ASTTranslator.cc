@@ -24,7 +24,10 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_primary_file_only(primary_file_only),
     my_lineno(0),
     my_types(my_ast.types(), v, d),
-    my_verbose(v), my_debug(d) 
+    my_verbose(v),
+    my_debug(d),
+    my_buffer(0),
+    my_declaration(0)
 {
   Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
   // determine canonical filenames
@@ -123,6 +126,18 @@ void ASTTranslator::visit(PTree::Declaration *declaration)
   // the comments are passed through.
   my_declaration = declaration;
   visit(static_cast<PTree::List *>(declaration));
+  my_declaration = 0;
+}
+
+void ASTTranslator::visit(PTree::FunctionDefinition *def)
+{
+  Trace trace("ASTTranslator::visit(PTree::FunctionDefinition *)", Trace::TRANSLATION);
+  // Cache the declaration while traversing the individual declarators;
+  // the comments are passed through.
+  my_declaration = def;
+  // Only traverse declaration-specifier-seq and declarator, but not body
+  if (PTree::first(def)) PTree::first(def)->accept(this);
+  PTree::second(def)->accept(this);
   my_declaration = 0;
 }
 

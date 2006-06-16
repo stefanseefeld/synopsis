@@ -1366,6 +1366,10 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
   }
   else
   {
+    PTree::FunctionDefinition *def;
+    def = new PTree::FunctionDefinition(head,
+					PTree::list(type_name, decl->car()));
+    ScopeGuard guard(*this, def);
     PTree::Block *body;
     if(!function_body(body))
       return false;
@@ -1373,8 +1377,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
     if(PTree::length(decl) != 1)
       return false;
 
-    statement = new PTree::Declaration(head, PTree::list(type_name,
-							 decl->car(), body));
+    statement = PTree::snoc(def, body);
   }
   return true;
 }
