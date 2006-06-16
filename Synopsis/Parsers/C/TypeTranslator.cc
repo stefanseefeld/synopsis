@@ -223,7 +223,10 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
     return i;
   }
   if (!base)
-    base = my_types.attr("__getitem__")(Python::Tuple(AST::ScopedName(name)));
+  {
+    base = my_types.attr("get")(Python::Tuple(AST::ScopedName(name)));
+    if (!base) throw std::runtime_error("Unknown symbol: " + name);
+  }
   if (premod.empty() && postmod.empty())
     type = base;
   else

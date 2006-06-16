@@ -25,7 +25,7 @@ class Type : public Python::Object
 public:
   Type() {}
   Type(const Python::Object &o, bool check = true)
-    : Python::Object(o) { if (check) assert_type("Type");}
+    : Python::Object(o) { if (check && o) assert_type("Type");}
 
   std::string language() const { return narrow<std::string>(attr("language")());}
 
@@ -41,7 +41,7 @@ class Named : public Type
 public:
   Named() {}
   Named(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check) assert_type("Named");}
+    : Type(o, false) { if (check && o) assert_type("Named");}
 
   ScopedName name() const { return attr("name")();}  
 
@@ -53,7 +53,7 @@ class Base : public Named
 public:
   Base() {}
   Base(const Python::Object &o, bool check = true)
-    : Named(o, false) { if (check) assert_type("Base");}
+    : Named(o, false) { if (check && o) assert_type("Base");}
 
   virtual void accept(TypeVisitor *v) { v->visit_base(this);}
 };
@@ -63,7 +63,7 @@ class Dependent : public Named
 public:
   Dependent() {}
   Dependent(const Python::Object &o, bool check = true)
-    : Named(o, false) { if (check) assert_type("Dependent");}
+    : Named(o, false) { if (check && o) assert_type("Dependent");}
 
   virtual void accept(TypeVisitor *v) { v->visit_dependent(this);}
 };
@@ -73,7 +73,7 @@ class Unknown : public Named
 public:
   Unknown() {}
   Unknown(const Python::Object &o, bool check = true)
-    : Named(o, false) { if (check) assert_type("Unknown");}
+    : Named(o, false) { if (check && o) assert_type("Unknown");}
 
   virtual void accept(TypeVisitor *v) { v->visit_unknown(this);}
 };
@@ -83,7 +83,7 @@ class Modifier : public Type
 public:
   Modifier() {}
   Modifier(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check) assert_type("Modifier");}
+    : Type(o, false) { if (check && o) assert_type("Modifier");}
 
   Type alias() const { return narrow<Type>(attr("alias")());}
   Modifiers pre() const { return narrow<Modifiers>(attr("premod")());}  
@@ -99,7 +99,7 @@ public:
 
   Array() {}
   Array(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check) assert_type("Array");}
+    : Type(o, false) { if (check && o) assert_type("Array");}
 
   Sizes sizes() const { return narrow<Sizes>(attr("sizes")());}  
 
@@ -111,7 +111,7 @@ class FunctionPtr : public Type
 public:
   FunctionPtr() {}
   FunctionPtr(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check) assert_type("Function");}
+    : Type(o, false) { if (check && o) assert_type("Function");}
 
   Type return_type() const { return narrow<Type>(attr("returnType")());}  
   Modifiers pre() const { return narrow<Modifiers>(attr("premod")());}  

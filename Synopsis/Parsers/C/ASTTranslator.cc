@@ -60,7 +60,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 {
   Trace trace("ASTTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
-  if (!PTree::first(declarator)) return; // empty
+  if (!my_declaration || !PTree::first(declarator)) return; // empty
 
   bool visible = update_position(declarator);
   PTree::Encoding name = declarator->encoded_name();
@@ -264,6 +264,7 @@ void ASTTranslator::visit(PTree::Typedef *typed)
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Type alias = my_types.lookup(type);
+    // FIXME: need to honour constr parameter
     AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
 							     "typedef",
 							     qname,
