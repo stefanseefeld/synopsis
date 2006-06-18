@@ -3242,8 +3242,12 @@ bool Parser::conditional_expr(PTree::Node *&exp)
   {
     Token tk1;
     my_lexer.get_token(tk1);
-    PTree::Node *then;
-    if(!expression(then)) return false;
+    PTree::Node *then = 0;
+    if (my_lexer.look_ahead(0) != ':')
+    {
+      if(!expression(then)) return false;
+    }
+    else if (!(my_ruleset & GCC)) return false;
     Token tk2;
     if(my_lexer.get_token(tk2) != ':') return false;
     PTree::Node *otherwise;
