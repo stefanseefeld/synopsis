@@ -215,7 +215,7 @@ void ConstEvaluator::visit(UnaryExpr *node)
 {
   Node *op = node->car();
   Node *expr = node->cdr()->car();
-  assert(op->is_atom() && op->length() >=2);
+  assert(op->is_atom() && op->length() <=2);
   if (!evaluate(expr, my_value)) return;
 
   if (op->length() == 1)

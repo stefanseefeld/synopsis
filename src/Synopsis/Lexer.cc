@@ -476,14 +476,33 @@ bool Lexer::read_str_const(unsigned long top)
     }
     else if(c == '"')
     {
+      // We are past one string literal token now.
+      // Any following whitespace needs to be skipped
+      // before looking for anything else.
       unsigned long pos = my_buffer->position() + 1;
-      int nline = 0;
-      do
+      while (true)
       {
-	c = my_buffer->get();
-	if(c == '\n') ++nline;
-      } while(is_blank(c) || c == '\n');
-
+	int nline = 0;
+	// Consume whitespace.
+	do
+	{
+	  c = my_buffer->get();
+	  if(c == '\n') ++nline;
+	} while(is_blank(c) || c == '\n');
+	// Consume comment.
+	if (c == '/')
+	{
+	  char d = my_buffer->get();
+	  if (d == '/' || d == '*')
+	    read_comment(d, my_buffer->position() - 2);
+	  else
+	  {
+	    my_buffer->unget();
+	    break;
+	  }
+	}
+	else break;
+      }
       if(c == '"')
 	/* line_number += nline; */ ;
       else
