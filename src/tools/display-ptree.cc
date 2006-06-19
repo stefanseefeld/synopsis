@@ -18,7 +18,7 @@ using namespace Synopsis;
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " [-g <filename>] [-d] [-r] [-e] <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-c] [-g <filename>] [-d] [-r] [-e] <input>" << std::endl;
   return -1;
 }
 
@@ -27,6 +27,8 @@ int main(int argc, char **argv)
   bool encoding = false;
   bool typeinfo = false;
   bool debug = false;
+  int tokenset = Lexer::CXX | Lexer::GCC;
+  int ruleset = Parser::CXX | Parser::GCC;
   std::string dotfile;
   const char *input = argv[1];
   if (argc == 1) return usage(argv[0]);
@@ -42,6 +44,11 @@ int main(int argc, char **argv)
       }
       dotfile = argv[i];
     }
+    else if (argv[i] == std::string("-c"))
+    {
+      tokenset = Lexer::C | Lexer::GCC;
+      ruleset = Parser::GCC;
+    }
     else if (argv[i] == std::string("-e")) encoding = true;
     else if (argv[i] == std::string("-r")) typeinfo = true;
     else if (argv[i] == std::string("-d")) debug = true;
@@ -56,9 +63,9 @@ int main(int argc, char **argv)
 
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
-    Lexer lexer(&buffer);
+    Lexer lexer(&buffer, tokenset);
     SymbolFactory symbols;
-    Parser parser(lexer, symbols);
+    Parser parser(lexer, symbols, ruleset);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
