@@ -3966,7 +3966,7 @@ bool Parser::postfix_expr(PTree::Node *&exp)
   PTree::Node *e;
   Token cp, op;
   int t, t2;
-
+  exp = 0;
   // try compound-literal
   if (my_ruleset & GCC && my_lexer.look_ahead(0) == '(')
   {
@@ -3985,8 +3985,7 @@ bool Parser::postfix_expr(PTree::Node *&exp)
     }
     else my_lexer.restore(save);
   }
-
-  if(!primary_expr(exp)) return false;
+  if(!exp && !primary_expr(exp)) return false;
 
   while(true)
   {
