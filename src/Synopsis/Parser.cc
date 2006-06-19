@@ -3967,6 +3967,25 @@ bool Parser::postfix_expr(PTree::Node *&exp)
   Token cp, op;
   int t, t2;
 
+  // try compound-literal
+  if (my_ruleset & GCC && my_lexer.look_ahead(0) == '(')
+  {
+    const char *save = my_lexer.save();
+    my_lexer.get_token(op);
+    PTree::Node *type;
+    PTree::Encoding name;
+    PTree::Node *init = 0;
+    if(type_id(type, name) && my_lexer.get_token(cp) == ')' &&
+       my_lexer.look_ahead(0) == '{' && initialize_expr(init))
+    {
+      exp = new PTree::PostfixExpr(PTree::list(new PTree::Atom(op),
+					       type,
+					       new PTree::Atom(cp)),
+				   init);
+    }
+    else my_lexer.restore(save);
+  }
+
   if(!primary_expr(exp)) return false;
 
   while(true)
