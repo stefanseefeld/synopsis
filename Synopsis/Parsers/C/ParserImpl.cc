@@ -71,7 +71,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Buffer buffer(ifs.rdbuf(), src);
     Lexer lexer(&buffer, Lexer::GCC);
     SymbolFactory symbols(SymbolFactory::NONE);
-    Parser parser(lexer, symbols);
+    Parser parser(lexer, symbols, Parser::GCC);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size())

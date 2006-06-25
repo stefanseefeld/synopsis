@@ -190,6 +190,7 @@ private:
   bool parameter_declaration(PTree::ParameterDeclaration *&, PTree::Encoding&);
   
   bool function_arguments(PTree::Node *&);
+  bool designation(PTree::Node *&);
   bool initialize_expr(PTree::Node *&);
   
   bool enum_spec(PTree::EnumSpec *&, PTree::Encoding&);

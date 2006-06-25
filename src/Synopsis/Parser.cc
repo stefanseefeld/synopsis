@@ -2676,6 +2676,59 @@ bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
   return true;
 }
 
+// designation:
+//   designator-list =
+// designator-list:
+//   designator
+//   designator-list designator
+// designator:
+//   [ constant-expression ]
+//   . identifier  
+bool Parser::designation(PTree::Node *&d)
+{
+  Trace trace("Parser::designation", Trace::PARSING);
+  Token::Type token = my_lexer.look_ahead(0);
+  while (token == '.' || token == '[')
+  {
+    Token tk;
+    my_lexer.get_token(tk);
+    if (token == '.')
+    {
+      // . identifier
+      Token id;
+      my_lexer.get_token(id);
+      if(id.type != Token::Identifier) return false;
+      d = PTree::nconc(d, PTree::list(new PTree::Atom(tk), new PTree::Identifier(id)));
+    }
+    else
+    {
+      // [ constant-expression ]
+      // [ expression ... expression ] (GNU Extension)
+      PTree::Node *e;
+      if (!expression(e)) return false;
+      d = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
+      if (my_lexer.look_ahead(0) == Token::Ellipsis && my_ruleset & GCC)
+      {
+	Token ellipsis;
+	my_lexer.get_token(ellipsis);
+	PTree::Node *e2;
+	if (!expression(e2)) return false;
+	d = PTree::nconc(d, PTree::list(new PTree::Atom(ellipsis), e2));
+      }
+      if (my_lexer.look_ahead(0) != ']') return false;
+      Token cp;
+      my_lexer.get_token(cp);
+      d = PTree::nconc(d, PTree::list(new PTree::Atom(cp)));
+    }
+    token = my_lexer.look_ahead(0);
+  }
+  if (token != '=') return false;
+  Token eq;
+  my_lexer.get_token(eq);
+  d = PTree::nconc(d, PTree::list(new PTree::Atom(eq)));
+  return true;
+}
+
 /*
   initialize.expr
   : expression
@@ -2686,7 +2739,6 @@ bool Parser::initialize_expr(PTree::Node *&exp)
   Trace trace("Parser::initialize_expr", Trace::PARSING);
   Token tk;
   PTree::Node *e, *elist;
-
   if(my_lexer.look_ahead(0) != '{') return assign_expr(exp);
   else
   {
@@ -2696,6 +2748,10 @@ bool Parser::initialize_expr(PTree::Node *&exp)
     int t = my_lexer.look_ahead(0);
     while(t != '}')
     {
+      PTree::Node *d = 0;
+      if (!(my_ruleset & CXX) && (t == '.' || t == '[') && !designation(d))
+	return false;
+      t = my_lexer.look_ahead(0);
       if(!initialize_expr(e))
       {
 	if(!mark_error()) return false; // too many errors
@@ -2706,7 +2762,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
 	return true;		// error recovery
       }
 
-      elist = PTree::snoc(elist, e);
+      elist = PTree::snoc(elist, d ? PTree::nconc(d, e) : e);
       t = my_lexer.look_ahead(0);
       if(t == '}') break;
       else if(t == ',')
