@@ -4134,10 +4134,20 @@ bool Parser::primary_expr(PTree::Node *&exp)
       return typeid_expr(exp);
     case '(':
     {
+      my_lexer.get_token(tk);
       PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
       my_gt_is_operator = true;
-      my_lexer.get_token(tk);
-      if(!expression(exp2)) return false;
+      if (my_lexer.look_ahead(0) == '{' && my_ruleset & GCC)
+      {
+	// GNU statement expression
+	PTree::Block *block;
+	if (!compound_statement(block)) return false;	
+	exp2 = block;
+      }
+      else
+      {
+	if(!expression(exp2)) return false;
+      }
       if(my_lexer.get_token(tk2) != ')') return false;
 
       exp = new PTree::ParenExpr(new PTree::Atom(tk),
