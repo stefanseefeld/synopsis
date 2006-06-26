@@ -21,56 +21,66 @@ using namespace Synopsis;
 
 void Buffer::iterator::next()
 {
-  if (my_replacement)
+  if (replacement_)
   {
-    ++my_offset;
-    if (my_offset >= my_replacement->patch.size())
+    ++offset_;
+    if (offset_ >= replacement_->patch.size())
     {
-      my_cursor = my_replacement->to - my_buffer->ptr();
-      my_replacement = 0;
-      my_offset = 0;
+      cursor_ = replacement_->to - buffer_->ptr();
+      replacement_ = 0;
+      offset_ = 0;
     }
   }
   else
   {
-    ++my_cursor;
-    for (Buffer::Replacements::const_iterator i = my_buffer->my_replacements.begin();
-	 i != my_buffer->my_replacements.end();
+    ++cursor_;
+    for (Buffer::Replacements::const_iterator i = buffer_->replacements_.begin();
+	 i != buffer_->replacements_.end();
 	 ++i)
-      if (i->from == my_buffer->ptr(my_cursor))
+      if (i->from == buffer_->ptr(cursor_))
       {
-	my_replacement = &*i;
-	my_offset = 0;
+	replacement_ = &*i;
+	offset_ = 0;
 	break;
       }
   }
 }
 
-Buffer::Buffer(std::streambuf *sb, const std::string &filename)
-  : my_filename(filename),
-    my_cursor(0)
+Buffer::Buffer(std::streambuf *sb, std::string const &filename)
+  : filename_(filename),
+    cursor_(0)
 {
   std::istreambuf_iterator<char> begin(sb), end;
-  my_buffer.append(begin, end);
+  buffer_.append(begin, end);
 }
 
-void Buffer::replace(const char *from, const char *to,
-		     const char *begin, unsigned long length)
+void Buffer::replace(char const *from, char const *to,
+		     char const *begin, unsigned long length)
 {
-  Replacements::iterator i = my_replacements.begin();
+  Replacements::iterator i = replacements_.begin();
 
   // Find the iterator after which to insert the new patch.
-  while (i != my_replacements.end() && i->from < from) ++i;
+  while (i != replacements_.end() && i->from < from) ++i;
   
   // TODO: handle overlapping replacements.
-  my_replacements.insert(i, Replacement(from, to, std::string(begin, length)));
+  replacements_.insert(i, Replacement(from, to, std::string(begin, length)));
 }
 
-unsigned long Buffer::origin(const char *ptr, std::string &filename) const
+bool Buffer::is_replaced(char const *ptr)
+{
+  Replacements::iterator i = replacements_.begin();
+
+  // Find the iterator after which to insert the new patch.
+  while (i != replacements_.end() && i->to < ptr) ++i;
+  if (i != replacements_.end() && i->from < ptr) return true;
+  else return false;
+}
+
+unsigned long Buffer::origin(char const *ptr, std::string &filename) const
 {
   // Determine pos in file
-  unsigned long cursor = ptr - my_buffer.data();
-  if(cursor > my_buffer.size())
+  unsigned long cursor = ptr - buffer_.data();
+  if(cursor > buffer_.size())
     throw std::invalid_argument("pointer out of bound");
 
   long lines = 0;
@@ -91,7 +101,7 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
  	if(l >= 0)
  	{
  	  unsigned long line = static_cast<unsigned long>(l) + lines;
-	  filename = std::string(my_buffer.data() + begin, end - begin);
+	  filename = std::string(buffer_.data() + begin, end - begin);
 	  return line;
  	}
  	break;
@@ -101,17 +111,17 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
 
   // if we are here the input file wasn't preprocessed and
   // thus the first line doesn't start with a line directive
-  filename = my_filename;
+  filename = filename_;
   return 1 + lines;
 }
 
-void Buffer::write(std::streambuf *sb, const std::string &/* filename */) const
+void Buffer::write(std::streambuf *sb, std::string const &/* filename */) const
 {
   // FIXME: what should we do with overlapping replacements ?
-  Replacements replacements(my_replacements);
+  Replacements replacements(replacements_);
   std::sort(replacements.begin(), replacements.end(), Replacement::smaller);
   std::ostreambuf_iterator<char> out(sb);
-  char const *b = my_buffer.data();
+  char const *b = buffer_.data();
   for (Replacements::iterator r = replacements.begin();
        r != replacements.end();
        ++r)
@@ -121,7 +131,7 @@ void Buffer::write(std::streambuf *sb, const std::string &/* filename */) const
     b = r->to;
     if (*b == '\0') break;
   }
-  std::copy(b, my_buffer.data() + my_buffer.length(), out);
+  std::copy(b, buffer_.data() + buffer_.length(), out);
 }
 
 long Buffer::read_line_directive(unsigned long cursor, long line,
@@ -136,7 +146,7 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
 
   // gcc only generates '#' instead of '#line', so make the following check
   // optional.
-  if(cursor + 4 <= my_buffer.size() && my_buffer.substr(cursor, 4) == "line")
+  if(cursor + 4 <= buffer_.size() && buffer_.substr(cursor, 4) == "line")
   {
     // skip 'line' token and following whitespace
     cursor += 4;
@@ -191,7 +201,7 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
   return line;
 }
 
-Buffer::Replacement::Replacement(const char *f, const char *t,
+Buffer::Replacement::Replacement(char const *f, const char *t,
 				 std::string const &p)
   : from(f), to(t), patch(p)
 {

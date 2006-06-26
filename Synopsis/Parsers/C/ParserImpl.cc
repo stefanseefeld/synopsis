@@ -73,7 +73,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Buffer buffer(ifs.rdbuf(), src);
     Lexer lexer(&buffer, Lexer::GCC);
     SymbolFactory symbols(SymbolFactory::C99);
-    Parser parser(lexer, symbols);
+    Parser parser(lexer, symbols, Parser::GCC);
     Timer timer;
     PTree::Node *ptree = parser.parse();
     if (profile)

@@ -61,16 +61,16 @@ private:
     typedef std::deque<Token> Container;
     typedef Container::size_type size_type;
 
-    bool empty() const { return my_container.empty();}
-    size_type size() const { return my_container.size();}
-    const Token &front() const { return my_container.front();}
-    const Token &back() const { return my_container.back();}
-    const Token &at(size_type i) const { return my_container.at(i);}
-    void push(const Token &t) { my_container.push_back(t);}
-    void pop() { my_container.pop_front();}
-    void clear() { my_container.clear();}
+    bool empty() const { return container_.empty();}
+    size_type size() const { return container_.size();}
+    const Token &front() const { return container_.front();}
+    const Token &back() const { return container_.back();}
+    const Token &at(size_type i) const { return container_.at(i);}
+    void push(const Token &t) { container_.push_back(t);}
+    void pop() { container_.pop_front();}
+    void clear() { container_.clear();}
   private:
-    Container my_container;
+    Container container_;
   };
   typedef std::map<std::string, Token::Type> Dictionary;
 
@@ -111,17 +111,17 @@ private:
   Token::Type single_char_op(unsigned char c);
   Token::Type read_comment(char c, unsigned long top);
 
-  Buffer    *my_buffer;
-  Queue      my_tokens;
-  Dictionary my_keywords;
-  Token      my_token;
-  Comments   my_comments;
+  Buffer    *buffer_;
+  Queue      tokens_;
+  Dictionary keywords_;
+  Token      token_;
+  Comments   comments_;
 };
 
 inline Token::Type Lexer::look_ahead(size_t offset)
 {
   if (!fill(offset + 1)) return Token::BadToken;
-  return my_tokens.at(offset).type;
+  return tokens_.at(offset).type;
 }
 
 inline bool is_blank(char c)
