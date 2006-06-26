@@ -2102,23 +2102,87 @@ PT::Declarator *Parser::declarator(PT::Encoding &type, PT::Encoding &name,
 PT::Node *Parser::initializer_clause(bool constant)
 {
   Trace trace("Parser::initializer_clause", Trace::PARSING);
-  if (my_lexer.look_ahead() != '{')
+  switch (my_lexer.look_ahead())
   {
-    PGuard<bool> guard(*this, &Parser::my_in_constant_expression, constant);
-    return assignment_expression();
+    case '.':
+    case '[':
+      if (!(my_ruleset & CXX))
+      {
+	PT::List *d = designation();
+	PGuard<bool> guard(*this, &Parser::my_in_constant_expression, constant);
+	PT::Node *i = assignment_expression();
+	return PT::snoc(d, i);
+      }
+      else return 0;
+    case '{':
+    {
+      Token ob = my_lexer.get_token();
+      PT::List *clause = PT::cons(new PT::Atom(ob));
+      if (my_lexer.look_ahead() != '}')
+      {
+	PT::List *initializers = initializer_list(constant);
+	if (!require(initializers, "initializer-list")) return 0;
+	clause = PT::snoc(clause, initializers);
+	if (my_lexer.look_ahead() == ',')
+	  clause = PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+      }
+      if (!require('}')) return 0;
+      return PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+    }
+    default:
+    {
+      PGuard<bool> guard(*this, &Parser::my_in_constant_expression, constant);
+      return assignment_expression();
+    }
   }
-  Token ob = my_lexer.get_token();
-  PT::List *clause = PT::cons(new PT::Atom(ob));
-  if (my_lexer.look_ahead() != '}')
+}
+
+// designation:
+//   designator-list =
+// designator-list:
+//   designator
+//   designator-list designator
+// designator:
+//   [ constant-expression ]
+//   . identifier  
+PTree::List *Parser::designation()
+{
+  Trace trace("Parser::designation", Trace::PARSING);
+  Token::Type token = my_lexer.look_ahead();
+  PT::List *d;
+  while (token == '.' || token == '[')
   {
-    PT::List *initializers = initializer_list(constant);
-    if (!require(initializers, "initializer-list")) return 0;
-    clause = PT::snoc(clause, initializers);
-    if (my_lexer.look_ahead() == ',')
-      clause = PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+    Token tk = my_lexer.get_token();
+    if (token == '.')
+    {
+      // . identifier
+      Token id = my_lexer.get_token();
+      if(id.type != Token::Identifier) return 0;
+      d = PT::snoc(d, PT::list(new PT::Atom(tk), new PT::Identifier(id)));
+    }
+    else
+    {
+      // [ constant-expression ]
+      // [ expression ... expression ] (GNU Extension)
+      PT::Node *e = expression();
+      if (!require(e, "expression")) return 0;
+      d = PT::snoc(d, PT::list(new PT::Atom(tk), e));
+      if (my_lexer.look_ahead(0) == Token::Ellipsis && my_ruleset & GCC)
+      {
+	Token ellipsis = my_lexer.get_token();
+	PT::Node *e2 = expression();
+	if (!require(e2, "expression")) return 0;
+	d = PT::snoc(d, PT::list(new PT::Atom(ellipsis), e2));
+      }
+      if (!require(']')) return 0;
+      Token cp = my_lexer.get_token();
+      d = PT::snoc(d, new PT::Atom(cp));
+    }
+    token = my_lexer.look_ahead();
   }
-  if (!require('}')) return 0;
-  return PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+  if (token != '=') return 0;
+  Token eq = my_lexer.get_token();
+  return PT::snoc(d, new PT::Atom(eq));
 }
 
 // initializer-list:
@@ -3319,8 +3383,9 @@ PT::Node *Parser::conditional_expression()
   if(my_lexer.look_ahead() == '?')
   {
     Token quest = my_lexer.get_token();
-    PT::Node *then = expression();
-    if (!then) return 0;
+    PT::Node *then = 0;
+    if (my_lexer.look_ahead() != ':') then = expression();
+    if (!then && !(my_ruleset & GCC)) return 0;
     Token colon = my_lexer.get_token();
     if (colon.type != ':') return 0;
     PT::Node *otherwise = assignment_expression();
@@ -3743,6 +3808,32 @@ PT::Node *Parser::sizeof_expression()
   else return new PT::SizeofExpr(new PT::Atom(kwd), PT::cons(unary));
 }
 
+PT::Node *Parser::offsetof_expression()
+{
+  Trace trace("Parser::offsetof_expression", Trace::PARSING);
+
+  Token kwd = my_lexer.get_token();
+  if (kwd.type != Token::OFFSETOF) return 0;
+  if (!require('(')) return 0;
+  Token op = my_lexer.get_token();
+  PT::Encoding encoding;
+  PT::Node *type = type_id(encoding);
+  if (!require(type, "type-id") || !require(',')) return 0;
+  Token comma = my_lexer.get_token();
+  // allowed syntax is:
+  //   id-expression
+  //   offsetof-member-designator . id-expression
+  //   offsetof-member-designator [ expression ]
+  // Quick hack: only look for postfix_expression.
+  PT::Node *id = postfix_expression();
+  if (!require(id, "id-expression") || !require(')')) return 0;
+  Token cp = my_lexer.get_token();
+  return new PT::OffsetofExpr(new PT::Atom(kwd),
+			      PT::list(new PT::Atom(op), type,
+				       new PT::Atom(comma), id,
+				       new PT::Atom(cp)));
+}
+
 // new-expression:
 //   :: [opt] new new-placement [opt] new-type-id new-initializer [opt]
 //   :: [opt] new new-placement [opt] ( type-id ) new-initializer [opt]
@@ -4014,6 +4105,28 @@ PT::Node *Parser::postfix_expression()
 	  break;
 	}
       }
+      tentative.rollback(true);
+      // Try compound-literal.
+      if (my_ruleset & GCC && my_lexer.look_ahead() == '(')
+      {
+	Token op = my_lexer.get_token();
+	PT::Encoding encoding;
+	PT::Node *type = type_id(encoding);
+	if (type && my_lexer.look_ahead() == ')')
+	{
+	  Token cp = my_lexer.get_token();
+	  if (my_lexer.look_ahead() == '{')
+	  {
+	    PT::Node *initializer = initializer_clause(false);
+	    if (initializer)
+	      expr = new PT::PostfixExpr(PT::list(new PT::Atom(op),
+						  type,
+						  new PT::Atom(cp)),
+					 static_cast<PT::List *>(initializer));
+	    break;
+	  }
+	}
+      }
       tentative.rollback();
       expr = primary_expression();
       if (!require(expr, "primary-expression")) return 0;
@@ -4115,13 +4228,29 @@ PT::Node *Parser::primary_expression()
       return new PT::Kwd::This(my_lexer.get_token());
     case '(':
     {
-      PGuard<bool> pguard(*this, &Parser::my_gt_is_operator, true);
       Token op = my_lexer.get_token();
-      PT::Node *expr = expression();
-      if (!expr || !require(')')) return 0;
+      PGuard<bool> pguard(*this, &Parser::my_gt_is_operator, true);
+      PT::Node *expr = 0;
+      if (my_lexer.look_ahead() == '{' && my_ruleset & GCC)
+      {
+	// GNU statement expression
+	PT::Block *block = compound_statement(block);
+	if (!require(block, "compound-statement")) return 0;	
+	expr = block;
+      }
+      else
+      {
+	expr = expression();
+	if (!expr) return 0;
+      }
+      if (!require(')')) return 0;
       Token cp = my_lexer.get_token();
       return new PT::ParenExpr(new PT::Atom(op),
 			       PT::list(expr, new PT::Atom(cp)));
+    }
+    case Token::OFFSETOF:
+    {
+      return offsetof_expression();
     }
     default:
     {

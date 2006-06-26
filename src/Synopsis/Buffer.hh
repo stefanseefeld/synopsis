@@ -27,27 +27,30 @@ public:
 
   Buffer(std::streambuf *, const std::string & = std::string("unknown"));
 
-  //. return the size of the buffer
-  unsigned long size() const { return my_buffer.size();}
+  //. Return the size of the buffer.
+  unsigned long size() const { return buffer_.size();}
 
-  //. report the character at the current position and advance one character
-  char get() { return my_cursor < my_buffer.size() ? my_buffer[my_cursor++] : '\0';}
-  //. undo the last get
-  void unget() { --my_cursor;}
-  //. reset the current position to position c
-  void reset(unsigned long c = 0) { my_cursor = c;}
+  //. Report the character at the current position and advance one character.
+  char get() { return cursor_ < buffer_.size() ? buffer_[cursor_++] : '\0';}
+  //. Undo the last get.
+  void unget() { --cursor_;}
+  //. Reset the current position to position c.
+  void reset(unsigned long c = 0) { cursor_ = c;}
 
-  //. report the current position
-  unsigned long position() const { return my_cursor - 1;}
-  //. report the character at position p
-  char at(unsigned long p) const { return my_buffer[p];}
-  //. report the pointer at position p
-  char const *ptr(unsigned long p = 0) const { return my_buffer.c_str() + p;}
+  //. Report the current position.
+  unsigned long position() const { return cursor_ - 1;}
+  //. Report the character at position p.
+  char at(unsigned long p) const { return buffer_[p];}
+  //. Report the pointer at position p.
+  char const *ptr(unsigned long p = 0) const { return buffer_.c_str() + p;}
 
-  //. replace the text between from and to by the text between
+  //. Replace the text between from and to by the text between
   //. begin and begin + length
   void replace(char const *from, char const *to,
 	       char const *begin, unsigned long length);
+
+  //. Return true if ptr points into a region that has been replaced.
+  bool is_replaced(char const *ptr);
 
   //. Return the origin of the given pointer (filename and line number)
   unsigned long origin(char const *, std::string &) const;
@@ -79,10 +82,10 @@ private:
   long read_line_directive(unsigned long cursor, long line,
 			   unsigned long &begin, unsigned long &end) const;
 
-  std::string   my_filename;
-  std::string   my_buffer;
-  unsigned long my_cursor;
-  Replacements  my_replacements;
+  std::string   filename_;
+  std::string   buffer_;
+  unsigned long cursor_;
+  Replacements  replacements_;
 };
   
 class Buffer::iterator : public std::iterator<std::forward_iterator_tag,
@@ -92,8 +95,8 @@ class Buffer::iterator : public std::iterator<std::forward_iterator_tag,
 public:
   reference operator*() const 
   {
-    if (my_replacement) return my_replacement->patch[my_offset];
-    else return *my_buffer->ptr(my_cursor);
+    if (replacement_) return replacement_->patch[offset_];
+    else return *buffer_->ptr(cursor_);
   }
   pointer operator->() const { return &(operator*());}
   iterator& operator++() { next(); return *this;}
@@ -106,15 +109,15 @@ public:
 
   friend bool operator==(Buffer::iterator const& x, Buffer::iterator const& y)
   {
-    return (x.my_cursor == y.my_cursor && 
-	    x.my_replacement == y.my_replacement && 
-	    x.my_offset == y.my_offset && 
-	    x.my_buffer == y.my_buffer);
+    return (x.cursor_ == y.cursor_ && 
+	    x.replacement_ == y.replacement_ && 
+	    x.offset_ == y.offset_ && 
+	    x.buffer_ == y.buffer_);
   }
 
 private:
   iterator(Buffer const *b, unsigned long c)
-    : my_buffer(b), my_cursor(c), my_replacement(0), my_offset(0) {}
+    : buffer_(b), cursor_(c), replacement_(0), offset_(0) {}
 
   //. Advance an iterator to the next position.
   //. This takes replacement patches into account, so the iteration
@@ -122,10 +125,10 @@ private:
   void next();
   void prev();
 
-  Buffer const *             my_buffer;
-  unsigned long              my_cursor;
-  Buffer::Replacement const *my_replacement;
-  unsigned long              my_offset;
+  Buffer const *             buffer_;
+  unsigned long              cursor_;
+  Buffer::Replacement const *replacement_;
+  unsigned long              offset_;
   
 };
 

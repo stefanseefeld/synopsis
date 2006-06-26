@@ -14,160 +14,161 @@
 using namespace Synopsis;
 
 Lexer::Lexer(Buffer *buffer, int tokenset)
-  : my_buffer(buffer),
-    my_token(my_buffer->ptr(), 0, '\n')
+  : buffer_(buffer),
+    token_(buffer_->ptr(), 0, '\n')
 {
-  my_keywords["asm"] = Token::ATTRIBUTE;
-  my_keywords["auto"] = Token::AUTO;
-  my_keywords["break"] = Token::BREAK;
-  my_keywords["case"] = Token::CASE;
-  my_keywords["char"] = Token::CHAR;
+  keywords_["asm"] = Token::ATTRIBUTE;
+  keywords_["auto"] = Token::AUTO;
+  keywords_["break"] = Token::BREAK;
+  keywords_["case"] = Token::CASE;
+  keywords_["char"] = Token::CHAR;
   // FIXME: Add support for _Complex to Parser.
-  my_keywords["_Complex"] = Token::Ignore;
-  my_keywords["const"] = Token::CONST;
-  my_keywords["continue"] = Token::CONTINUE;
-  my_keywords["default"] = Token::DEFAULT;
-  my_keywords["do"] = Token::DO;
-  my_keywords["double"] = Token::DOUBLE;
-  my_keywords["else"] = Token::ELSE;
-  my_keywords["enum"] = Token::ENUM;
-  my_keywords["extern"] = Token::EXTERN;
-  my_keywords["float"] = Token::FLOAT;
-  my_keywords["for"] = Token::FOR;
-  my_keywords["goto"] = Token::GOTO;
-  my_keywords["if"] = Token::IF;
-  my_keywords["inline"] = Token::INLINE;
-  my_keywords["int"] = Token::INT;
-  my_keywords["long"] = Token::LONG;
-  my_keywords["register"] = Token::REGISTER;
-  my_keywords["return"] = Token::RETURN;
-  my_keywords["short"] = Token::SHORT;
-  my_keywords["signed"] = Token::SIGNED;
-  my_keywords["sizeof"] = Token::SIZEOF;
-  my_keywords["static"] = Token::STATIC;
-  my_keywords["struct"] = Token::STRUCT;
-  my_keywords["switch"] = Token::SWITCH;
-  my_keywords["typedef"] = Token::TYPEDEF;
-  my_keywords["union"] = Token::UNION;
-  my_keywords["unsigned"] = Token::UNSIGNED;
-  my_keywords["void"] = Token::VOID;
-  my_keywords["volatile"] = Token::VOLATILE;
-  my_keywords["while"] = Token::WHILE;
+  keywords_["_Complex"] = Token::Ignore;
+  keywords_["const"] = Token::CONST;
+  keywords_["continue"] = Token::CONTINUE;
+  keywords_["default"] = Token::DEFAULT;
+  keywords_["do"] = Token::DO;
+  keywords_["double"] = Token::DOUBLE;
+  keywords_["else"] = Token::ELSE;
+  keywords_["enum"] = Token::ENUM;
+  keywords_["extern"] = Token::EXTERN;
+  keywords_["float"] = Token::FLOAT;
+  keywords_["for"] = Token::FOR;
+  keywords_["goto"] = Token::GOTO;
+  keywords_["if"] = Token::IF;
+  keywords_["inline"] = Token::INLINE;
+  keywords_["int"] = Token::INT;
+  keywords_["long"] = Token::LONG;
+  keywords_["register"] = Token::REGISTER;
+  keywords_["return"] = Token::RETURN;
+  keywords_["short"] = Token::SHORT;
+  keywords_["signed"] = Token::SIGNED;
+  keywords_["sizeof"] = Token::SIZEOF;
+  keywords_["static"] = Token::STATIC;
+  keywords_["struct"] = Token::STRUCT;
+  keywords_["switch"] = Token::SWITCH;
+  keywords_["typedef"] = Token::TYPEDEF;
+  keywords_["union"] = Token::UNION;
+  keywords_["unsigned"] = Token::UNSIGNED;
+  keywords_["void"] = Token::VOID;
+  keywords_["volatile"] = Token::VOLATILE;
+  keywords_["while"] = Token::WHILE;
   if (tokenset & CXX)
   {
-    my_keywords["bool"] = Token::BOOLEAN;
-    my_keywords["catch"] = Token::CATCH;
-    my_keywords["const_cast"] = Token::CONST_CAST;
-    my_keywords["class"] = Token::CLASS;
-    my_keywords["delete"] = Token::DELETE;
-    my_keywords["dynamic_cast"] = Token::DYNAMIC_CAST;
-    my_keywords["explicit"] = Token::EXPLICIT;
-    my_keywords["export"] = Token::EXPORT;
-    my_keywords["false"] = Token::Constant;
-    my_keywords["friend"] = Token::FRIEND;
-    my_keywords["mutable"] = Token::MUTABLE;
-    my_keywords["namespace"] = Token::NAMESPACE;
-    my_keywords["new"] = Token::NEW;
-    my_keywords["reinterpret_cast"] = Token::REINTERPRET_CAST;
-    my_keywords["operator"] = Token::OPERATOR;
-    my_keywords["private"] = Token::PRIVATE;
-    my_keywords["protected"] = Token::PROTECTED;
-    my_keywords["public"] = Token::PUBLIC;
-    my_keywords["static_cast"] = Token::STATIC_CAST;
-    my_keywords["template"] = Token::TEMPLATE;
-    my_keywords["this"] = Token::THIS;
-    my_keywords["throw"] = Token::THROW;
-    my_keywords["true"] = Token::Constant;
-    my_keywords["try"] = Token::TRY;
-    my_keywords["typeid"] = Token::TYPEID;
-    my_keywords["typename"] = Token::TYPENAME;
-    my_keywords["using"] = Token::USING;
-    my_keywords["virtual"] = Token::VIRTUAL;
-    my_keywords["wchar_t"] = Token::WCHAR;
+    keywords_["bool"] = Token::BOOLEAN;
+    keywords_["catch"] = Token::CATCH;
+    keywords_["const_cast"] = Token::CONST_CAST;
+    keywords_["class"] = Token::CLASS;
+    keywords_["delete"] = Token::DELETE;
+    keywords_["dynamic_cast"] = Token::DYNAMIC_CAST;
+    keywords_["explicit"] = Token::EXPLICIT;
+    keywords_["export"] = Token::EXPORT;
+    keywords_["false"] = Token::Constant;
+    keywords_["friend"] = Token::FRIEND;
+    keywords_["mutable"] = Token::MUTABLE;
+    keywords_["namespace"] = Token::NAMESPACE;
+    keywords_["new"] = Token::NEW;
+    keywords_["reinterpret_cast"] = Token::REINTERPRET_CAST;
+    keywords_["operator"] = Token::OPERATOR;
+    keywords_["private"] = Token::PRIVATE;
+    keywords_["protected"] = Token::PROTECTED;
+    keywords_["public"] = Token::PUBLIC;
+    keywords_["static_cast"] = Token::STATIC_CAST;
+    keywords_["template"] = Token::TEMPLATE;
+    keywords_["this"] = Token::THIS;
+    keywords_["throw"] = Token::THROW;
+    keywords_["true"] = Token::Constant;
+    keywords_["try"] = Token::TRY;
+    keywords_["typeid"] = Token::TYPEID;
+    keywords_["typename"] = Token::TYPENAME;
+    keywords_["using"] = Token::USING;
+    keywords_["virtual"] = Token::VIRTUAL;
+    keywords_["wchar_t"] = Token::WCHAR;
   }
   if (tokenset & GCC)
   {
-    my_keywords["__alignof__"] = Token::SIZEOF;
-    my_keywords["__asm__"] = Token::ATTRIBUTE;
-    my_keywords["__attribute__"] = Token::ATTRIBUTE;
-    my_keywords["__builtin_va_arg"] = Token::EXTENSION; // Is this correct ?
-    my_keywords["__complex__"] = Token::Ignore;
-    my_keywords["__const"] = Token::CONST;
-    my_keywords["__extension__"] = Token::EXTENSION;
-    my_keywords["__imag__"] = Token::Ignore;
-    my_keywords["__inline"] = Token::INLINE;
-    my_keywords["__inline__"] = Token::INLINE;
-    my_keywords["__real__"] = Token::Ignore;
-    my_keywords["__restrict"] = Token::Ignore;
-    my_keywords["__restrict__"] = Token::Ignore;
-    my_keywords["__signed"] = Token::SIGNED;
-    my_keywords["__signed__"] = Token::SIGNED;
-    my_keywords["typeof"] = Token::TYPEOF;
-    my_keywords["__typeof"] = Token::TYPEOF;
-    my_keywords["__typeof__"] = Token::TYPEOF;
+    keywords_["__alignof__"] = Token::SIZEOF;
+    keywords_["__asm__"] = Token::ATTRIBUTE;
+    keywords_["__attribute__"] = Token::ATTRIBUTE;
+    keywords_["__builtin_offsetof"] = Token::OFFSETOF;
+    keywords_["__builtin_va_arg"] = Token::EXTENSION; // Is this correct ?
+    keywords_["__complex__"] = Token::Ignore;
+    keywords_["__const"] = Token::CONST;
+    keywords_["__extension__"] = Token::EXTENSION;
+    keywords_["__imag__"] = Token::Ignore;
+    keywords_["__inline"] = Token::INLINE;
+    keywords_["__inline__"] = Token::INLINE;
+    keywords_["__real__"] = Token::Ignore;
+    keywords_["__restrict"] = Token::Ignore;
+    keywords_["__restrict__"] = Token::Ignore;
+    keywords_["__signed"] = Token::SIGNED;
+    keywords_["__signed__"] = Token::SIGNED;
+    keywords_["typeof"] = Token::TYPEOF;
+    keywords_["__typeof"] = Token::TYPEOF;
+    keywords_["__typeof__"] = Token::TYPEOF;
   }
   if (tokenset & MSVC)
   {
-    my_keywords["cdecl"] = Token::Ignore;
-    my_keywords["_cdecl"] = Token::Ignore;
-    my_keywords["__cdecl"] = Token::Ignore;
-    my_keywords["_fastcall"] = Token::Ignore;
-    my_keywords["__fastcall"] = Token::Ignore;
-    my_keywords["_based"] = Token::Ignore;
-    my_keywords["__based"] = Token::Ignore;
-    my_keywords["_asm"] = Token::ASM;
-    my_keywords["__asm"] = Token::ASM;
-    my_keywords["_inline"] = Token::INLINE;
-    my_keywords["__inline"] = Token::INLINE;
-    my_keywords["_stdcall"] = Token::Ignore;
-    my_keywords["__stdcall"] = Token::Ignore;
-    my_keywords["__declspec"] = Token::DECLSPEC;
-    my_keywords["__int8"] = Token::CHAR;
-    my_keywords["__int16"] = Token::SHORT;
-    my_keywords["__int32"] = Token::INT;
-    my_keywords["__int64"] = Token::INT64;
+    keywords_["cdecl"] = Token::Ignore;
+    keywords_["_cdecl"] = Token::Ignore;
+    keywords_["__cdecl"] = Token::Ignore;
+    keywords_["_fastcall"] = Token::Ignore;
+    keywords_["__fastcall"] = Token::Ignore;
+    keywords_["_based"] = Token::Ignore;
+    keywords_["__based"] = Token::Ignore;
+    keywords_["_asm"] = Token::ASM;
+    keywords_["__asm"] = Token::ASM;
+    keywords_["_inline"] = Token::INLINE;
+    keywords_["__inline"] = Token::INLINE;
+    keywords_["_stdcall"] = Token::Ignore;
+    keywords_["__stdcall"] = Token::Ignore;
+    keywords_["__declspec"] = Token::DECLSPEC;
+    keywords_["__int8"] = Token::CHAR;
+    keywords_["__int16"] = Token::SHORT;
+    keywords_["__int32"] = Token::INT;
+    keywords_["__int64"] = Token::INT64;
   }
 }
 
 Token Lexer::get_token()
 {
   if (!fill(1)) return Token();
-  Token token = my_tokens.front();
-  my_tokens.pop();
+  Token token = tokens_.front();
+  tokens_.pop();
   return token;
 }
 
 Token::Type Lexer::look_ahead(size_t offset, Token &t)
 {
   if (!fill(offset + 1)) return Token::BadToken;
-  t = my_tokens.at(offset);
+  t = tokens_.at(offset);
   return t.type;
 }
 
 const char *Lexer::save()
 {
   if (!fill(1)) throw std::runtime_error("unexpected EOF");
-  Token current = my_tokens.front();
+  Token current = tokens_.front();
   return current.ptr;
 }
 
 void Lexer::restore(const char *pos)
 {
-  my_token.type = '\n';
-  my_token.ptr = my_buffer->ptr();
-  my_token.length = 0;
-  my_tokens.clear();
+  token_.type = '\n';
+  token_.ptr = buffer_->ptr();
+  token_.length = 0;
+  tokens_.clear();
   rewind(pos);
 }
 
 unsigned long Lexer::origin(const char *ptr, std::string &filename) const
 {
-  return my_buffer->origin(ptr, filename);
+  return buffer_->origin(ptr, filename);
 }
 
 void Lexer::rewind(const char *p)
 {
-  my_buffer->reset(p - my_buffer->ptr());
+  buffer_->reset(p - buffer_->ptr());
 }
 
 Token::Type Lexer::read_token(const char *&ptr, size_t &length)
@@ -177,7 +178,7 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
   {
     t = read_line();
     if(t == Token::Ignore) continue;
-    my_token.type = t;
+    token_.type = t;
 
     if(t == Token::ATTRIBUTE)
     {
@@ -203,19 +204,19 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
     if(t != '\n') break;
   }
 
-  ptr = my_token.ptr;
-  length = my_token.length;
+  ptr = token_.ptr;
+  length = token_.length;
   return t;
 }
 
 bool Lexer::fill(size_t o)
 {
-  while (my_tokens.size() < o)
+  while (tokens_.size() < o)
   {
     Token t;
     t.type = read_token(t.ptr, t.length);
     if (t.type == Token::BadToken) return false;
-    my_tokens.push(t);
+    tokens_.push(t);
   }
   return true;
 }
@@ -223,7 +224,7 @@ bool Lexer::fill(size_t o)
 void Lexer::skip_attribute()
 {
   char c;
-  do { c = my_buffer->get();}
+  do { c = buffer_->get();}
   while(c != '(' && c != '\0');
   if (c == '\0') return;
   skip_paren();
@@ -231,16 +232,16 @@ void Lexer::skip_attribute()
 
 Token::Type Lexer::skip_extension(const char *&ptr, size_t &length)
 {
-  ptr = my_token.ptr;
-  length = my_token.length;
+  ptr = token_.ptr;
+  length = token_.length;
 
   char c;
-  do { c = my_buffer->get();}
+  do { c = buffer_->get();}
   while(is_blank(c) || c == '\n');
 
   if(c != '(')
   {
-    my_buffer->unget();
+    buffer_->unget();
     return Token::Ignore; // if no (..) follows, ignore __extension__
   }
   skip_paren();
@@ -263,7 +264,7 @@ void Lexer::skip_paren()
   size_t i = 1;
   do
   {
-    char c = my_buffer->get();
+    char c = buffer_->get();
     if (c == '\0') return;
     if(c == '(') ++i;
     else if(c == ')') --i;
@@ -273,24 +274,24 @@ void Lexer::skip_paren()
 void Lexer::process_directive()
 {
   char c = ' ';
-  while(is_blank(c)) c = my_buffer->get();
+  while(is_blank(c)) c = buffer_->get();
   if (is_letter(c))
   {
-    unsigned long top = my_buffer->position();
-    char const *ptr = my_buffer->ptr(top);
-    do { c = my_buffer->get();}
+    unsigned long top = buffer_->position();
+    char const *ptr = buffer_->ptr(top);
+    do { c = buffer_->get();}
     while(is_letter(c) || is_digit(c));
-    size_t length = static_cast<size_t>(my_buffer->position() - top);
+    size_t length = static_cast<size_t>(buffer_->position() - top);
     if (length == 6 && strncmp(ptr, "pragma", 6) == 0)
     {
-      while(c != '\n' && c != '\0') c = my_buffer->get();
-      length = static_cast<size_t>(my_buffer->position() - top);
+      while(c != '\n' && c != '\0') c = buffer_->get();
+      length = static_cast<size_t>(buffer_->position() - top);
       process_pragma(std::string(ptr + 6, length - 6));
       return;
     }
   }
   else ; // FIXME: issue a parse error: no directive found.
-  while(c != '\n' && c != '\0') c = my_buffer->get();
+  while(c != '\n' && c != '\0') c = buffer_->get();
 }
 
 /* You can have the following :
@@ -314,8 +315,8 @@ void Lexer::skip_asm()
 
   do
   {
-    c = my_buffer->get();
-    if (check_end_of_instruction(my_buffer, c, "")) return;
+    c = buffer_->get();
+    if (check_end_of_instruction(buffer_, c, "")) return;
   }
   while(is_blank(c) || c == '\n');
 
@@ -324,8 +325,8 @@ void Lexer::skip_asm()
     size_t i = 1;
     do
     {
-      c = my_buffer->get();
-      if (check_end_of_instruction(my_buffer, c, "")) return;
+      c = buffer_->get();
+      if (check_end_of_instruction(buffer_, c, "")) return;
       if(c == '{') ++i;
       else if(c == '}') --i;
     } while(i > 0);
@@ -334,8 +335,8 @@ void Lexer::skip_asm()
   {
     while(true)
     {
-      if (check_end_of_instruction(my_buffer, c, "}\n")) return;
-      c = my_buffer->get();
+      if (check_end_of_instruction(buffer_, c, "}\n")) return;
+      c = buffer_->get();
     }
   }
 }
@@ -345,8 +346,8 @@ void Lexer::skip_declspec()
   char c;
   do
   {
-    c = my_buffer->get();
-    if (check_end_of_instruction(my_buffer, c, "")) return;
+    c = buffer_->get();
+    if (check_end_of_instruction(buffer_, c, "")) return;
   } while(is_blank(c));
 
   if (c == '(')
@@ -354,8 +355,8 @@ void Lexer::skip_declspec()
     size_t i = 1;
     do
     {
-      c = my_buffer->get();
-      if (check_end_of_instruction(my_buffer, c, "};")) return;
+      c = buffer_->get();
+      if (check_end_of_instruction(buffer_, c, "};")) return;
       if(c == '(') ++i;
       else if(c == ')') --i;
     } while(i > 0);
@@ -367,15 +368,15 @@ char Lexer::get_next_non_white_char()
   char c;
   while(true)
   {
-    do { c = my_buffer->get();}
+    do { c = buffer_->get();}
     while(is_blank(c));
 
     if(c != '\\') break;
 
-    c = my_buffer->get();
+    c = buffer_->get();
     if(c != '\n' && c!= '\r') 
     {
-      my_buffer->unget();
+      buffer_->unget();
       break;
     }
   }
@@ -385,15 +386,15 @@ char Lexer::get_next_non_white_char()
 Token::Type Lexer::read_line()
 {
   char c = get_next_non_white_char();
-  unsigned long top = my_buffer->position();
-  my_token.ptr = my_buffer->ptr(top);
+  unsigned long top = buffer_->position();
+  token_.ptr = buffer_->ptr(top);
   if(c == '\0')
   {
-    my_buffer->unget();
+    buffer_->unget();
     return '\0';
   }
   else if(c == '\n') return '\n';
-  else if(c == '#' && my_token.type == '\n')
+  else if(c == '#' && token_.type == '\n')
   {
     process_directive();
     return '\n';
@@ -408,18 +409,18 @@ Token::Type Lexer::read_line()
     {
       if(read_str_const(top)) return Token::StringL;
     }
-    my_buffer->reset(top + 1);
-    my_token.length = 1;
+    buffer_->reset(top + 1);
+    token_.length = 1;
     return single_char_op(c);
   }
   else if(is_digit(c)) return read_number(c, top);
   else if(c == '.')
   {
-    c = my_buffer->get();
+    c = buffer_->get();
     if(is_digit(c)) return read_float(top);
     else
     {
-      my_buffer->unget();
+      buffer_->unget();
       return read_separator('.', top);
     }
   }
@@ -427,14 +428,14 @@ Token::Type Lexer::read_line()
   {
     if (c == 'L')
     {
-      c = my_buffer->get();
+      c = buffer_->get();
       if (c == '\'' || c == '"')
       {
 	if (c == '\'')
 	{
 	  if (read_char_const(top+1))
 	  {
-	    ++my_token.length;
+	    ++token_.length;
 	    return Token::WideCharConst;
 	  }
 	} 
@@ -442,12 +443,12 @@ Token::Type Lexer::read_line()
 	{
 	  if(read_str_const(top+1))
 	  {
-	    ++my_token.length;
+	    ++token_.length;
 	    return Token::WideStringL;
 	  }
 	}
       }
-      my_buffer->reset(top);
+      buffer_->reset(top);
     }
     return read_identifier(top);
   }
@@ -458,15 +459,15 @@ bool Lexer::read_char_const(unsigned long top)
 {
   while(true)
   {
-    char c = my_buffer->get();
+    char c = buffer_->get();
     if(c == '\\')
     {
-      c = my_buffer->get();
+      c = buffer_->get();
       if(c == '\0') return false;
     }
     else if(c == '\'')
     {
-      my_token.length = static_cast<size_t>(my_buffer->position() - top + 1);
+      token_.length = static_cast<size_t>(buffer_->position() - top + 1);
       return true;
     }
     else if(c == '\n' || c == '\0') return false;
@@ -481,31 +482,50 @@ bool Lexer::read_char_const(unsigned long top)
 bool Lexer::read_str_const(unsigned long top)
 {
   // Skip the L if there is one
-  if (my_buffer->at(top) == 'L') my_buffer->get();
+  if (buffer_->at(top) == 'L') buffer_->get();
   while(true)
   {
-    char c = my_buffer->get();
+    char c = buffer_->get();
     if(c == '\\')
     {
-      c = my_buffer->get();
+      c = buffer_->get();
       if(c == '\0') return false;
     }
     else if(c == '"')
     {
-      unsigned long pos = my_buffer->position() + 1;
-      int nline = 0;
-      do
+      // We are past one string literal token now.
+      // Any following whitespace needs to be skipped
+      // before looking for anything else.
+      unsigned long pos = buffer_->position() + 1;
+      while (true)
       {
-	c = my_buffer->get();
-	if(c == '\n') ++nline;
-      } while(is_blank(c) || c == '\n');
-
+	int nline = 0;
+	// Consume whitespace.
+	do
+	{
+	  c = buffer_->get();
+	  if(c == '\n') ++nline;
+	} while(is_blank(c) || c == '\n');
+	// Consume comment.
+	if (c == '/')
+	{
+	  char d = buffer_->get();
+	  if (d == '/' || d == '*')
+	    read_comment(d, buffer_->position() - 2);
+	  else
+	  {
+	    buffer_->unget();
+	    break;
+	  }
+	}
+	else break;
+      }
       if(c == '"')
 	/* line_number += nline; */ ;
       else
       {
-	my_token.length = static_cast<size_t>(pos - top);
-	my_buffer->reset(pos);
+	token_.length = static_cast<size_t>(pos - top);
+	buffer_->reset(pos);
 	return true;
       }
     }
@@ -515,33 +535,33 @@ bool Lexer::read_str_const(unsigned long top)
 
 Token::Type Lexer::read_number(char c, unsigned long top)
 {
-  char c2 = my_buffer->get();
+  char c2 = buffer_->get();
 
   if(c == '0' && is_xletter(c2))
   {
-    do { c = my_buffer->get();}
+    do { c = buffer_->get();}
     while(is_hexdigit(c));
-    while(is_int_suffix(c)) c = my_buffer->get();
+    while(is_int_suffix(c)) c = buffer_->get();
 
-    my_buffer->unget();
-    my_token.length = static_cast<size_t>(my_buffer->position() - top + 1);
+    buffer_->unget();
+    token_.length = static_cast<size_t>(buffer_->position() - top + 1);
     return Token::Constant;
   }
 
-  while(is_digit(c2)) c2 = my_buffer->get();
+  while(is_digit(c2)) c2 = buffer_->get();
 
   if(is_int_suffix(c2))
-    do { c2 = my_buffer->get();}
+    do { c2 = buffer_->get();}
     while(is_int_suffix(c2));
   else if(c2 == '.') return read_float(top);
   else if(is_eletter(c2))
   {
-    my_buffer->unget();
+    buffer_->unget();
     return read_float(top);
   }
 
-  my_buffer->unget();
-  my_token.length = static_cast<size_t>(my_buffer->position() - top + 1);
+  buffer_->unget();
+  token_.length = static_cast<size_t>(buffer_->position() - top + 1);
   return Token::Constant;
 }
 
@@ -549,39 +569,39 @@ Token::Type Lexer::read_float(unsigned long top)
 {
   char c;
     
-  do { c = my_buffer->get();}
+  do { c = buffer_->get();}
   while(is_digit(c));
   if(is_float_suffix(c))
-    do { c = my_buffer->get();}
+    do { c = buffer_->get();}
     while(is_float_suffix(c));
   else if(is_eletter(c))
   {
-    unsigned long p = my_buffer->position();
-    c = my_buffer->get();
+    unsigned long p = buffer_->position();
+    c = buffer_->get();
     if(c == '+' || c == '-')
     {
-      c = my_buffer->get();
+      c = buffer_->get();
       if(!is_digit(c))
       {
-	my_buffer->reset(p);
-	my_token.length = static_cast<size_t>(p - top);
+	buffer_->reset(p);
+	token_.length = static_cast<size_t>(p - top);
 	return Token::Constant;
       }
     }
     else if(!is_digit(c))
     {
-      my_buffer->reset(p);
-      my_token.length = static_cast<size_t>(p - top);
+      buffer_->reset(p);
+      token_.length = static_cast<size_t>(p - top);
       return Token::Constant;
     }
 
-    do { c = my_buffer->get();}
+    do { c = buffer_->get();}
     while(is_digit(c));
 
-    while(is_float_suffix(c)) c = my_buffer->get();
+    while(is_float_suffix(c)) c = buffer_->get();
   }
-  my_buffer->unget();
-  my_token.length = static_cast<size_t>(my_buffer->position() - top + 1);
+  buffer_->unget();
+  token_.length = static_cast<size_t>(buffer_->position() - top + 1);
   return Token::Constant;
 }
 
@@ -589,25 +609,25 @@ Token::Type Lexer::read_identifier(unsigned long top)
 {
   char c;
 
-  do { c = my_buffer->get();}
+  do { c = buffer_->get();}
   while(is_letter(c) || is_digit(c));
-  my_token.length = static_cast<size_t>(my_buffer->position() - top);
-  my_buffer->unget();
-  return screen(my_buffer->ptr(top), my_token.length);
+  token_.length = static_cast<size_t>(buffer_->position() - top);
+  buffer_->unget();
+  return screen(buffer_->ptr(top), token_.length);
 }
 
 Token::Type Lexer::screen(const char *identifier, size_t length)
 {
-  Dictionary::iterator i = my_keywords.find(std::string(identifier, length));
-  if (i != my_keywords.end()) return i->second;
+  Dictionary::iterator i = keywords_.find(std::string(identifier, length));
+  if (i != keywords_.end()) return i->second;
   return Token::Identifier;
 }
 
 Token::Type Lexer::read_separator(char c, unsigned long top)
 {
-  char c1 = my_buffer->get();
+  char c1 = buffer_->get();
   if (c1 == '\0') return Token::BadToken;
-  my_token.length = 2;
+  token_.length = 2;
   if(c1 == '=')
   {
     switch(c)
@@ -625,8 +645,8 @@ Token::Type Lexer::read_separator(char c, unsigned long top)
       case '<' :
       case '>' : return Token::RelOp;
       default : 
-	my_buffer->unget();
-	my_token.length = 1;
+	buffer_->unget();
+	token_.length = 1;
 	return single_char_op(c);
     }
   }
@@ -636,14 +656,14 @@ Token::Type Lexer::read_separator(char c, unsigned long top)
     {
       case '<' :
       case '>' :
-	if(my_buffer->get() != '=')
+	if(buffer_->get() != '=')
 	{
-	  my_buffer->unget();
+	  buffer_->unget();
 	  return Token::ShiftOp;
 	}
 	else
 	{
-	  my_token.length = 3;
+	  token_.length = 3;
 	  return Token::AssignOp;
 	}
       case '|' : return Token::LogOrOp;
@@ -652,36 +672,36 @@ Token::Type Lexer::read_separator(char c, unsigned long top)
       case '-' : return Token::IncOp;
       case ':' : return Token::Scope;
       case '.' :
-	if(my_buffer->get() == '.')
+	if(buffer_->get() == '.')
 	{
-	  my_token.length = 3;
+	  token_.length = 3;
 	  return Token::Ellipsis;
 	}
-	else my_buffer->unget();
+	else buffer_->unget();
       case '/' : return read_comment(c1, top);
       default :
-	my_buffer->unget();
-	my_token.length = 1;
+	buffer_->unget();
+	token_.length = 1;
 	return single_char_op(c);
     }
   }
   else if(c == '.' && c1 == '*') return Token::PmOp;
   else if(c == '-' && c1 == '>')
-    if(my_buffer->get() == '*')
+    if(buffer_->get() == '*')
     {
-      my_token.length = 3;
+      token_.length = 3;
       return Token::PmOp;
     }
     else
     {
-      my_buffer->unget();
+      buffer_->unget();
       return Token::ArrowOp;
     }
   else if(c == '/' && c1 == '*') return read_comment(c1, top);
   else
   {
-    my_buffer->unget();
-    my_token.length = 1;
+    buffer_->unget();
+    token_.length = 1;
     return single_char_op(c);
   }
 
@@ -701,7 +721,7 @@ Token::Type Lexer::single_char_op(unsigned char c)
   else if(c == '#') 
   {
     // Skip to end of line
-    do{ c = my_buffer->get();}
+    do{ c = buffer_->get();}
     while(c != '\n' && c != '\0');
     return Token::Ignore;
   }
@@ -718,32 +738,32 @@ Token::Type Lexer::read_comment(char c, unsigned long top)
   if (c == '*')	// a nested C-style comment is prohibited.
     do 
     {
-      c = my_buffer->get();
+      c = buffer_->get();
       if (c == '*')
       {
-	c = my_buffer->get();
+	c = buffer_->get();
 	if (c == '/')
 	{
 	  len = 1;
 	  break;
 	}
-	else my_buffer->unget();
+	else buffer_->unget();
       }
     } while(c != '\0');
   else /* if (c == '/') */
-    do { c = my_buffer->get();}
+    do { c = buffer_->get();}
     while(c != '\n' && c != '\0');
 
-  len += my_buffer->position() - top;
-  my_token.length = static_cast<size_t>(len);
-  my_comments.push_back(Token(my_buffer->ptr(top), my_token.length, Token::Comment));
+  len += buffer_->position() - top;
+  token_.length = static_cast<size_t>(len);
+  comments_.push_back(Token(buffer_->ptr(top), token_.length, Token::Comment));
   return Token::Ignore;
 }
 
 Lexer::Comments Lexer::get_comments()
 {
-  Comments c = my_comments;
-  my_comments.clear();
+  Comments c = comments_;
+  comments_.clear();
   return c;
 }
 

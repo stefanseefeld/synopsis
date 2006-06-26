@@ -33,7 +33,7 @@ class SourceFile : public Python::Object
 public:
   SourceFile() {}
   SourceFile(Python::Object const &o) : Python::Object(o) {}
-  std::string name() const { return narrow<std::string>(attr("filename"));}
+  std::string name() const { return narrow<std::string>(attr("name"));}
   std::string abs_name() const { return narrow<std::string>(attr("abs_name"));}
   bool primary() const { return narrow<bool>(Python::Dict(attr("annotations")).get("primary"));}
   void set_primary(bool flag)

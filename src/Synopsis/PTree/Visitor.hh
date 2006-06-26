@@ -172,6 +172,7 @@ public:
   virtual void visit(ThrowExpr *);
   //. [ sizeof ( [type [???] ] ) ]
   virtual void visit(SizeofExpr *);
+  virtual void visit(OffsetofExpr *);
   virtual void visit(TypeidExpr *);
   virtual void visit(TypeofExpr *);
   virtual void visit(NewExpr *);

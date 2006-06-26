@@ -337,6 +337,16 @@ private:
   //.   { }
   PTree::Node *initializer_clause(bool constant);
 
+  //. designation:
+  //.   designator-list =
+  //. designator-list:
+  //.   designator
+  //.   designator-list designator
+  //. designator:
+  //.   [ constant-expression ]
+  //.   . identifier  
+  PTree::List *designation();
+
   //. initializer-list:
   //.   initializer-clause
   //.   initializer-list , initializer-clause
@@ -633,6 +643,8 @@ private:
   //.   sizeof unary-expression
   //.   sizeof ( type-id )
   PTree::Node *sizeof_expression();
+
+  PTree::Node *offsetof_expression();
 
   //. new-expression:
   //.  :: [opt] new new-placement [opt] new-type-id new-initializer [opt]

@@ -250,24 +250,30 @@ void ConstEvaluator::visit(PT::UnaryExpr *node)
   Trace trace("ConstEvaluator::visit(UnaryExpr)", Trace::TYPEANALYSIS);
   PT::Node *op = node->car();
   PT::Node *expr = node->cdr()->car();
-  assert(op->is_atom() && op->length() == 1);
+  assert(op->is_atom() && op->length() <= 2);
   if (!evaluate(expr, my_value)) return;
 
-  switch (*op->position()) // '*' and '&' do not apply to constant expressions
-  {
-    case '+': break; 
-    case '-':
-      my_value = -my_value;
-      break;
-    case '!': 
-      my_value = !my_value;
-      break;
-    case '~': 
-      my_value = ~my_value;
-      break;
-    default:
-      my_valid = false;
-  }
+  if (op->length() == 1)
+    switch (*op->position()) // '*' and '&' do not apply to constant expressions
+    {
+      case '+': break; 
+      case '-':
+        my_value = -my_value;
+        break;
+      case '!': 
+        my_value = !my_value;
+        break;
+      case '~': 
+        my_value = ~my_value;
+        break;
+      default:
+        my_valid = false;
+    }
+  else if (*op->position() == '+' && op->position()[1] == '+')
+    ++my_value;
+  else if (*op->position() == '-' && op->position()[1] == '-')
+    --my_value;
+  else my_valid = false;
 }
 
 void ConstEvaluator::visit(PT::CondExpr *node)
