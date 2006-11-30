@@ -1,3 +1,4 @@
+prefix:= 
 synopsis:= python synopsis.py
 
 src	:= ../src/Shapes.h
@@ -19,6 +20,12 @@ Classes3.png: $(syn)
 
 Shapes.syn: $(src)
 	$(synopsis) cxx --output=$@ $<
+
+install-html: all
+ifdef prefix
+	mkdir -p $(prefix)
+	cp index.html *.png $(prefix)
+endif
 
 clean:
 	rm -f $(syn)

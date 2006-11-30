@@ -80,6 +80,9 @@ void greet()
         key <constant>comments</constant>. Later these comments may be translated 
         into documentation (stored under the key <constant>doc</constant>), which 
         may be formatted once the final document is generated.</para>
+      <para>Translating comments into doc-strings involves the removal of comment
+        markers (such as the <code>//!</code> above), as well as the handling of
+        processing instructions that may be embedded in comments, too.</para>
       <para>For languages such as Python such a translation isn't necessary,
         as the language has built-in support for documentation, and thus the
         parser itself can generate the 'doc' annotations.</para>
@@ -377,7 +380,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <para>The synopsis framework provides a function <function>process</function> 
         that lets you declare and expose processors as commands so they can be 
         used per command line:
-        <programlisting><xi:include href="examples/Paths/doc1/synopsis.py" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/html/synopsis.py" parse="text"/>
         </programlisting>
       </para>
       <para>With such a script <filename>synopsis.py</filename> it is possible

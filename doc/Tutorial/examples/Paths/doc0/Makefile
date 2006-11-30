@@ -1,3 +1,4 @@
+prefix:=
 synopsis:= synopsis
 
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
@@ -33,6 +34,8 @@ Paths.ps: Paths.syn
 	$(synopsis) -f Dot -Wf,--title="class diagram" -Wf,--format=ps \
           -Wf,hide_operations=False,hide_attributes=False \
           -o $@ $<
+
+install-html:
 
 clean:
 	rm -rf *.syn
