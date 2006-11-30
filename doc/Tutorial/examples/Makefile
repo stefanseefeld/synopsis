@@ -7,6 +7,8 @@
 
 SHELL	:= /bin/sh
 
+prefix	:=
+
 subdirs	:= $(filter-out Paths/src, $(wildcard Paths/*))
 
 action	:= all
@@ -17,7 +19,14 @@ all:	$(subdirs)
 
 $(subdirs):
 	@echo making $(action) in $@
-	$(MAKE) -k -C $@ $(action)
+	$(MAKE) -k -C $@ $(action) prefix=$(prefix)/$@
+
+install-html:
+ifdef prefix
+	mkdir -p $(prefix)
+	cp index.html $(prefix)
+endif
+	$(MAKE) action="install-html" prefix=$(prefix)
 
 clean:
 	$(MAKE) action="clean"
@@ -25,3 +34,16 @@ clean:
 distclean:
 	$(MAKE) action="distclean"
 
+install-src:
+ifdef prefix
+	mkdir -p $(prefix)
+	for file in $(shell find . -path '*/.svn' -prune -o \
+          -name '*.syn' -prune -o \
+          -name '*.html' -prune -o \
+          -name '*.png' -prune -o \
+          -name '*.ps' -prune -o \
+          -type f -a -print); do \
+          mkdir -p $(prefix)/`dirname $$file`; \
+          cp -p $$file $(prefix)/$$file; \
+        done
+endif

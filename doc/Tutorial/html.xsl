@@ -16,4 +16,16 @@
 <xsl:param name="footer.rule" select="0"/>
 <xsl:param name="table.borders.with.css" select="1"/>
 <xsl:param name="segmentedlist.as.table" select="1"/>
+<xsl:param name="refmanual.base" select="'http://synopsis.fresco.org/docs/Manual/'"/>
+
+<!-- Specialize the olink template for links to the ref manual -->
+<xsl:template match="olink[@targetdoc='reference']">
+  <xsl:variable name="href">
+    <xsl:value-of select="$refmanual.base"/>
+  </xsl:variable>
+  <a href="$href">
+    <xsl:apply-templates />
+  </a>
+</xsl:template>
+
 </xsl:stylesheet>

@@ -122,12 +122,28 @@ class build_doc(build.build):
    def build_tutorial(self):
       """Build the tutorial."""
 
-      self.announce("building tutorial")
+      self.announce("building tutorial et al.")
       srcdir = os.path.abspath('doc/Tutorial/')
       tempdir = os.path.abspath(os.path.join(self.build_temp,
                                              'doc/Tutorial'))
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
+
+      # Copy examples sources into build tree.
+      examples = []
+      def visit(arg, base, files):
+         if '.svn' in files: del files[files.index('.svn')]
+         arg.extend([os.path.join(base, f) for f in files
+                     if os.path.isfile(os.path.join(base, f))])
+
+      os.path.walk('doc/Tutorial/examples', visit, examples)
+      for e in examples:
+         dirname = os.path.dirname(os.path.join(tempdir, e))
+         mkpath(dirname, 0777, self.verbose, self.dry_run)
+         copy_file(e, os.path.join(tempdir, e))
+      
+      if newer('doc/Tutorial/examples', os.path.join(tempdir, 'examples')):
+         copy_tree('doc/Tutorial/examples', os.path.join(tempdir, 'examples'))
 
       make = os.environ.get('MAKE', 'make')
 
@@ -139,20 +155,16 @@ class build_doc(build.build):
       if self.html:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/Synopsis'))
-         if os.path.isdir(os.path.join(builddir, 'html', 'Tutorial')):
-            rmtree(os.path.join(builddir, 'html', 'Tutorial'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'Tutorial'),
-                   os.path.join(builddir, 'html', 'Tutorial'))
 
-         if os.path.isdir(os.path.join(builddir, 'examples')):
-            rmtree(os.path.join(builddir, 'examples'), 1)
-         copy_tree(os.path.join(tempdir, 'examples'),
-                   os.path.join(builddir, 'examples'))
+         for component in ('Tutorial', 'examples', 'DevGuide'):
+            if os.path.isdir(os.path.join(builddir, 'html', component)):
+               rmtree(os.path.join(builddir, 'html', component), 1)
+            copy_tree(os.path.join(tempdir, 'html', component),
+                      os.path.join(builddir, 'html', component))
 
-         if os.path.isdir(os.path.join(builddir, 'html', 'DevGuide')):
-            rmtree(os.path.join(builddir, 'html', 'DevGuide'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'DevGuide'),
-                   os.path.join(builddir, 'html', 'DevGuide'))
+      # Copy examples sources into installation directory.
+      spawn([make, '-C', os.path.join(tempdir, 'examples'),
+             'install-src', 'prefix=%s/examples'%builddir])
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
