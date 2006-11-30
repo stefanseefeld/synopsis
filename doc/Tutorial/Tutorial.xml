@@ -80,6 +80,9 @@ void greet()
         key <constant>comments</constant>. Later these comments may be translated 
         into documentation (stored under the key <constant>doc</constant>), which 
         may be formatted once the final document is generated.</para>
+      <para>Translating comments into doc-strings involves the removal of comment
+        markers (such as the <code>//!</code> above), as well as the handling of
+        processing instructions that may be embedded in comments, too.</para>
       <para>For languages such as Python such a translation isn't necessary,
         as the language has built-in support for documentation, and thus the
         parser itself can generate the 'doc' annotations.</para>
