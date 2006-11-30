@@ -3,7 +3,7 @@ synopsis:= synopsis
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
 syn	:= $(patsubst %.h, %.syn, $(src))
 
-all: Paths Paths.ps
+all:# Paths Paths.ps
 
 Path: ../src/Path.h
 	$(synopsis) -p Cxx -f HTML  -o $@ $<
