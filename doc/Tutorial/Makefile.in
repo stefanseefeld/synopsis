@@ -30,7 +30,7 @@ examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -type 
 vpath %.xml $(srcdir)
 
 all: html pdf
-html: html/Tutorial html/DevGuide
+html: html/Tutorial html/DevGuide html/examples
 pdf: Tutorial.pdf DevGuide.pdf
 
 html/Tutorial: Tutorial.xml $(appendix) examples 
@@ -39,7 +39,7 @@ html/Tutorial: Tutorial.xml $(appendix) examples
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
-	cp examples/Paths/doc4/*.png $@/images/
+	cp examples/Paths/diagrams/*.png $@/images/
 
 html/DevGuide: DevGuide.xml
 	mkdir -p $@
@@ -48,15 +48,12 @@ html/DevGuide: DevGuide.xml
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
 
+html/examples: examples
+	mkdir -p $@
+	make -C examples install-html prefix=$(abspath $@)
+
 examples:
-	for file in $(examples); do \
-          if ! cmp -s $(srcdir)/$$file $$file 2>/dev/null; then \
-            mkdir -p `dirname $$file`;\
-            cp -p $(srcdir)/$$file $$file;\
-          fi\
-        done
-	make -C examples       # build examples...
-	make -C examples clean # ...but remove temporary files
+	make -C examples
 
 Tutorial.pdf: $(appendix)
 

@@ -1,3 +1,4 @@
+prefix:= 
 synopsis:= python synopsis.py
 
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
@@ -27,6 +28,12 @@ Paths.ps: Paths.syn
 	$(synopsis) dot --title="class diagram" --format=ps \
           hide_operations=False hide_attributes=False \
           --output=$@ $<
+
+install-html: all
+ifdef prefix
+	mkdir -p $(prefix)
+	cp -r Paths/* $(prefix)
+endif
 
 clean:
 	rm -rf *.syn

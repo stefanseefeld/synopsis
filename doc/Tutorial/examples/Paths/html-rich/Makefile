@@ -1,3 +1,4 @@
+prefix=:=
 synopsis:= python synopsis.py
 
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
@@ -26,6 +27,12 @@ Bezier.syn: ../src/Bezier.h
 
 Nurbs.syn: ../src/Nurbs.h
 	$(synopsis) cxx_rst --output=$@ $<
+
+install-html: all
+ifdef prefix
+	mkdir -p $(prefix)
+	cp -r Paths/* $(prefix)
+endif
 
 clean:
 	rm -rf *.syn Paths.xref links xref

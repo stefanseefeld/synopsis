@@ -377,7 +377,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <para>The synopsis framework provides a function <function>process</function> 
         that lets you declare and expose processors as commands so they can be 
         used per command line:
-        <programlisting><xi:include href="examples/Paths/doc1/synopsis.py" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/html/synopsis.py" parse="text"/>
         </programlisting>
       </para>
       <para>With such a script <filename>synopsis.py</filename> it is possible
