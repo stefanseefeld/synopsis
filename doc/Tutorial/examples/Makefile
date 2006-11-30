@@ -7,7 +7,7 @@
 
 SHELL	:= /bin/sh
 
-subdirs	:= $(filter-out Paths/src $(wildcard Paths/*))
+subdirs	:= $(filter-out Paths/src, $(wildcard Paths/*))
 
 action	:= all
 
