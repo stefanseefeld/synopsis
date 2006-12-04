@@ -328,7 +328,7 @@ Types::Type* Decoder::decodeFuncPtr(std::vector<std::string>& postmod)
     return ret;
 }
 
-Types::Type* Decoder::decodeTemplate()
+Types::Parameterized* Decoder::decodeTemplate()
 {
     STrace trace("Decoder::decodeTemplate()");
 

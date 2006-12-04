@@ -32,6 +32,7 @@
 namespace Types
 {
 class Type;
+class Parameterized;
 }
 
 // bad duplicate typedef.. hmm
@@ -72,7 +73,7 @@ public:
     Types::Type* decodeQualType();
 
     //. Decodes a Template type. iter must be just after the T
-    Types::Type* decodeTemplate();
+    Types::Parameterized* decodeTemplate();
 
     //. Decodes a FuncPtr type. iter must be just after the F. The vector is
     //. the postmod - if it contains a * then it will be removed and given to

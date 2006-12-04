@@ -229,7 +229,7 @@ void SWalker::find_comments(PTree::Node *node)
 {
   PTree::Node *leaf, *parent;
   leaf = FindLeftLeaf(node, parent);
-  if (leaf) add_comments(0, dynamic_cast<PTree::CommentedAtom *>(leaf));
+  if (leaf) add_comments(0, static_cast<PTree::CommentedAtom *>(leaf));
 }
 
 PTree::Node *SWalker::translate_arg_decl_list(bool, PTree::Node *, PTree::Node *)
@@ -404,7 +404,7 @@ void SWalker::visit(PTree::Atom *node)
     AST::Declaration* decl;
     update_line_number(node);
     decl = my_builder->add_tail_comment(my_lineno);
-    add_comments(decl, dynamic_cast<PTree::CommentedAtom *>(node));
+    add_comments(decl, static_cast<PTree::CommentedAtom *>(node));
   }
   else
   {
@@ -466,7 +466,7 @@ void SWalker::visit(PTree::NamespaceSpec *node)
   else ns = my_builder->start_namespace(my_file->filename(), NamespaceAnon);
 
   // Add comments
-  add_comments(ns, dynamic_cast<PTree::NamespaceSpec*>(node));
+  add_comments(ns, static_cast<PTree::NamespaceSpec*>(node));
   if (my_links && PTree::first(pIdentifier)) my_links->link(pIdentifier, ns);
 
   // Translate the body
@@ -555,13 +555,13 @@ void SWalker::visit(PTree::ClassSpec *node)
     // [ class|struct <name> <inheritance> [{ body }] ]
     pName = PTree::nth(node, 1);
     pInheritance = PTree::nth(node, 2);
-    pBody = dynamic_cast<PTree::ClassBody *>(PTree::nth(node, 3));
+    pBody = static_cast<PTree::ClassBody *>(PTree::nth(node, 3));
   }
   else if (size == SizeAnonClass)
     // An anonymous struct. OpenC++ encodes us a unique
     // (may be qualified if nested) name
     // [ struct [nil nil] [{ ... }] ]
-    pBody = dynamic_cast<PTree::ClassBody *>(PTree::nth(node, 2));
+    pBody = static_cast<PTree::ClassBody *>(PTree::nth(node, 2));
   else
     throw nodeERROR(node, "Class node has bad length: " << size);
 
@@ -583,8 +583,8 @@ void SWalker::visit(PTree::ClassSpec *node)
     LOG("Specialization?");
     nodeLOG(node);
     LOG("encname:"<< enc);
-    Types::Parameterized* param = dynamic_cast<Types::Parameterized*>(my_decoder->decodeTemplate());
-    // If a non-type param was found, it's name will be '*'
+    Types::Parameterized* param = my_decoder->decodeTemplate();
+    // If a non-type param was found, its name will be '*'
     for (size_t i = 0; i < param->parameters().size(); i++)
       if (Types::Dependent* dep = dynamic_cast<Types::Dependent*>(param->parameters()[i]))
       {
@@ -895,7 +895,6 @@ void SWalker::visit(PTree::Declaration *node)
   STrace trace("SWalker::visit(PTree::Declaration*)");
   // Link any comments added because we are inside a function body
   if (my_links) find_comments(node);
-
   update_line_number(node);
 
   my_declaration = node;
