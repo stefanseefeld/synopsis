@@ -12,7 +12,7 @@ from Synopsis import AST
 from Synopsis.Processor import Processor, Composite, Error
 from Synopsis.Processors import *
 
-import sys, os, os.path, string, getopt
+import sys, os, os.path, getopt
 
 def error(msg):
     """Write an error message and exit."""
@@ -149,13 +149,13 @@ def make_processor(argv):
 
         elif o == '-W':
             if a[0] == "p":
-                for o,a in get_options(a[2:].split(',')):
+                for o,a in get_options(a[2:].split(','), expect_non_options = False):
                     parser_opts[o] = a
             elif a[0] == "l":
-                for o,a in get_options(a[2:].split(',')):
+                for o,a in get_options(a[2:].split(','), expect_non_options = False):
                     linker_opts[o] = a
             elif a[0] == "f":
-                for o,a in get_options(a[2:].split(',')):
+                for o,a in get_options(a[2:].split(','), expect_non_options = False):
                     formatter_opts[o] = a
 
         elif o in ['-h', '--help']:
