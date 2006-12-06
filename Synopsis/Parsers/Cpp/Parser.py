@@ -30,12 +30,13 @@ class Parser(Processor):
       self.set_parameters(kwds)
       self.ast = ast
 
-      flags = self.flags
+      # Accept either a string or a list.
+      flags = type(self.flags) is str and self.flags.split() or self.flags
       base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
       if self.emulate_compiler is not None:
          info = get_compiler_info(self.language, self.emulate_compiler)
-         flags += map(lambda x:'-I%s'%x, info.include_paths)
-         flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
+         flags += ['-I%s'%x for x in info.include_paths]
+         flags += ['-D%s=%s'%(x[0], x[1]) for x in info.macros]
       for file in self.input:
          self.ast = ucpp.parse(self.ast,
                                os.path.abspath(file),
