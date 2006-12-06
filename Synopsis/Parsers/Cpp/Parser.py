@@ -27,7 +27,8 @@ class Parser(Processor):
         self.set_parameters(kwds)
         self.ast = ast
 
-        flags = self.flags
+        # Accept either a string or a list.
+        flags = type(self.flags) is str and self.flags.split() or self.flags
         base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
         if self.emulate_compiler is not None:
             info = get_compiler_info(self.language, self.emulate_compiler)
