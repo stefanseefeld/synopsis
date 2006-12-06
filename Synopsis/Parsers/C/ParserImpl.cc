@@ -74,7 +74,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Parser parser(lexer, symbols, Parser::GCC);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
-    if (!errors.size())
+    if (!errors.size() && ptree)
     {
       ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
       translator.translate(ptree, buffer);
