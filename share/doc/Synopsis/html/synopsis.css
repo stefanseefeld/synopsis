@@ -3,10 +3,10 @@ body
   margin: 0;
   color: #003030;
   background-color: #ffffff;
+  font-family:arial,sans-serif;
 }
 :link { color: #bb0000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
-:active { color: #ff0000; text-decoration: none;}
    
 h1 
 {
@@ -58,15 +58,22 @@ div.menu p.selected1
 
 div.menu p.normal2
 {
+  margin-left: 17px;
   font-size: small;
-  padding-left: 17px;
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
 }
 
 div.menu p.selected2
 { 
+  margin-left: 17px;
   font-size: small;
   padding-left: 17px;
   background-color: #dbdee0;
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
 }
 
 div.menu p.separator
@@ -103,15 +110,24 @@ table.form th
   padding: 5px;
 }
 
+div.news
+{
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+  text-align: center;
+  margin: 20px;
+}
+
 div.newsheader
 {
   font-weight: bold;
 }
 
+div.poweredby,
 div.modifiedby
 {
   position: absolute;
-  bottom: 1em;
+  bottom: 4em;
   height: auto;
   font-size: small;
   margin-left: 10px;
@@ -119,6 +135,7 @@ div.modifiedby
   border-top: solid;
   border-color: #aaaaaa;
   border-width: 1px;
+  padding: 5px;
 }
 
 div.hostedby 
@@ -127,7 +144,7 @@ div.hostedby
   margin-right: 10px;
 }
 
-p.logentry .revision
+p.logentry .title
 { 
   font-weight: bold;
 }
