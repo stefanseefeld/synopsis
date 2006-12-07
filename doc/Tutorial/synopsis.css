@@ -1,8 +1,9 @@
 body 
 {
-    margin: 0;
-    color: #003030;
-    background-color: #ffffff;
+  margin: 0;
+  color: #003030;
+  background-color: #ffffff;
+  font-family:arial,sans-serif;
 }
 :link { color: #bb0000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
