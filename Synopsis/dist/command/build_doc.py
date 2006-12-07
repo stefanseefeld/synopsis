@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-import os, sys, string, re, stat
+import os, sys
 from stat import *
 import os.path
 from shutil import *
@@ -138,13 +138,10 @@ class build_doc(build.build):
 
       os.path.walk('doc/Tutorial/examples', visit, examples)
       for e in examples:
-         dirname = os.path.dirname(os.path.join(tempdir, e))
+         dirname = os.path.dirname(os.path.join(self.build_temp, e))
          mkpath(dirname, 0777, self.verbose, self.dry_run)
-         copy_file(e, os.path.join(tempdir, e))
+         copy_file(e, dirname)
       
-      if newer('doc/Tutorial/examples', os.path.join(tempdir, 'examples')):
-         copy_tree('doc/Tutorial/examples', os.path.join(tempdir, 'examples'))
-
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
