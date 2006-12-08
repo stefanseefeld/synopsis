@@ -12,54 +12,47 @@ from BaseHTTPServer import HTTPServer
 from CGIHTTPServer import CGIHTTPRequestHandler
 import sys, os, os.path, getopt, socket
 
-document_root = '.'
-url = ''
-src = ''
-debug = False
-
 class RequestHandler(CGIHTTPRequestHandler):
-   """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
-   options to serve source files and data generated from sxr.cgi"""
+    """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
+    options to serve source files and data generated from sxr.cgi"""
 
-   def translate_path(self, path):
-      
-      if debug: print 'translate_path', path
-      # similar to an 'Alias <src> <document_root>' under apache...
-      if path.startswith(src): # a file request...
-         path = os.path.join(document_root, path[len(src) + 1:])
-      # hack to be able to serve absolute URLs from the document root
-      elif not path.endswith('sxr.cgi'):
-         path = os.path.join(document_root, path[1:])
+    url = ''
+    src = ''
+    document_root = '.'
+    debug = False
 
-      return path
+    def translate_path(self, path):
+        """Translate URL into local path."""
 
-   def is_cgi(self):
-      """The path either refers to the sxr cgi or to a (source) file."""
+        if path.endswith('sxr.cgi'):
+            path = os.path.join(config.datadir, path[1:])
+        else:
+            path = os.path.join(self.document_root, path[1:])
+        return path
 
-      if self.path.startswith(url):
-         self.cgi_info = config.datadir + '/cgi-bin', 'sxr.cgi' + self.path[len(url):]
-         if debug: print 'is_cgi', self.path, self.cgi_info
-         return True
+    def is_cgi(self):
+        """The path either refers to the sxr cgi or to a static file."""
 
-      if debug: print 'is_cgi False'
-      return False
+        if self.path.startswith(self.url):
+            self.cgi_info = ('/cgi-bin', 'sxr.cgi' + self.path[len(self.url):])
+            return True
+        return False
       
 
 def usage():
-   print 'Usage : %s [options] <input files>'%sys.argv[0]
+   print 'Usage : %s [options]'%sys.argv[0]
    print """
 List of options:
 
   -h, --help             help
   -d, --debug            print debug output
   -p, --port             port to listen for requests
-  -r, --document_root    document root, i.e. top level directory (for things like stylesheets)
+  -r, --document_root    document root, i.e. top level directory for static files
   -u, --url              base url under which to reach sxr.cgi
   -s, --src              base url under which to reach source files
 """
 
 def run():
-   global document_root, url, src, debug
 
    port = 8000
    env = {}
@@ -68,34 +61,27 @@ def run():
                               ['port=', 'document_root=', 'url=', 'src=',
                                'debug', 'help'])
    for o, a in opts:
-      if o == '-h' or o == '--help':
+      if o in ['-h', '--help']:
          usage()
          sys.exit(0)
-      elif o == '-p' or o == '--port':
+      elif o in ['-p', '--port']:
          port = int(a)
-      elif o == '-r' or o == '--document_root':
+      elif o in ['-r', '--document_root']:
          env['SXR_ROOT_DIR'] = a
-         document_root = a
-      elif o == '-u' or o == '--url':
+         RequestHandler.document_root = a
+      elif o in ['-u', '--url']:
          env['SXR_CGI_URL'] = a
-         url = a
-      elif o == '-s' or o == '--src':
+         RequestHandler.url = a
+      elif o in ['-s', '--src']:
          env['SXR_SRC_URL'] = a
-         src = a
-      elif o == '-d' or o == '--debug':
-         debug = True
-
-   if not os.path.isfile(os.path.join(document_root, 'xref_db')):
-      print 'please set the document root to a valid value !'
-      usage()
-      sys.exit(-1)
-      
-
+         RequestHandler.src = a
+      elif o in ['-d', '--debug']:
+         RequestHandler.debug = True
 
    os.environ.update(env)
 
    httpd = HTTPServer(('', port), RequestHandler)
-   print 'SXR server running, please connect to http://%s:%d%s ...'%(socket.gethostname(), port, src)
+   print 'SXR server running, please connect to http://%s:%d ...'%(socket.gethostname(), port)
    try:
       httpd.serve_forever()
    except KeyboardInterrupt:
