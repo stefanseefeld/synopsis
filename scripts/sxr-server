@@ -23,7 +23,7 @@ class RequestHandler(CGIHTTPRequestHandler):
 
     def translate_path(self, path):
         """Translate URL into local path."""
-      
+
         if path.endswith('sxr.cgi'):
             path = os.path.join(config.datadir, path[1:])
         else:
@@ -31,7 +31,7 @@ class RequestHandler(CGIHTTPRequestHandler):
         return path
 
     def is_cgi(self):
-        """The path either refers to the sxr cgi or to a (source) file."""
+        """The path either refers to the sxr cgi or to a static file."""
 
         if self.path.startswith(self.url):
             self.cgi_info = ('/cgi-bin', 'sxr.cgi' + self.path[len(self.url):])
@@ -40,14 +40,14 @@ class RequestHandler(CGIHTTPRequestHandler):
       
 
 def usage():
-   print 'Usage : %s [options] <input files>'%sys.argv[0]
+   print 'Usage : %s [options]'%sys.argv[0]
    print """
 List of options:
 
   -h, --help             help
   -d, --debug            print debug output
   -p, --port             port to listen for requests
-  -r, --document_root    document root, i.e. top level directory (for things like stylesheets)
+  -r, --document_root    document root, i.e. top level directory for static files
   -u, --url              base url under which to reach sxr.cgi
   -s, --src              base url under which to reach source files
 """
