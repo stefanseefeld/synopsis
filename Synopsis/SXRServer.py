@@ -119,7 +119,7 @@ class SXRServer:
     def search_file(self, pattern):
         """Generate a file search listing"""
 
-        html = "Content-Type: text/html\n\n"
+        html = 'Content-Type: text/html\n\n'
         html += self.template[0]
         html += file_search_form%{'script': self.cgi_url}
 
@@ -146,7 +146,7 @@ class SXRServer:
     def search_ident(self, name, qualified = False):
         """Generate an identifier listing"""
 
-        html = "Content-Type: text/html\n\n"
+        html = 'Content-Type: text/html\n\n'
         html += self.template[0]
         html += ident_search_form%{'script' : self.cgi_url}
 
