@@ -7,19 +7,24 @@
 #
 
 from Synopsis import config
-
+from Synopsis.SXRServer import SXRServer
 from BaseHTTPServer import HTTPServer
 from CGIHTTPServer import CGIHTTPRequestHandler
-import sys, os, os.path, getopt, socket
+import sys, os, os.path, getopt, socket, urllib, cgi
 
-class RequestHandler(CGIHTTPRequestHandler):
+class SXRConfig:
+    """Mixin base class to hold config parameters."""
+    
+    cgi_url = ''
+    src_url = ''
+    document_root = '.'
+    debug = False
+    sxr_server = None
+
+class RequestHandler(CGIHTTPRequestHandler, SXRConfig):
     """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
     options to serve source files and data generated from sxr.cgi"""
 
-    url = ''
-    src = ''
-    document_root = '.'
-    debug = False
 
     def translate_path(self, path):
         """Translate URL into local path."""
@@ -31,13 +36,39 @@ class RequestHandler(CGIHTTPRequestHandler):
         return path
 
     def is_cgi(self):
-        """The path either refers to the sxr cgi or to a static file."""
+        """If the path starts with the configured cgi_uri, it is a CGI."""
 
-        if self.path.startswith(self.url):
-            self.cgi_info = ('/cgi-bin', 'sxr.cgi' + self.path[len(self.url):])
+        if self.path.startswith(self.cgi_url):
+            self.cgi_info = ('/cgi-bin', 'sxr.cgi' + self.path[len(self.cgi_url):])
             return True
         return False
-      
+
+    def run_cgi(self):
+        """Execute the CGI, either in-process or as a sub-process."""
+
+        if not self.sxr_server:
+            CGIHTTPRequestHandler.run_cgi(self)
+
+        else:
+            command = self.path[len(self.cgi_url) + 1:]
+            i = command.rfind('?')
+            if i >= 0:
+                command, query = command[:i], command[i+1:]
+            else:
+                query = ''
+            if self.debug: print command, query
+            arguments = cgi.parse_qs(query)
+            if self.debug: print arguments
+            self.send_response(200, "Script output follows")
+            if command == 'file':
+                pattern = arguments.get('string', [])
+                self.wfile.write(self.sxr_server.search_file(pattern[0]))
+            elif command == 'ident':
+                name = arguments.get('string', [])
+                qualified = arguments.has_key('full')
+                self.wfile.write(self.sxr_server.search_ident(name[0], qualified))
+
+
 
 def usage():
    print 'Usage : %s [options]'%sys.argv[0]
@@ -50,43 +81,58 @@ List of options:
   -r, --document_root    document root, i.e. top level directory for static files
   -u, --url              base url under which to reach sxr.cgi
   -s, --src              base url under which to reach source files
+  --cgi                  use cgi script instead of in-process SXRServer (for testing)
 """
 
 def run():
 
-   port = 8000
-   env = {}
-   opts, args = getopt.getopt(sys.argv[1:],
-                              'p:r:u:s:dh',
-                              ['port=', 'document_root=', 'url=', 'src=',
-                               'debug', 'help'])
-   for o, a in opts:
-      if o in ['-h', '--help']:
-         usage()
-         sys.exit(0)
-      elif o in ['-p', '--port']:
-         port = int(a)
-      elif o in ['-r', '--document_root']:
-         env['SXR_ROOT_DIR'] = a
-         RequestHandler.document_root = a
-      elif o in ['-u', '--url']:
-         env['SXR_CGI_URL'] = a
-         RequestHandler.url = a
-      elif o in ['-s', '--src']:
-         env['SXR_SRC_URL'] = a
-         RequestHandler.src = a
-      elif o in ['-d', '--debug']:
-         RequestHandler.debug = True
+    port = 8000
+    env = {}
+    opts, args = getopt.getopt(sys.argv[1:],
+                               'p:r:u:s:dh',
+                               ['port=', 'document_root=', 'url=', 'src=', 'cgi',
+                                'debug', 'help'])
+    cgi = False
+    for o, a in opts:
+        if o in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif o in ['-p', '--port']:
+            port = int(a)
+        elif o in ['-r', '--document_root']:
+            env['SXR_ROOT_DIR'] = a
+            SXRConfig.document_root = a
+        elif o in ['-u', '--url']:
+            env['SXR_CGI_URL'] = a
+            SXRConfig.cgi_url = a
+        elif o in ['-s', '--src']:
+            env['SXR_SRC_URL'] = a
+            SXRConfig.src_url = a
+        elif o in ['-d', '--debug']:
+            SXRConfig.debug = True
+        elif o == '--cgi':
+            cgi = True
 
-   os.environ.update(env)
+    if cgi:
+        # For testing purposes only: run ordinary http server that invokes
+        # sxr.cgi for appropriate URLs.
+        os.environ.update(env)
+        httpd = HTTPServer(('', port), RequestHandler)
+    else:
+        # Instantiate an SXRServer object, and set up a request handler that
+        # calls into it.
+        SXRConfig.sxr_server = SXRServer(SXRConfig.document_root,
+                                         SXRConfig.cgi_url,
+                                         SXRConfig.src_url,
+                                         os.path.join(SXRConfig.document_root, 'sxr-template.html'))
+        httpd = HTTPServer(('', port), RequestHandler)
 
-   httpd = HTTPServer(('', port), RequestHandler)
-   print 'SXR server running, please connect to http://%s:%d ...'%(socket.gethostname(), port)
-   try:
-      httpd.serve_forever()
-   except KeyboardInterrupt:
-      print 'Keyboard Interrupt: exiting'
+    print 'SXR server running, please connect to http://%s:%d ...'%(socket.gethostname(), port)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print 'Keyboard Interrupt: exiting'
 
 if __name__ == '__main__':
-   run()
+    run()
 

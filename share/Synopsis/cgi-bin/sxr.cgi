@@ -6,191 +6,27 @@
 # see the file COPYING for details.
 #
 
-import sys, os, dircache, cgi, cPickle
-import urllib, cgitb
-
-def escape(text):
-   """escape special characters ('&', '"', '<', '>')"""
-
-   text = text.replace('&', '&amp;')
-   text = text.replace('"', '&quot;')
-   text = text.replace('<', '&lt;')
-   text = text.replace('>', '&gt;')
-   return text
+import os, cgi, cgitb
+from Synopsis.SXRServer import SXRServer
 
 cgitb.enable()
 
-class Handler(object):
-
-    def __init__(self):
-
-        root_dir = os.environ.get('SXR_ROOT_DIR', '.')
-        self.src_dir = os.path.join(root_dir, 'Source')
-        self.xref_db = os.path.join(root_dir, 'xref_db')
-        try: template = open(os.path.join(root_dir, 'sxr-template.html')).read()
-        except:
-            template = """
-<html>
-  <head><title>Synopsis Cross-Reference</title></head>
-  <body>
-    <h1>Synopsis Cross-Reference</h1>
-    @CONTENT@
-  </body>
-</html>"""
-
-        self.template = template.split("@CONTENT@")
-        self.src_url = os.environ.get('SXR_SRC_URL', '')
-        self.cgi_url = os.environ.get('SXR_CGI_URL', '.')
-
-        path = os.environ.get('PATH_INFO', '/').split('/')
-        self.command = len(path) > 1 and path[1] or ''
-        self.path_info = '/'.join(path[2:])
-        self.form = cgi.FieldStorage()
-        self.script_name = os.environ.get('SCRIPT_NAME', None)
-
-    def print_ident(self, file, line, text):
-        return "<a href=\"%s/Source/%s.html#%s\">%s:%s: %s</a>"%(self.src_url, file, line,
-                                                                 file, line, escape(text))
-
-    def print_file(self, file, name = None):
-        if not name: name = file
-        name = name[:-5] # strip of trailing '.html'
-        return "<a href=\"%s/Source/%s\">%s</a>"%(self.src_url, file, name)
-
-    def dump(self, data, name):
-        if not data.has_key(name): return
-        print "<h3>%s</h3>"%escape('::'.join(name))
-        target_data = data[name]
-        if target_data[0]:
-            print "<li>Defined at:<br>"
-            print "<ul>"
-            for file, line, scope in target_data[0]:
-                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
-            print "</ul></li>"
-        if target_data[1]:
-            print "<li>Called from:<br>"
-            print "<ul>"
-            for file, line, scope in target_data[1]:
-                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
-            print "</ul></li>"
-        if target_data[2]:
-            print "<li>Referenced from:<br>"
-            print "<ul>"
-            for file, line, scope in target_data[2]:
-                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
-            print "</ul></li>"
-
-    def file(self):
-        """Generate a file search listing"""
-
-        print """
-<table class="form">
-  <tr>
-    <td colspan="2">
-      Use this field to search for files by name.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      Find File:
-    </td>
-    <td>
-      <form method="get" action="%(script)s/file">
-        <input type="text" name="string" value="" size="15"/>
-        <input type="submit" value="Find"/>
-      </form>
-    </td>
-  </tr>
-</table>
-"""%{'script': self.cgi_url}
-
-        if self.form.has_key('string'):
-            file = self.form['string'].value
-
-            command = 'cd %s && find . -name \'%s.html\' -print'%(self.src_dir, file)
-            ins, outs = os.popen2(command)
-            files = outs.readlines()
-            if files:
-                print '<ul>'
-                for f in files:
-                    print '<li>%s</li>'%(self.print_file(f[2:].strip()))
-                print '</ul>'
-
-    def ident(self):
-        """Generate an identifier listing"""
-
-        print """
-<table class="form">
-  <tr>
-    <td colspan="2">
-      Use this field to find a particular function, variable, etc.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      Find Identifier:
-    </td>
-    <td>
-      <form method="get" action="%(script)s/ident">
-        <input type="text" name="string" value="" size="15"/>
-        <input type="submit" value="Find"/>
-      </form>
-    </td>
-  </tr>
-</table>
-"""%{'script' : self.cgi_url}
-
-        if self.form.has_key('string'):
-            ident = self.form['string']
-            full = self.form.has_key('full')
-
-            f = open(self.xref_db, 'rb')
-            data, index = cPickle.load(f)
-            f.close()
-
-            if full:
-                name = tuple(ident.value.split('::'))
-                found = False
-                # Check for exact match
-                if data.has_key(name):
-                    print "Found exact match:<br>"
-                    self.dump(data, name)
-                    found = True
-                # Search for last part of name in index
-                if index.has_key(name[-1]):
-                    matches = index[name[-1]]
-                    print "Found (%d) possible matches:<br>"%(len(matches))
-                    print '<ul>'
-                    for name in matches:
-                        self.dump(data, name)
-                    print '</ul>'
-                    found = True
-                if not found:
-                    print "No matches found<br>"
-
-            elif index.has_key(ident.value):
-                matches = index[ident.value]
-                print "Found (%d) possible matches:<br>"%(len(matches))
-                print '<ul>'
-                for name in matches:
-                    self.dump(data, name)
-                print '</ul>'
-            else:
-                print "No matches found<br>"
-
-    def run(self):
-        
-        print "Content-Type: text/html\n"
-        print
-
-        print self.template[0]
-
-        if self.command == 'file': self.file()
-        elif self.command == 'ident': self.ident()
-
-        print self.template[1]
-
 if __name__ == '__main__':
 
-    handler = Handler()
-    handler.run()
+    root = os.environ.get('SXR_ROOT_DIR', '.')
+    src_url = os.environ.get('SXR_SRC_URL', '')
+    cgi_url = os.environ.get('SXR_CGI_URL', '.')
+    path = os.environ.get('PATH_INFO', '/').split('/')
+    command = len(path) > 1 and path[1] or ''
+    path_info = '/'.join(path[2:])
+    script_name = os.environ.get('SCRIPT_NAME', None)
+    server = SXRServer(root, cgi_url, src_url, os.path.join(root, 'sxr-template.html'))
+
+    form = cgi.FieldStorage()
+    if command == 'file':
+       pattern = form.has_key('string') and form['string'].value or None
+       print server.search_file(pattern)
+    elif command == 'ident':
+       name = form.has_key('string') and form['string'].value or None
+       qualified = form.has_key('full')
+       print server.search_ident(name, qualified)
