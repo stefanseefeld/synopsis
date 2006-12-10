@@ -1,46 +1,59 @@
 #!/usr/bin/env python
 # Command line search interface for Synopsis XREF file
 # Copyright (c) 2002 by Stephen Davies
+# Copyright (c) 2005 by Stefan Seefeld
 
-import string, sys, cPickle
+import sys, cPickle
 
-if len(sys.argv) != 4:
+def usage(status):
+    print "Usage: search-xref <data file> list"
+    print "  print content of <data file>"
     print "Usage: search-xref <data file> <mode> <string>"
-    print "mode is one of:"
-    print " full    - search for fully scoped name,"
-    print "   eg: 'Ptree::Ptree()' will only match that declaration"
-    print " name    - search for name of declaration,"
-    print "   eg: 'Ptree' will only match class Ptree or a constructor"
-    sys.exit(0)
+    print "  mode is one of:"
+    print "   full    - search for fully scoped name,"
+    print "     eg: 'Ptree::Ptree()' will only match that declaration"
+    print "   name    - search for name of declaration,"
+    print "     eg: 'Ptree' will only match class Ptree or a constructor"
+    sys.exit(status)
 
+if len(sys.argv) < 3: usage(1)
 mode = sys.argv[2]
 
-search = sys.argv[3]
+if len(sys.argv) == 3 and mode != 'list': usage(1)
+if len(sys.argv) == 4:
+    if mode not in ['full', 'name']: usage(1)
+    else: search = sys.argv[3]
+
 
 f = open(sys.argv[1], 'rb')
 data, index = cPickle.load(f)
 f.close()
 
-def dump(name):
+def dump(name, detail=True):
     if not data.has_key(name): return
-    print string.join(name, '::')
+    print '::'.join(name)
+    if not detail: return
     target_data = data[name]
     if target_data[0]:
 	print "  Defined at:"
 	for file, line, scope in target_data[0]:
-	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
     if target_data[1]:
 	print "  Called from:"
 	for file, line, scope in target_data[1]:
-	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
     if target_data[2]:
 	print "  Referenced from:"
 	for file, line, scope in target_data[2]:
-	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
 
 
-if mode == 'full':
-    name = tuple(string.split(search,'::'))
+if mode == 'list':
+    for name in data:
+	dump(name, detail=False)
+
+elif mode == 'full':
+    name = tuple(search.split('::'))
     found = 0
     # Check for exact match
     if data.has_key(name):
