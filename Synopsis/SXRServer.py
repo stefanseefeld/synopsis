@@ -117,16 +117,15 @@ class SXRServer:
     
 
     def search_file(self, pattern):
-        """Generate a file search listing"""
+        """Generate a file search listing."""
 
-        html = 'Content-Type: text/html\n\n'
-        html += self.template[0]
+        html = self.template[0]
         html += file_search_form%{'script': self.cgi_url}
 
         base_path_len = len(self.src_dir)
         def find(result, base, files):
 
-           result.extend([os.path.join(base[base_path_len:], file)
+           result.extend([os.path.join(base[base_path_len + 1:], file)
                           for file in files
                           if os.path.isfile(os.path.join(base, file)) and
                           fnmatch.fnmatch(os.path.splitext(file)[0], pattern)])
@@ -144,10 +143,9 @@ class SXRServer:
     
 
     def search_ident(self, name, qualified = False):
-        """Generate an identifier listing"""
+        """Generate an identifier listing."""
 
-        html = 'Content-Type: text/html\n\n'
-        html += self.template[0]
+        html = self.template[0]
         html += ident_search_form%{'script' : self.cgi_url}
 
         if qualified:

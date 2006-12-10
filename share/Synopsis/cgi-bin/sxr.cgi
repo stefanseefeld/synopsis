@@ -23,6 +23,8 @@ if __name__ == '__main__':
     server = SXRServer(root, cgi_url, src_url, os.path.join(root, 'sxr-template.html'))
 
     form = cgi.FieldStorage()
+    print 'Content-Type: text/html\n\n'
+
     if command == 'file':
        pattern = form.has_key('string') and form['string'].value or None
        print server.search_file(pattern)
