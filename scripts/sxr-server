@@ -59,7 +59,9 @@ class RequestHandler(CGIHTTPRequestHandler, SXRConfig):
             if self.debug: print command, query
             arguments = cgi.parse_qs(query)
             if self.debug: print arguments
-            self.send_response(200, "Script output follows")
+            self.send_response(200, 'Script output follows')
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
             if command == 'file':
                 pattern = arguments.get('string', [])
                 self.wfile.write(self.sxr_server.search_file(pattern[0]))
