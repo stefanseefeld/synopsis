@@ -73,6 +73,7 @@ HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/TypeAnalysis/*.h
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
+HDR_SXR_SYN:= $(patsubst %, %.sxr.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC) $(TSRC))
 
 LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
@@ -97,7 +98,7 @@ $(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
 	$(link_app)
 
-doc: cxx.syn cxx-impl.syn
+doc: cxx.syn cxx-sxr.syn
 
 cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
@@ -105,7 +106,7 @@ cxx.syn: $(HDR_SYN)
 	touch 'links'
 	touch 'xref'
 
-cxx-impl.syn: $(HDR_SYN) $(CC_SYN)
+cxx-sxr.syn: $(HDR_SXR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(SYNOPSIS) link --output=$@ $^
 	touch 'links'
@@ -125,10 +126,15 @@ $(HDR_SYN): %.syn: %
 	mkdir -p $(dir $@)
 	$(SYNOPSIS) cxx --output=$@ $?
 
+$(HDR_SXR_SYN): %.sxr.syn: %
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(SYNOPSIS) cxx_sxr --output=$@ $?
+
 $(CC_SYN): %.cc.syn: %.cc
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(SYNOPSIS) cxx --output=$@ $?
+	$(SYNOPSIS) cxx_sxr --output=$@ $?
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):

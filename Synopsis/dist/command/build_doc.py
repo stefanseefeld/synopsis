@@ -75,7 +75,7 @@ class build_doc(build.build):
       # build the 'doc' target
       spawn([make, '-C', tmpdir, 'doc'])
 
-      for d in ['cxx.syn', 'cxx-impl.syn']:
+      for d in ['cxx.syn', 'cxx-sxr.syn']:
          src, dest = os.path.join(tmpdir, d), os.path.join(tmp_man_dir, d)
          if os.path.exists(src) and newer(src, dest):
             copy_file(src, dest)
