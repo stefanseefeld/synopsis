@@ -28,7 +28,8 @@ class Formatter(Processor, AST.Visitor):
 
         if self.show_files:
             for name, sf in self.ast.files().iteritems():
-                print name, sf.name
+                print '%s (language=%s, primary=%d)'\
+                      %(sf.name, sf.annotations['language'], sf.annotations['primary'])
 
         if self.show_scope is not None:
             if '.' in self.show_scope:
