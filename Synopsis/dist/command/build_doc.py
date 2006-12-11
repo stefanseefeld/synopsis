@@ -42,7 +42,7 @@ class build_doc(build.build):
 
       if not (self.manual or self.tutorial): # if no option was given, do both
          self.manual = self.tutorial = True
-      if not (self.html or self.printable): # if no option was given, do both
+      if not (self.html or self.printable or self.sxr): # if no option was given, do all
          self.html = self.printable = True
       build.build.finalize_options(self)
 
@@ -104,9 +104,19 @@ class build_doc(build.build):
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      for d in ['python', 'cxx', 'sxr']:
+      for d in ['python', 'cxx']:
          src = os.path.join(tmp_man_dir, 'html', d)
          dest = os.path.join(builddir, d)
+
+         if newer(src, dest):
+            rmtree(dest, True)
+            copy_tree(src, dest)
+
+      if self.sxr:
+         src = os.path.join(tmp_man_dir, 'html', 'sxr')
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/Synopsis/html/'))
+         dest = os.path.join(builddir, 'SXR')
 
          if newer(src, dest):
             rmtree(dest, True)
@@ -149,10 +159,10 @@ class build_doc(build.build):
       if self.printable:
          spawn([make, '-C', tempdir, 'pdf'])
 
-      if self.html:
-         builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/Synopsis'))
+      builddir = os.path.abspath(os.path.join(self.build_lib,
+                                              'share/doc/Synopsis'))
 
+      if self.html:
          for component in ('Tutorial', 'examples', 'DevGuide'):
             if os.path.isdir(os.path.join(builddir, 'html', component)):
                rmtree(os.path.join(builddir, 'html', component), 1)
