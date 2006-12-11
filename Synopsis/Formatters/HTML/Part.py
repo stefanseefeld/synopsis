@@ -20,20 +20,18 @@ from Fragment import Fragment
 import Tags # need both because otherwise 'Tags.name' would be ambiguous
 from Tags import *
 
-import string, os
-
 class Part(Parametrized, Type.Visitor, AST.Visitor):
    """Base class for formatting a Part of a Scope View.
     
    This class contains functionality for modularly formatting an AST node and
-   its children for display. It is typically used to contruct Heading,
+   its children for display. It is typically used to construct Heading,
    Summary and Detail formatters. Strategy objects are added according to
    configuration, and this base class  then checks which format methods each
    strategy implements. For each AST declaration visited, the Part asks all
    Strategies which implement the appropriate format method to generate
    output for that declaration. The final writing of the formatted html is
    delegated to the write_section_start, write_section_end, and write_section_item
-   methods, which myst be implemented in a subclass.
+   methods, which must be implemented in a subclass.
    """
 
    fragments = Parameter([], "list of Fragments")
@@ -109,7 +107,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       label = escape(Util.ccolonName(label, self.scope()))
       if entry is None: return label
       location = entry.link
-      index = string.find(location, '#')
+      index = location.find('#')
       if index >= 0: location = location[index+1:]
       return location and Tags.name(location, label) or label
 
@@ -120,15 +118,10 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       the names are joined separately. The consolidated type and name
       strings are then passed to write_section_item."""
 
-      # TODO - investigate quickest way of doing this. I tried.
-      # A Lambda that calls the given function with decl
-      format = lambda func, decl=decl: func(decl)
-      # Get a list of 2tuples [('type','name'),('type','name'),...]
-      type_name = map(format, self.__formatdict[method])
-      if not len(type_name): return
-      # NEW CODE:
-      text = string.strip(string.join(type_name))
-      self.write_section_item(text)
+      type_name = [f(decl) for f in self.__formatdict[method]]
+      if type_name:
+         text = ' '.join(type_name).strip()
+         self.write_section_item(text)
 
    def process(self, decl):
       """Formats the given decl, creating the output for this Part of the
@@ -195,8 +188,8 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       def amp(x):
          if x == '&': return '&amp;'
          return x
-      pre = string.join(map(lambda x:x+"&#160;", map(amp, type.premod())), '')
-      post = string.join(map(amp, type.postmod()), '')
+      pre = ''.join(['%s&#160;'%amp(x) for x in type.premod()])
+      post = ''.join([amp(x) for x in type.postmod()])
       self.__type_label = "%s%s%s"%(pre,alias,post)
             
    def visitParametrized(self, type):
@@ -207,14 +200,13 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       else:
          type_label = "(unknown)"
       params = map(self.format_type, type.parameters())
-      self.__type_label = "%s&lt;%s&gt;"%(type_label,string.join(params, ", "))
+      self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(params))
 
    def visitTemplate(self, type):
       "Labs the template with the parameters"
 
       self.__type_label = "template&lt;%s&gt;"%(
-         string.join(map(lambda x:"typename "+x,
-                         map(self.format_type, type.parameters())), ",")
+         ','.join(['typename %s'%self.format_type(p) for p in type.parameters()])
          )
 
    def visitFunctionType(self, type):
@@ -222,13 +214,13 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       
       ret = self.format_type(type.returnType())
       params = map(self.format_type, type.parameters())
-      pre = string.join(type.premod(), '')
+      pre = ''.join(type.premod())
       if self.__id_holder:
          ident = self.__id_holder[0]
          del self.__id_holder[0]
       else:
          ident = ''
-      self.__type_label = "%s(%s%s)(%s)"%(ret,pre,ident,string.join(params,", "))
+      self.__type_label = "%s(%s%s)(%s)"%(ret,pre,ident,', '.join(params))
 
 
 

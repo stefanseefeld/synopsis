@@ -34,7 +34,7 @@ class DeclarationFormatter(Fragment):
         """The default is to return no type and just the declarations name for
         the name."""
 
-        return self.col(self.label(decl.name()))
+        return div('synopsis', self.label(decl.name()))
 
     def format_forward(self, decl):
 
@@ -124,7 +124,7 @@ class DeclarationFormatter(Fragment):
             templ = div('template', templ)
             type = '%s %s'%(templ, type)
 
-        return self.col(type) + self.col(name)
+        return div('synopsis', type + ' ' + name)
 
     def format_operation(self, decl):
 
@@ -145,7 +145,7 @@ class DeclarationFormatter(Fragment):
         text.extend([span('keyword', m) for m in parameter.postmodifier()])
         # Param identifier
         if id_holder and len(parameter.identifier()) != 0:
-            text.append(span('variable', parameter.identifier()))
+            text.append(' ' + span('variable', parameter.identifier()))
         # Param value
         if len(parameter.value()) != 0:
             text.append(' = ' + span('value', escape(parameter.value())))

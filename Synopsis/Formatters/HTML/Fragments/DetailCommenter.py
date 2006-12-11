@@ -14,6 +14,6 @@ class DetailCommenter(Default):
 
     def format_declaration(self, decl):
 
-        text = self.processor.documentation.details(decl, self.view)
-        return desc(text)
+        details = self.processor.documentation.details(decl, self.view)
+        return details and div('doc', details) or ''
 

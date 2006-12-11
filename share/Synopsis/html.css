@@ -4,10 +4,11 @@ body
   margin-right: 5%;
   color: #003030;
   background: #ffffff;
+  font-family:arial,sans-serif;
 }
 :link { color: #770000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
-:active { color: #800000; text-decoration: none;}
+
 span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
 span.name { font-weight: bold; }
@@ -15,6 +16,19 @@ span.name { font-weight: bold; }
 .tag-heading
 { 
   font-weight: bold;
+}
+
+.tag-section
+{ 
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.tag-section th.dt
+{ 
+  font-weight: normal;
+  font-style: italic;
+  padding-right: 20px;
 }
 
 table.form
@@ -63,16 +77,26 @@ div.desc {
     border: none;
     color: #003030;
 }
-div.summary {
-    border: none;
-    color: #003030;
-    margin-left: 2em;
+
+.summary .heading,
+.detail .heading
+{
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0.1em;
+  border: 1px solid #aaaaaa;
+  background: #f2f5f7;
 }
-span.summary {
-    border: none;
-    color: #003030;
-    margin-left: 2em;
+
+.summary .item .doc,
+.detail .item .doc,
+.doc /* This one refers to top-level class docs, which needs more qualification. */
+{
+  margin-left: 2em;
+  font-size: smaller;
+  padding: 0.5em;
 }
+
 div.enumerator {
     margin-left: 2em;
 }
@@ -94,12 +118,6 @@ h2.heading, td.heading {
     padding: 0.1em;
     border: 1px solid #aaaaaa;
     background: #f2f5f7;
-}
-td.summ-start {
-    vertical-align: top;
-}
-td.summ-info {
-    vertical-align: top;
 }
 div.section {
     margin-left: 2em;
@@ -128,43 +146,6 @@ ul.tree {
 div.nameindex-item {
     margin-left: 1em;
 }
-div.file-all {
-    font-size: smaller;
-    font-family: monospace;
-    white-space: nowrap;
-}
-pre.file-all {
-    font-size: smaller;
-    font-family: monospace;
-}
-span.file-linenum {
-    color: red;
-}
-span.file-indent {
-}
-span.file-default {
-    color: #222222;
-}
-span.file-keyword {
-    font-weight: bold;
-}
-span.file-comment {
-    color: green;
-}
-span.file-number {
-    color: blue;
-    font-style: italic;
-}
-span.file-string {
-    color: green;
-    font-style: italic;
-}
-a.file-ref {
-    font-style: italic;
-}
-a.file-def {
-    font-weight: bold;
-}
 
 /* Style for the SXR view. */
 
@@ -172,6 +153,7 @@ pre.sxr
 {
   border: 1px solid #aaaaaa;
   background-color: #f2f5f7;
+  font-size: smaller;
 }
 pre.sxr .lineno
 {
@@ -185,6 +167,11 @@ pre.sxr .line
   margin-left: .2em;
   padding-left: .4em;
 }
-pre.sxr .py-string { background: transparent; color: #006030; }
-pre.sxr .py-comment { background: transparent; color: #003060; }
-pre.sxr .py-keyword { background: transparent; color: #600000; }
+pre.sxr .py-string { background: transparent; color: #006030;}
+pre.sxr .py-comment { background: transparent; color: #003060;}
+pre.sxr .py-keyword { background: transparent; color: #600000;}
+
+pre.sxr .keyword { font-weight: bold;}
+pre.sxr .comment { color: green;}
+pre.sxr .string { color: green;}
+pre.sxr .literal { color: blue;}
