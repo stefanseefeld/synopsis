@@ -4,6 +4,7 @@ body
   margin-right: 5%;
   color: #003030;
   background: #ffffff;
+  font-family:arial,sans-serif;
 }
 :link { color: #770000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
@@ -76,16 +77,26 @@ div.desc {
     border: none;
     color: #003030;
 }
-div.summary {
-    border: none;
-    color: #003030;
-    margin-left: 2em;
+
+.summary .heading,
+.detail .heading
+{
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0.1em;
+  border: 1px solid #aaaaaa;
+  background: #f2f5f7;
 }
-span.summary {
-    border: none;
-    color: #003030;
-    margin-left: 2em;
+
+.summary .item .doc,
+.detail .item .doc,
+.doc /* This one refers to top-level class docs, which needs more qualification. */
+{
+  margin-left: 2em;
+  font-size: smaller;
+  padding: 0.5em;
 }
+
 div.enumerator {
     margin-left: 2em;
 }
@@ -107,12 +118,6 @@ h2.heading, td.heading {
     padding: 0.1em;
     border: 1px solid #aaaaaa;
     background: #f2f5f7;
-}
-td.summ-start {
-    vertical-align: top;
-}
-td.summ-info {
-    vertical-align: top;
 }
 div.section {
     margin-left: 2em;
@@ -162,9 +167,9 @@ pre.sxr .line
   margin-left: .2em;
   padding-left: .4em;
 }
-pre.sxr .py-string { background: transparent; color: #006030; }
-pre.sxr .py-comment { background: transparent; color: #003060; }
-pre.sxr .py-keyword { background: transparent; color: #600000; }
+pre.sxr .py-string { background: transparent; color: #006030;}
+pre.sxr .py-comment { background: transparent; color: #003060;}
+pre.sxr .py-keyword { background: transparent; color: #600000;}
 
 pre.sxr .keyword { font-weight: bold;}
 pre.sxr .comment { color: green;}
