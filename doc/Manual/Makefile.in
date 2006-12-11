@@ -14,7 +14,7 @@ synopsis := @PYTHON@ synopsis.py
 
 # This is a default setting suitable for the sxr-server demo applet
 # use 'make sxr sxr=<URL>' to generate the sxr db for another URL
-sxr	:= http://localhost:8000/sxr.cgi
+sxr	:= http://localhost:8000/sxr
 
 python_src	:= $(wildcard $(topdir)/Synopsis/*.py)
 python_src	+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
@@ -56,7 +56,7 @@ html/sxr: sxr.syn
 	$(synopsis) sxr --url=$(sxr) --output=$@ $<
 	touch $@
 
-sxr.syn: python.syn cxx-impl.syn
+sxr.syn: python.syn cxx-sxr.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
 
