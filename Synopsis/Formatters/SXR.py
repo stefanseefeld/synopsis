@@ -13,7 +13,7 @@ from Synopsis.Processor import Processor, Parameter
 from Synopsis.Processors.XRefCompiler import XRefCompiler
 import HTML
 from HTML.View import View, Template
-from HTML.Views import DirBrowse, Source, RawFile
+from HTML.Views import Directory, Source, RawFile
 from HTML.FileLayout import NestedFileLayout
 from HTML.TreeFormatterJS import TreeFormatterJS
 import os, os.path
@@ -96,7 +96,7 @@ class Formatter(Processor):
 
       views = [SXRIndex(sxr_cgi = self.url,
                         template = Template(template = self.sxr_template)),
-               DirBrowse(src_dir = self.src_dir,
+               Directory(src_dir = self.src_dir,
                          base_path = self.src_dir,
                          exclude = self.exclude),
                Source(prefix = self.syntax_prefix,

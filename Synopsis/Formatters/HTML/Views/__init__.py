@@ -7,7 +7,7 @@
 #
 
 from FramesIndex import FramesIndex
-from DirBrowse import DirBrowse
+from Directory import Directory
 from Scope import Scope
 from ModuleListing import ModuleListing
 from ModuleListingJS import ModuleListingJS
