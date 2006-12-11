@@ -57,7 +57,7 @@ class MyHTML(HTML.Formatter):
       
       return HTML.Formatter.process(self, ast)
 
-sxr = SXR.Formatter(url = '/sxr.cgi',
+sxr = SXR.Formatter(url = '/sxr',
                     src_dir = '@topdir@',
                     exclude = ['build', 'demo', 'doc', 'share', 'debian',
                                '.svn', 'autom4te.cache',

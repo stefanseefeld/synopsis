@@ -54,7 +54,7 @@ ext_modules = [('Synopsis/Parsers/Cpp', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/C', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/Cxx', 'ParserImpl' + module_ext)]
 
-scripts = ['synopsis']
+scripts = ['synopsis', 'sxr-server']
 
 data_files = []
 
