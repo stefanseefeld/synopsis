@@ -1,0 +1,21 @@
+NEWS
+====
+
+This file describes user-visible changes to Synopsis.
+
+Synopsis 0.9
+============
+
+Support for C99 parsing has been greatly enhanced.
+
+Support for Python code cross-referencing has been added.
+
+The processing of source-embedded documentation has been greatly
+enhanced. As a result, Synopsis now supports multiple markup formats,
+such as Javadoc, and ReStructuredText. The latter requires python-docutils
+to be installed.
+
+Synopsis no longer depends on an external omniidl tool, as its IDL
+parser is now self-contained.
+
+Solidified and optimized SXR server.
