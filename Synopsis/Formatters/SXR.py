@@ -98,12 +98,15 @@ class Formatter(Processor):
                         template = Template(template = self.sxr_template)),
                Directory(src_dir = self.src_dir,
                          base_path = self.src_dir,
-                         exclude = self.exclude),
+                         exclude = self.exclude,
+                         template = Template(template = self.sxr_template)),
                Source(prefix = self.syntax_prefix,
-                      external_url = '%s/ident?full=1&string='%self.url),
+                      external_url = '%s/ident?full=1&string='%self.url,
+                      template = Template(template = self.sxr_template)),
                RawFile(src_dir = self.src_dir,
                        base_path = self.src_dir,
-                       exclude = self.exclude)]
+                       exclude = self.exclude,
+                       template = Template(template = self.sxr_template))]
 
       file_layout = NestedFileLayout()
       html = HTML.Formatter(file_layout = file_layout,
