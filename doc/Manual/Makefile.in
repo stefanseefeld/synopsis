@@ -42,7 +42,7 @@ vpath Manual.texi $(srcdir)
 
 all: html pdf info
 
-html: html/python html/cxx html/sxr
+html: html/python html/cxx
 sxr: html/sxr
 pdf: Manual.pdf
 
