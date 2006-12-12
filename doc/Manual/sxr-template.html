@@ -4,6 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
   <head>
     <title>Synopsis Cross-Reference</title>
+    <link type="text/css" rel="stylesheet" href="/style.css"/>
     <style type="text/css">
 <!--
 body 
@@ -11,6 +12,7 @@ body
   margin: 0;
   color: #003030;
   background-color: #ffffff;
+  font-family:arial,sans-serif;
 }
 :link { color: #bb0000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
@@ -34,13 +36,17 @@ h1
 
 div.navigation
 { 
-  position: fixed;
+  position: absolute;
+  padding: 5px;
   top: 1em;
   bottom: 1em;
   width: 10em;
   height: 100%;
-  border-right: 1px solid #aaaaaa;
+  border: none;
+  background-color: #ffffff;
 }
+
+body > div.content { border-left: 1px solid #aaaaaa;}
 
 div.menu 
 {
@@ -97,7 +103,7 @@ div.content
   position: absolute;
   top: 1em;
   height: auto;
-  left: 10em;
+  left: 11em;
   right: 1em;
   padding: 10px;
 }
@@ -134,7 +140,7 @@ table.form th
         <p class="normal1"><a href="http://synopsis.fresco.org/code.html">Code</a></p>
         <p class="normal2"><a href="http://synopsis.fresco.org/changelog.rss">Changelog</a></p>
         <p class="normal2"><a href="http://synopsis.fresco.org/viewsvn/">Repository</a></p>
-        <p class="selected2"><a href="http://synopsis.fresco.org/sxr/files">SXR</a></p>
+        <p class="selected2"><a href="http://synopsis.fresco.org/sxr/">SXR</a></p>
 	<p class="normal2"><a href="http://synopsis.fresco.org/tests">Test Report</a></p>
 	<p class="normal2"><a href="http://synopsis.fresco.org/buildbot/">Build Status</a></p>
       </div>
