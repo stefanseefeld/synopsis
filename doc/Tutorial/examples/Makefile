@@ -11,6 +11,7 @@ prefix	:=
 
 subdirs	:= $(filter-out Paths/src, $(wildcard Paths/*))
 subdirs += COS
+subdirs += hybrid
 
 action	:= all
 
@@ -40,7 +41,11 @@ ifdef prefix
 	mkdir -p $(prefix)
 	for file in $(shell find . -path '*/.svn' -prune -o \
           -name '*.syn' -prune -o \
+          -name '*.xref' -prune -o \
+          -name 'xref_db' -prune -o \
           -name '*.html' -prune -o \
+          -name '*.toc' -prune -o \
+          -name '*.css' -prune -o \
           -name '*.png' -prune -o \
           -name '*.ps' -prune -o \
           -type f -a -print); do \
