@@ -220,7 +220,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
          # a single typedef declaration can have a different type. *sigh*
          dtype = type
          if d.sizes():
-            array = Type.Array('IDL', self.getType(type), map(lambda s:str(s), d.sizes()))
+            array = Type.Array('IDL', self.getType(type), [str(s) for s in d.sizes()])
             dtype = map(None, type[:-1])
             dtype.append(type[-1] + string.join(map(lambda s:"["+ str(s) +"]", d.sizes()),''))
             self.addType(dtype, array)
@@ -323,7 +323,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
       name.append(node.declarator().identifier())
       self.__scope[-1].declarations().append(
          AST.Operation(sourcefile, node.line(), 'case',
-			  [], self.getType(type), name, name[-1]))
+			  [], self.getType(type), [], name, name[-1]))
 
    def visitUnion(self, node):
 
@@ -336,7 +336,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
          self.addType(name, Type.Declared('IDL', name, forward))
          return
       clas = AST.Class(sourcefile, node.line(), 'union', name)
-      self.addDeclaration(clas)
+      self.add_declaration(clas)
       self.__scope.append(clas)
       self.addType(name, Type.Declared('IDL', name, clas))
       comments = [c.text() for c in node.comments()]
