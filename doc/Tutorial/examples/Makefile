@@ -10,6 +10,7 @@ SHELL	:= /bin/sh
 prefix	:=
 
 subdirs	:= $(filter-out Paths/src, $(wildcard Paths/*))
+subdirs += COS
 
 action	:= all
 
