@@ -83,6 +83,8 @@ Installing
 
 * To install synopsis in <prefix>, run 'python setup.py install --prefix=<prefix>'
   The default prefix is the one from the python interpreter used during the build.
+  If you chose a different prefix, make sure to set the PYTHONPATH appropriately
+  so the package can be found by the python interpreter.
 
 * If documentation was built before, it will be installed into 
   <prefix>/share/doc/Synopsis
