@@ -104,13 +104,14 @@ class build_doc(build.build):
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      for d in ['python', 'cxx']:
-         src = os.path.join(tmp_man_dir, 'html', d)
-         dest = os.path.join(builddir, d)
+      if self.html:
+         for d in ['python', 'cxx']:
+            src = os.path.join(tmp_man_dir, 'html', d)
+            dest = os.path.join(builddir, d)
 
-         if newer(src, dest):
-            rmtree(dest, True)
-            copy_tree(src, dest)
+            if newer(src, dest):
+               rmtree(dest, True)
+               copy_tree(src, dest)
 
       if self.sxr:
          src = os.path.join(tmp_man_dir, 'html', 'sxr')

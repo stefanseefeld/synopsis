@@ -69,7 +69,7 @@ def add_documentation(all, directory, files):
    all.append((directory,
                [os.path.join(directory, file)
                 for file in files
-                if os.path.isfile(file)]))
+                if os.path.isfile(os.path.join(directory, file))]))
 
 documentation = []
 os.path.walk('share/doc/Synopsis', add_documentation, documentation)

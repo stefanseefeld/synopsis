@@ -1,10 +1,5 @@
-synopsis	:= python synopsis.py
-omniidl	:= omniidl
-
-#
-# adapt to your environent...
-#
-CPPFLAGS	:= -I. -I/usr/local/include -Wp,-D__x86__
+prefix:=
+synopsis := python synopsis.py
 
 all:	interface implementation
 
@@ -16,9 +11,6 @@ implementation: StorableImpl.syn FactoryImpl.syn interface.toc
 	$(synopsis) format_cxx --output=$@ StorableImpl.syn FactoryImpl.syn
 	touch $@
 
-Storage.hh:	Storage.idl
-	$(omniidl) -nf -bcxx $?
-
 Storage.syn: Storage.idl
 	$(synopsis) idl --output=$@ $<
 
@@ -28,8 +20,14 @@ StorableImpl.syn:	StorableImpl.hh Storage.hh
 FactoryImpl.syn:	FactoryImpl.hh Storage.hh
 	$(synopsis) cxx --output=$@ $<
 
+install-html: all
+ifdef prefix
+	mkdir -p $(prefix)
+	cp -r interface implementation $(prefix)
+endif
+
 clean:
-	rm -rf Storage.hh StorageSK.cc *.syn interface.toc
+	rm -rf *.syn interface.toc
 
 distclean: clean
 	rm -rf interface implementation 
