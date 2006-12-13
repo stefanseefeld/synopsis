@@ -58,7 +58,9 @@ class DocCache:
             doc = formatter.format(decl, view)
          else:
             doc = Markup.Struct()
-         self._doc_cache[key] = doc
+         # FIXME: Unfortunately we can't easily cache these, as they may
+         #        contain relative URLs that aren't valid across views.
+         #self._doc_cache[key] = doc
          return doc
       else:
          return self._doc_cache[key]

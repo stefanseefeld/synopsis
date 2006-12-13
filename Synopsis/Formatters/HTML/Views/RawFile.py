@@ -10,7 +10,7 @@ from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-from DirBrowse import compile_glob
+from Directory import compile_glob
 
 import time, os, stat, os.path, string
 
@@ -88,7 +88,7 @@ class RawFile(View):
       if reg_view is not self: return
 
       self.__filename = filename
-      self.__title = filename
+      self.__title = original[len(self.base_path):]
       self.start_file()
       self.write(self.processor.navigation_bar(filename, 2))
       self.write('File: '+entity('b', self.__title))
