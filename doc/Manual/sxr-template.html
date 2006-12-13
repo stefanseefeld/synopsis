@@ -4,7 +4,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
   <head>
     <title>Synopsis Cross-Reference</title>
-    <link type="text/css" rel="stylesheet" href="/style.css"/>
     <style type="text/css">
 <!--
 body 
@@ -123,6 +122,55 @@ table.form th
   background-color: #f2f5f7;
   padding: 5px;
 }
+
+/* For the directory view */
+
+div.navigation
+{ 
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+  padding: 5px;
+}
+
+div.navigation span 
+{
+  border-right: 1px solid #aaaaaa;
+  padding: 2px;
+}
+
+div.navigation span.root-current 
+{
+  background-color: #dbdee0;
+}
+
+/* Style for the SXR view. */
+
+pre.sxr
+{
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+  font-size: smaller;
+}
+pre.sxr .lineno
+{
+  font-style: italic;
+  font-size: 90%;
+  padding: .5em;
+}
+pre.sxr .line
+{
+  border-left: 1px solid #aaaaaa;
+  margin-left: .2em;
+  padding-left: .4em;
+}
+pre.sxr .py-string { background: transparent; color: #006030;}
+pre.sxr .py-comment { background: transparent; color: #003060;}
+pre.sxr .py-keyword { background: transparent; color: #600000;}
+
+pre.sxr .keyword { font-weight: bold;}
+pre.sxr .comment { color: green;}
+pre.sxr .string { color: green;}
+pre.sxr .literal { color: blue;}
 
 -->
     </style>

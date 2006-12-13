@@ -212,6 +212,10 @@ greet()
         from it. The parser to be used is selected using the <option>-p</option>
         option, and the formatter with the <option>-f</option> option.
       </para>
+      <para>If no formatter is specified, synopsis dumps its 
+        <link linkend="ir">internal representation</link> to the specified output file.
+        Similarly, if no parser is specified, the input is interpreted as an IR dump.
+        Thus, the processing can be split into multiple synopsis invocations.</para>
       <para>
         Each processor (including parsers and formatters) provides a number of
         parameters that can be set from the command line. For example the Cxx parser
@@ -236,19 +240,25 @@ greet()
         comments in the source code. To do that the comments have to be translated
         first. This translation consists of a filter that picks up a particular kind
         of comment, for example only lines starting with "//.", or javadoc-style
-        comments such as "/**...*/".</para>
-      <para>Let's translate all comments that start with "//.". The appropriate
-        filter is named "ssd" (for "slash-slash-dot"):
-        <programlisting>synopsis -p Cxx --cfilter=ssd -o Paths ../src/Path.h</programlisting>
-      </para>
-      <para>Let us now consider some source code with slightly more interesting
-        comments:
+        comments such as "/**...*/", as well as some translator that converts the
+        comments into actual documentation, possibly using some inline markup, such
+        as Javadoc or ReST.</para>
+      <para>The following source code snippet contains java-style comments, with
+        javadoc-style markup. Further, an embedded processing instruction wants some
+        declarations to be grouped.
         <programlisting><xi:include href="examples/Paths/src/Bezier.h" parse="text"/>
         </programlisting>
       </para>
-      <remark>Introduce option --cfilter=java -translate=javadoc</remark>
-      <remark>Introduce option --cprocessor=grouper</remark>
-      <remark>Introduce option -lMacroFilter (i.e. option -l, as well as MacroFilter)</remark>
+      <para>
+        The right combination of comment processing options for this code would be:
+        <programlisting>synopsis -p Cxx --cfilter=java --translate=javadoc -lComments.Grouper ...</programlisting>
+        The <option>--cfilter</option> option allows to specify a filter to select
+        document comments, and the <option>--translate</option> option sets the kind of markup
+        to expect. The <option>-l</option> option is somewhat more generic. It is a <emphasis>linker</emphasis>
+        to which (almost) arbitrary post-processors can be attached. Here we pass the <type>Comments.Grouper</type>
+        processor that injects <type>Group</type> nodes into the IR that cause the grouped declarations to
+        be documented together.
+      </para>
     </section>
   </chapter>
 
@@ -610,7 +620,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term>DirBrowse</term>
+          <term>Directory</term>
           <listitem>
             <para>Presents a directory (of source files).</para>
           </listitem>
@@ -754,7 +764,10 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
         <listitem>
           <para>A processor that generates some form of formatted
             output from an existing AST, typically html, docbook xml,
-            or class graphs.</para>
+            or class graphs. Other formatters exist to assist debugging,
+            such as a <type>List</type> formatter that prints specific
+            aspects of the IR to stdout, or a <type>Dump</type> formatter
+            that writes the IR to an xml file, useful for unit testing.</para>
         </listitem>
       </varlistentry>
     </variablelist>
@@ -862,7 +875,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       </varlistentry>
     </variablelist>
   </appendix>
-  <appendix><title>Listing of all Processors and their parameters</title>
+  <appendix><title>Listing of some Processors and their parameters</title>
     <para>
       This is a listing of all processors with their respective parameters
       that can be set as described in <xref linkend="script" />.
@@ -884,6 +897,15 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </xi:include>
     <xi:include href="Synopsis.Processors.Linker.xml">
       <xi:fallback>The Linker reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Processors.MacroFilter.xml">
+      <xi:fallback>The MacroFilter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Processors.Comments.Filter.xml">
+      <xi:fallback>The Comments.Filter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Processors.Comments.Translator.xml">
+      <xi:fallback>The Comments.Translator reference...</xi:fallback>
     </xi:include>
     <xi:include href="Synopsis.Formatters.Dot.Formatter.xml">
       <xi:fallback>The Dot formatter reference...</xi:fallback>

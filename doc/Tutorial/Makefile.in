@@ -15,6 +15,9 @@ processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Parsers.C.Parser \
               Synopsis.Parsers.Cxx.Parser \
               Synopsis.Processors.Linker \
+              Synopsis.Processors.MacroFilter \
+              Synopsis.Processors.Comments.Filter \
+              Synopsis.Processors.Comments.Translator \
               Synopsis.Formatters.Dump.Formatter \
               Synopsis.Formatters.Docbook.Formatter \
               Synopsis.Formatters.Texinfo.Formatter \
