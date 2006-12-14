@@ -9,6 +9,8 @@
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters.HTML.Fragment import Fragment
 from Synopsis.Formatters.HTML.Tags import *
+from SourceLinker import SourceLinker
+from XRefLinker import XRefLinker
 
 class DeclarationFormatter(Fragment):
     """Base class for SummaryFormatter and DetailFormatter.
@@ -20,11 +22,20 @@ class DeclarationFormatter(Fragment):
     printed out in the detailed version.
     """
 
-    def col(self, text):
-        # quick hack: use '\t' instead of html markup, so it remains valid
-        # stand-alone as well as inside a table row
-        return '\t' + text
+    def register(self, formatter):
 
+        super(DeclarationFormatter, self).register(formatter)
+        if self.processor.has_view('XRef'):
+            self.xref = XRefLinker()
+            self.xref.register(formatter)
+        else:
+            self.xref = None
+        if self.processor.has_view('Source'):
+            self.source = SourceLinker()        
+            self.source.register(formatter)
+        else:
+            self.source = None
+            
     def format_parameters(self, parameters):
         """Returns formatted string for the given parameter list."""
 
@@ -42,7 +53,7 @@ class DeclarationFormatter(Fragment):
 
     def format_group(self, decl):
 
-        return self.col('')
+        return ''
 
     def format_scope(self, decl):
         """Scopes have their own views, so return a reference to it."""
@@ -62,13 +73,19 @@ class DeclarationFormatter(Fragment):
 
     def format_class(self, decl):
 
-        return self.format_scope(decl)
+        chunk = '%s'%div('synopsis', self.format_scope(decl))
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
 
     def format_typedef(self, decl):
         "(typedef type, typedef name)"
 
         type = self.format_type(decl.alias())
-        return self.col(type) + self.col(self.label(decl.name()))
+        chunk = '%s'%div('synopsis', type + ' ' + self.label(decl.name()))
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
 
     def format_enumerator(self, decl):
         """This is only called by formatEnum"""
@@ -80,20 +97,29 @@ class DeclarationFormatter(Fragment):
 
         type = self.label(decl.name())
         name = ', '.join([e.name()[-1] for e in decl.enumerators()])
-        return self.col(type) + self.col(name)
+        chunk = '%s'%div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
 
     def format_variable(self, decl):
 
         # TODO: deal with sizes
         type = self.format_type(decl.vtype())
-        return self.col(type) + self.col(self.label(decl.name()))
+        chunk = '%s'%div('synopsis', type + ' ' + self.label(decl.name()))
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
 
     def format_const(self, decl):
         "(const type, const name = const value)"
 
         type = self.format_type(decl.ctype())
         name = self.label(decl.name()) + " = " + decl.value()
-        return self.col(type) + self.col(name)
+        chunk = '%s'%div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
 
     def format_function(self, decl):
         "(return type, func + params + exceptions)"
@@ -124,7 +150,11 @@ class DeclarationFormatter(Fragment):
             templ = div('template', templ)
             type = '%s %s'%(templ, type)
 
-        return div('synopsis', type + ' ' + name)
+        chunk = '%s'%div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+
+        return chunk
 
     def format_operation(self, decl):
 
@@ -167,10 +197,6 @@ class DeclarationSummaryFormatter(DeclarationFormatter):
 class DeclarationDetailFormatter(DeclarationFormatter):
     """Provide detail-specific Declaration formatting."""
 
-    col_sep = ' '
-    row_sep = '<br/>'
-    whole_row = ''
-
     def format_exceptions(self, oper):
         """Prints out the full exception spec"""
 
@@ -188,7 +214,7 @@ class DeclarationDetailFormatter(DeclarationFormatter):
 
         name = span('keyword', 'enum') + ' ' + self.label(enum.name())
         enumors = ''.join([self.format_enumerator(e) for e in enum.enumerators()])
-        return name + '<div class="enum">' + enumors + '</div>'
+        return name + div('enum', enumors)
 
     def format_enumerator(self, enumerator):
 
@@ -198,4 +224,4 @@ class DeclarationDetailFormatter(DeclarationFormatter):
         else:
             value = ''
         doc = self.processor.documentation.details(enumerator, self.view)
-        return '<div class="enumerator">%s%s%s</div>'%(text, value, doc)
+        return div('enumerator','%s%s%s'%(text, value, doc))
