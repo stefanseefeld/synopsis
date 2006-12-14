@@ -2,7 +2,7 @@
 # MANIFEST template for source distribution generation
 #
 
-include COPYING README MANIFEST.in setup.py autogen.sh
+include COPYING README NEWS MANIFEST.in setup.py autogen.sh synopsis.spec
 exclude setup.cfg
 
 # python modules
