@@ -10,7 +10,7 @@ from Synopsis import AST, Type
 from Tags import *
 import string
 
-class Fragment:
+class Fragment(object):
    """Generates HTML fragment for a declaration. Multiple strategies are
    combined to generate the output for a single declaration, allowing the
    user to customise the output by choosing a set of strategies. This follows
