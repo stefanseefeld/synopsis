@@ -19,7 +19,10 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
+ifneq ($(findstring -fPIC, $(CXXFLAGS)),)
+GC_CFLAGS := -fPIC
 GC_LIB	:= @GC_LIB@
+endif
 ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 LIBS	+= -pthread
@@ -115,7 +118,7 @@ $(CC_SYN): %.cc.sxr.syn: %.cc
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):
-	$(MAKE) -C Synopsis/gc
+	$(MAKE) -C Synopsis/gc GC_CFLAGS=$(GC_CFLAGS)
 
 clean :
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
