@@ -11,20 +11,20 @@ from Default import Default
 from Synopsis import Util
 
 class XRefLinker(Default):
-   """Adds an xref link to all declarations"""
+    """Adds an xref link to all declarations"""
 
-   def register(self, formatter):
+    def register(self, formatter):
 
-      Default.register(self, formatter)
-      self.xref = self.processor.xref
+        Default.register(self, formatter)
+        self.xref = self.processor.xref
 
-   def format_declaration(self, decl):
+    def format_declaration(self, decl):
 
-      info = self.xref.get_info(decl.name())
-      if not info:
-         return ''
-      page = self.xref.get_page_for(decl.name())
-      filename = self.processor.file_layout.xref(page)
-      filename = filename + "#" + Util.quote(string.join(decl.name(), '::'))
-      return href(rel(self.formatter.filename(), filename), "[xref]")
+        info = self.xref.get_info(decl.name())
+        if not info:
+            return ''
+        page = self.xref.get_page_for(decl.name())
+        filename = self.processor.file_layout.xref(page)
+        filename = filename + '#' + Util.quote('::'.join(decl.name()))
+        return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
 

@@ -9,138 +9,156 @@
 from Synopsis import AST, Type
 from Synopsis.Formatters.HTML.Fragment import Fragment
 from Synopsis.Formatters.HTML.Tags import *
-import string
+from SourceLinker import SourceLinker
+from XRefLinker import XRefLinker
 
 class HeadingFormatter(Fragment):
-   """Formats the top of a view - it is passed only the Declaration that the
-   view is for (a Module or Class)."""
+    """Formats the top of a view - it is passed only the Declaration that the
+    view is for (a Module or Class)."""
 
-   def format_name(self, scoped_name):
-      """Formats a reference to each parent scope"""
+    def register(self, formatter):
 
-      scope, text = [], []
-      for name in scoped_name[:-1]:
-         scope.append(name)
-         text.append(self.reference(scope))
-      text.append(escape(scoped_name[-1]))
-      return string.join(text, "::\n") + '\n'
+        super(HeadingFormatter, self).register(formatter)
+        if self.processor.has_view('XRef'):
+            self.xref = XRefLinker()
+            self.xref.register(formatter)
+        else:
+            self.xref = None
+        if self.processor.has_view('Source'):
+            self.source = SourceLinker()        
+            self.source.register(formatter)
+        else:
+            self.source = None
+            
+    def format_name(self, scoped_name):
+        """Formats a reference to each parent scope"""
 
-   def format_name_in_namespace(self, scoped_name):
-      """Formats a reference to each parent scope, starting at the first
-      non-module scope"""
+        scope, text = [], []
+        for name in scoped_name[:-1]:
+            scope.append(name)
+            text.append(self.reference(scope))
+        text.append(escape(scoped_name[-1]))
+        return '::\n'.join(text) + '\n'
 
-      types = self.processor.ast.types()
+    def format_name_in_namespace(self, scoped_name):
+        """Formats a reference to each parent scope, starting at the first
+        non-module scope."""
 
-      scope, text = [], []
-      for name in scoped_name[:-1]:
-         scope.append(name)
-         if types.has_key(scope):
-            ns_type = types[scope]
-            if isinstance(ns_type, Type.Declared):
-               decl = ns_type.declaration()
-               if isinstance(decl, AST.Module):
-                  # Skip modules (including namespaces)
-                  continue
-         text.append(self.reference(scope))
-      text.append(escape(scoped_name[-1]))
-      return string.join(text, "::\n") + '\n'
+        types = self.processor.ast.types()
 
-   def format_namespace_of_name(self, scoped_name):
-      "Formats a reference to each parent scope and this one"
+        scope, text = [], []
+        for name in scoped_name[:-1]:
+            scope.append(name)
+            if types.has_key(scope):
+                ns_type = types[scope]
+                if isinstance(ns_type, Type.Declared):
+                    decl = ns_type.declaration()
+                    if isinstance(decl, AST.Module):
+                        # Skip modules (including namespaces)
+                        continue
+            text.append(self.reference(scope))
+        text.append(escape(scoped_name[-1]))
+        return '::\n'.join(text) + '\n'
 
-      types = self.processor.ast.types()
+    def format_namespace_of_name(self, scoped_name):
+        """Formats a reference to each parent scope and this one."""
 
-      scope, text = [], []
-      last_decl = None
-      for name in scoped_name:
-         scope.append(name)
-         if types.has_key(scope):
-            ns_type = types[scope]
-            if isinstance(ns_type, Type.Declared):
-               decl = ns_type.declaration()
-               if isinstance(decl, AST.Module):
-                  # Only do modules and namespaces
-                  text.append(self.reference(scope))
-                  last_decl = decl
-                  continue
-         break
-      return last_decl, string.join(text, "::") + '\n'
+        types = self.processor.ast.types()
 
-   def format_module(self, module):
-      """Formats the module by linking to each parent scope in the name"""
+        scope, text = [], []
+        last_decl = None
+        for name in scoped_name:
+            scope.append(name)
+            if types.has_key(scope):
+                ns_type = types[scope]
+                if isinstance(ns_type, Type.Declared):
+                    decl = ns_type.declaration()
+                    if isinstance(decl, AST.Module):
+                        # Only do modules and namespaces
+                        text.append(self.reference(scope))
+                        last_decl = decl
+                        continue
+            break
+        return last_decl, '::'.join(text) + '\n'
 
-      # Module details are only printed at the top of their view
-      if not module.name():
-         type, name = "Global", "Namespace"
-      else:
-         type = string.capitalize(module.type())
-         name = self.format_name(module.name())
-      name = entity('h1', "%s %s"%(type, name))
-      return name
+    def format_module(self, module):
+        """Formats the module by linking to each parent scope in the name."""
 
-   def format_meta_module(self, module):
-      """Calls formatModule"""
+        # Module details are only printed at the top of their view
+        if not module.name():
+            type, name = 'Global', 'Namespace'
+        else:
+            type = module.type().capitalize()
+            name = self.format_name(module.name())
+        name = entity('h1', '%s %s'%(type, name))
+        return name
 
-      return self.format_module(module)
+    def format_meta_module(self, module):
+        """Calls format_module."""
 
-   def format_class(self, clas):
-      """Formats the class by linking to each parent scope in the name"""
+        return self.format_module(module)
 
-      # Calculate the namespace string
-      decl, namespace = self.format_namespace_of_name(clas.name())
-      if decl:
-         namespace = '%s %s'%(decl.type(), namespace)
-         namespace = div('class-namespace', namespace)
-      else:
-         namespace = ''
+    def format_class(self, clas):
+        """Formats the class by linking to each parent scope in the name."""
 
-      # Calculate template string
-      templ = clas.template()
-      if templ:
-         params = templ.parameters()
-         params = string.join(map(self.format_parameter, params), ', ')
-         templ = div('class-template', "template &lt;%s&gt;"%params)
-      else:
-         templ = ''
+        # Calculate the namespace string
+        decl, namespace = self.format_namespace_of_name(clas.name())
+        if decl:
+            namespace = '%s %s'%(decl.type(), namespace)
+            namespace = div('class-namespace', namespace)
+        else:
+            namespace = ''
 
-      # Calculate class name string
-      type = clas.type()
-      name = self.format_name_in_namespace(clas.name())
-      name = div('class-name', "%s %s"%(type, name))
+        # Calculate template string
+        templ = clas.template()
+        if templ:
+            params = templ.parameters()
+            params = ', '.join([self.format_parameter(p) for p in params])
+            templ = div('class-template', "template &lt;%s&gt;"%params)
+        else:
+            templ = ''
 
-      # Calculate file-related string
-      file_name = rel(self.processor.output, clas.file().name)
-      # Try the file index view first
-      file_link = self.processor.file_layout.file_index(clas.file().name)
-      if self.processor.filename_info(file_link):
-         file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")
-      else:
-         # Try source file next
-         file_link = self.processor.file_layout.file_source(clas.file().name)
-         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name)
-         else:
-            file_ref = file_name
-      files = "Files: "+file_ref + "<br/>"
+        # Calculate class name string
+        type = clas.type()
+        name = self.format_name_in_namespace(clas.name())
+        name = div('class-name', '%s %s'%(type, name))
 
-      return '%s%s%s%s'%(namespace, templ, name, files)
+        # Calculate file-related string
+        file_name = rel(self.processor.output, clas.file().name)
+        # Try the file index view first
+        file_link = self.processor.file_layout.file_index(clas.file().name)
+        if self.processor.filename_info(file_link):
+            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")
+        else:
+            # Try source file next
+            file_link = self.processor.file_layout.file_source(clas.file().name)
+            if self.processor.filename_info(file_link):
+                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+            else:
+                file_ref = file_name
 
-   def format_parameter(self, parameter):
-      """Returns one string for the given parameter"""
+        links = div('file', 'File: %s'%file_ref)
+        if self.xref: links += ' %s'%div('xref', self.xref.format_class(clas))
+        if self.source: links += ' %s'%div('source', self.source.format_class(clas))
+        info = div('links', links)
 
-      str = []
-      keyword = lambda m,span=span: span("keyword", m)
-      # Premodifiers
-      str.extend(map(keyword, parameter.premodifier()))
-      # Param Type
-      typestr = self.format_type(parameter.type())
-      if typestr: str.append(typestr)
-      # Postmodifiers
-      str.extend(map(keyword, parameter.postmodifier()))
-      # Param identifier
-      if len(parameter.identifier()) != 0:
-         str.append(span("variable", parameter.identifier()))
-      # Param value
-      if len(parameter.value()) != 0:
-         str.append(" = " + span("value", parameter.value()))
-      return string.join(str)
+        return '%s%s%s%s'%(namespace, templ, name, info)
+
+    def format_parameter(self, parameter):
+        """Returns one string for the given parameter"""
+
+        chunks = []
+        # Premodifiers
+        chunks.extend([span("keyword", m) for m in parameter.premodifier()])
+        # Param Type
+        typestr = self.format_type(parameter.type())
+        if typestr: chunks.append(typestr)
+        # Postmodifiers
+        chunks.extend([span("keyword", m) for m in parameter.postmodifier()])
+        # Param identifier
+        if len(parameter.identifier()) != 0:
+            chunks.append(span("variable", parameter.identifier()))
+        # Param value
+        if len(parameter.value()) != 0:
+            chunks.append(" = " + span("value", parameter.value()))
+        return ' '.join(chunks)

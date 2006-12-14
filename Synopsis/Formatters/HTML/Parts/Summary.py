@@ -22,11 +22,6 @@ class Summary(Part):
 
     def register(self, view):
 
-        if view.processor.has_view('XRef'):
-            self.fragments.append(XRefLinker())
-        if view.processor.has_view('Source'):
-            self.fragments.append(SourceLinker())
-            
         Part.register(self, view)
         self.__link_detail = 0
 
@@ -50,7 +45,7 @@ class Summary(Part):
         """Start a 'summary' section and write an appropriate heading."""
 
         self.write('<div class="summary">\n')
-        self.write('<div class="heading">%s</div>\n'%heading)
+        self.write(div('heading', heading) + '\n')
 
     def write_section_end(self, heading):
         """Close the section."""
@@ -60,7 +55,7 @@ class Summary(Part):
     def write_section_item(self, text):
         """Add an item."""
 
-        self.write('<div class="item">%s</div>\n'%text)
+        self.write(div('item', text) + '\n')
       
     def process(self, scope):
         "Print out the summaries from the given scope"

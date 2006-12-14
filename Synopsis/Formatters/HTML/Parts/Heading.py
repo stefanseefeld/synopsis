@@ -12,32 +12,23 @@ from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 
 class Heading(Part):
-   """Heading view part. Displays a header for the view -- its strategies are
-   only passed the object that the view is for; ie a Class or Module"""
+    """Heading view part. Displays a header for the view -- its strategies are
+    only passed the object that the view is for; ie a Class or Module"""
 
-   fragments = Parameter([HeadingFormatter(),
-                          ClassHierarchyGraph(),
-                          DetailCommenter()],
-                         '')
+    fragments = Parameter([HeadingFormatter(),
+                           ClassHierarchyGraph(),
+                           DetailCommenter()],
+                          '')
 
-   def register(self, view):
+    def write_section_item(self, text):
+        """Writes text and follows with a horizontal rule"""
 
-      if view.processor.has_view('XRef'):
-         self.fragments.append(XRefLinker())
-      if view.processor.has_view('Source'):
-         self.fragments.append(SourceLinker())
+        self.write(text + '\n')
 
-      Part.register(self, view)
+    def process(self, decl):
+        """Process this Part by formatting only the given decl"""
 
-   def write_section_item(self, text):
-      """Writes text and follows with a horizontal rule"""
-
-      self.write(text + '\n')
-
-   def process(self, decl):
-      """Process this Part by formatting only the given decl"""
-
-      self.write_start()
-      decl.accept(self)
-      self.write_end()
+        self.write_start()
+        decl.accept(self)
+        self.write_end()
 

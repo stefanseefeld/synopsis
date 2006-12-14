@@ -14,4 +14,4 @@ class SummaryCommenter(Default):
 
     def format_declaration(self, decl):
         summary = self.processor.documentation.summary(decl, self.view)
-        return summary and div('doc', summary) or ''
+        return div('doc', summary or '')

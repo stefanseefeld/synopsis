@@ -20,7 +20,7 @@ class Detail(Part):
         """Start a 'detail' section and write an appropriate heading."""
 
         self.write('<div class="detail">\n')
-        self.write('<div class="heading">%s</div>\n'%heading)
+        self.write(div('heading', heading) + '\n')
 
     def write_section_end(self, heading):
         """Close the section."""
@@ -30,7 +30,7 @@ class Detail(Part):
     def write_section_item(self, text):
         """Add an item."""
 
-        self.write('<div class="item">%s</div>\n'%text)
+        self.write(div('item',text) + '\n')
 
     def process(self, decl):
         "Print out the details for the children of the given decl"

@@ -88,10 +88,26 @@ div.desc {
   background: #f2f5f7;
 }
 
+.links .file,
+.summary .item .synopsis,
+.detail .item .synopsis
+{
+  float: left;
+}
+.links .xref,
+.links .source,
+.summary .item .xref,
+.summary .item .source,
+.detail .item .xref,
+.detail .item .source
+{
+  float: right;
+}
 .summary .item .doc,
 .detail .item .doc,
 .doc /* This one refers to top-level class docs, which needs more qualification. */
 {
+  clear:both;
   margin-left: 2em;
   font-size: smaller;
   padding: 0.5em;
@@ -131,7 +147,7 @@ div.logo {
 }
 div.class-namespace {
     font-size: 1.5em;
-    float: right;
+    text-align: right;
 }
 div.class-template {
     font-size: 1.7em;
