@@ -9,7 +9,7 @@ from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 from Synopsis.DocString import DocString
-from Synopsis.FileTree import FileTree
+from Synopsis.FileTree import FileTree as SourceFileTree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
 from Synopsis.Formatters.XRef import CrossReferencer
@@ -25,11 +25,6 @@ import Markup
 import Tags
 
 import time
-
-class Struct:
-   "Dummy class. Initialise with keyword args."
-   def __init__(self, **keys):
-      for name, value in keys.items(): setattr(self, name, value)
 
 class DocCache:
    """"""
@@ -91,10 +86,10 @@ class Formatter(Processor):
 
    views = Parameter([FramesIndex(),
                       Scope(),
-                      ModuleListing(),
-                      ModuleIndexer(),
-                      FileListing(),
-                      FileIndexer(),
+                      ModuleTree(),
+                      ModuleIndex(),
+                      FileTree(),
+                      FileIndex(),
                       FileDetails(),
                       InheritanceTree(),
                       InheritanceGraph(),
@@ -118,7 +113,7 @@ class Formatter(Processor):
       # Create the Class Tree (TODO: only if needed...)
       self.class_tree = ClassTree()
       # Create the File Tree (TODO: only if needed...)
-      self.file_tree = FileTree()
+      self.file_tree = SourceFileTree()
       self.file_tree.set_ast(self.ast)
 
       self.xref = CrossReferencer()
@@ -141,7 +136,6 @@ class Formatter(Processor):
       for d in declarations:
          d.accept(self.class_tree)
 
-      self.__roots = [] #views with roots, list of Structs
       self.__global = None # The global scope
       self.__files = {} # map from filename to (view,scope)
 
@@ -258,38 +252,34 @@ class Formatter(Processor):
             sys.exit(3)
       return start
 
-   def add_root_view(self, file, label, target, visibility):
-      """Adds a named link to the list of root views. Called from the
-      constructors of View objects. The root views are displayed at the top
-      of every view, depending on their visibility (higher = more visible).
-      @param file	    the filename, to be used when generating the link
-      @param label	    the label of the view
-      @param target       target frame
-      @param visibility   should be a number such as 1 or 2. Visibility 2 is
-      shown on all views, 1 only on views with lots of
-      room. For example, views for the top-left frame
-      only show visibility 2 views."""
-
-      self.__roots.append(Struct(file=file, label=label, target=target, visibility=visibility))
-
-   def navigation_bar(self, origin, visibility=1):
+   def navigation_bar(self, origin, frame = 'main'):
       """Formats the list of root views to HTML. The origin specifies the
       generated view itself (which shouldn't be linked), such that the relative
       links can be generated. Only root views of 'visibility' or
       above are included."""
 
+      class Struct:
+         def __init__(self, **keys):
+            self.__dict__.update(keys)
+
+
       # If not using frames, show all headings on all views!
       if not self.has_view('FramesIndex'):
-         visibility = 1
-      #filter out roots that are visible
-      roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
-      #a function generating a link
-      other = lambda x: span('root-other', href(rel(origin, x.file), x.label, target=x.target))
-      #a function simply printing label
-      current = lambda x: span('root-current', x.label)
+         frame = 'main'
+      #filter out roots that are visible in this frame
+      roots = [v.menu_item() for v in self.views]
+      roots = [Struct(url = t[0], label = t[1], target = t[2])
+               for t in roots if t[3] == frame]
+
+      def item(x):
+         """Generate an active menu item."""
+         return span('root-other', href(rel(origin, x.url), x.label, target=x.target))
+      def current_item(x):
+         """Generate a 'selected' menu item."""
+         return span('root-current', x.label)
       # generate the header
-      roots = map(lambda x: x.file==origin and current(x) or other(x), roots)
-      return div('navigation', string.join(roots, '\n'))+'\n'
+      roots = [x.url==origin and current_item(x) or item(x) for x in roots]
+      return roots and div('navigation', '\n'.join(roots))+'\n' or ''
 
    def register_filename(self, filename, view, scope):
       """Registers a file for later production. The first view to register

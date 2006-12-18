@@ -90,7 +90,7 @@ class RawFile(View):
       self.__filename = filename
       self.__title = original[len(self.base_path):]
       self.start_file()
-      self.write(self.processor.navigation_bar(filename, 2))
+      self.write(self.processor.navigation_bar(filename, 'contents'))
       self.write('File: '+entity('b', self.__title))
       try:
          lines = open(original, 'rt').readlines()

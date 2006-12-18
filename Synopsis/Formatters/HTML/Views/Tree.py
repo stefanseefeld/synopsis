@@ -61,10 +61,9 @@ init_tree("%s", "%s");
 --></script>
 """
 # The HTML for one image. %s's are 2x the same id string and the image
-img_html = """<a href="javascript:toggle('%s');"
->%s</a>"""
+img_html = """<a href="javascript:toggle('%s');">%s</a>"""
 
-class JSTree(View):
+class Tree(View):
    """View that makes Javascript trees. The trees have expanding and
    collapsing nodes. call js_init() with the button images and default
    open/close policy during process"""
@@ -77,13 +76,13 @@ class JSTree(View):
       self.__close_img = ''
       self.__leaf_img = ''
 	
-   def getId(self):
+   def get_id(self):
 
       self.__id = self.__id + 1
       return "tree%d"%self.__id
 
    def js_init(self, open_img, close_img, leaf_img, base, default_open=1):
-      """Initialise the JSTree view. This method copies the files to the
+      """Initialise the Tree view. This method copies the files to the
       output directory and stores the values given.
       @param open_img	     filename of original open image
       @param close_img     filename of original close image
@@ -108,38 +107,38 @@ class JSTree(View):
 
       View.start_file(self, headextra=top_js%(self.__base_open, self.__base_close))
       
-   def formatImage(self, id, filename, alt_text=""):
+   def format_image(self, id, filename, alt_text=""):
       """Returns the image element for the given image"""
       # todo: resolve directory path
       id = id and 'id="%s" '%id or ''
-      return '<img %sborder=0 src="%s" alt="%s">'%(id, filename, alt_text)
+      return '<img %sborder="0" src="%s" alt="%s" />'%(id, filename, alt_text)
 
-   def writeLeaf(self, item_text):
+   def write_leaf(self, item_text):
       """Write a leaf node to the output at the current tree level."""
-      img = self.formatImage(None, self.__base_leaf, "leaf")
-      self.write(div('module-section', img+item_text))
+      img = self.format_image(None, self.__base_leaf, "leaf")
+      self.write(div('module-section', img + item_text) + '\n')
 
-   def writeNodeStart(self, item_text):
+   def write_node_start(self, item_text):
       """Write a non-leaf node to the output at the current tree level, and
       start a new level."""
       # Get a unique id for this node
-      id = self.getId()
+      id = self.get_id()
       # Get the image for this node
-      if self.__def_open: img = self.formatImage(id, self.__base_open, 'node')
-      else: img = self.formatImage(id+"_img", self.__base_close, 'node')
+      if self.__def_open: img = self.format_image(id, self.__base_open, 'node')
+      else: img = self.format_image(id+"_img", self.__base_close, 'node')
       # Get the scripted link for the image
       img_link = img_html%(id, img)
       # Write the item
       self.write('<div class="module-section">%s%s'%(img_link, item_text))
       # Start the (collapsible) section for the child nodes
       if self.__def_open:
-         self.write('<div id="%s">'%id)
+         self.write('<div id="%s">\n'%id)
       else:
-         self.write('<div id="%s" style="display:none;">'%id)
+         self.write('<div id="%s" style="display:none;">\n'%id)
 
-   def writeNodeEnd(self):
+   def write_node_end(self):
       """Finish a non-leaf node, and close the current tree level."""
       # Close the collapsible div, and the node's div
-      self.write('</div></div>')
+      self.write('</div>\n</div>\n')
 
 

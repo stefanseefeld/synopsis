@@ -18,11 +18,18 @@ class InheritanceTree(View):
    def register(self, processor):
 
       View.register(self, processor)
-      self.processor.add_root_view(self.filename(), 'Inheritance Tree', 'main', 1)
  
-   def filename(self): return self.processor.file_layout.special('InheritanceTree')
+   def filename(self):
 
-   def title(self): return 'Synopsis - Class Hierarchy'
+      return self.processor.file_layout.special('InheritanceTree')
+
+   def title(self):
+
+      return 'Inheritance Tree'
+
+   def menu_item(self):
+
+      return self.filename(), self.title(), 'main', 'main'
 
    def process(self, start):
       """Creates a file with the inheritance tree"""

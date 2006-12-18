@@ -25,12 +25,20 @@ class ModuleListing(View):
       self._children_cache = {}
       filename = self.filename()
       processor.set_contents_view(filename)
-      self.processor.add_root_view(filename, self.short_title, 'contents', 2)
       self._link_target = 'index'
 
-   def filename(self): return self.processor.file_layout.special('ModuleListing')
+   def filename(self):
 
-   def title(self): return self.short_title + ' Listing'
+      return self.processor.file_layout.special('ModuleListing')
+
+   def title(self):
+
+      return self.short_title
+
+   def menu_item(self):
+      """Return a pair (url, title, target, frame) to be used as navigation bar item."""
+
+      return self.filename(), self.title(), 'contents', 'contents'
 
    def process(self, start):
       """Create a view with an index of all modules"""
@@ -39,7 +47,7 @@ class ModuleListing(View):
       self.tree.register(self)
       # Create the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 2))
+      self.write(self.processor.navigation_bar(self.filename(), 'contents'))
       self.tree.start_tree()
       self.index_module(start, start.name())
       self.tree.end_tree()

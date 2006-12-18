@@ -10,10 +10,11 @@ from FramesIndex import FramesIndex
 from Directory import Directory
 from Scope import Scope
 from ModuleListing import ModuleListing
-from ModuleListingJS import ModuleListingJS
-from ModuleIndexer import ModuleIndexer
+from ModuleTree import ModuleTree
+from ModuleIndex import ModuleIndex
 from FileListing import FileListing
-from FileIndexer import FileIndexer
+from FileTree import FileTree
+from FileIndex import FileIndex
 from FileDetails import FileDetails
 from InheritanceTree import InheritanceTree
 from InheritanceGraph import InheritanceGraph

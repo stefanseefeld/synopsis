@@ -13,7 +13,7 @@ from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class FileIndexer(View):
+class FileIndex(View):
    """A view that creates an index of files, and an index for each file.
    First the index of files is created, intended for the top-left frame.
    Second a view is created for each file, listing the major declarations for
@@ -66,18 +66,17 @@ class FileIndexer(View):
       self.__title = string.join(name, os.sep)
 
       self.start_file()
-      self.write(entity('b', string.join(name, os.sep))+'<br/>')
+      self.write(entity('b', string.join(name, os.sep))+'<br/>\n')
       if self.__link_source:
          link = rel(self.filename(),
                     self.processor.file_layout.file_source(filename))
-         self.write(href(link, '[File Source]', target="main")+'<br/>')
+         self.write(href(link, '[File Source]', target="main")+'<br/>\n')
       if self.__link_details:
          link = rel(self.filename(),
                     self.processor.file_layout.file_details(filename))
-         self.write(href(link, '[File Details]', target="main")+'<br/>')
-      doc = self.processor.documentation
+         self.write(href(link, '[File Details]', target="main")+'<br/>\n')
 
-      self.write('<b>Declarations:</b><br/>')
+      self.write('<b>Declarations:</b><br/>\n')
       # Sort items (by name)
       items = [(d.name(), d) for d in file.declarations]
       items.sort()
@@ -86,7 +85,6 @@ class FileIndexer(View):
          # TODO make this nicer :)
          entry = self.processor.toc[name]
          if not entry: continue
-         summary = string.strip("(%s) %s"%(decl.type(), doc.summary(decl, self)))
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
          if isinstance(decl, AST.Function): print_name = decl.realname()
@@ -105,18 +103,19 @@ class FileIndexer(View):
          while i < len(print_name)-1:
             scope.append(print_name[i])
             if len(last) >= len(scope) and last[:len(scope)] == scope: div_bit = ""
-            else: div_bit = print_name[i]+"<br/>"
+            else: div_bit = print_name[i]+"<br/>\n"
             self.write('%s<div class="fileview-scope">'%div_bit)
             i = i + 1
 
          # Now print the actual item
          label = escape(Util.ccolonName(print_name, scope))
          label = replace_spaces(label)
-         self.write(div('href',href(link, label, target='main', title=summary)))
+         title = '(%s)'%decl.type()
+         self.write(div('href',href(link, label, target='main', title=title)))
          # Store this name incase, f.ex, its a class and the next item is
          # in that class scope
          last = list(name)
       # Close open DIVs
       for i in scope:
-         self.write("</div>")
+         self.write("</div>\n")
       self.end_file()

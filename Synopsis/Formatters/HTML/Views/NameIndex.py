@@ -21,11 +21,18 @@ class NameIndex(View):
    def register(self, processor):
 
       View.register(self, processor)
-      self.processor.add_root_view(self.filename(), 'Name Index', 'main', 1)
 
-   def filename(self): return self.processor.file_layout.special('NameIndex')
+   def filename(self):
 
-   def title(self): return 'Synopsis - Name Index'
+      return self.processor.file_layout.special('NameIndex')
+
+   def title(self):
+
+      return 'Name Index'
+
+   def menu_item(self):
+
+      return self.filename(), self.title(), 'main', 'main'
 
    def process(self, start):
       """Creates the view. It is created as a list of tables, one for each

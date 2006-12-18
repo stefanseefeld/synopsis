@@ -9,25 +9,33 @@
 from Synopsis import config
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Tags import *
-from JSTree import JSTree
+from Tree import Tree
 
 import os
 
-class ModuleListingJS(JSTree):
+class ModuleTree(Tree):
    """Create an index of all modules with JS. The JS allows the user to
    expand/collapse sections of the tree!"""
 
    def register(self, processor):
 
-      JSTree.register(self, processor)
+      Tree.register(self, processor)
       self._children_cache = {}
       filename = self.processor.file_layout.special('ModuleTree')
       self.processor.set_contents_view(filename)
-      self.processor.add_root_view(filename, 'Modules', 'contents', 2)
       self._link_target = 'index'
 
-   def filename(self): return self.processor.file_layout.special('ModuleTree')
-   def title(self): return 'Module Tree'
+   def filename(self):
+
+      return self.processor.file_layout.special('ModuleTree')
+
+   def title(self):
+
+      return 'Module Tree'
+
+   def menu_item(self):
+
+      return self.filename(), self.title(), 'contents', 'contents'
 
    def process(self, start):
       """Create a view with an index of all modules"""
@@ -40,8 +48,8 @@ class ModuleListingJS(JSTree):
       self.__share = share
       # Creare the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 2))
-      self.indexModule(start, start.name())
+      self.write(self.processor.navigation_bar(self.filename(), 'contents'))
+      self.index_module(start, start.name())
       self.end_file()
 
    def _child_filter(self, child):
@@ -64,7 +72,7 @@ class ModuleListingJS(JSTree):
       self._children_cache[decl] = children
       return children
 
-   def indexModule(self, ns, rel_scope):
+   def index_module(self, ns, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
       my_scope = ns.name()
@@ -77,11 +85,11 @@ class ModuleListingJS(JSTree):
       link = self._link_href(ns)
       text = href(link, name, target=self._link_target)
       if not len(children):
-         self.writeLeaf(text)
+         self.write_leaf(text)
       else:
-         self.writeNodeStart(text)
+         self.write_node_start(text)
          # Add children
          for child in children:
-            self.indexModule(child, my_scope)
-         self.writeNodeEnd()
+            self.index_module(child, my_scope)
+         self.write_node_end()
 

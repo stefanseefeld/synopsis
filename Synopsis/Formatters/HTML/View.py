@@ -187,6 +187,11 @@ class View(Parametrized):
 
       return ''
 
+   def menu_item(self):
+      """Return a pair (url, title, target, frame) to be used as navigation bar item."""
+
+      return None, None, None, None
+
    def os(self):
       "Returns the output stream opened with start_file"
 

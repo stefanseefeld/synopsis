@@ -11,9 +11,7 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os
-
-class ModuleIndexer(View):
+class ModuleIndex(View):
    """A module for indexing AST.Modules. Each module gets its own view with a
    list of nested scope declarations with documentation. It is intended to go in
    the left frame..."""

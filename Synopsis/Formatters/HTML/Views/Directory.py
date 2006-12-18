@@ -40,7 +40,11 @@ class Directory(View):
         """since FileTree generates a while file hierarchy, this method returns the current title,
         which may change over the lifetime of this object"""
         
-        return self.__title
+        return 'Directory Listing'
+
+    def menu_item(self):
+
+        return self.processor.file_layout.special('dir'), self.title(), 'main', 'main'
 
     def filename_for_dir(self, dir):
         """Returns the output filename for the given input directory"""
@@ -59,7 +63,6 @@ class Directory(View):
 
         self.__filename = self.processor.file_layout.special('dir')
       
-        self.__title = 'Directory Listing'
         processor.set_main_view(self.__filename)
         # FIXME: file_layout.special() will return two distinct values,
         #        depending on whether this is the main view or not
@@ -104,7 +107,7 @@ class Directory(View):
 
         # Start the file
         self.start_file()
-        self.write(self.processor.navigation_bar(self.filename(), 1))
+        self.write(self.processor.navigation_bar(self.filename(), 'main'))
         # Write intro stuff
         root = ''
         if self.base_path != self.src_dir:

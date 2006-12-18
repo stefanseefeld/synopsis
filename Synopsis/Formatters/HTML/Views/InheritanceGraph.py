@@ -62,10 +62,18 @@ class InheritanceGraph(View):
 
       View.register(self, processor)
       self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
-      self.processor.add_root_view(self.filename(), 'Inheritance Graph', 'main', 1)
 
-   def filename(self): return self.processor.file_layout.special('InheritanceGraph')
-   def title(self): return 'Synopsis - Class Hierarchy'
+   def filename(self):
+
+      return self.processor.file_layout.special('InheritanceGraph')
+
+   def title(self):
+
+      return 'Inheritance Graph'
+
+   def menu_item(self):
+
+      return self.filename(), self.title(), 'main', 'main'
 
    def consolidate(self, graphs):
       """Consolidates small graphs into larger ones"""

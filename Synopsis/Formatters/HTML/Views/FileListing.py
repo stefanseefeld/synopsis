@@ -23,29 +23,25 @@ class FileListing(View):
    def register(self, processor):
 
       View.register(self, processor)
-      self.__filename = self.processor.file_layout.special('FileListing')
-      self.__title = 'Files'
-
       processor.set_main_view(self.filename())
-      # Reset filename in case we got main view status
-      self.__filename = self.processor.file_layout.special('FileListing')
-      self.processor.add_root_view(self.filename(), self.title(), "contents", 2)
       processor.set_contents_view(self.filename())
 
    def filename(self):
-      """Returns the filename"""
 
-      return self.__filename
+      return self.processor.file_layout.special('FileListing')
 
    def title(self):
-      """Returns the title"""
 
-      return self.__title
+      return 'Files'
+
+   def menu_item(self):
+
+      return self.filename(), self.title(), 'contents', 'contents'
 
    def register_filenames(self, start):
       """Registers a view for each file indexed"""
 
-      self.processor.register_filename(self.__filename, self, None)
+      self.processor.register_filename(self.filename(), self, None)
     
    def process(self, start):
       """Creates the listing using the recursive process_file_tree_node method"""
@@ -55,7 +51,7 @@ class FileListing(View):
       self.tree.register(self)
       # Start the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 2))
+      self.write(self.processor.navigation_bar(self.filename(), 'contents'))
       self.tree.start_tree()
       # recursively visit all nodes
       self.process_file_tree_node(self.processor.file_tree.root())
