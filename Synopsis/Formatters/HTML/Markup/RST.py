@@ -112,9 +112,9 @@ class RST(Formatter):
                 summary = pub.writer.parts['html_body']
                 # Hack to strip off some redundant blocks to make the output
                 # more compact.
-                if (summary.startswith('<div class="document">\n<p>') and
-                    summary.endswith('</p>\n</div>\n')):
-                    summary=summary[26:-12]
+                if (summary.startswith('<div class="document">\n') and
+                    summary.endswith('</div>\n')):
+                    summary=summary[23:-7]
             else:
                 summary = ''
                 
@@ -128,9 +128,9 @@ class RST(Formatter):
             details = pub.writer.parts['html_body']
             # Hack to strip off some redundant blocks to make the output
             # more compact.
-            if (details.startswith('<div class="document">\n<p>') and
-                details.endswith('</p>\n</div>\n')):
-                details=details[26:-12]
+            if (details.startswith('<div class="document">\n') and
+                details.endswith('</div>\n')):
+                details=details[23:-7]
                 
             return Struct(summary, details)
         else:
