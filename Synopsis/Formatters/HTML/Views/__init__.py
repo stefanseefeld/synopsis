@@ -6,7 +6,6 @@
 # see the file COPYING for details.
 #
 
-from FramesIndex import FramesIndex
 from Directory import Directory
 from Scope import Scope
 from ModuleListing import ModuleListing

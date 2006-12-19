@@ -53,20 +53,12 @@ class DirectoryLayout (TOC.Linker):
             print "ERROR: ", reason
             sys.exit(2)
     
-    def _check_main(self, filename):
-        """Checks whether the given filename is the main index view or not. If
-        it is, then it returns the filename from index(), else it returns
-        it unchanged"""
-
-        if filename == self.processor.main_index: return self.index()
-        return filename
-	
     def scope(self, scope = None):
         """Return the filename of a scoped name (class or module).
         The default implementation is to join the names with '-' and append
         ".html" Additionally, special characters are Util.quoted in URL-style"""
 
-        if not scope: return self._check_main(self.special('global'))
+        if not scope: return self.special('global')
         return Util.quote('.'.join(scope)) + '.html'
 
     def _strip(self, filename):
@@ -106,7 +98,7 @@ class DirectoryLayout (TOC.Linker):
         """Return the name of a special file (tree, etc). Default is
         _name.html"""
 
-        return self._check_main('_%s.html'%name)
+        return '_%s.html'%name
 
     def scoped_special(self, name, scope, ext='.html'):
         """Return the name of a special type of scope file. Default is to join
@@ -148,7 +140,7 @@ class NestedDirectoryLayout(DirectoryLayout):
 
     def scope(self, scope = None):
 
-        if not scope: return self._check_main('Scopes/global.html')
+        if not scope: return 'Scopes/global.html'
         else: return Util.quote('Scopes/' + '/'.join(scope)) + '.html'
 
     def file_index(self, filename):
@@ -165,7 +157,7 @@ class NestedDirectoryLayout(DirectoryLayout):
 
     def special(self, name):
 
-        return self._check_main(name + '.html')
+        return name + '.html'
     
     def scoped_special(self, name, scope, ext='.html'):
 
@@ -182,5 +174,6 @@ class NestedDirectoryLayout(DirectoryLayout):
     def module_index(self, scope):
 
         if not len(scope):
-            return self._check_main('Modules/global.html')
-        else: return Util.quote('Modules/' + '/'.join(scope)) + '.html'
+            return 'Modules/global.html'
+        else:
+            return Util.quote('Modules/' + '/'.join(scope)) + '.html'

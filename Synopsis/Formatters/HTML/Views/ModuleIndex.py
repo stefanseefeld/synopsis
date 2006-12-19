@@ -51,7 +51,7 @@ class ModuleIndex(View):
          url = self.directory_layout.module_index(name[:depth+1])
          label = escape(name[depth])
          links.append(href(rel(self.__filename, url), label))
-      return entity('b', string.join(links, '\n::') + ' Index')
+      return entity('b', '::'.join(links) + ' Index')
 
    def process_module_index(self, module):
       "Index one module"

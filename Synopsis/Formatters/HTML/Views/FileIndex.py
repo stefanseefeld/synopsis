@@ -61,12 +61,12 @@ class FileIndex(View):
       # set up filename and title for the current view
       self.__filename = self.directory_layout.file_index(filename)
       # (get rid of ../'s in the filename)
-      name = string.split(filename, os.sep)
+      name = filename.split(os.sep)
       while len(name) and name[0] == '..': del name[0]
-      self.__title = string.join(name, os.sep)
+      self.__title = os.sep.join(name)
 
       self.start_file()
-      self.write(entity('b', string.join(name, os.sep))+'<br/>\n')
+      self.write(entity('b', os.sep.join(name))+'<br/>\n')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))

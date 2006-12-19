@@ -61,13 +61,13 @@ class FileDetails(View):
       # set up filename and title for the current view
       self.__filename = self.directory_layout.file_details(filename)
       # (get rid of ../'s in the filename)
-      name = string.split(filename, os.sep)
+      name = filename.split(os.sep)
       while len(name) and name[0] == '..': del name[0]
-      self.__title = string.join(name, os.sep)+' Details'
+      self.__title = os.sep.join(name)+' Details'
 
       self.start_file()
       self.write_navigation_bar()
-      self.write(entity('h1', string.join(name, os.sep))+'<br/>')
+      self.write(entity('h1', os.sep.join(name))+'<br/>')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))

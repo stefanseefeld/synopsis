@@ -57,15 +57,11 @@ class Source(View):
     external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
    
     def filename(self):
-        """since Source generates a whole file hierarchy, this method returns the current filename,
-        which may change over the lifetime of this object"""
 
         return self.__filename
 
 
     def title(self):
-        """since Source generates a while file hierarchy, this method returns the current title,
-        which may change over the lifetime of this object"""
 
         return self.__title
 

@@ -13,8 +13,6 @@ from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.XRef import *
 
-import os
-
 class XRef(View):
    """A module for creating views full of xref infos"""
 

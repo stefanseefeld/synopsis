@@ -54,7 +54,11 @@ class Scope(View):
 
     def root(self):
 
-        return self.directory_layout.scope(), 'Global Module'
+        if self.main:
+            url = self.directory_layout.index()
+        else:
+            url = self.directory_layout.scope()
+        return url, 'Global Module'
 
     def scope(self):
         """return the current scope processed by this object"""
@@ -83,8 +87,10 @@ class Scope(View):
         self.__scopes = [self.processor.ast.declarations()[0]]
         while self.__scopes:
             scope = self.__scopes.pop(0)
-
-            filename = self.directory_layout.scope(scope.name())
+            if scope.name():
+                filename = self.directory_layout.scope(scope.name())
+            else:
+                filename = self.root()[0]
             self.processor.register_filename(filename, self, scope)
 
             self.processor.sorter.set_scope(scope)
@@ -99,8 +105,11 @@ class Scope(View):
 
         # Open file and setup scopes
         self.__scope = scope.name()
-        self.__filename = self.directory_layout.scope(self.__scope)
-        self.__title = escape(string.join(self.__scope))
+        if self.__scope:
+            self.__filename = self.directory_layout.scope(self.__scope)
+        else:
+            self.__filename = self.root()[0]
+        self.__title = escape(' '.join(self.__scope))
         self.start_file()
         self.write_navigation_bar()
 

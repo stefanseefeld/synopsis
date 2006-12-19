@@ -12,11 +12,14 @@ class Frame:
     """A Frame is a mediator for views that get displayed in it (as well
     as other frames. It supports the creation of links across views."""
 
-    def __init__(self, processor, views, noframe = False):
+    def __init__(self, processor, views, noframes = False):
 
         self.processor = processor
         self.views = views
-        self.noframe = noframe
+        self.noframes = noframes
+        if self.noframes:
+            self.views[0].main = True
+            print self.views[0].__class__.__name__, 'is main'
         for v in self.views:
             v.register(self)
 
@@ -38,7 +41,8 @@ class Frame:
     def navigation_bar(self, view):
         """Generates a navigation bar for the given view."""
 
-        views = [v for v in self.views if v.root() != (None, None)]
+        # Only include views that set a root title.
+        views = [v for v in self.views if v.root()[1]]
 
         def item(v):
             """Generate a navigation bar item."""

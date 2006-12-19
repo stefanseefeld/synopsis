@@ -37,7 +37,7 @@ class Format(Parametrized):
       """
 
       os.write('<?xml version="1.0" encoding="iso-8859-1"?>\n')
-      if view.frame.noframe:
+      if view.frame.noframes:
          os.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"\n')
          os.write('    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n')
       else:

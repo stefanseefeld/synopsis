@@ -40,24 +40,28 @@ class Directory(View):
 
     def root(self):
 
-        return self.directory_layout.special('dir'), self.title()
+        if self.main:
+            url = self.directory_layout.index()
+        else:
+            url = self.directory_layout.special('dir')
+        return url, self.title()
 
     def filename_for_dir(self, dir):
-        """Returns the output filename for the given input directory"""
+        """Returns the output filename for the given input directory."""
 
-        if dir is self.src_dir:
-            return self.directory_layout.special('dir')
-        scope = rel(self.src_dir, dir).split(os.sep)
-        return self.directory_layout.scoped_special('dir', scope)
+        if dir == self.src_dir:
+            return self.root()[0]
+        else:
+            scope = rel(self.src_dir, dir).split(os.sep)
+            return self.directory_layout.scoped_special('dir', scope)
 
     def register(self, frame):
 
         View.register(self, frame)
         self._exclude = [compile_glob(e) for e in self.exclude]
-        self.__filename = self.directory_layout.special('dir')
+        self.__filename = self.root()[0]
 
     def register_filenames(self):
-        """Registers a view for every directory."""
 
         dirs = [self.src_dir]
         while dirs:
@@ -77,12 +81,10 @@ class Directory(View):
                     dirs.append(entry_path)
    
     def process(self):
-        """Recursively visit each directory in the source directory."""
 
         self.process_dir(self.src_dir)
             
     def process_dir(self, path):
-        """Process a directory, producing an output view for it"""
 
         # Find the filename
         self.__filename = self.filename_for_dir(path)
@@ -98,7 +100,7 @@ class Directory(View):
         if path is self.src_dir:
             self.write('<h1> '+root)
         else:
-            self.write('<h1>' + href(self.directory_layout.special('dir'), root + ' '))
+            self.write('<h1>' + href(self.root()[0], root + ' '))
             dirscope = []
             scope = rel(self.src_dir, path).split(os.sep)
          

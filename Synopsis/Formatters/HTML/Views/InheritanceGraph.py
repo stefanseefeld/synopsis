@@ -50,7 +50,7 @@ def find_common_name(graph):
          if decl_name[i] != common_name[i]:
             common_name = common_name[:i]
             break
-   return string.join(common_name, '::')
+   return '::'.join(common_name)
 
 class InheritanceGraph(View):
 
@@ -66,7 +66,10 @@ class InheritanceGraph(View):
 
    def filename(self):
 
-      return self.directory_layout.special('InheritanceGraph')
+      if self.main:
+         return self.directory_layout.index()
+      else:
+         return self.directory_layout.special('InheritanceGraph')
 
    def title(self):
 
@@ -135,7 +138,7 @@ class InheritanceGraph(View):
          graphs.sort(lensorter)
          if name:
             self.write('<div class="inheritance-group">')
-            scoped_name = string.split(name,'::')
+            scoped_name = name.split('::')
             type_str = ''
             types = self.processor.ast.types()
             type = types.get(scoped_name, None)

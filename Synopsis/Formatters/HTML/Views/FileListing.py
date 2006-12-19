@@ -22,7 +22,10 @@ class FileListing(View):
 
    def filename(self):
 
-      return self.directory_layout.special('FileListing')
+      if self.main:
+         return self.directory_layout.index()
+      else:
+         return self.directory_layout.special('FileListing')
 
    def title(self):
 
@@ -57,7 +60,7 @@ class FileListing(View):
       b_leaf = isinstance(a, FileTree.File)
       if a_leaf != b_leaf:
          return cmp(b_leaf, a_leaf)
-      return cmp(string.upper(a.path), string.upper(b.path))
+      return cmp(a.path.upper(), b.path.upper())
 
    def process_file_tree_node(self, node):
       """Creates a portion of the tree for the given file node. This method

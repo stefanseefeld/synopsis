@@ -120,6 +120,7 @@ class Formatter(Processor):
         self.file_tree = SourceFileTree()
         self.file_tree.set_ast(self.ast)
 
+        # Create the cross reference table (shared by XRef / Scope views)
         self.xref = CrossReferencer()
 
         # if not self.sorter:
@@ -133,17 +134,12 @@ class Formatter(Processor):
         # If only content contains views don't use frames.
         if self.index or self.detail:
             Tags.using_frames = True
-            # The frameset will become the main index.
-            self.main_index = self.directory_layout.index()
             
             frames.append(Frame(self, self.index))
             frames.append(Frame(self, self.detail))
             frames.append(Frame(self, self.content))
         else:
-            # The root URL of the first content view will become the main index.
-            self.main_index = None #self.content[0].root()[0]
-
-            frames.append(Frame(self, self.content)) # no frames
+            frames.append(Frame(self, self.content, noframes = True))
 
         self.__files = {} # map from filename to (view,scope)
 
