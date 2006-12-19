@@ -20,6 +20,8 @@
 
 using namespace Synopsis;
 
+PyObject *py_error;
+
 namespace
 {
 
@@ -130,6 +132,8 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
         || !extract(py_flags, flags))
       return 0;
     
+    Py_INCREF(py_error);
+    std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
     Py_INCREF(py_ast);
     // since everything in this file is accessed only during the execution
     // of ucpp_parse, we can safely manage these objects in this scope yet
@@ -185,7 +189,12 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     
     int status = ucpp_main(flags.size(), (char **)&*flags.begin());
     if (status != 0)
-      std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
+    {
+      std::string msg = "ucpp could not parse ";
+      msg += input;
+      Python::Object py_e((*error_type)(Python::Tuple(msg)));
+      PyErr_SetObject(py_error, py_e.ref());
+    }
 
     Python::Dict files = ast->files();
     Path path = Path(input).abs();
@@ -309,4 +318,8 @@ extern "C" void initucpp()
 {
   Python::Module module = Python::Module::define("ucpp", methods);
   module.set_attr("version", "0.1");
+  Python::Object processor = Python::Object::import("Synopsis.Processor");
+  Python::Object error_base = processor.attr("Error");
+  py_error = PyErr_NewException("ucpp.ParseError", error_base.ref(), 0);
+  module.set_attr("ParseError", py_error);
 }
