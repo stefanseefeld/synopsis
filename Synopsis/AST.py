@@ -19,10 +19,6 @@ PRIVATE.
 import Type
 import sys, cPickle
 
-# The version of the file format - this should be increased everytime
-# incompatible changes are made to the AST or Type classes
-FILE_VERSION = 6
-
 # Accessibility constants
 DEFAULT = 0
 PUBLIC = 1
@@ -35,33 +31,12 @@ def ccmp(a,b):
 
 def load(filename):
    """Loads an AST object from the given filename"""
-   try:
-      file = open(filename, 'rb')
-      unpickler = cPickle.Unpickler(file)
-      version = unpickler.load()
-      if version is not FILE_VERSION:
-         file.close()
-         raise Exception, 'Wrong file version'
-      ast = unpickler.load()
-      file.close()
-      return ast
-   except:
-      exc, msg = sys.exc_info()[0:2]
-      if exc is Exception:
-         raise Exception, "Loading AST from '%s': %s"%(filename, msg)
-      raise Exception, "Loading AST from '%s', %s: %s"%(filename, exc, msg)
 
-def save(filename, ast):
-   """Saves an AST object to the given filename"""
-   try:
-      file = open(filename, 'wb')
-      pickler = cPickle.Pickler(file, 1)
-      pickler.dump(FILE_VERSION)
-      pickler.dump(ast)
-      file.close()
-   except:
-      exc, msg = sys.exc_info()[0:2]
-      raise Exception, "Saving '%s', %s: %s"%(filename, exc, msg)
+   file = open(filename, 'rb')
+   unpickler = cPickle.Unpickler(file)
+   ast = unpickler.load()
+   file.close()
+   return ast
 
 class AST:
    """Top-level Abstract Syntax Tree.
@@ -95,6 +70,14 @@ class AST:
    def accept(self, visitor):
       """Accept the given visitor"""
       visitor.visitAST(self)
+
+   def save(self, filename):
+      """Saves an AST object to the given filename"""
+
+      file = open(filename, 'wb')
+      pickler = cPickle.Pickler(file, 1)
+      pickler.dump(self)
+      file.close()
 
    def merge(self, other_ast):
       """Merges another AST. Files and declarations are appended to those in

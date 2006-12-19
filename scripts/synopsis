@@ -217,5 +217,5 @@ if __name__ == '__main__':
         error(str(e))
     except KeyboardInterrupt, e:
         print 'KeyboardInterrupt'
-    except Exception, e:
+    except IOError, e:
         error(str(e))

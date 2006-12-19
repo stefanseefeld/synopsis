@@ -73,7 +73,7 @@ def process(argv = sys.argv, **commands):
             error(str(e))
         except KeyboardInterrupt, e:
             print 'KeyboardInterrupt'
-        except Exception, e:
+        except IOError, e:
             error(str(e))
     else:
         error('no command "%s"'%command)

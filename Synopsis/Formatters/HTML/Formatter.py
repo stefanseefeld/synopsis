@@ -80,7 +80,6 @@ class Formatter(Processor):
 
     title = Parameter('Synopsis - Generated Documentation', 'title to put into html header')
     stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
-    datadir = Parameter('', 'alternative data directory')
     directory_layout = Parameter(NestedDirectoryLayout(), 'how to lay out the output files')
     toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
     toc_out = Parameter('', 'name of file into which to store the TOC')
@@ -139,6 +138,8 @@ class Formatter(Processor):
             frames.append(Frame(self, self.detail))
             frames.append(Frame(self, self.content))
         else:
+            Tags.using_frames = False
+
             frames.append(Frame(self, self.content, noframes = True))
 
         self.__files = {} # map from filename to (view,scope)

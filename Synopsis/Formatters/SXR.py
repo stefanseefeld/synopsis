@@ -28,9 +28,9 @@ class SXRIndex(View):
 
     def title(self):
 
-        return 'Cross Reference'
+        return 'Index'
 
-    def menu_item(self):
+    def root(self):
 
         return self.filename(), self.title()
 
@@ -74,6 +74,7 @@ class Formatter(Processor):
     """This is a facade to the HTML.Formatter. It adds an 'url' parameter and
     dispatches it to various 'views'."""
 
+    title = Parameter('Synopsis - Cross-Reference', 'title to put into html header')
     url = Parameter('/sxr.cgi', 'the base url to use for the sxr cgi')
     syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
     xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
