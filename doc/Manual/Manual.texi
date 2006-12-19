@@ -7,10 +7,10 @@
 Synopsis Reference Manual
 
 Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+All rights reserved.
+Licensed to the public under the terms of the GNU LGPL (>= 2),
+see the file COPYING for details.
 
-Permission is granted to make and distribute verbatim copies of this
-document provided the copyright notice and this permission notice
-are preserved on all copies.
 @end ifinfo
 
 @c title page for the printed version
@@ -27,9 +27,9 @@ Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
 This is Version: 0.9 of the Synopsis Reference Manual
 @sp 2
 
-Permission is granted to make and distribute verbatim copies of this
-document provided the copyright notice and this permission notice
-are preserved on all copies.
+All rights reserved.
+Licensed to the public under the terms of the GNU LGPL (>= 2),
+see the file COPYING for details.
 @end titlepage
 
 @iftex
@@ -51,7 +51,7 @@ some intro here
 * Copying::                     This manual is freely redistributable.
 * Acknowledgments::             Thanks!
 * Overview::                    How does it work
-* Core::                        The backbone of the synopsis tool
+* IR::                          The backbone of the synopsis tool
 * Parsers::                     Parser plugins
 * Processors::                  Processor plugins
 * Formatters::                  Formatter plugins
@@ -64,21 +64,20 @@ some intro here
 
 Copyright (C) 2001 Stefan Seefeld, Stephen Davies
 
-Permission is granted to use at your own risk and distribute this
-software in source and binary forms provided the above copyright
-notice and this paragraph are preserved on all copies. This software
-is provided "as is" with no express or implied warranty.@refill
+All rights reserved.
+Licensed to the public under the terms of the GNU LGPL (>= 2),
+see the file COPYING for details.@refill
 
 @node Acknowledgments, Overview, Copying, Top
 @unnumbered Acknowledgments
 @cindex acknowledgments
 
-@node Overview, Core, Acknowledgments, Top
+@node Overview, IR, Acknowledgments, Top
 @chapter Overview
 To be written...
 
-@node Core, Parsers, Overview, Top
-@chapter The Core Module
+@node IR, Parsers, Overview, Top
+@chapter The Internal Representation
 The backbone of synopsis is an Abstract Syntax Tree, together with a
 Type dictionary. Both are designed to be sufficiently abstract to support
 a variety of languges, without giving up the necessary details to retain
@@ -96,19 +95,19 @@ to manipulate the data and or to generate some output from it.
 * Util::   Common utils
 @end menu
 
-@node AST, Type, Core, Core
+@node AST, Type, IR, IR
 @section The AST Module
 @include ast.texi
 @page
-@node Type, Util, AST, Core
+@node Type, Util, AST, IR
 @section The Type Module
 @include type.texi
 @page
-@node Util,  , Type, Core
+@node Util,  , Type, IR
 @section The Util Module
 @include util.texi
 
-@node Parsers, Processors, Core, Top
+@node Parsers, Processors, IR, Top
 @chapter The Parsers Module
 Synopsis provides a set of parsers that generate an Abstract Syntax Tree
 from various programming languages. They are usually part of third party

@@ -7,7 +7,7 @@ from Synopsis.Processors import *
 from Synopsis.Parsers import Python
 from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML.FileLayout import *
+from Synopsis.Formatters.HTML.DirectoryLayout import *
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
