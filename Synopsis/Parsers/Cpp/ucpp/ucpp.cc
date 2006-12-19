@@ -151,14 +151,10 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
 
     source_file.reset(new AST::SourceFile(lookup_source_file(input, true)));
 
-    if (std::string(language) == "C")
-    {
-      // ucpp considers __STDC__ to be predefined, and doesn't allow
-      // us to set it explicitely.
-      flags.erase(std::remove(flags.begin(), flags.end(),
-			      std::string("-D__STDC__=1")),
-		  flags.end());
-    }
+    // ucpp considers __STDC__ to be predefined, and doesn't allow
+    // us to set it explicitely.
+    flags.erase(std::remove(flags.begin(), flags.end(), std::string("-D__STDC__=1")),
+                flags.end());
 
     flags.insert(flags.begin(), "ucpp");
     flags.push_back("-C"); // keep comments
