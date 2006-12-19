@@ -19,7 +19,6 @@ class Frame:
         self.noframes = noframes
         if self.noframes:
             self.views[0].main = True
-            print self.views[0].__class__.__name__, 'is main'
         for v in self.views:
             v.register(self)
 

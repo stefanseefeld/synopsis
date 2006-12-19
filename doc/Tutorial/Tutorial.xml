@@ -591,44 +591,32 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <title>HTML Formatter</title>
       <para>The HTML formatter generates html output. It is designed 
         in a modular way, to let users customize in much detail how
-        to format the AST. It formats the AST into a number of views, which highlight
-        different aspects of the AST. Some views show the file / directory layout,
-        others group declarations by scopes, or provide an annotated source view.</para>
+        to format the data. All output is organized by a set of 
+        <emphasis>views</emphasis>, which highlight different aspects of data.
+        Some views show the file / directory layout, others group declarations by 
+        scopes, or provide an annotated (and cross-referenced) source view.</para>
+      <para>By default the formatter generates its output using frames. The views
+        are formatter parameters. <varname>index</varname> is a list of views that
+        fill the upper-left index frame. <varname>detail</varname> is a list of
+        views for the lower-left detail frame, and <varname>content</varname>
+        sets all the views for the main content frame.</para>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
-        </imageobject>
-
-        <imageobject>
-          <imagedata fileref="images/html-classes.png" format="PNG" />
+          <imagedata fileref="images/html-screenshot.png" format="PNG"
+                     align="center" scale="100" />
         </imageobject>
       </mediaobject>
-      <para>The <type>views</type> parameter is used to specify the list of View objects to be
-        used by the formatter. Each is a <type>Parametrized</type>, so you can pass parameters to
-        the views, too. Here are the most important <type>View</type> types:</para>
+      <para>When the <varname>index</varname> and <varname>detail</varname> arguments
+        are empty lists, non-framed html will be generated.</para>
+      <para>Here are the most important <type>View</type> types:</para>
       <variablelist>
         <varlistentry>
-          <term>FramesIndex</term>
+          <term>Scope</term>
           <listitem>
-            <para>While arguably not really a view in itself, this is right now the master view, organizing other views in frames.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>FileDetails</term>
-          <listitem>
-            <para>Shows details about a given file, such as what other files are included, what declarations it contains, etc.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>Directory</term>
-          <listitem>
-            <para>Presents a directory (of source files).</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>FileTreeJS</term>
-          <listitem>
-            <para>A tree view containing source files.</para>
+            <para>The most important view for documentation purposes is doubtless the
+              <type>Scope</type> view. It presents all declaration in a given scope,
+              together with a number of references to other views if appropriate.
+            </para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -638,21 +626,9 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term>ModuleIndexer</term>
-          <listitem>
-            <para>A tree containing all modules.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
           <term>NameIndex</term>
           <listitem>
             <para>A global index of all declared names (macros, variables, types, ...)</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>Scope</term>
-          <listitem>
-            <para>The content of a given scope.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -667,55 +643,53 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
             <para>A listing of symbols with links to their documentation, definition, and reference.</para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term>FileDetails</term>
+          <listitem>
+            <para>Shows details about a given file, such as what other files are included, what declarations it contains, etc.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Directory</term>
+          <listitem>
+            <para>Presents a directory (of source files). This is typically used
+              in conjunction with the Source view above.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>FileTree</term>
+          <listitem>
+            <para>A javascript-based file tree view suitable for the index frame
+              for navigation.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>ModuleTree</term>
+          <listitem>
+            <para>A javascript-based module tree view suitable for the index frame
+              for navigation.</para>
+          </listitem>
+        </varlistentry>
       </variablelist>
-      <section id="scope-formatter">
-        <title>The Scope View</title>
-        <para>
-          The most important view for documentation purposes is doubtless the <type>Scope</type>view. It presents all declaration 
-          in a given scope, together with a number of references to other views if appropriate. The <type>Scope</type>
-          view is subdivided into <type>Parts</type>, which are (for flexibility's sake) further subdivided into 
-          <type>Fragments</type>.
-        </para>
-      </section>
-      <section id="cross-referencing">
-        <title>SourceCode Cross Referencing</title>
-        <para>
-          A particularly interesting feature of the C++ parser and the HTML formatter is the ability to
-          generate a cross-referenced view on the entire source code. Since the AST itself only stores
-          declarations, the two processors need to share some other external data containing all the
-          remaining details about the code, i.e. where the various types and variables are declared and
-          where they are referenced from.
-        </para>
-        <para>
-          Here is a diagram for the data flow used to generate these views:
-        </para>
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="images/xref.svg" format="SVG" scale="80" />
-          </imageobject>
-          <imageobject>
-            <imagedata fileref="images/xref.png" format="PNG" />
-          </imageobject>
-        </mediaobject>
-        <para>
-          Use the <type>syntax_prefix</type> and <type>xref_prefix</type> parameters in both, the C++ parser
-          as well as the XRef and Source views to specify the files to pass source file detail information.
-        </para>
-      </section>
     </section>
     <section id="sxr-formatter">
       <title>SXR Formatter</title>
-      <para>The SXR formatter is a variant of the HTML formatter.</para>
+      <para>The SXR formatter is a variant of the HTML formatter. However, as its
+        focus is not so much documentation as code navigation, there are a number
+        of important differences. Its default set of views is different, and instead
+        of displaying listings of all identifiers on static html, it loads a database
+        of (typed) identifiers and provides an interface to query them.</para>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
-        </imageobject>
-
-        <imageobject>
-          <imagedata fileref="images/html-classes.png" format="PNG" />
+          <imagedata fileref="images/sxr-screenshot.png" format="PNG" 
+                     align="center" scale="100" />
         </imageobject>
       </mediaobject>
-      <para></para>
+      <para>It is to be used with an http server, either a default http server
+        such as apache in conjunction with the <emphasis>sxi.cgi</emphasis> script
+        that is part of Synopsis, or by using the <emphasis>sxr-server</emphasis>
+        program. The latter performs better, as the database is kept in-process,
+        while in case of sxi.cgi it needs to be reloaded on each query.</para>
     </section>
   </chapter>
   <chapter>
