@@ -68,9 +68,22 @@ div.navigation span
   padding: 2px;
 }
 
-div.navigation span.root-current 
+div.navigation span.selected
 {
   background-color: #dbdee0;
+}
+
+/* Tree view(s) */
+
+div.tree-navigation a
+{
+  border-left: 1px solid #aaaaaa;
+  margin: 5px;
+}
+div.tree-navigation a:first-child 
+{
+  border-left: none;
+  margin: 5px;
 }
 
 div.xref-name

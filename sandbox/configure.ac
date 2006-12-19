@@ -34,7 +34,7 @@ AC_SUBST(SYN_CPP)
 AC_SUBST(SYN_LIBS)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
-  AC_CHECK_PROG(PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
+  AC_CHECK_PROG(PYTHON, $PYTHON, AC_MSG_ERROR([Cannot find Python interpreter]))
 else
   AC_PATH_PROG(PYTHON, python2 python, python)
 fi

@@ -54,15 +54,8 @@ class Source(View):
     """A module for creating a view for each file with hyperlinked source"""
 
     prefix = Parameter('', 'prefix to the syntax files')
-    toc_in = Parameter([], 'obsolete, to be removed in a later release')
     external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
    
-    def register(self, processor):
-
-        View.register(self, processor)
-        self.__toclist = map(lambda x: ''+x, self.toc_in)
-
-
     def filename(self):
         """since Source generates a whole file hierarchy, this method returns the current filename,
         which may change over the lifetime of this object"""
@@ -77,24 +70,24 @@ class Source(View):
         return self.__title
 
 
-    def process(self, start):
+    def process(self):
         """Creates a view for every file"""
 
         # Get the TOC
-        self.toc = self.processor.get_toc(start)
+        self.__toc = self.processor.toc
         # create a view for each primary file
         for file in self.processor.ast.files().values():
             if file.annotations['primary']:
                 self.process_node(file)
 
 
-    def register_filenames(self, start):
+    def register_filenames(self):
         """Registers a view for every source file"""
 
         for file in self.processor.ast.files().values():
             if file.annotations['primary']:
                 filename = file.name
-                filename = self.processor.file_layout.file_source(filename)
+                filename = self.directory_layout.file_source(filename)
                 self.processor.register_filename(filename, self, file)
 
 	     
@@ -103,14 +96,14 @@ class Source(View):
 
         # Start view
         filename = file.name
-        self.__filename = self.processor.file_layout.file_source(filename)
+        self.__filename = self.directory_layout.file_source(filename)
         self.rel_url = rel(self.filename(), '')
         
         source = file.name
         self.__title = source
 
         self.start_file()
-        self.write(self.processor.navigation_bar(self.filename()))
+        self.write_navigation_bar()
         self.write('File: '+entity('b', self.__title))
 
         sxr = os.path.join(self.prefix, source + '.sxr')
@@ -150,7 +143,7 @@ class Source(View):
 
     def lookup_symbol(self, name):
 
-        e = self.toc.lookup(tuple(name))
+        e = self.__toc.lookup(tuple(name))
         return e and self.rel_url + e.link or ''
 
 

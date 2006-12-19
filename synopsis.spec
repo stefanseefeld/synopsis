@@ -22,7 +22,7 @@ enable further processing such as documentation extraction,
 reverse engineering, and source-to-source translation.
 
 %package devel
-Summary: The Synopsis header files
+Summary: The Synopsis development environment.
 Group: System Environment/Libraries
 Requires: synopsis = %{version}-%{release}
 
@@ -36,6 +36,15 @@ Requires: synopsis = %{version}-%{release}
 
 %description doc
 Synopsis documentation
+
+%package idl
+Summary: The Synopsis IDL Parser
+License: GPL
+Group: System Environment/Libraries
+Requires: synopsis = %{version}-%{release}
+
+%description idl
+Synopsis IDL Parser module to parse CORBA IDL.
 
 
 %prep
@@ -61,7 +70,18 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %{_bindir}/*
 %{_libdir}/*.so
-%{py_sitedir}/Synopsis
+%{py_sitedir}/Synopsis/*.py
+%{py_sitedir}/Synopsis/*.pyc
+%{py_sitedir}/Synopsis/*.pyo
+%{py_sitedir}/Synopsis/Parsers/*.py
+%{py_sitedir}/Synopsis/Parsers/*.pyc
+%{py_sitedir}/Synopsis/Parsers/*.pyo
+%{py_sitedir}/Synopsis/Parsers/Cpp
+%{py_sitedir}/Synopsis/Parsers/C
+%{py_sitedir}/Synopsis/Parsers/Cxx
+%{py_sitedir}/Synopsis/Parsers/Python
+%{py_sitedir}/Synopsis/Processors
+%{py_sitedir}/Synopsis/Formatters
 %{_datadir}/Synopsis 
 %doc README COPYING NEWS
 
@@ -74,6 +94,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %{_docdir}/Synopsis
 
+%files idl
+%defattr(-, root, root)
+%{py_sitedir}/Synopsis/Parsers/IDL
+
 %changelog
-* Wed Dec 13 2006 Stefan Seefeld <stefan@fresco.org> 0.9-1
+* Wed Dec 20 2006 Stefan Seefeld <stefan@fresco.org> 0.9-1
 - initial package.

@@ -6,7 +6,6 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import config
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Tags import *
 from Tree import Tree
@@ -17,48 +16,41 @@ class ModuleTree(Tree):
    """Create an index of all modules with JS. The JS allows the user to
    expand/collapse sections of the tree!"""
 
-   def register(self, processor):
+   def register(self, frame):
 
-      Tree.register(self, processor)
+      super(ModuleTree, self).register(frame)
       self._children_cache = {}
-      filename = self.processor.file_layout.special('ModuleTree')
-      self.processor.set_contents_view(filename)
-      self._link_target = 'index'
 
    def filename(self):
 
-      return self.processor.file_layout.special('ModuleTree')
+      return self.directory_layout.special('ModuleTree')
 
    def title(self):
 
       return 'Module Tree'
 
-   def menu_item(self):
+   def root(self):
 
-      return self.filename(), self.title(), 'contents', 'contents'
+      return self.filename(), self.title()
 
-   def process(self, start):
-      """Create a view with an index of all modules"""
-      # Init tree
-      share = config.datadir
-      self.js_init(os.path.join(share, 'syn-down.png'),
-                   os.path.join(share, 'syn-right.png'),
-                   os.path.join(share, 'syn-dot.png'),
-                   'tree_%s.png', 0)
-      self.__share = share
+   def process(self):
+
       # Creare the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 'contents'))
-      self.index_module(start, start.name())
+      self.write_navigation_bar()
+      # FIXME: see HTML.Formatter
+      module = self.processor.ast.declarations()[0]
+      self.index_module(module, module.name())
+      self.end_tree()
       self.end_file()
 
    def _child_filter(self, child):
 
       return isinstance(child, AST.Module)
 
-   def _link_href(self, ns):
+   def _link_href(self, module):
 
-      return self.processor.file_layout.module_index(ns.name())
+      return self.directory_layout.module_index(module.name())
 
    def get_children(self, decl):
 
@@ -72,18 +64,18 @@ class ModuleTree(Tree):
       self._children_cache[decl] = children
       return children
 
-   def index_module(self, ns, rel_scope):
+   def index_module(self, module, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
-      my_scope = ns.name()
+      my_scope = module.name()
       # Find children, and sort so that compound children (packages) go first
-      children = self.get_children(ns)
+      children = self.get_children(module)
       children.sort(lambda a,b,g=self.get_children:
                     cmp(len(g(b)),len(g(a))))
       # Print link to this module
-      name = Util.ccolonName(my_scope, rel_scope) or "Global Namespace"
-      link = self._link_href(ns)
-      text = href(link, name, target=self._link_target)
+      name = Util.ccolonName(my_scope, rel_scope) or 'Global Module'
+      link = self._link_href(module)
+      text = href(link, name, target='detail')
       if not len(children):
          self.write_leaf(text)
       else:

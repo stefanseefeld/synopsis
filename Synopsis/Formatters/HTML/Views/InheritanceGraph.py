@@ -58,22 +58,23 @@ class InheritanceGraph(View):
    min_group_size = Parameter(5, 'how many nodes to put into a group')
    direction = Parameter('vertical', 'layout of the graph')
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
-      self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
+      super(InheritanceGraph, self).register(frame)
+      self.decl_finder = DeclarationFinder(self.processor.ast.types(),
+                                           self.processor.verbose)
 
    def filename(self):
 
-      return self.processor.file_layout.special('InheritanceGraph')
+      return self.directory_layout.special('InheritanceGraph')
 
    def title(self):
 
       return 'Inheritance Graph'
 
-   def menu_item(self):
+   def root(self):
 
-      return self.filename(), self.title(), 'main', 'main'
+      return self.filename(), self.title()
 
    def consolidate(self, graphs):
       """Consolidates small graphs into larger ones"""
@@ -110,12 +111,12 @@ class InheritanceGraph(View):
          graphs[:] = conned + pending
       return common
 
-   def process(self, start):
+   def process(self):
       """Creates a file with the inheritance graph"""
 
       filename = self.filename()
       self.start_file()
-      self.write(self.processor.navigation_bar(filename))
+      self.write_navigation_bar()
       self.write(entity('h1', "Inheritance Graph"))
 
       from Synopsis.Formatters import Dot

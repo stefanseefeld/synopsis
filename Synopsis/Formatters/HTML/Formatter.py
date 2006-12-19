@@ -13,285 +13,179 @@ from Synopsis.FileTree import FileTree as SourceFileTree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
 from Synopsis.Formatters.XRef import CrossReferencer
-from FileLayout import *
-from TreeFormatter import *
+from DirectoryLayout import *
 from Views import *
+from Frame import Frame
+from FrameSet import FrameSet
 from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
 try:
-   from Synopsis.Formatters.HTML.Markup.RST import RST
+    from Synopsis.Formatters.HTML.Markup.RST import RST
 except ImportError:
-   from Synopsis.Formatters.HTML.Markup import Formatter as RST
+    from Synopsis.Formatters.HTML.Markup import Formatter as RST
 import Markup
 import Tags
 
 import time
 
 class DocCache:
-   """"""
+    """"""
 
-   def __init__(self, processor, markup_formatters):
+    def __init__(self, processor, markup_formatters):
 
-      self._processor = processor
-      self._markup_formatters = markup_formatters
-      # Make sure we have a default markup formatter.
-      if '' not in self._markup_formatters:
-         self._markup_formatters[''] = Markup.Formatter()
-      for f in self._markup_formatters.values():
-         f.init(self._processor)
-      self._doc_cache = {}
-
-
-   def _process(self, decl, view):
-      """Return the documentation for the given declaration."""
-
-      key = id(decl)
-      if key not in self._doc_cache:
-         doc = decl.annotations.get('doc')
-         if doc:
-            formatter = self._markup_formatters.get(doc.markup,
-                                                    self._markup_formatters[''])
-            doc = formatter.format(decl, view)
-         else:
-            doc = Markup.Struct()
-         # FIXME: Unfortunately we can't easily cache these, as they may
-         #        contain relative URLs that aren't valid across views.
-         #self._doc_cache[key] = doc
-         return doc
-      else:
-         return self._doc_cache[key]
+        self._processor = processor
+        self._markup_formatters = markup_formatters
+        # Make sure we have a default markup formatter.
+        if '' not in self._markup_formatters:
+            self._markup_formatters[''] = Markup.Formatter()
+        for f in self._markup_formatters.values():
+            f.init(self._processor)
+        self._doc_cache = {}
 
 
-   def summary(self, decl, view):
-      """"""
+    def _process(self, decl, view):
+        """Return the documentation for the given declaration."""
 
-      doc = self._process(decl, view)
-      return doc.summary
+        key = id(decl)
+        if key not in self._doc_cache:
+            doc = decl.annotations.get('doc')
+            if doc:
+                formatter = self._markup_formatters.get(doc.markup,
+                                                        self._markup_formatters[''])
+                doc = formatter.format(decl, view)
+            else:
+                doc = Markup.Struct()
+            # FIXME: Unfortunately we can't easily cache these, as they may
+            #        contain relative URLs that aren't valid across views.
+            # self._doc_cache[key] = doc
+            return doc
+        else:
+            return self._doc_cache[key]
 
 
-   def details(self, decl, view):
-      """"""
+    def summary(self, decl, view):
+        """"""
 
-      doc = self._process(decl, view)
-      return doc.details
+        doc = self._process(decl, view)
+        return doc.summary
+
+
+    def details(self, decl, view):
+        """"""
+
+        doc = self._process(decl, view)
+        return doc.details
 
 
 class Formatter(Processor):
 
-   title = Parameter('Synopsis - Generated Documentation', 'title to put into html header')
-   stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
-   datadir = Parameter('', 'alternative data directory')
-   file_layout = Parameter(NestedFileLayout(), 'how to lay out the output files')
-   toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
-   toc_out = Parameter('', 'name of file into which to store the TOC')
+    title = Parameter('Synopsis - Generated Documentation', 'title to put into html header')
+    stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
+    datadir = Parameter('', 'alternative data directory')
+    directory_layout = Parameter(NestedDirectoryLayout(), 'how to lay out the output files')
+    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
+    toc_out = Parameter('', 'name of file into which to store the TOC')
 
-   views = Parameter([FramesIndex(),
-                      Scope(),
-                      ModuleTree(),
-                      ModuleIndex(),
-                      FileTree(),
-                      FileIndex(),
-                      FileDetails(),
-                      InheritanceTree(),
-                      InheritanceGraph(),
-                      NameIndex()],
-                      '')
+    index = Parameter([ModuleTree(), FileTree()], '')
+    detail = Parameter([ModuleIndex(), FileIndex()], '')
+    content = Parameter([Scope(),
+                         FileDetails(),
+                         InheritanceTree(),
+                         InheritanceGraph(),
+                         NameIndex()],
+                        '')
    
-   markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
-                                 'Markup-specific formatters.')
-   tree_formatter = Parameter(TreeFormatter(), 'Define how to lay out tree views.')
+    markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
+                                  'Markup-specific formatters.')
 
-   def process(self, ast, **kwds):
+    def process(self, ast, **kwds):
 
-      self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+        self.set_parameters(kwds)
 
-      # if not set, use default...
-      if not self.datadir: self.datadir = config.datadir
+        # FIXME: wrap the declarations into a single AST.Module
+        #        during processing, but put the original ast back at the end.
+        ast = self.merge_input(ast)
+        root = AST.Module(None, -1, 'Global', ())
+        root.declarations()[:] = ast.declarations()
+        self.ast = AST.AST(ast.files(), [root], ast.types())
 
-      self.file_layout.init(self)
-      self.documentation = DocCache(self, self.markup_formatters)
-      # Create the Class Tree (TODO: only if needed...)
-      self.class_tree = ClassTree()
-      # Create the File Tree (TODO: only if needed...)
-      self.file_tree = SourceFileTree()
-      self.file_tree.set_ast(self.ast)
+        self.directory_layout.init(self)
+        self.documentation = DocCache(self, self.markup_formatters)
 
-      self.xref = CrossReferencer()
+        # Create the class tree (shared by inheritance graph / tree views).
+        self.class_tree = ClassTree()
+        for d in root.declarations():
+            d.accept(self.class_tree)
 
-      #if not self.sorter:
-      import ScopeSorter
-      self.sorter = ScopeSorter.ScopeSorter()
+        # Create the file tree (shared by file listing / tree views).
+        self.file_tree = SourceFileTree()
+        self.file_tree.set_ast(self.ast)
 
+        self.xref = CrossReferencer()
 
-      Tags.using_frames = self.has_view('FramesIndex')
+        # if not self.sorter:
+        import ScopeSorter
+        self.sorter = ScopeSorter.ScopeSorter()
 
-      self.main_view = None
-      self.contents_view = None
-      self.index_view = None
-      self.using_module_index = False
-      
-      declarations = self.ast.declarations()
+        # Make all views queryable through Formatter.has_view()
+        self.views = self.content + self.index + self.detail
 
-      # Build class tree
-      for d in declarations:
-         d.accept(self.class_tree)
+        frames = []
+        # If only content contains views don't use frames.
+        if self.index or self.detail:
+            Tags.using_frames = True
+            # The frameset will become the main index.
+            self.main_index = self.directory_layout.index()
+            
+            frames.append(Frame(self, self.index))
+            frames.append(Frame(self, self.detail))
+            frames.append(Frame(self, self.content))
+        else:
+            # The root URL of the first content view will become the main index.
+            self.main_index = None #self.content[0].root()[0]
 
-      self.__global = None # The global scope
-      self.__files = {} # map from filename to (view,scope)
+            frames.append(Frame(self, self.content)) # no frames
 
-      for view in self.views:
-         view.register(self)
+        self.__files = {} # map from filename to (view,scope)
 
-      root = AST.Module(None,-1,"Global",())
-      root.declarations()[:] = declarations
-
-      # Create table of contents index
-      start = self.calculate_start(root)
-      self.toc = self.get_toc(start)
-      if self.verbose: print "HTML Formatter: Initialising TOC"
-
-      # Add all declarations to the namespace tree
-      # for d in declarations:
-      #	d.accept(self.toc)
-	
-      if self.verbose: print "TOC size:",self.toc.size()
-      if self.toc_out: self.toc.store(self.toc_out)
-    
-      # load external references from toc files, if any
-      for t in self.toc_in: self.toc.load(t)
+        # The table of content is by definition the TOC of the first
+        # view on the content frame.
+        self.toc = self.content[0].toc()
+        if self.verbose: print "TOC size:", self.toc.size()
+        if self.toc_out: self.toc.store(self.toc_out)
+        # load external references from toc files, if any
+        for t in self.toc_in: self.toc.load(t)
    
-      if self.verbose: print "HTML Formatter: Generating views..."
+        if self.verbose: print "HTML Formatter: Generating views..."
 
-      # Create the views
-      self.__global = root
-      start = self.calculate_start(root)
-      if self.verbose: print "Registering filenames...",
-      for view in self.views:
-         view.register_filenames(start)
-      if self.verbose: print "Done."
-      for view in self.views:
-         if self.profile:
-            print "Time for %s:"%view.__class__.__name__,
-            sys.stdout.flush()
-            start_time = time.time()
-         view.process(start)
-         if self.profile:
-            print "%f seconds"%(time.time() - start_time)
+        # Process the views.
+        if len(frames) > 1:
+            frameset = FrameSet()
+            frameset.process(self.output, self.directory_layout.index(),
+                             self.title,
+                             self.index[0].root()[0] or self.index[0].filename(),
+                             self.detail[0].root()[0] or self.detail[0].filename(),
+                             self.content[0].root()[0] or self.content[0].filename())
 
-      return self.ast
+        for frame in frames: frame.process()
+        # Return original AST, not the synthetic AST.Module created above.
+        return ast
 
-   def has_view(self, name):
-      """test whether the given view is part of the views list."""
+    def has_view(self, name):
+        """test whether the given view is part of the views list."""
 
-      return reduce(lambda x, y: x or y,
-                    map(lambda x: x.__class__.__name__ == name, self.views))
+        return name in [x.__class__.__name__ for x in self.views]
 
-   def get_toc(self, start):
-      """Returns the table of content to link into from the outside"""
+    def register_filename(self, filename, view, scope):
+        """Registers a file for later production. The first view to register
+        the filename gets to keep it."""
 
-      ### FIXME : how should this work ?
-      ### We need to point to one of the views...
-      return self.views[1].get_toc(start)
+        filename = str(filename)
+        if not self.__files.has_key(filename):
+            self.__files[filename] = (view, scope)
 
-   def set_main_view(self, view):
-      """Call this method to set the main index.html view. First come first served
-      -- whatever module the user puts first in the list that sets this is
-      it."""
-
-      if not self.main_view:
-         self.main_view = view
-
-   def set_contents_view(self, view):
-      """Call this method to set the contents view. First come first served
-      -- whatever module the user puts first in the list that sets this is
-      it. This is the frame in the top-left if you use the default frameset."""
-
-      if not self.contents_view: self.contents_view = view
-    
-   def set_index_view(self, view):
-      """Call this method to set the index view. First come first served
-      -- whatever module the user puts first in the list that sets this is
-      it. This is the frame on the left if you use the default frameset."""
-
-      if not self.index_view: self.index_view = view
-
-   def set_using_module_index(self):
-      """Sets the using_module_index flag. This will cause the an
-      intermediate level of links intended to go in the left frame."""
-      self.using_module_index = True
-
-   def global_scope(self):
-      "Return the global scope"
-
-      return self.__global
-
-   def calculate_start(self, root, namespace=None):
-      "Calculates the start scope using the 'namespace' config var"
-
-      scope_names = string.split(namespace or '', "::")
-      #scope_names = string.split(namespace or config.namespace, "::")
-      start = root # The running result
-      self.sorter.set_scope(root)
-      scope = [] # The running name of the start
-      for scope_name in scope_names:
-         if not scope_name: break
-         scope.append(scope_name)
-         try:
-            child = self.sorter.child(tuple(scope))
-            if isinstance(child, AST.Scope):
-               start = child
-               self.sorter.set_scope(start)
-            else:
-               raise TypeError, 'calculate_start: Not a Scope'
-         except:
-            # Don't continue if scope traversal failed!
-            import traceback
-            traceback.print_exc()
-            print "Fatal: Couldn't find child scope",scope
-            print "Children:",map(lambda x:x.name(), self.sorter.children())
-            sys.exit(3)
-      return start
-
-   def navigation_bar(self, origin, frame = 'main'):
-      """Formats the list of root views to HTML. The origin specifies the
-      generated view itself (which shouldn't be linked), such that the relative
-      links can be generated. Only root views of 'visibility' or
-      above are included."""
-
-      class Struct:
-         def __init__(self, **keys):
-            self.__dict__.update(keys)
-
-
-      # If not using frames, show all headings on all views!
-      if not self.has_view('FramesIndex'):
-         frame = 'main'
-      #filter out roots that are visible in this frame
-      roots = [v.menu_item() for v in self.views]
-      roots = [Struct(url = t[0], label = t[1], target = t[2])
-               for t in roots if t[3] == frame]
-
-      def item(x):
-         """Generate an active menu item."""
-         return span('root-other', href(rel(origin, x.url), x.label, target=x.target))
-      def current_item(x):
-         """Generate a 'selected' menu item."""
-         return span('root-current', x.label)
-      # generate the header
-      roots = [x.url==origin and current_item(x) or item(x) for x in roots]
-      return roots and div('navigation', '\n'.join(roots))+'\n' or ''
-
-   def register_filename(self, filename, view, scope):
-      """Registers a file for later production. The first view to register
-      the filename gets to keep it."""
-
-      filename = str(filename)
-      if not self.__files.has_key(filename):
-         self.__files[filename] = (view, scope)
-
-   def filename_info(self, filename):
-      """Returns information about a registered file, as a (view,scope)
-      pair. Will return None if the filename isn't registered."""
-
-      return self.__files.get(filename)
+    def filename_info(self, filename):
+        """Returns information about a registered file, as a (view,scope)
+        pair. Will return None if the filename isn't registered."""
+        
+        return self.__files.get(filename)
 

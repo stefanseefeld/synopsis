@@ -369,7 +369,7 @@ def quote(name):
    original = name # save the old name
    
    # a . is usually an extension, eg source page filename: "_page-foo.hpp" + .html
-   name = re.sub('\.','_',name) 
+   #name = re.sub('\.','_',name) 
    # The . is arbitrary..
    name = re.sub('<','.L',name)
    name = re.sub('>','.R',name)

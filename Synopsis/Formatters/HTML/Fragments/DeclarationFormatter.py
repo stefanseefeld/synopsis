@@ -60,7 +60,7 @@ class DeclarationFormatter(Fragment):
 
         name = decl.name()
         link = rel(self.formatter.filename(),
-                   self.processor.file_layout.scope(name))
+                   self.directory_layout.scope(name))
         return href(link, escape(name[-1]))
 
     def format_module(self, decl):

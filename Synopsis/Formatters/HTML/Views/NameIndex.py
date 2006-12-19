@@ -18,29 +18,22 @@ class NameIndex(View):
 
    columns = Parameter(2, 'the number of columns for the listing')
 
-   def register(self, processor):
-
-      View.register(self, processor)
-
    def filename(self):
 
-      return self.processor.file_layout.special('NameIndex')
+      return self.directory_layout.special('NameIndex')
 
    def title(self):
 
       return 'Name Index'
 
-   def menu_item(self):
+   def root(self):
 
-      return self.filename(), self.title(), 'main', 'main'
+      return self.filename(), self.title()
 
-   def process(self, start):
-      """Creates the view. It is created as a list of tables, one for each
-      letter. The tables have a number of columns, which is 2 by default.
-      _processItem is called for each item in the dictionary."""
+   def process(self):
 
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename()))
+      self.write_navigation_bar()
       self.write(entity('h1', "Name Index"))
       self.write('<i>Hold the mouse over a link to see the scope of each name</i>\n')
 

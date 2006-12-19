@@ -19,13 +19,13 @@ class FileIndex(View):
    Second a view is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
+      super(FileIndex, self).register(frame)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = processor.has_view('Source')
-      self.__link_details = processor.has_view('FileDetails')
+      self.__link_source = self.processor.has_view('Source')
+      self.__link_details = self.processor.has_view('FileDetails')
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -39,16 +39,16 @@ class FileIndex(View):
 
       return self.__title
    
-   def register_filenames(self, start):
-      """Registers a view for each file indexed"""
+   def register_filenames(self):
+      """Registers a view for each file indexed."""
 
       for filename, file in self.processor.ast.files().items():
          if file.annotations['primary']:
-            filename = self.processor.file_layout.file_index(filename)
+            filename = self.directory_layout.file_index(filename)
             self.processor.register_filename(filename, self, file)
     
-   def process(self, start):
-      """Creates a view for each file using process_scope"""
+   def process(self):
+      """Creates a view for each known file."""
 
       for filename, file in self.processor.ast.files().items():
          if file.annotations['primary']:
@@ -59,7 +59,7 @@ class FileIndex(View):
       containing a list of declarations."""
 
       # set up filename and title for the current view
-      self.__filename = self.processor.file_layout.file_index(filename)
+      self.__filename = self.directory_layout.file_index(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)
       while len(name) and name[0] == '..': del name[0]
@@ -69,12 +69,12 @@ class FileIndex(View):
       self.write(entity('b', string.join(name, os.sep))+'<br/>\n')
       if self.__link_source:
          link = rel(self.filename(),
-                    self.processor.file_layout.file_source(filename))
-         self.write(href(link, '[File Source]', target="main")+'<br/>\n')
+                    self.directory_layout.file_source(filename))
+         self.write('(' + href(link, 'Source', target='content')+')<br/>\n')
       if self.__link_details:
          link = rel(self.filename(),
-                    self.processor.file_layout.file_details(filename))
-         self.write(href(link, '[File Details]', target="main")+'<br/>\n')
+                    self.directory_layout.file_details(filename))
+         self.write('(' + href(link, 'Details', target='content')+')<br/>\n')
 
       self.write('<b>Declarations:</b><br/>\n')
       # Sort items (by name)
@@ -111,7 +111,7 @@ class FileIndex(View):
          label = escape(Util.ccolonName(print_name, scope))
          label = replace_spaces(label)
          title = '(%s)'%decl.type()
-         self.write(div('href',href(link, label, target='main', title=title)))
+         self.write(div('href',href(link, label, target='content', title=title)))
          # Store this name incase, f.ex, its a class and the next item is
          # in that class scope
          last = list(name)

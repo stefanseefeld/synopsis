@@ -19,3 +19,7 @@ Synopsis no longer depends on an external omniidl tool, as its IDL
 parser is now self-contained.
 
 Solidified and optimized SXR server.
+
+Much enhanced HTML formatter.
+
+Etc.

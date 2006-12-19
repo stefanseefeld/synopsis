@@ -21,22 +21,17 @@ class RawFile(View):
    base_path = Parameter('', 'path prefix to strip off of the file names')
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
-
+      super(RawFile, self).register(frame)
       self._exclude = [compile_glob(e) for e in self.exclude]
       self.__files = None
 
    def filename(self):
-      """since RawFile generates a whole file hierarchy, this method returns the current filename,
-      which may change over the lifetime of this object"""
 
       return self.__filename
 
    def title(self):
-      """since RawFile generates a while file hierarchy, this method returns the current title,
-      which may change over the lifetime of this object"""
 
       return self.__title
 
@@ -64,18 +59,17 @@ class RawFile(View):
                # strip of base_path
                path = entry_path[len(self.base_path):]
                if path[0] == '/': path = path[1:]
-               filename = self.processor.file_layout.file_source(path)
+               filename = self.directory_layout.file_source(path)
                self.__files.append((entry_path, filename))
       return self.__files
 
-   def process(self, start):
+   def process(self):
       """Creates a view for every file"""
 
       for path, filename in self._get_files():
          self.process_file(path, filename)
 
-   def register_filenames(self, start):
-      """Registers a view for every file"""
+   def register_filenames(self):
 
       for path, filename in self._get_files():
          self.processor.register_filename(filename, self, path)
@@ -90,7 +84,7 @@ class RawFile(View):
       self.__filename = filename
       self.__title = original[len(self.base_path):]
       self.start_file()
-      self.write(self.processor.navigation_bar(filename, 'contents'))
+      self.write_navigation_bar()
       self.write('File: '+entity('b', self.__title))
       try:
          lines = open(original, 'rt').readlines()

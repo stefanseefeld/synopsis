@@ -15,31 +15,28 @@ import os
 
 class InheritanceTree(View):
 
-   def register(self, processor):
-
-      View.register(self, processor)
- 
    def filename(self):
 
-      return self.processor.file_layout.special('InheritanceTree')
+      return self.directory_layout.special('InheritanceTree')
 
    def title(self):
 
       return 'Inheritance Tree'
 
-   def menu_item(self):
+   def root(self):
 
-      return self.filename(), self.title(), 'main', 'main'
+      return self.filename(), self.title()
 
-   def process(self, start):
-      """Creates a file with the inheritance tree"""
+   def process(self):
 
       roots = self.processor.class_tree.roots()
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename()))
+      self.write_navigation_bar()
       self.write(entity('h1', "Inheritance Tree"))
       self.write('<ul>')
-      map(self.process_class_inheritance, map(lambda a,b=start.name():(a,b), roots))
+      # FIXME: see HTML.Formatter
+      module = self.processor.ast.declarations()[0]
+      map(self.process_class_inheritance, map(lambda a,b=module.name():(a,b), roots))
       self.write('</ul>')
       self.end_file()   
 

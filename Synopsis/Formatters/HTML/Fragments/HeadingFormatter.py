@@ -126,12 +126,12 @@ class HeadingFormatter(Fragment):
         # Calculate file-related string
         file_name = rel(self.processor.output, clas.file().name)
         # Try the file index view first
-        file_link = self.processor.file_layout.file_index(clas.file().name)
+        file_link = self.directory_layout.file_index(clas.file().name)
         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")
+            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
-            file_link = self.processor.file_layout.file_source(clas.file().name)
+            file_link = self.directory_layout.file_source(clas.file().name)
             if self.processor.filename_info(file_link):
                 file_ref = href(rel(self.formatter.filename(), file_link), file_name)
             else:

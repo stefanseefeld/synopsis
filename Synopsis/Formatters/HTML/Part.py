@@ -57,8 +57,6 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
                            'format_function':[],
                            'format_operation':[]}
 
-      # Why not just apply all formatters ? is this an optimization ?
-      # ask chalky...
       for fragment in self.fragments:
          fragment.register(self)
          for method in self.__formatdict.keys():
@@ -89,8 +87,8 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
       if not label: label = escape(Util.ccolonName(name, self.scope()))
       entry = self.processor.toc[name]
-      if entry: return apply(href, (rel(self.filename(), entry.link), escape(label)), keys)
-      return label or ''
+      if entry: return href(rel(self.filename(), entry.link), escape(label), **keys)
+      else: return label or ''
 
    def label(self, name, label=None):
       """Create a label for the given name. The label is an anchor so it can
