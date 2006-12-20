@@ -49,7 +49,7 @@ class MyHTML(HTML.Formatter):
 
 sxr = SXR.Formatter(url = '/sxr',
                     src_dir = '@topdir@',
-                    exclude = ['build', 'demo', 'doc', 'share', 'debian',
+                    exclude = ['build', 'dist', 'doc', 'share', 'debian',
                                '.svn', 'autom4te.cache',
                                '*.pyc', '*.so', '*~'],
                     xref_prefix='xref',
