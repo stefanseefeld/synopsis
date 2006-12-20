@@ -101,7 +101,7 @@ def run():
             usage()
             sys.exit(0)
         elif o in ['-V', '--version']:
-            print 'sxr-version version %s'%config.version
+            print 'sxr-server version %s'%config.version
             sys.exit(0)
         elif o in ['-p', '--port']:
             port = int(a)
