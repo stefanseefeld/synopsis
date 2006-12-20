@@ -84,6 +84,7 @@ rm -rf $RPM_BUILD_ROOT
 %{py_sitedir}/Synopsis/Formatters
 %{_datadir}/Synopsis 
 %doc README COPYING NEWS
+%doc %_mandir/man1/*
 
 %files devel
 %defattr(-, root, root)

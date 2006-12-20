@@ -58,7 +58,7 @@ ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
 scripts = ['synopsis', 'sxr-server']
 
 data_files = [('share/doc/Synopsis', ('README', 'COPYING', 'NEWS'))]
-
+data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
 data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
 
 #### add documentation
