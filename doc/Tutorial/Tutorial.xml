@@ -26,7 +26,7 @@
       about those (Parse Tree, Symbol Table, etc.) see the 
       <ulink url="../DevGuide/index.html">Developer's Guide</ulink>.
     </para>
-    <section>
+    <section id="inspecting">
       <title>Inspecting code</title>
 
       <!-- Talk about the problem domain:
@@ -61,7 +61,7 @@
 
     </section>
 
-    <section>
+    <section id="documenting">
       <title>Documenting source code</title>
       <para>Being read and understood is at least as important for source code
         as it is for it to be processed by a computer. Humans have to maintain
@@ -123,7 +123,7 @@ greet()
       </example>
     </section>
 
-    <section>
+    <section id="processing">
       <title>The synopsis processing pipeline</title>
 
       <para>Synopsis provides a large number of <emphasis>processor</emphasis>
@@ -149,38 +149,30 @@ greet()
       your needs.</para>
     <section id="options">
       <title>Option handling</title>
-      <para>As discussed earlier, there is a variety of processors available in the
-        Synopsis distribution. There are a number of parsers (for IDL, Python, and C++,
-        and C), some formatters (HTML is probably the most popular
-        one, but others such as Docbook, Texinfo, or Dot may be useful, too),
-        and a number of linker processors.</para>
-      <para>Synopsis takes short options (e.g. <option>-h</option>) as well as
-        long options (e.g. <option>--help</option>). To see the full list of toplevel
-        options, use <command>synopsis -h</command>.</para>
-      <para>By means of the <option>-W</option> option you can pass arguments down to
-        particular processors that are run. For example, 
-        <command>synopsis -p Cxx -Wp,--base_path=../src/</command>
-        instructs synopsis to use the <type>Cxx</type> parser, and then passes the
-        <varname>base_path</varname> argument to it.</para>
-      <para>To find out about what parameters a processor defines, use the <option>--help</option>
-        option. For example <command>synopsis -p Cxx --help</command>
-        will tell us how to use the Cxx parser. To pass these options to the Cxx parser,
-        simply append them via the <option>-Wp</option> option, and they will be forwarded.
-        The <option>-Wp</option> accepts either of two option forms.</para>
-      <para>The <varname>--option=value</varname> form expects <varname>value</varname> to 
-        be a string, and passes that to the <varname>option</varname> parameter. Omitting 
-        <varname>value</varname> makes its value default to the python <constant>True</constant>
-        literal.</para>
-      <para>Alternatively, you can use the <varname>option=value</varname> form (i.e. omitting
-        the dashes), which will result in <varname>value</varname> to be interpreted as a
-        python expression. This is useful if the expected parameter type is a python type such
-        as a list. However, care has to be taken to properly quote the value in that case to
-        prevent the shell to expand it.</para>
-      <para>If we want to generate a (UML) class diagram, we could for example run 
-        <programlisting>synopsis -f Dot -Wf,--title="class diagram" -Wf,--format=ps \
-          -Wf,hide_operations=False,hide_attributes=False \
-          -o Paths.ps Paths.syn</programlisting>
-      </para>
+      <para>The synopsis tool combines three optional processors: a parser (specified with the
+        <option>-p</option> option), a linker (specified with the <option>-l</option> option, 
+        and a formatter (specified with the <option>-f</option> option). If a parser is selected,
+        any input is interpreted as source files of the respective language. Otherwise it will
+        be read in as a stored IR. Similarly, if a formatter is selected, output is generated
+        according to the formatter. Otherwise it will contain a stored IR.</para>
+      <para>For all of the three main processors, arguments can be passed down using the
+        <option>-W</option>. For example, to find out what parameters are available with the
+        <type>Cxx</type> parser, use the <option>--help</option> option:</para>
+      <screen>
+$ synopsis -p Cxx -h
+Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
+   profile               output profile data
+   cppflags              list of preprocessor flags such as -I or -D
+   preprocess            whether or not to preprocess the input
+   ...
+      </screen>
+      <para>Then, to pass a <varname>preprocess</varname> option, either of:</para>
+      <programlisting>synopsis -p Cxx -Wp,--preprocess ...</programlisting>
+      <programlisting>synopsis -p Cxx -Wp,preprocess=True ...</programlisting>
+      <para>The first form expects an optional string argument, while the second form
+        expects a python expression, thus allowing to pass python objects such as lists.
+        (But be careful to properly escape characters to get the expression through the
+        shell !)</para>
       <para>But passing options via the command line has its limits, both, in terms of
         usability, as well as for the robustness of the interface (all data have to be
         passed as strings !). Therefor, for any tasks demanding more flexibility a
@@ -225,13 +217,6 @@ greet()
         processor. To pass such an option, use the <code>-Wp,</code> prefix.
         For example, to set the parser's <varname>base_path</varname> option, use
         <programlisting>synopsis -p Cxx -Wp,-base_path=&lt;prefix&gt; -f HTML -o Paths Path.h</programlisting>
-      </para>
-      <para>To set a formatter-specific option use <code>-Wf,</code>, and so on.
-        Use the <option>--help</option> to find out about options available for a
-        particular processor, e.g.
-        <programlisting>synopsis --help</programlisting>
-        or
-        <programlisting>synopsis -p Cxx --help</programlisting>
       </para>
     </section>
     <section id="comments">
@@ -849,7 +834,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       </varlistentry>
     </variablelist>
   </appendix>
-  <appendix><title>Listing of some Processors and their parameters</title>
+  <appendix id="processor-listing"><title>Listing of some Processors and their parameters</title>
     <para>
       This is a listing of all processors with their respective parameters
       that can be set as described in <xref linkend="script" />.
@@ -900,7 +885,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <xi:fallback>The SXR formatter reference...</xi:fallback>
     </xi:include>
   </appendix>
-  <appendix>
+  <appendix id="markup">
     <title>Supported documentation markup</title>
     <para>Synopsis can handle a variety of documentation markup through
       markup formatter plugins. The most frequently used markup types are
@@ -909,10 +894,10 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       (available as <option>--translate=javadoc</option>), as well as
       <varname>ReStructuredText</varname> (available as 
       <option>--translate=rst</option>).</para>
-    <section>
+    <section id="javadoc">
       <title>Javadoc</title>
     </section>
-    <section>
+    <section id="rest">
       <title>Restructured Text</title>
     </section>
   </appendix>
