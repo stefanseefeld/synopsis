@@ -22,17 +22,19 @@ class build_doc(build.build):
    """Defines the specific procedure to build synopsis' documentation."""
 
    description = "build documentation"
-   user_options = [('manual', 'm', "build the manual only"),
-                   ('tutorial', 't', "build the tutorial only"),
+   user_options = [('man-page', 'm', "build the man-pages only"),
+                   ('ref-manual', 'r', "build the API reference manual only"),
+                   ('tutorial', 't', "build the tutorial, development guide, and examples only"),
                    ('html', 'h', "build for html output only"),
                    ('printable', 'p', "build for pdf output only"),
                    ('sxr=', 'x', "build the sxr database for synopsis for the given URL (requires -m)")]
-   boolean_options = ['manual', 'tutorial', 'html', 'print']
+   boolean_options = ['man-page', 'ref-manual', 'tutorial', 'html', 'print']
 
    def initialize_options (self):
 
       build.build.initialize_options(self)
-      self.manual = False
+      self.man_page = False
+      self.ref_manual = False
       self.tutorial = False
       self.html = False
       self.printable = False
@@ -40,9 +42,8 @@ class build_doc(build.build):
 
    def finalize_options (self):
 
-      if not (self.manual or self.tutorial): # if no option was given, do both
-         self.manual = self.tutorial = True
-      if not (self.html or self.printable or self.sxr): # if no option was given, do all
+      # If no option was given, do all media.
+      if not (self.html or self.printable or self.sxr):
          self.html = self.printable = True
       build.build.finalize_options(self)
 
@@ -54,13 +55,49 @@ class build_doc(build.build):
 
       self.build_lib = '.'
 
-      if self.manual or self.sxr: self.build_manual()
+      if self.man_page: self.build_man_page()
+      if self.ref_manual or self.sxr: self.build_ref_manual()
       if self.tutorial: self.build_tutorial()
     
-   def build_manual(self):
-      """Build the manual."""
+   def build_man_page(self):
+      """Build man pages for all installable programs."""
         
-      self.announce("building reference manual")
+      self.announce("building man pages")
+
+      descriptions = {}
+      descriptions['synopsis'] = """simple frontend to the Synopsis framework, a multi-language source code introspection tool that
+provides a variety of representations for the parsed code, to
+enable further processing such as documentation extraction,
+reverse engineering, and source-to-source translation."""
+      
+      descriptions['sxr-server'] = """the Synopsis Cross-Reference http server. Allows users
+to query and browse cross-referenced source code."""
+      
+
+      help2man = find_executable('help2man')
+      if not help2man:
+         self.warn("cannot build man pages")
+         return
+      gzip = find_executable('gzip')
+
+      section = 1
+      man_dir = 'share/man/man%d'%section
+      mkpath(man_dir, 0777, self.verbose, self.dry_run)
+
+      for s in ['synopsis', 'sxr-server']:
+         command = [help2man, '-N', '-n', descriptions[s]]
+         executable = os.path.join('scripts', s)
+         output = '%s/%s.%d'%(man_dir, s, section)
+         command += ['-o', output, executable]
+         spawn(command)
+         if gzip:
+            spawn(['gzip', '-f', output])
+
+
+   def build_ref_manual(self):
+      """Build the API reference manual."""
+        
+      self.announce("building API reference manual")
 
       tmp_man_dir = os.path.abspath(os.path.join(self.build_temp,
                                                  'doc/Manual'))
@@ -104,9 +141,20 @@ class build_doc(build.build):
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      for d in ['python', 'cxx']:
-         src = os.path.join(tmp_man_dir, 'html', d)
-         dest = os.path.join(builddir, d)
+      if self.html:
+         for d in ['python', 'cxx']:
+            src = os.path.join(tmp_man_dir, 'html', d)
+            dest = os.path.join(builddir, d)
+
+            if newer(src, dest):
+               rmtree(dest, True)
+               copy_tree(src, dest)
+
+      if self.sxr:
+         src = os.path.join(tmp_man_dir, 'html', 'sxr')
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/Synopsis/html/'))
+         dest = os.path.join(builddir, 'SXR')
 
          if newer(src, dest):
             rmtree(dest, True)

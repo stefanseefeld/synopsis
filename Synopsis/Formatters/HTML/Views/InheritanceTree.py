@@ -11,41 +11,47 @@ from Synopsis import Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os
-
 class InheritanceTree(View):
 
-   def register(self, processor):
+    def filename(self):
 
-      View.register(self, processor)
-      self.processor.add_root_view(self.filename(), 'Inheritance Tree', 'main', 1)
- 
-   def filename(self): return self.processor.file_layout.special('InheritanceTree')
+        if self.main:
+            return self.directory_layout.index()
+        else:
+            return self.directory_layout.special('InheritanceTree')
 
-   def title(self): return 'Synopsis - Class Hierarchy'
+    def title(self):
 
-   def process(self, start):
-      """Creates a file with the inheritance tree"""
+        return 'Inheritance Tree'
 
-      roots = self.processor.class_tree.roots()
-      self.start_file()
-      self.write(self.processor.navigation_bar(self.filename()))
-      self.write(entity('h1', "Inheritance Tree"))
-      self.write('<ul>')
-      map(self.process_class_inheritance, map(lambda a,b=start.name():(a,b), roots))
-      self.write('</ul>')
-      self.end_file()   
+    def root(self):
 
-   def process_class_inheritance(self, args):
-      name, rel_name = args
-      self.write('<li>')
-      self.write(self.reference(name, rel_name))
-      parents = self.processor.class_tree.superclasses(name)
-      if parents:
-         self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))
-      subs = self.processor.class_tree.subclasses(name)
-      if subs:
-         self.write('<ul>')
-         map(self.process_class_inheritance, map(lambda a,b=name:(a,b), subs))
-         self.write('</ul>\n')
-      self.write('</li>')
+        return self.filename(), self.title()
+
+    def process(self):
+
+        self.start_file()
+        self.write_navigation_bar()
+        self.write(entity('h1', "Inheritance Tree"))
+        self.write('<ul>')
+        # FIXME: see HTML.Formatter
+        module = self.processor.ast.declarations()[0]
+        for r in self.processor.class_tree.roots():
+            self.process_inheritance(r, module.name())
+        self.write('</ul>')
+        self.end_file()   
+
+    def process_inheritance(self, name, rel_name):
+        self.write('<li>')
+        self.write(self.reference(name, rel_name))
+        parents = self.processor.class_tree.superclasses(name)
+        if parents:
+            self.write(' <i>(%s)</i>'%', '.join([Util.ccolonName(p)
+                                                 for p in parents]))
+        subs = self.processor.class_tree.subclasses(name)
+        if subs:
+            self.write('<ul>')
+            for s in subs:
+                self.process_inheritance(s, name)
+            self.write('</ul>\n')
+        self.write('</li>')

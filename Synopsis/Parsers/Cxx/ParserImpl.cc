@@ -101,6 +101,19 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
  	path.strip(base.str());
  	std::string short_filename = path.str();
  	AST::SourceFile file = ast.files().get(short_filename);
+	// Undo the preprocesser's macro expansions.
+	Python::Dict macro_calls = file.macro_calls();
+	for (Python::Dict::iterator l = macro_calls.begin(); l != macro_calls.end(); ++l)
+	{
+	  Python::List line = l->get(1);
+	  for (Python::List::iterator m = line.begin(); m != line.end(); ++m)
+	  {
+	    AST::MacroCall call = *m;
+	    std::cout << "macro call " << call.name() << ' ' 
+		      << call.start() << ' ' << call.end() << ' '
+		      << call.diff() << std::endl;
+	  }
+	}
 	std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
 	makedirs(Path(sxr).dirname());
  	std::ofstream ofs(sxr.c_str());

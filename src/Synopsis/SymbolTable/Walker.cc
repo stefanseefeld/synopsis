@@ -185,7 +185,10 @@ SymbolSet Walker::lookup(PT::Encoding const &name, Scope::LookupContext context)
     // Else do an unqualified lookup for the scope.
     SymbolSet symbols = scope->unqualified_lookup(*next, context | Scope::SCOPE);
     if (symbols.empty())
+    {
+      std::cout << "undefined " << name << std::endl;
       throw Undefined(name, scope);
+    }
     else if (symbols.size() > 1)
       // If the name was found multiple times, it must refer to a function,
       // so throw a TypeError.
@@ -204,7 +207,10 @@ SymbolSet Walker::lookup(PT::Encoding const &name, Scope::LookupContext context)
   while (++next != name.end_name())
   {
     if (symbols.empty())
+    {
+      std::cout << "undefined 2 " << name << std::endl;
       throw Undefined(component, scope);
+    }
     else if (symbols.size() > 1)
       // If the name was found multiple times, it must refer to a function,
       // so throw a TypeError.

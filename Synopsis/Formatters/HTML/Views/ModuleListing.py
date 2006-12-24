@@ -11,38 +11,40 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os
-
 class ModuleListing(View):
    """Create an index of all modules."""
 
    short_title = Parameter('Modules', 'short title')
    child_types = Parameter(None, 'the types of children to include')
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
+      super(ModuleListing, self).register(frame)
       self._children_cache = {}
-      filename = self.filename()
-      processor.set_contents_view(filename)
-      self.processor.add_root_view(filename, self.short_title, 'contents', 2)
-      self._link_target = 'index'
 
-   def filename(self): return self.processor.file_layout.special('ModuleListing')
+   def filename(self):
 
-   def title(self): return self.short_title + ' Listing'
+      return self.directory_layout.special('ModuleListing')
 
-   def process(self, start):
-      """Create a view with an index of all modules"""
-      # Init tree
-      self.tree = self.processor.tree_formatter
-      self.tree.register(self)
+   def title(self):
+
+      return self.short_title
+
+   def root(self):
+
+      return self.filename(), self.title()
+
+   def process(self):
+      """Create a view with an index of all modules."""
+
       # Create the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 2))
-      self.tree.start_tree()
-      self.index_module(start, start.name())
-      self.tree.end_tree()
+      self.write_navigation_bar()
+      self.write('<ul class="tree">')
+      # FIXME: see HTML.Formatter
+      module = self.processor.ast.declarations()[0]
+      self.index_module(module, module.name())
+      self.write('</ul>')
       self.end_file()
 
    def _child_filter(self, child):
@@ -53,11 +55,11 @@ class ModuleListing(View):
          return 0
       return 1
 
-   def _link_href(self, ns):
+   def _link_href(self, module):
       """Returns the link to the given declaration"""
 
       return rel(self.filename(),
-                 self.processor.file_layout.module_index(ns.name()))
+                 self.directory_layout.module_index(module.name()))
 
    def _get_children(self, decl):
       """Returns the children of the given declaration"""
@@ -73,24 +75,24 @@ class ModuleListing(View):
       self._children_cache[decl] = children
       return children
 
-   def index_module(self, ns, rel_scope):
+   def index_module(self, module, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
-      my_scope = ns.name()
+      my_scope = module.name()
       # Find children, and sort so that compound children (packages) go first
-      children = self._get_children(ns)
+      children = self._get_children(module)
       children.sort(lambda a,b,g=self._get_children:
                     cmp(len(g(b)),len(g(a))))
       # Print link to this module
-      name = Util.ccolonName(my_scope, rel_scope) or "Global&#160;Namespace"
-      link = self._link_href(ns)
-      text = href(link, name, target=self._link_target)
+      name = Util.ccolonName(my_scope, rel_scope) or 'Global Module'
+      link = self._link_href(module)
+      text = href(link, name, target='detail')
       if not len(children):
-         self.tree.write_leaf(text)
+         self.write('<li>%s</li>'%text)
       else:
-         self.tree.write_node_start(text)
+         self.write('<li>%s<ul class="tree">'%text)
          # Add children
          for child in children:
             self.index_module(child, my_scope)
-         self.tree.write_node_end()
+         self.write('</ul></li>')
 

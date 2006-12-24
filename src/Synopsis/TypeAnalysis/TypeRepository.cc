@@ -100,6 +100,7 @@ void TA::TypeRepository::declare(PT::Encoding const &name,
   {
     kind = PT::string(spec->type());
   }
+  std::cout << "declaring " << kind << ' ' << name.unmangled() << std::endl;
   AtomicType *type = 0;
   if (kind == "union")
     type = new Union(name.unmangled());

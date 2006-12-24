@@ -8,13 +8,13 @@
 import sys, os, os.path, fnmatch, cPickle
 
 def escape(text):
-   """escape special characters ('&', '\"', '<', '>')"""
+    """escape special characters ('&', '\"', '<', '>')"""
 
-   text = text.replace('&', '&amp;')
-   text = text.replace('"', '&quot;')
-   text = text.replace('<', '&lt;')
-   text = text.replace('>', '&gt;')
-   return text
+    text = text.replace('&', '&amp;')
+    text = text.replace('"', '&quot;')
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
+    return text
 
 default_template = """
 <html>
@@ -73,8 +73,12 @@ class SXRServer:
         self.template = template.split("@CONTENT@")
 
 
-    def ident_ref(self, file, line, text):
+    def ident_ref(self, file, line, scope):
 
+        if len(scope):
+           text = '::'.join(scope)
+        else:
+           text = '<global scope>'
         return '<a href=\"%s/Source/%s.html#%s\">%s:%s: %s</a>'\
                %(self.src_url, file, line, file, line, escape(text))
 
@@ -96,22 +100,19 @@ class SXRServer:
             html += '<li>Defined at:<br/>\n'
             html += '<ul>\n'
             for file, line, scope in target_data[0]:
-                html +=  '<li>%s</li>\n'%(self.ident_ref(file, line,
-                                                         '::'.join(scope)))
+                html +=  '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
         if target_data[1]:
             html += '<li>Called from:<br/>\n'
             html += '<ul>\n'
             for file, line, scope in target_data[1]:
-                html += '<li>%s</li>\n'%(self.ident_ref(file, line,
-                                                        '::'.join(scope)))
+                html += '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
         if target_data[2]:
             html += '<li>Referenced from:<br/>\n'
             html += '<ul>\n'
             for file, line, scope in target_data[2]:
-                html += '<li>%s</li>\n'%(self.ident_ref(file, line,
-                                                        '::'.join(scope)))
+                html += '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
         return html
     

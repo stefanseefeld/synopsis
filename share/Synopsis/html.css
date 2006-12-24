@@ -47,6 +47,8 @@ table.form th
   padding: 5px;
 }
 
+/* The navigation bar */
+
 div.navigation
 { 
   border: 1px solid #aaaaaa;
@@ -54,16 +56,36 @@ div.navigation
   padding: 5px;
 }
 
-div.navigation span 
+div.navigation span:first-child
 {
-  border-right: 1px solid #aaaaaa;
+  border-left: none;
   padding: 2px;
 }
 
-div.navigation span.root-current 
+div.navigation span 
+{
+  border-left: 1px solid #aaaaaa;
+  padding: 2px;
+}
+
+div.navigation span.selected
 {
   background-color: #dbdee0;
 }
+
+/* Tree view(s) */
+
+div.tree-navigation a
+{
+  border-left: 1px solid #aaaaaa;
+  margin: 5px;
+}
+div.tree-navigation a:first-child 
+{
+  border-left: none;
+  margin: 5px;
+}
+
 div.xref-name
 { 
   border-top: 1px solid #aaaaaa;
@@ -113,54 +135,74 @@ div.desc {
   padding: 0.5em;
 }
 
-div.enumerator {
-    margin-left: 2em;
-}
-div.module-section {
-    margin-left: 0.5em;
-}
-div.module-section img {
-    vertical-align: text-bottom;
-}
-div.files {
-    margin-left: 1em;
-}
-div.filepage-scope {
-    margin-left: 1em;
-}
-h2.heading, td.heading {
-    font-size: 1.5em;
-    font-weight: bold;
-    padding: 0.1em;
-    border: 1px solid #aaaaaa;
-    background: #f2f5f7;
-}
-div.section {
-    margin-left: 2em;
+div.enumerator 
+{
+  margin-left: 2em;
 }
 
-div.logo {
-    border-top: 1px solid #aaaaaa;
-    margin-left: 2em;
-    text-align: center;
-    color: #dddddd;
+div.module-section
+{
+  margin-left: 0.5em;
 }
-div.class-namespace {
-    font-size: 1.5em;
-    text-align: right;
+
+div.module-section img
+{
+  vertical-align: text-bottom;
 }
-div.class-template {
-    font-size: 1.7em;
+
+div.files
+{
+  margin-left: 1em;
 }
-div.class-name {
-    font-size: 1.7em;
-    margin-bottom: 1em;
+
+div.filepage-scope 
+{
+  margin-left: 1em;
 }
-ul.tree {
-    padding-left: 1em;
+
+h2.heading,
+td.heading
+{
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0.1em;
+  border: 1px solid #aaaaaa;
+  background: #f2f5f7;
 }
-div.nameindex-item {
-    margin-left: 1em;
+
+div.section
+{
+  margin-left: 2em;
+}
+
+div.logo
+{
+  border-top: 1px solid #aaaaaa;
+  margin-left: 2em;
+  text-align: center;
+  color: #dddddd;
+}
+div.class-module
+{
+  font-size: 1.5em;
+  text-align: right;
+}
+div.class-template 
+{
+  font-size: 1.7em;
+}
+div.class-name
+{
+  font-size: 1.7em;
+  margin-bottom: 1em;
+}
+ul.tree
+{
+  padding-left: 1em;
+}
+div.nameindex-item 
+{
+  margin-left: 1em;
 }
 
 /* Style for the SXR view. */

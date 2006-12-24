@@ -106,7 +106,7 @@ class Processor(Parametrized):
       """writes output if the 'output' attribute is set, then returns"""
       output = getattr(self, 'output', None)
       if output:
-         AST.save(output, self.ast)
+         self.ast.save(output)
       return self.ast
 
    def process(self, ast, **kwds):

@@ -244,6 +244,7 @@ void SXRGenerator::link(PT::Node *node, PT::Encoding const &name)
 
 void SXRGenerator::visit(PT::Literal *node)
 {
+  if (buffer_.is_replaced(node->position())) return;
   std::string begin = "<span class=\"literal\">";
   for (std::string::iterator i = begin.begin(); i != begin.end(); ++i)
     *i += 0x80;
@@ -259,6 +260,7 @@ void SXRGenerator::visit(PT::Literal *node)
 
 void SXRGenerator::visit(PT::Keyword *node)
 {
+  if (buffer_.is_replaced(node->position())) return;
   std::string begin = "<span class=\"keyword\">";
   for (std::string::iterator i = begin.begin(); i != begin.end(); ++i)
     *i += 0x80;
@@ -274,16 +276,19 @@ void SXRGenerator::visit(PT::Keyword *node)
 
 void SXRGenerator::visit(PT::Identifier *node)
 {
+  if (buffer_.is_replaced(node->position())) return;
   link(node, PT::Encoding(node));
 }
 
 void SXRGenerator::visit(PT::Name *node)
 {
+  if (buffer_.is_replaced(node->begin())) return;
   link(node, node->encoded_name());
 }
 
 void SXRGenerator::visit(PT::ClassSpec *node)
 {
+  if (buffer_.is_replaced(node->begin())) return;
   visit(node->key());
   PT::Node *ident = node->name();
   if (ident) ident->accept(this);

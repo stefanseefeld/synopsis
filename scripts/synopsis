@@ -38,7 +38,7 @@ def __import__(name, verbose):
 def usage():
     """Print a little usage text"""
 
-    print 'Usage : %s [options] <input files>'%sys.argv[0]
+    print 'Usage : %s [options] <input files>'%'synopsis'
     print """
 List of options:
   -h, --help                  Display usage summary.
@@ -217,5 +217,5 @@ if __name__ == '__main__':
         error(str(e))
     except KeyboardInterrupt, e:
         print 'KeyboardInterrupt'
-    except Exception, e:
+    except IOError, e:
         error(str(e))

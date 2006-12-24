@@ -79,18 +79,24 @@ private:
   //. Mark the file as 'primary' if so required.
   AST::SourceFile lookup_source_file(std::string const &filename, bool primary);
 
-  AST::AST            ast_;
-  AST::ASTKit         ast_kit_;
-  AST::SourceFileKit  sf_kit_;
-  AST::TypeKit        type_kit_;
-  AST::SourceFile     file_;
-  std::string         raw_filename_;
-  std::string         base_path_;
-  FileStack           file_stack_;
-  std::string         include_dir_;
-  bool                include_next_dir_;
-  bool                primary_file_only_;
-  unsigned int        mask_counter_;
-  bool                verbose_;
-  bool                debug_;
+  AST::AST             ast_;
+  AST::ASTKit          ast_kit_;
+  AST::SourceFileKit   sf_kit_;
+  AST::TypeKit         type_kit_;
+  AST::SourceFile      file_;
+  std::string          raw_filename_;
+  Token::position_type position_;
+  std::string          base_path_;
+  FileStack            file_stack_;
+  std::string          include_dir_;
+  bool                 include_next_dir_;
+  bool                 primary_file_only_;
+  unsigned int         mask_counter_;
+  unsigned int         macro_level_counter_;
+  //. The name of the macro currently being expanded.
+  std::string          current_macro_name_;
+  //. The length of the character sequence representing the current macro call.
+  unsigned int         current_macro_call_length_;
+  bool                 verbose_;
+  bool                 debug_;
 };

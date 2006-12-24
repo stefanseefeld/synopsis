@@ -545,6 +545,7 @@ unsigned long Parser::origin(const char *ptr,
 PT::Node *Parser::parse()
 {
   Trace trace("Parser::parse", Trace::PARSING);
+  try {
   PT::List *declarations = opt_declaration_seq();
   // TODO: Retrieve trailing comments
   //       We first need to figure out all the right places to
@@ -562,6 +563,16 @@ PT::Node *Parser::parse()
     declarations = PT::snoc(declarations, c);
   }
   return declarations;
+  }
+  catch (ST::Undefined const &e)
+  {
+    std::string filename;
+    unsigned long line = 0;
+    if (e.ptree)
+      line = my_lexer.origin(e.ptree->begin(), filename);
+    std::cout << "undefined symbol " << e.name << " at " << filename << " : " << line << std::endl;
+    return 0;
+  }
 }
 
 // :: [opt]

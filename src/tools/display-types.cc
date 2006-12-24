@@ -53,27 +53,42 @@ private:
 
 void display_types(ST::Scope const *scope, std::ostream &os)
 {
-  for (ST::Scope::symbol_iterator i = scope->symbols_begin();
-       i != scope->symbols_end();
-       ++i)
+  if (!scope)
   {
-    TypeFinder finder;
-    TA::Type const *type = finder.find(i->second);
-    if (!type) continue;
-    os << "Type : " << i->first.unmangled() << " = ";
-    display(type, os);
-    os << std::endl;
+    // Dump the content of the type repository.
+    TA::TypeRepository *tr = TA::TypeRepository::instance();
+    for (TA::TypeRepository::siterator i = tr->sbegin();
+         i != tr->send(); ++i)
+    {
+      display(i->second, os);
+      os << std::endl;
+    }
   }
-  for (ST::Scope::scope_iterator i = scope->scopes_begin();
-       i != scope->scopes_end();
-       ++i)
-    display_types(i->second, os);
+  else
+  {
+    // Print types of symbols in symbol table.
+    for (ST::Scope::symbol_iterator i = scope->symbols_begin();
+         i != scope->symbols_end();
+         ++i)
+    {
+      TypeFinder finder;
+      TA::Type const *type = finder.find(i->second);
+      if (!type) continue;
+      os << "Type : " << i->first.unmangled() << " = ";
+      display(type, os);
+      os << std::endl;
+    }
+    for (ST::Scope::scope_iterator i = scope->scopes_begin();
+         i != scope->scopes_end();
+         ++i)
+      display_types(i->second, os);
+  }
 }
 
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " [-t <category>] <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-s] [-t <category>] <input>" << std::endl;
   return -1;
 }
 
@@ -81,6 +96,7 @@ int main(int argc, char **argv)
 {
   const char *input = argv[1];
   if (argc == 1) return usage(argv[0]);
+  bool symbolic = false;
   for (int i = 1; i < argc - 1; ++i)
   {
     if (argv[i] == std::string("-t") && ++i != argc - 1)
@@ -91,6 +107,7 @@ int main(int argc, char **argv)
       else if (argv[i] == std::string("parsing")) { Trace::enable(Trace::PARSING);}
       else { std::cerr << "unknown trace category '" << argv[i] << "\'\n"; return -1;}
     }
+    else if (argv[i] == std::string("-s")) symbolic = true;
     else return usage(argv[0]);
   }
   input = argv[argc - 1];
@@ -111,7 +128,10 @@ int main(int argc, char **argv)
 	(*i)->write(std::cerr);
       return -1;
     }
-    display_types(symbols.current_scope(), std::cout);
+    if (symbolic)
+      display_types(symbols.current_scope(), std::cout);
+    else
+      display_types(0, std::cout);
   }
   catch (const std::exception &e)
   {
