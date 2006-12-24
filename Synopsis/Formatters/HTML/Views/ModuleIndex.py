@@ -11,77 +11,75 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os
-
-class ModuleIndexer(View):
+class ModuleIndex(View):
    """A module for indexing AST.Modules. Each module gets its own view with a
    list of nested scope declarations with documentation. It is intended to go in
    the left frame..."""
 
-   def register(self, processor):
-      """Register first view as index view"""
+   def register(self, frame):
 
-      View.register(self, processor)
-      processor.set_using_module_index()
-      self.__filename = self.processor.file_layout.module_index(())
-      processor.set_index_view(self.__filename)
+      super(ModuleIndex, self).register(frame)
+      self.__filename = self.directory_layout.module_index(())
+      self.__title = 'Global Module Index'
 
-   def filename(self): return self.__filename
+   def filename(self):
 
-   def title(self): return self.__title
+      return self.__filename
 
-   def process(self, start):
-      """Creates indexes for all modules"""
+   def title(self):
 
-      start_file = self.processor.file_layout.module_index(start.name())
-      self.processor.set_index_view(start_file)
-      self.__namespaces = [start]
-      while self.__namespaces:
-         ns = self.__namespaces.pop(0)
-         self.process_namespace_index(ns)
+      return self.__title
+
+   def process(self):
+
+      self.__modules = [d for d in self.processor.ast.declarations()
+                        if isinstance(d, AST.Module)]
+      while self.__modules:
+         m = self.__modules.pop(0)
+         self.process_module_index(m)
     
-   def make_view_heading(self, ns):
+   def make_view_heading(self, module):
       """Creates a HTML fragment which becomes the name at the top of the
       index view. This may be overridden, but the default is (now) to make a
       linked fully scoped name, where each scope has a link to the relevant
       index."""
 
-      name = ns.name()
+      name = module.name()
       if not name: return 'Global Index'
       links = []
       for depth in range(0, len(name)):
-         url = self.processor.file_layout.module_index(name[:depth+1])
+         url = self.directory_layout.module_index(name[:depth+1])
          label = escape(name[depth])
          links.append(href(rel(self.__filename, url), label))
-      return entity('b', string.join(links, '\n::') + ' Index')
+      return entity('b', '::'.join(links) + ' Index')
 
-   def process_namespace_index(self, ns):
+   def process_module_index(self, module):
       "Index one module"
 
       sorter = self.processor.sorter
-      sorter.set_scope(ns)
+      sorter.set_scope(module)
       sorter.sort_section_names()
       sorter.sort_sections()
 
-      self.__filename = self.processor.file_layout.module_index(ns.name())
-      self.__title = Util.ccolonName(ns.name()) or 'Global Namespace'
+      self.__filename = self.directory_layout.module_index(module.name())
+      self.__title = Util.ccolonName(module.name()) or 'Global Module'
       self.__title = self.__title + ' Index'
       # Create file
       self.start_file()
-      #target = rel(self.__filename, self.processor.file_layout.scope(ns.name()))
-      #link = href(target, self.__title, target='main')
-      self.write(self.make_view_heading(ns))
+      #target = rel(self.__filename, self.directory_layout.scope(module.name()))
+      #link = href(target, self.__title, target='content')
+      self.write(self.make_view_heading(module))
 
       toc = self.processor.toc
 
       # Make script to switch main frame upon load
       load_script = '<!--\n'
-      if toc[ns.name()]:
-         target = rel(self.__filename, toc[ns.name()].link)
-         load_script = load_script + 'window.parent.frames["main"].location="%s";\n'%target
-      load_script = load_script + 'function go(index,main) {\n'\
+      if toc[module.name()]:
+         target = rel(self.__filename, toc[module.name()].link)
+         load_script = load_script + 'window.parent.frames["content"].location="%s";\n'%target
+      load_script = load_script + 'function go(index,detail) {\n'\
                     'window.parent.frames["index"].location=index;\n'\
-                    'window.parent.frames["main"].location=main;\n'\
+                    'window.parent.frames["detail"].location=detail;\n'\
                     'return false;}\n-->'
       self.write(entity('script', load_script, type='text/javascript'))
 
@@ -98,24 +96,24 @@ class ModuleIndexer(View):
             if heading:
                self.write(heading)
                heading = None
-            label = Util.ccolonName(child.name(), ns.name())
+            label = Util.ccolonName(child.name(), module.name())
             label = escape(label)
             label = replace_spaces(label)
             if isinstance(child, AST.Module):
                index_url = rel(self.__filename,
-                               self.processor.file_layout.module_index(child.name()))
-               self.write(href(index_url, label, target='index'))
+                               self.directory_layout.module_index(child.name()))
+               self.write(href(index_url, label, target='detail'))
             else:
                entry = toc[child.name()]
                if entry:
                   url = rel(self.__filename, entry.link)
-                  self.write(href(url, label, target='main'))
+                  self.write(href(url, label, target='content'))
                else:
                   self.write(label)
             self.write('<br/>\n')
       self.end_file()
 
-      # Queue child namespaces
+      # Queue child modules
       for child in sorter.children():
          if isinstance(child, AST.Module):
-            self.__namespaces.append(child)
+            self.__modules.append(child)

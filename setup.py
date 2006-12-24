@@ -57,7 +57,7 @@ ext_modules = [('Synopsis/Parsers/Cpp', 'ParserImpl' + module_ext),
 scripts = ['synopsis', 'sxr-server']
 
 data_files = [('share/doc/Synopsis', ('README', 'COPYING', 'NEWS'))]
-
+data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
 data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
 
 #### add documentation
@@ -96,12 +96,13 @@ enable further processing such as documentation extraction,
 reverse engineering, and source-to-source translation.""",
       url="http://synopsis.fresco.org",
       download_url = 'http://synopsis.fresco.org/download',
-      license = 'LGPL',
+      license = 'LGPL / GPL',
       classifiers = ['Development Status :: 5 - Production/Stable',
                      'Environment :: Console',
                      'Environment :: Web Environment',
                      'Intended Audience :: Developers',
                      'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+                     'License :: OSI Approved :: GNU General Public License (GPL)',
                      'Operating System :: POSIX',
                      'Programming Language :: Python',
                      'Programming Language :: C++',

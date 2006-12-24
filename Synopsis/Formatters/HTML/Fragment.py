@@ -41,6 +41,7 @@ class Fragment(object):
       of them."""
 
       self.processor = formatter.processor
+      self.directory_layout = self.processor.directory_layout
       self.formatter = formatter
       self.label = formatter.label
       self.reference = formatter.reference

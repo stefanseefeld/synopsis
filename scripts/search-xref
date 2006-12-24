@@ -35,17 +35,17 @@ def dump(name, detail=True):
     if not detail: return
     target_data = data[name]
     if target_data[0]:
-	print "  Defined at:"
+	print '  Defined at:'
 	for file, line, scope in target_data[0]:
-	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
+	    print '    %s:%s: %s'%(file,line,'::'.join(scope) or '<global scope>')
     if target_data[1]:
-	print "  Called from:"
+	print '  Called from:'
 	for file, line, scope in target_data[1]:
-	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
+	    print '    %s:%s: %s'%(file,line,'::'.join(scope) or '<global scope>')
     if target_data[2]:
-	print "  Referenced from:"
+	print '  Referenced from:'
 	for file, line, scope in target_data[2]:
-	    print "    %s:%s: %s"%(file,line,'::'.join(scope))
+	    print '    %s:%s: %s'%(file,line,'::'.join(scope) or '<global scope>')
 
 
 if mode == 'list':

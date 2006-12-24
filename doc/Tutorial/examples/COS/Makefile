@@ -4,6 +4,8 @@ synopsis := python synopsis.py
 src:= CosNaming.idl CosTrading.idl CosTradingDynamic.idl CosTradingRepos.idl
 syn:= $(patsubst %.idl, %.syn, $(src))
 
+all: html
+
 html: cos.syn
 	$(synopsis) format --output=$@ $?
 	touch $@

@@ -27,7 +27,7 @@ class ClassHierarchySimple(Fragment):
          super = div('superclasses', "Superclasses: "+super)
 
       # Print subclasses
-      subs = self.processor.classTree.subclasses(clas.name())
+      subs = self.processor.class_tree.subclasses(clas.name())
       if subs:
          refs = map(self.reference, subs)
          sub = string.join(refs, ", ")

@@ -50,7 +50,7 @@ def find_common_name(graph):
          if decl_name[i] != common_name[i]:
             common_name = common_name[:i]
             break
-   return string.join(common_name, '::')
+   return '::'.join(common_name)
 
 class InheritanceGraph(View):
 
@@ -58,14 +58,26 @@ class InheritanceGraph(View):
    min_group_size = Parameter(5, 'how many nodes to put into a group')
    direction = Parameter('vertical', 'layout of the graph')
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
-      self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
-      self.processor.add_root_view(self.filename(), 'Inheritance Graph', 'main', 1)
+      super(InheritanceGraph, self).register(frame)
+      self.decl_finder = DeclarationFinder(self.processor.ast.types(),
+                                           self.processor.verbose)
 
-   def filename(self): return self.processor.file_layout.special('InheritanceGraph')
-   def title(self): return 'Synopsis - Class Hierarchy'
+   def filename(self):
+
+      if self.main:
+         return self.directory_layout.index()
+      else:
+         return self.directory_layout.special('InheritanceGraph')
+
+   def title(self):
+
+      return 'Inheritance Graph'
+
+   def root(self):
+
+      return self.filename(), self.title()
 
    def consolidate(self, graphs):
       """Consolidates small graphs into larger ones"""
@@ -102,12 +114,12 @@ class InheritanceGraph(View):
          graphs[:] = conned + pending
       return common
 
-   def process(self, start):
+   def process(self):
       """Creates a file with the inheritance graph"""
 
       filename = self.filename()
       self.start_file()
-      self.write(self.processor.navigation_bar(filename))
+      self.write_navigation_bar()
       self.write(entity('h1', "Inheritance Graph"))
 
       from Synopsis.Formatters import Dot
@@ -126,7 +138,7 @@ class InheritanceGraph(View):
          graphs.sort(lensorter)
          if name:
             self.write('<div class="inheritance-group">')
-            scoped_name = string.split(name,'::')
+            scoped_name = name.split('::')
             type_str = ''
             types = self.processor.ast.types()
             type = types.get(scoped_name, None)

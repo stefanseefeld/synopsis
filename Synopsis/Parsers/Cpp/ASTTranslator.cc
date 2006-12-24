@@ -24,6 +24,7 @@ ASTTranslator::ASTTranslator(std::string const &language,
     base_path_(base_path),
     primary_file_only_(primary_file_only),
     mask_counter_(0),
+    macro_level_counter_(0),
     verbose_(v),
     debug_(d)
 {
@@ -38,30 +39,17 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 						  std::vector<Container> const &arguments) 
 {
   Trace trace("ASTTranslator::expand_function_like_macro", Trace::TRANSLATION);
+  ++macro_level_counter_;
   if (mask_counter_) return;
 
-  Token::position_type position = macrocall.get_position();
-  std::string name;
-  {
-    Token::string_type tmp = macrocall.get_value();
-    name = std::string(tmp.begin(), tmp.end());
-  }
-  // argument list
-//   for (Container::size_type i = 0; i < arguments.size(); ++i) 
-//   {
-//     std::cout << wave::util::impl::as_string(arguments[i]);
-//     if (i < arguments.size()-1)
-//       std::cout << ", ";
-//   }
-  Python::Dict mmap = file_stack_.top().macro_calls();
-  Python::List line = mmap.get(position.get_line(), Python::List());
-  // TODO: compute correct positional parameters for the macro replacement:
-  //       * start: start position of the replacement in the output stream.
-  //       * end: end position of the replacement in the output stream.
-  //       * diff: offset by which to shift back the following tokens to
-  //               match the input stream.
-  line.append(sf_kit_.create_macro_call(name, 0, 0, 0));//start, end, diff));
-  mmap.set(position.get_line(), line);
+  position_ = macrocall.get_position();
+  Token::string_type tmp = macrocall.get_value();
+  current_macro_name_.assign(tmp.begin(), tmp.end());
+  current_macro_call_length_ =
+    arguments.back().back().get_position().get_column() +
+    // hack to take into account the following closing paren
+    arguments.back().back().get_value().size() + 1 -
+    position_.get_column();
 }
  
 void ASTTranslator::expanding_object_like_macro(Token const &macro, 
@@ -69,31 +57,49 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 						Token const &macrocall)
 {
   Trace trace("ASTTranslator::expand_object_like_macro", Trace::TRANSLATION);
+  ++macro_level_counter_;
   if (mask_counter_) return;
 
-  Token::position_type position = macrocall.get_position();
-  std::string name;
-  {
-    Token::string_type tmp = macrocall.get_value();
-    name = std::string(tmp.begin(), tmp.end());
-  }
-  Python::Dict mmap = file_stack_.top().macro_calls();
-  Python::List line = mmap.get(position.get_line(), Python::List());
-  line.append(sf_kit_.create_macro_call(name, 0, 0, 0));//start, end, diff));
-  mmap.set(position.get_line(), line);
+  position_ = macrocall.get_position();
+  Token::string_type tmp = macrocall.get_value();
+  current_macro_name_.assign(tmp.begin(), tmp.end());
+  current_macro_call_length_ = current_macro_name_.size();
 }
  
 void ASTTranslator::expanded_macro(Container const &result)
 {
   Trace trace("ASTTranslator::expand_macro", Trace::TRANSLATION);
-  if (mask_counter_) return;
-//   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
  
 void ASTTranslator::rescanned_macro(Container const &result)
 {
   Trace trace("ASTTranslator::rescanned_macro", Trace::TRANSLATION);
-//   std::cout << wave::util::impl::as_string(result) << std::endl;
+  if (!--macro_level_counter_)
+  {
+    // All (potentially recursive) scanning is finished at this point, so we
+    // can create the MacroCall object.
+    //
+    // The positions of the tokens in the result vector are the ones from
+    // the macro definition, so we only extract the expanded length, and
+    // then calculate the new positions in the (yet to be written) preprocessed
+    // file.
+    unsigned int begin = result.front().get_position().get_column();
+    unsigned int end = 
+      result.back().get_position().get_column() + 
+      result.back().get_value().size();
+    unsigned int length = end - begin;
+    // We assume the expansion happens at the point where the macro call occured,
+    // i.e. any whitespace or comments are unaltered.
+    // Wave starts to count columns at index 1, synopsis at 0.
+    begin = position_.get_column() - 1;
+    end = begin + length;
+    Python::Dict mmap = file_stack_.top().macro_calls();
+    Python::List line = mmap.get(position_.get_line() - 1, Python::List());
+    line.append(sf_kit_.create_macro_call(current_macro_name_,
+					  begin, end,
+					  current_macro_call_length_ - length));
+    mmap.set(position_.get_line() - 1, line);
+  }
 }
 
 void ASTTranslator::found_include_directive(std::string const &filename, bool next)
@@ -149,7 +155,6 @@ void ASTTranslator::defined_macro(Token const &name, bool is_functionlike,
 				  bool is_predefined)
 {
   Trace trace("ASTTranslator::defined_macro", Trace::TRANSLATION);
-  trace << name;
   if (mask_counter_ || is_predefined) return;
   
   Token::string_type const &m = name.get_value();

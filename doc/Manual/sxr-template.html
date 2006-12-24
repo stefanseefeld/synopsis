@@ -132,13 +132,19 @@ div.navigation
   padding: 5px;
 }
 
-div.navigation span 
+div.navigation span:first-child
 {
-  border-right: 1px solid #aaaaaa;
+  border-left: none;
   padding: 2px;
 }
 
-div.navigation span.root-current 
+div.navigation span 
+{
+  border-left: 1px solid #aaaaaa;
+  padding: 2px;
+}
+
+div.navigation span.selected
 {
   background-color: #dbdee0;
 }

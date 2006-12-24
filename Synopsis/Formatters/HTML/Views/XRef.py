@@ -13,81 +13,71 @@ from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.XRef import *
 
-import os
-
 class XRef(View):
    """A module for creating views full of xref infos"""
 
    xref_file = Parameter('', '')
    link_to_scope = Parameter(True, '')
 
-   def register(self, processor):
+   def register(self, frame):
 
-      View.register(self, processor)
+      super(XRef, self).register(frame)
       self.__filename = None
       self.__title = None
-      self.__toc = None
       if self.xref_file:
-         processor.xref.load(self.xref_file)
-
-   def get_toc(self, start):
-      """Returns the toc for XRef"""
-
-      if self.__toc: return self.__toc
+         self.processor.xref.load(self.xref_file)
       self.__toc = TOC(None)
       # Add an entry for every xref
       xref = self.processor.xref
       for name in xref.get_all_names():
          view = xref.get_page_for(name)
-         file = self.processor.file_layout.special('xref%d'%view)
+         file = self.directory_layout.special('xref%d'%view)
          file = file + '#' + Util.quote('::'.join(name))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
+
+   def toc(self, start):
+
       return self.__toc
 
    def filename(self):
-      """Returns the current filename,
-      which may change over the lifetime of this object"""
 
       return self.__filename
 
    def title(self):
-      """Returns the current title,
-      which may change over the lifetime of this object"""
 
       return self.__title
 
-   def process(self, start):
-      """Creates a view for every bunch of xref infos"""
+   def process(self):
 
       page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         self.__filename = self.processor.file_layout.xref(i)
+         self.__filename = self.directory_layout.xref(i)
          self.__title = 'Cross Reference page #%d'%i
 
          self.start_file()
-         self.write(self.processor.navigation_bar(self.filename()))
-         self.write(entity('h1', self.__title))
+         self.write_navigation_bar()
+         self.write(entity('h1', self.title()))
          for name in page_info[i]:
             self.write('<div class="xref-name">')
             self.process_name(name)
             self.write('</div>')
          self.end_file()
 
-   def register_filenames(self, start):
+   def register_filenames(self):
       """Registers each view"""
 
       page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         filename = self.processor.file_layout.special('xref%d'%i)
+         filename = self.directory_layout.special('xref%d'%i)
          self.processor.register_filename(filename, self, i)
     
    def process_link(self, file, line, scope):
       """Outputs the info for one link"""
 
       # Make a link to the highlighted source
-      file_link = self.processor.file_layout.file_source(file)
+      file_link = self.directory_layout.file_source(file)
       file_link = rel(self.filename(), file_link) + "#%d"%line
       # Try and make a descriptive
       desc = ''
@@ -137,7 +127,7 @@ class XRef(View):
       if self.link_to_scope:
          type = self.processor.ast.types().get(name, None)
          if isinstance(type, Type.Declared):
-            link = self.processor.file_layout.link(type.declaration())
+            link = self.directory_layout.link(type.declaration())
             self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:
          self.write('<li>Defined at:<ul>\n')
@@ -158,7 +148,7 @@ class XRef(View):
          self.write('<li>Declarations:<ul>\n')
          for child in decl.declarations():
             file, line = child.file().name, child.line()
-            file_link = self.processor.file_layout.file_source(file)
+            file_link = self.directory_layout.file_source(file)
             file_link = rel(self.filename(),file_link) + '#%d'%line
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
             cname = child.name()

@@ -13,113 +13,116 @@ from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Parts import *
-import time, os
+import time, pdb
 
 class Scope(View):
-   """A module for creating a view for each Scope with summaries and
-   details. This module is highly modular, using the classes from
-   ASTFormatter to do the actual formatting. The classes to use may be
-   controlled via the config script, resulting in a very configurable output.
-   @see ASTFormatter The ASTFormatter module
-   @see Config.Formatters.HTML.ScopeViews Config for ScopeViews
-   """
+    """A module for creating a view for each Scope with summaries and
+    details. This module is highly modular, using the classes from
+    ASTFormatter to do the actual formatting. The classes to use may be
+    controlled via the config script, resulting in a very configurable output.
+    @see ASTFormatter The ASTFormatter module
+    @see Config.Formatters.HTML.ScopeViews Config for ScopeViews
+    """
 
-   parts = Parameter([Heading(),
-                      Summary(),
-                      Inheritance(),
-                      Detail()],
-                     '')
+    parts = Parameter([Heading(),
+                       Summary(),
+                       Inheritance(),
+                       Detail()],
+                      '')
    
-   def register(self, processor):
+    def register(self, frame):
 
-      View.register(self, processor)
-      for part in self.parts: part.register(self)
+        super(Scope, self).register(frame)
+        for part in self.parts: part.register(self)
 
-      self.__scopes = []
-      self.__toc = None
+        self.__scopes = []
+        self.__toc = TOC(self.directory_layout)
+        for d in self.processor.ast.declarations():
+            d.accept(self.__toc)
       
-   def get_toc(self, start):
-      """Returns the TOC for the whole AST starting at start"""
+    def toc(self):
       
-      if self.__toc: return self.__toc
-      self.__toc = TOC(self.processor.file_layout)
-      start.accept(self.__toc)
-      return self.__toc
+        return self.__toc
 
-   def filename(self):
-      """since Scope generates a whole file hierarchy, this method
-      returns the current filename, which may change over the lifetime
-      of this object"""
+    def filename(self):
 
-      return self.__filename
+        return self.__filename
 
-   def title(self):
-      """since Scope generates a while file hierarchy, this method
-      returns the current title, which may change over the lifetime
-      of this object"""
+    def title(self):
 
-      return self.__title
+        return self.__title
 
-   def scope(self):
-      """return the current scope processed by this object"""
+    def root(self):
 
-      return self.__scope
+        if self.main:
+            url = self.directory_layout.index()
+        else:
+            url = self.directory_layout.scope()
+        return url, 'Global Module'
 
-   def process(self, start):
-      """Creates a view for every Scope"""
+    def scope(self):
+        """return the current scope processed by this object"""
 
-      self.__scopes = [start]
-      while self.__scopes:
-         scope = self.__scopes.pop(0)
-         self.process_scope(scope)
+        return self.__scope
+
+    def process(self):
+        """Creates a view for every Scope."""
+
+        # FIXME: see HTML.Formatter
+        module = self.processor.ast.declarations()[0]
+        self.__scopes = [module]
+        while self.__scopes:
+            scope = self.__scopes.pop(0)
+            self.process_scope(scope)
          
-         # Queue child scopes
-         for child in self.processor.sorter.children():
-            if isinstance(child, AST.Scope):
-               self.__scopes.append(child)
+            # Queue child scopes
+            for child in self.processor.sorter.children():
+                if isinstance(child, AST.Scope):
+                    self.__scopes.append(child)
 
-   def register_filenames(self, start):
-      """Registers a view for every Scope"""
+    def register_filenames(self):
+        """Registers a view for every Scope."""
 
-      self.__scopes = [start]
-      while self.__scopes:
-         scope = self.__scopes.pop(0)
+        # FIXME: see HTML.Formatter
+        self.__scopes = [self.processor.ast.declarations()[0]]
+        while self.__scopes:
+            scope = self.__scopes.pop(0)
+            if scope.name():
+                filename = self.directory_layout.scope(scope.name())
+            else:
+                filename = self.root()[0]
+            self.processor.register_filename(filename, self, scope)
 
-         filename = self.processor.file_layout.scope(scope.name())
-         self.processor.register_filename(filename, self, scope)
-
-         self.processor.sorter.set_scope(scope)
+            self.processor.sorter.set_scope(scope)
          
-         # Queue child scopes
-         for child in self.processor.sorter.children():
-            if isinstance(child, AST.Scope):
-               self.__scopes.append(child)
+            # Queue child scopes
+            for child in self.processor.sorter.children():
+                if isinstance(child, AST.Scope):
+                    self.__scopes.append(child)
      
-   def process_scope(self, scope):
-      """Creates a view for the given scope"""
+    def process_scope(self, scope):
+        """Creates a view for the given scope"""
 
-      details = {} # A hash of lists of detailed children by type
-      sections = [] # a list of detailed sections
-	
-      # Open file and setup scopes
-      self.__scope = scope.name()
-      self.__filename = self.processor.file_layout.scope(self.__scope)
-      self.__title = escape(string.join(self.__scope))
-      self.start_file()
-	
-      # Write heading
-      self.write(self.processor.navigation_bar(self.filename()))
+        # Open file and setup scopes
+        self.__scope = scope.name()
+        if self.__scope:
+            self.__filename = self.directory_layout.scope(self.__scope)
+        else:
+            self.__filename = self.root()[0]
+        self.__title = escape(' '.join(self.__scope))
+        self.start_file()
+        self.write_navigation_bar()
 
-      # Loop throught all the view Parts
-      for part in self.parts:
-         part.process(scope)
-      self.end_file()
+        # Loop throught all the view Parts
+        for part in self.parts:
+            part.process(scope)
+        self.end_file()
     
-   def end_file(self):
-      """Overrides end_file to provide synopsis logo"""
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
 
-      self.write('\n')
-      now = time.strftime(r'%c', time.localtime(time.time()))
-      logo = href('http://synopsis.fresco.org', 'synopsis')
-      self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
-      View.end_file(self)
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = href('http://synopsis.fresco.org', 'synopsis')
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

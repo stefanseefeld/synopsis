@@ -40,7 +40,7 @@ class HeadingFormatter(Fragment):
         text.append(escape(scoped_name[-1]))
         return '::\n'.join(text) + '\n'
 
-    def format_name_in_namespace(self, scoped_name):
+    def format_name_in_module(self, scoped_name):
         """Formats a reference to each parent scope, starting at the first
         non-module scope."""
 
@@ -54,13 +54,13 @@ class HeadingFormatter(Fragment):
                 if isinstance(ns_type, Type.Declared):
                     decl = ns_type.declaration()
                     if isinstance(decl, AST.Module):
-                        # Skip modules (including namespaces)
+                        # Skip modules
                         continue
             text.append(self.reference(scope))
         text.append(escape(scoped_name[-1]))
         return '::\n'.join(text) + '\n'
 
-    def format_namespace_of_name(self, scoped_name):
+    def format_module_of_name(self, scoped_name):
         """Formats a reference to each parent scope and this one."""
 
         types = self.processor.ast.types()
@@ -74,7 +74,7 @@ class HeadingFormatter(Fragment):
                 if isinstance(ns_type, Type.Declared):
                     decl = ns_type.declaration()
                     if isinstance(decl, AST.Module):
-                        # Only do modules and namespaces
+                        # Only do modules
                         text.append(self.reference(scope))
                         last_decl = decl
                         continue
@@ -86,7 +86,7 @@ class HeadingFormatter(Fragment):
 
         # Module details are only printed at the top of their view
         if not module.name():
-            type, name = 'Global', 'Namespace'
+            type, name = 'Global', 'Module'
         else:
             type = module.type().capitalize()
             name = self.format_name(module.name())
@@ -101,13 +101,13 @@ class HeadingFormatter(Fragment):
     def format_class(self, clas):
         """Formats the class by linking to each parent scope in the name."""
 
-        # Calculate the namespace string
-        decl, namespace = self.format_namespace_of_name(clas.name())
+        # Calculate the module string
+        decl, module = self.format_module_of_name(clas.name())
         if decl:
-            namespace = '%s %s'%(decl.type(), namespace)
-            namespace = div('class-namespace', namespace)
+            module = '%s %s'%(decl.type(), module)
+            module = div('class-module', module)
         else:
-            namespace = ''
+            module = ''
 
         # Calculate template string
         templ = clas.template()
@@ -120,18 +120,18 @@ class HeadingFormatter(Fragment):
 
         # Calculate class name string
         type = clas.type()
-        name = self.format_name_in_namespace(clas.name())
+        name = self.format_name_in_module(clas.name())
         name = div('class-name', '%s %s'%(type, name))
 
         # Calculate file-related string
         file_name = rel(self.processor.output, clas.file().name)
         # Try the file index view first
-        file_link = self.processor.file_layout.file_index(clas.file().name)
+        file_link = self.directory_layout.file_index(clas.file().name)
         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")
+            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
-            file_link = self.processor.file_layout.file_source(clas.file().name)
+            file_link = self.directory_layout.file_source(clas.file().name)
             if self.processor.filename_info(file_link):
                 file_ref = href(rel(self.formatter.filename(), file_link), file_name)
             else:
@@ -142,7 +142,7 @@ class HeadingFormatter(Fragment):
         if self.source: links += ' %s'%div('source', self.source.format_class(clas))
         info = div('links', links)
 
-        return '%s%s%s%s'%(namespace, templ, name, info)
+        return '%s%s%s%s'%(module, templ, name, info)
 
     def format_parameter(self, parameter):
         """Returns one string for the given parameter"""

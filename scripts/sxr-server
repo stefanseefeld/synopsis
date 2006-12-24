@@ -73,11 +73,12 @@ class RequestHandler(CGIHTTPRequestHandler, SXRConfig):
 
 
 def usage():
-   print 'Usage : %s [options]'%sys.argv[0]
+   print 'Usage : %s [options]'%'sxr-server'
    print """
 List of options:
 
-  -h, --help             help
+  -h, --help             Display usage summary
+  -V, --version          Display version information.
   -d, --debug            print debug output
   -p, --port             port to listen for requests
   -r, --document_root    document root, i.e. top level directory for static files
@@ -91,13 +92,16 @@ def run():
     port = 8000
     env = {}
     opts, args = getopt.getopt(sys.argv[1:],
-                               'p:r:u:s:dh',
+                               'p:r:u:s:dhV',
                                ['port=', 'document_root=', 'url=', 'src=', 'cgi',
-                                'debug', 'help'])
+                                'debug', 'help', 'version'])
     cgi = False
     for o, a in opts:
         if o in ['-h', '--help']:
             usage()
+            sys.exit(0)
+        elif o in ['-V', '--version']:
+            print 'sxr-server version %s'%config.version
             sys.exit(0)
         elif o in ['-p', '--port']:
             port = int(a)

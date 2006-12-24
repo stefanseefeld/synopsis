@@ -46,4 +46,3 @@ class SourceFile:
         self.includes = []
         self.declarations = []
         self.macro_calls = {}
-

@@ -20,46 +20,36 @@ class FileListing(View):
    Second a view is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
-   def register(self, processor):
-
-      View.register(self, processor)
-      self.__filename = self.processor.file_layout.special('FileListing')
-      self.__title = 'Files'
-
-      processor.set_main_view(self.filename())
-      # Reset filename in case we got main view status
-      self.__filename = self.processor.file_layout.special('FileListing')
-      self.processor.add_root_view(self.filename(), self.title(), "contents", 2)
-      processor.set_contents_view(self.filename())
-
    def filename(self):
-      """Returns the filename"""
 
-      return self.__filename
+      if self.main:
+         return self.directory_layout.index()
+      else:
+         return self.directory_layout.special('FileListing')
 
    def title(self):
-      """Returns the title"""
 
-      return self.__title
+      return 'Files'
 
-   def register_filenames(self, start):
-      """Registers a view for each file indexed"""
+   def root(self):
 
-      self.processor.register_filename(self.__filename, self, None)
+      return self.filename(), self.title()
+
+   def register_filenames(self):
+      """Registers a view for each file indexed."""
+
+      self.processor.register_filename(self.filename(), self, None)
     
-   def process(self, start):
+   def process(self):
       """Creates the listing using the recursive process_file_tree_node method"""
 
-      # Init tree
-      self.tree = self.processor.tree_formatter
-      self.tree.register(self)
       # Start the file
       self.start_file()
-      self.write(self.processor.navigation_bar(self.filename(), 2))
-      self.tree.start_tree()
+      self.write_navigation_bar()
+      self.write('<ul class="tree">')
       # recursively visit all nodes
-      self.process_file_tree_node(self.processor.file_tree.root())
-      self.tree.end_tree()
+      self.process_file_tree_node(self.directory_tree.root())
+      self.write('</ul>')
       self.end_file()
 
    def _node_sorter(self, a, b):
@@ -70,7 +60,7 @@ class FileListing(View):
       b_leaf = isinstance(a, FileTree.File)
       if a_leaf != b_leaf:
          return cmp(b_leaf, a_leaf)
-      return cmp(string.upper(a.path), string.upper(b.path))
+      return cmp(a.path.upper(), b.path.upper())
 
    def process_file_tree_node(self, node):
       """Creates a portion of the tree for the given file node. This method
@@ -80,17 +70,17 @@ class FileListing(View):
 
       if isinstance(node, FileTree.File):
          # Leaf node
-         ref = rel(self.filename(), self.processor.file_layout.file_index(node.path))
-         text = href(ref, node.filename, target='index')
-         self.tree.write_leaf(text)
+         ref = rel(self.filename(), self.directory_layout.file_index(node.path))
+         text = href(ref, node.filename, target='detail')
+         self.write('<li>%s</li>'%text)
          return
       # Non-leaf node
       children = node.children
       children.sort(self._node_sorter)
       if len(node.path):
-         self.tree.write_node_start(node.filename+os.sep)
+         self.write('<li>%s<ul class="tree">'%node.filename+os.sep)
       if len(children):
          for child in children:
             self.process_file_tree_node(child)
       if len(node.path):
-         self.tree.write_node_end()
+         self.write('</ul></li>')
