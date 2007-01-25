@@ -19,6 +19,10 @@
 # define PYTHON_HAS_BOOL 0
 #endif
 
+#if PY_VERSION_HEX < 0x02050000
+typedef int Py_ssize_t;
+#endif
+
 namespace Synopsis
 {
 namespace Python
@@ -289,7 +293,7 @@ private:
   void incr();
 
   Dict my_dict;
-  int my_pos;
+  Py_ssize_t my_pos;
 
   Tuple my_current;
 };
@@ -395,7 +399,7 @@ inline char Object::narrow(Object o) throw(Object::TypeError)
   if (!PyString_Check(o.my_impl) || PyString_GET_SIZE(o.my_impl) != 1)
     throw TypeError("object not a character");
   char *value;
-  int length;
+  Py_ssize_t length;
   PyString_AsStringAndSize(o.my_impl, &value, &length);
   return value[0];
 }
