@@ -207,7 +207,7 @@ private:
   void decr();
 
   List my_list;
-  int my_pos;
+  Py_ssize_t my_pos;
 
   Object my_current;
 };
@@ -239,7 +239,7 @@ private:
   void decr();
 
   List my_list;
-  int my_pos;
+  Py_ssize_t my_pos;
 
   Object my_current;
 };
