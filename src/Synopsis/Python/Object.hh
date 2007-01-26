@@ -207,7 +207,7 @@ private:
   void decr();
 
   List my_list;
-  int my_pos;
+  Py_ssize_t my_pos;
 
   Object my_current;
 };
@@ -239,7 +239,7 @@ private:
   void decr();
 
   List my_list;
-  int my_pos;
+  Py_ssize_t my_pos;
 
   Object my_current;
 };
@@ -448,8 +448,10 @@ inline void Object::check_exception() const
   PyObject *exc = PyErr_Occurred();
   if (!exc) return;
   PyObject *type, *value, *trace;
+  //  PyErr_Print();
   PyErr_Fetch(&type, &value, &trace);
   Object t(type), v(value), tr(trace); // to release the reference at end of scope
+  std::cerr << trace << ' ' << Object::narrow<std::string>(tr.str()) << std::endl;
   if (exc == PyExc_KeyError)
     throw KeyError(Object::narrow<std::string>(v.str()));
   else if (exc == PyExc_TypeError)
