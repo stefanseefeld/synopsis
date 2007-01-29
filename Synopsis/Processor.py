@@ -7,7 +7,7 @@
 
 import AST
 
-class Error:
+class Error(Exception):
    """An exception a processor may raise during processing."""
 
    def __init__(self, what):
