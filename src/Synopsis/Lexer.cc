@@ -120,6 +120,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__int16"] = Token::SHORT;
     my_keywords["__int32"] = Token::INT;
     my_keywords["__int64"] = Token::INT64;
+    my_keywords["__w64"] = Token::Ignore;
   }
 }
 
