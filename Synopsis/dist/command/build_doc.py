@@ -160,16 +160,6 @@ to query and browse cross-referenced source code."""
             rmtree(dest, True)
             copy_tree(src, dest)
 
-      if self.sxr:
-         src = os.path.join(tmp_man_dir, 'html', 'sxr')
-         builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/Synopsis/html/'))
-         dest = os.path.join(builddir, 'SXR')
-
-         if newer(src, dest):
-            rmtree(dest, True)
-            copy_tree(src, dest)
-
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/Synopsis/print'))
