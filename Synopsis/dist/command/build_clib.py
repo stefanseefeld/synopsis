@@ -23,7 +23,7 @@ def collect_headers(arg, path, files):
                 if f.endswith('.hh') or f.endswith('.h')])
 
 
-class build_syn_clib (Command):
+class build_clib(Command):
 
     description = "build common C/C++ stuff used by all extensions"
 
@@ -32,14 +32,14 @@ class build_syn_clib (Command):
                     ('build-temp', 't',
                      "directory to put temporary build by-products")]
 
-    def initialize_options (self):
+    def initialize_options(self):
 
         self.build_base = 'build'
         self.build_clib = None
         self.build_ctemp = None
 
 
-    def finalize_options (self):
+    def finalize_options(self):
 
         if self.build_ctemp is None:
             self.build_ctemp = os.path.join(self.build_base,

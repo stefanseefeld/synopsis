@@ -13,17 +13,17 @@
 from distutils.core import setup
 from distutils import sysconfig
 
-from Synopsis.config import *
-
 from Synopsis.dist.command.config import config
+from Synopsis.dist.command.build_py import build_py
 from Synopsis.dist.command.build_doc import build_doc
-from Synopsis.dist.command.build_syn_clib import build_syn_clib
-from Synopsis.dist.command.build_syn_ext import build_syn_ext
+from Synopsis.dist.command.build_clib import build_clib
+from Synopsis.dist.command.build_ext import build_ext
 from Synopsis.dist.command.test import test
-from Synopsis.dist.command.install_syn_clib import install_syn_clib
-from Synopsis.dist.command.install_syn import install_syn
+from Synopsis.dist.command.install_clib import install_clib
+from Synopsis.dist.command.install_lib import install_lib
+from Synopsis.dist.command.install import install
 from Synopsis.dist.command.bdist_dpkg import bdist_dpkg
-from Synopsis.dist.command.clean_syn import clean_syn
+from Synopsis.dist.command.clean import clean
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -36,6 +36,10 @@ import os, sys, re, glob
 module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return [pref + x for x in list]
+
+
+version = '0.9.1'
+
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
                "Synopsis.Parsers.IDL", "Synopsis.Parsers.Python",
@@ -57,16 +61,18 @@ ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
 
 scripts = ['synopsis', 'sxr-server']
 
-data_files = [('share/doc/Synopsis', ('README', 'COPYING', 'NEWS'))]
+data_files = [('share/doc/Synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
 data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
-data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
+data_files.append(('share/Synopsis-%s'%version, glob.glob('share/Synopsis/*.*')))
 
 #### add documentation
 
 def add_documentation(all, directory, files):
 
    if '.svn' in files: files.remove('.svn')
-   all.append((directory,
+   dest = directory.replace('share/doc/Synopsis',
+                            'share/doc/Synopsis-%s'%version)
+   all.append((dest,
                [os.path.join(directory, file)
                 for file in files
                 if os.path.isfile(os.path.join(directory, file))]))
@@ -77,13 +83,15 @@ data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
-                'build_clib':build_syn_clib,
-                'build_ext':build_syn_ext,
+                'build_clib':build_clib,
+                'build_ext':build_ext,
+                'build_py':build_py,
                 'test':test,
-                'install_clib':install_syn_clib,
-                'install':install_syn,
+                'install_clib':install_clib,
+                'install_lib':install_lib,
+                'install':install,
                 'bdist_dpkg':bdist_dpkg,
-                'clean':clean_syn},
+                'clean':clean},
       name="synopsis",
       version=version,
       author="Stefan Seefeld",

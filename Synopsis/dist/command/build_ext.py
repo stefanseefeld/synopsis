@@ -7,13 +7,13 @@
 
 import os, sys, string
 
-from distutils.command.build_ext import build_ext
+from distutils.command.build_ext import build_ext as base
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
-class build_syn_ext(build_ext):
+class build_ext(base):
 
     description = "build C++ extension packages"
 

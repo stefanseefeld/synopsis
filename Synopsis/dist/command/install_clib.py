@@ -21,7 +21,7 @@ def header_collector(prefix):
     return collect_headers
 
 
-class install_syn_clib(Command):
+class install_clib(Command):
 
     description = "install libSynopsis.so"
 
