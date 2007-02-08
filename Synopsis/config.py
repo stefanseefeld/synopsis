@@ -1,4 +1,11 @@
-"""contains configuration data that are specific to a
+#
+# Copyright (C) 2007 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+"""This module contains configuration data that are specific to a
 particular release / installation such as version, data
 paths, etc."""
 

@@ -5,10 +5,10 @@
 # see the file COPYING for details.
 #
 
-import os
 from distutils.core import Command
 from distutils.dir_util import remove_tree
 from distutils import log
+import os
 
 from distutils.command.clean import clean as base
 

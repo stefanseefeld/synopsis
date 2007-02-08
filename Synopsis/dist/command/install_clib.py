@@ -1,10 +1,17 @@
-import sys, os, string
+#
+# Copyright (C) 2005 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
 from distutils.core import Command
 from distutils.errors import DistutilsOptionError
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.util import change_root
 from distutils import sysconfig
+import os
 
 def header_collector(prefix):
 

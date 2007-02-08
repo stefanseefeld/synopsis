@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-import os, string, dircache
+import os, dircache
 from distutils.core import Command
 from distutils import sysconfig
 from distutils.dir_util import mkpath
@@ -62,7 +62,7 @@ class build_clib(Command):
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
-            path = string.replace(self.build_ctemp, '\\', '/') + '/src'
+            path = self.build_ctemp.replace('\\', '/') + '/src'
         else:
             path = os.path.join(self.build_ctemp, 'src')
         
