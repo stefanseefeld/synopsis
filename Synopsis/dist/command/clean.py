@@ -5,18 +5,18 @@
 # see the file COPYING for details.
 #
 
-import os
 from distutils.core import Command
 from distutils.dir_util import remove_tree
 from distutils import log
+import os
 
-from distutils.command.clean import clean
+from distutils.command.clean import clean as base
 
-class clean_syn(clean):
+class clean(base):
 
     def finalize_options(self):
         
-        clean.finalize_options(self)
+        base.finalize_options(self)
         
         build_clib = self.distribution.get_command_obj('build_clib')
         build_clib.ensure_finalized()
@@ -25,7 +25,7 @@ class clean_syn(clean):
 
     def run(self):
 
-        clean.run(self)
+        base.run(self)
 
         # Remove the build/ctemp.<plat> directory (unless it's already
         # gone).

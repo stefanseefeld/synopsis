@@ -75,8 +75,8 @@ class config(build_ext):
             self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
 
         if os.name == 'nt':
-            syn_cxx = string.replace('`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp),
-                                     '\\', '\\\\\\\\\\\\\\\\')
+            syn_cxx = '`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp)
+            syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
         else:
             syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
@@ -117,9 +117,9 @@ class config(build_ext):
             # a cygwin shell
             configure = ('../' * (build_temp.count('\\') + component.count('/')  + 2)
                          + component + '/configure')
-            python = string.replace('`cygpath -a %s`'%os.path.dirname(sys.executable)
-                                    + '/' + os.path.basename(sys.executable),
-                                    '\\', '\\\\\\\\\\\\\\\\')
+            python = '`cygpath -a %s`'%os.path.dirname(sys.executable)
+            python += '/' + os.path.basename(sys.executable)
+            python.replace('\\', '\\\\\\\\\\\\\\\\')
             prefix = '`cygpath -a %s`'%sys.prefix
         
         else:

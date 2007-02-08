@@ -5,15 +5,14 @@
 # see the file COPYING for details.
 #
 
-import os, sys, string
-
-from distutils.command.build_ext import build_ext
+from distutils.command.build_ext import build_ext as base
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.spawn import spawn, find_executable
 from shutil import *
+import os
 
-class build_syn_ext(build_ext):
+class build_ext(base):
 
     description = "build C++ extension packages"
 
@@ -66,8 +65,8 @@ class build_syn_ext(build_ext):
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
-            path = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
-            temp_target = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
+            path = self.build_temp.replace('\\', '/') + '/' + ext[0]
+            temp_target = self.build_temp.replace('\\', '/') + '/' + ext[0]
         else:
             path = os.path.join(self.build_temp, ext[0])
             temp_target = os.path.join(self.build_temp, ext[0])
