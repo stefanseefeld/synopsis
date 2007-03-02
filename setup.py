@@ -14,10 +14,10 @@ from distutils.core import setup
 from distutils import sysconfig
 
 from Synopsis.dist.command.config import config
-from Synopsis.dist.command.build_py import build_py
 from Synopsis.dist.command.build_doc import build_doc
 from Synopsis.dist.command.build_clib import build_clib
 from Synopsis.dist.command.build_ext import build_ext
+from Synopsis.dist.command.build_py import build_py
 from Synopsis.dist.command.test import test
 from Synopsis.dist.command.install_clib import install_clib
 from Synopsis.dist.command.install_lib import install_lib
@@ -36,7 +36,6 @@ import os, sys, re, glob
 module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return [pref + x for x in list]
-
 
 version = '0.9.1'
 
@@ -61,24 +60,24 @@ ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
 
 scripts = ['synopsis', 'sxr-server']
 
-data_files = [('share/doc/Synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
+data_files = [('share/doc/synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
 data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
-data_files.append(('share/Synopsis-%s'%version, glob.glob('share/Synopsis/*.*')))
+data_files.append(('share/synopsis-%s'%version, glob.glob('share/synopsis/*.*')))
 
 #### add documentation
 
 def add_documentation(all, directory, files):
 
    if '.svn' in files: files.remove('.svn')
-   dest = directory.replace('share/doc/Synopsis',
-                            'share/doc/Synopsis-%s'%version)
+   dest = directory.replace('share/doc/synopsis',
+                            'share/doc/synopsis-%s'%version)
    all.append((dest,
                [os.path.join(directory, file)
                 for file in files
                 if os.path.isfile(os.path.join(directory, file))]))
 
 documentation = []
-os.path.walk('share/doc/Synopsis', add_documentation, documentation)
+os.path.walk('share/doc/synopsis', add_documentation, documentation)
 data_files.extend(documentation)
 
 setup(cmdclass={'config':config,

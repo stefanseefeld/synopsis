@@ -13,5 +13,5 @@ import os, os.path
 
 # The following variables are adjusted during installation.
 version = 'devel'
-prefix = os.path.join(__file__, os.pardir, os.pardir)
-datadir = os.path.join(prefix, 'share', 'Synopsis')
+prefix = os.path.join(os.path.dirname(__file__), os.pardir)
+datadir = os.path.join(prefix, 'share', 'synopsis')

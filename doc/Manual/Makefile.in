@@ -152,14 +152,14 @@ info:	$(TEXI) Manual.texi
 	makeinfo -I $(srcdir) Manual.texi
 
 install: all
-	mkdir -p $(datadir)/Synopsis
-	cp -pr html $(datadir)/Synopsis
+	mkdir -p $(datadir)/synopsis
+	cp -pr html $(datadir)/synopsis
 	mkdir -p $(infodir)
 	install -m644 synopsis.info* $(infodir)
-	install -m644 Manual.pdf $(datadir)/Synopsis
+	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:
-	rm -rf Synopsis links xref *.syn links.toc $(TEXI) \
+	rm -rf synopsis links xref *.syn links.toc $(TEXI) \
      $(addprefix Manual., $(texi-help))
 
 distclean:  clean

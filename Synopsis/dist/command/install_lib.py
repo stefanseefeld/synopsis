@@ -20,7 +20,7 @@ class install_lib(base):
         i = self.distribution.get_command_obj('install')
         prefix = i.root or i.prefix
         version = self.distribution.get_version()
-        datadir=os.path.join(prefix, 'share', 'Synopsis-%s'%version)
+        datadir=os.path.join(prefix, 'share', 'synopsis-%s'%version)
         reset_config_variables(config_file,
                                prefix=prefix,
                                version=version,

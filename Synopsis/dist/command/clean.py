@@ -42,7 +42,7 @@ class clean(base):
             for d in [libdir, incdir, bindir]:
                 if os.path.exists(d):
                     remove_tree(d, dry_run=self.dry_run)
-            pc = os.path.join(self.build_clib, 'Synopsis.pc')
+            pc = os.path.join(self.build_clib, 'synopsis.pc')
             if os.path.exists(pc) and not self.dry_run:
                 os.remove(pc)
 

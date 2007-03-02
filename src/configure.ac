@@ -80,8 +80,8 @@ AC_SUBST(LIBEXT)
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh
                  Makefile 
                  synopsis.py 
-                 Synopsis-uninstalled.pc
-                 Synopsis.pc])
+                 synopsis-uninstalled.pc
+                 synopsis.pc])
 
 mkdir -p lib
 mkdir -p bin

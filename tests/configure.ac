@@ -23,8 +23,8 @@ AC_ARG_WITH(syn-cxx,
 
 AC_PROG_CXX
 
-SYN_CPP="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --cflags Synopsis-uninstalled`"
-SYN_LIBS="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --libs Synopsis-uninstalled`"
+SYN_CPP="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --cflags synopsis-uninstalled`"
+SYN_LIBS="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --libs synopsis-uninstalled`"
 CPPFLAGS="$CPPFLAGS $SYN_CPP"
 LIBS="$LIBS $SYN_LIBS"
 

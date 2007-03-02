@@ -88,22 +88,22 @@ rm -rf $RPM_BUILD_ROOT
 %{py_sitedir}/Synopsis/Parsers/Python
 %{py_sitedir}/Synopsis/Processors
 %{py_sitedir}/Synopsis/Formatters
-%{_datadir}/Synopsis-%{version}
-%doc %{_docdir}/Synopsis-%{version}/README 
-%doc %{_docdir}/Synopsis-%{version}/COPYING
-%doc %{_docdir}/Synopsis-%{version}/NEWS
+%{_datadir}/synopsis-%{version}
+%doc %{_docdir}/synopsis-%{version}/README 
+%doc %{_docdir}/synopsis-%{version}/COPYING
+%doc %{_docdir}/synopsis-%{version}/NEWS
 %doc %_mandir/man1/*
 
 %files devel
 %defattr(-, root, root)
 %{_includedir}/Synopsis
-%{_libdir}/pkgconfig/Synopsis.pc
+%{_libdir}/pkgconfig/synopsis.pc
 
 %files doc
 %defattr(-, root, root)
-%{_docdir}/Synopsis-%{version}/html
-#%{_docdir}/Synopsis-%{version}/print
-%{_docdir}/Synopsis-%{version}/examples
+%{_docdir}/synopsis-%{version}/html
+#%{_docdir}/synopsis-%{version}/print
+%{_docdir}/synopsis-%{version}/examples
 
 %files idl
 %defattr(-, root, root)

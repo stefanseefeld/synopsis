@@ -140,7 +140,7 @@ to query and browse cross-referenced source code."""
          spawn([make, '-C', tmp_man_dir, 'sxr', 'sxr=%s'%self.sxr])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/Synopsis/html/Manual'))
+                                              'share/doc/synopsis/html/Manual'))
       if self.html:
          for d in ['python', 'cxx']:
             src = os.path.join(tmp_man_dir, 'html', d)
@@ -153,7 +153,7 @@ to query and browse cross-referenced source code."""
       if self.sxr:
          src = os.path.join(tmp_man_dir, 'html', 'sxr')
          builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/Synopsis/html/'))
+                                                 'share/doc/synopsis/html/'))
          dest = os.path.join(builddir, 'SXR')
 
          if newer(src, dest):
@@ -162,7 +162,7 @@ to query and browse cross-referenced source code."""
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/Synopsis/print'))
+                                                 'share/doc/synopsis/print'))
          mkpath(builddir, 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tmp_man_dir, 'Manual.pdf'),
                    os.path.join(builddir, 'Manual.pdf'))
@@ -198,7 +198,7 @@ to query and browse cross-referenced source code."""
          spawn([make, '-C', tempdir, 'pdf'])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/Synopsis'))
+                                              'share/doc/synopsis'))
 
       if self.html:
          for component in ('Tutorial', 'examples', 'DevGuide'):
@@ -213,7 +213,7 @@ to query and browse cross-referenced source code."""
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/Synopsis/print'))
+                                                 'share/doc/synopsis/print'))
          mkpath(builddir, 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
                    os.path.join(builddir, 'Tutorial.pdf'))

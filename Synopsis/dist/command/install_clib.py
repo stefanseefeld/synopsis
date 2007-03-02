@@ -100,8 +100,8 @@ class install_clib(Command):
             
         pkgdir = os.path.join(libdir, 'pkgconfig')
         mkpath (pkgdir, 0777, self.verbose, self.dry_run)
-        copy_file(os.path.join(self.build_dir, 'Synopsis.pc'),
-                  os.path.join(pkgdir, 'Synopsis.pc'),
+        copy_file(os.path.join(self.build_dir, 'synopsis.pc'),
+                  os.path.join(pkgdir, 'synopsis.pc'),
                   1, 1, 0, None, self.verbose, self.dry_run)
 
     def get_outputs(self):
@@ -116,7 +116,7 @@ class install_clib(Command):
         else:
             LIBEXT = sysconfig.get_config_var('SO')
         library = os.path.join(prefix, 'lib', 'libSynopsis%s'%LIBEXT)
-        pkgconf = os.path.join(prefix, 'lib', 'pkgconfig', 'Synopsis.pc')
+        pkgconf = os.path.join(prefix, 'lib', 'pkgconfig', 'synopsis.pc')
         headers = []
         os.path.walk(os.path.join('src', 'Synopsis'),
                      header_collector('src'),
