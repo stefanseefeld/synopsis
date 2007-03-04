@@ -1,19 +1,21 @@
 %define name synopsis
-%define version 0.9
+%define version 0.9.1
 %define release 1
-%define py_sitedir %(echo `%{__python} -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib()"`)
+%define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
+%define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
+%define url http://synopsis.fresco.org
 
 Summary: Source-code Introspection Tool
 Name: %{name}
 Version: %{version}
-Release: %{release}
-Source0: %{name}-%{version}.tar.gz
+Release: %{release}%{?dist}
+Source0: %{url}/download/%{name}-%{version}.tar.gz
 License: LGPL
-Group: Development/Libraries
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-Prefix: %{_prefix}
-Vendor: Stefan Seefeld <stefan@fresco.org>
-Url: http://synopsis.fresco.org
+Group: Development/Tools
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Url: %{url}
+BuildRequires: python-devel
+BuildRequires: pkgconfig
 
 %description
 Synopsis is a multi-language source code introspection tool that
@@ -23,15 +25,16 @@ reverse engineering, and source-to-source translation.
 
 %package devel
 Summary: The Synopsis development environment.
-Group: System Environment/Libraries
+Group: Development/Libraries
 Requires: synopsis = %{version}-%{release}
+Requires: pkgconfig
 
 %description devel
 Headers and libraries for developing software that uses Synopsis APIs.
 
 %package doc
 Summary: The Synopsis documentation
-Group: System Environment/Libraries
+Group: Documentation
 Requires: synopsis = %{version}-%{release}
 
 %description doc
@@ -40,7 +43,7 @@ Synopsis documentation
 %package idl
 Summary: The Synopsis IDL Parser
 License: GPL
-Group: System Environment/Libraries
+Group: Development/Tools
 Requires: synopsis = %{version}-%{release}
 
 %description idl
@@ -49,12 +52,13 @@ Synopsis IDL Parser module to parse CORBA IDL.
 
 %prep
 
-%setup
+%setup -q
 
 %build
-env CFLAGS="$RPM_OPT_FLAGS" python setup.py build
+env CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" python setup.py build
 
 %install
+rm -rf $RPM_BUILD_ROOT
 python setup.py install --root=$RPM_BUILD_ROOT
 
 %clean
@@ -70,9 +74,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %{_bindir}/*
 %{_libdir}/*.so
+%dir %{py_sitedir}/Synopsis/
 %{py_sitedir}/Synopsis/*.py
 %{py_sitedir}/Synopsis/*.pyc
 %{py_sitedir}/Synopsis/*.pyo
+%dir %{py_sitedir}/Synopsis/Parsers/
 %{py_sitedir}/Synopsis/Parsers/*.py
 %{py_sitedir}/Synopsis/Parsers/*.pyc
 %{py_sitedir}/Synopsis/Parsers/*.pyo
@@ -82,18 +88,22 @@ rm -rf $RPM_BUILD_ROOT
 %{py_sitedir}/Synopsis/Parsers/Python
 %{py_sitedir}/Synopsis/Processors
 %{py_sitedir}/Synopsis/Formatters
-%{_datadir}/Synopsis 
-%doc README COPYING NEWS
+%{_datadir}/synopsis-%{version}
+%doc %{_docdir}/synopsis-%{version}/README 
+%doc %{_docdir}/synopsis-%{version}/COPYING
+%doc %{_docdir}/synopsis-%{version}/NEWS
 %doc %_mandir/man1/*
 
 %files devel
 %defattr(-, root, root)
 %{_includedir}/Synopsis
-%{_libdir}/pkgconfig/Synopsis.pc
+%{_libdir}/pkgconfig/synopsis.pc
 
 %files doc
 %defattr(-, root, root)
-%{_docdir}/Synopsis
+%{_docdir}/synopsis-%{version}/html
+#%{_docdir}/synopsis-%{version}/print
+%{_docdir}/synopsis-%{version}/examples
 
 %files idl
 %defattr(-, root, root)

@@ -59,24 +59,24 @@ ext_modules = [('Synopsis/Parsers/Cpp', 'ParserImpl' + module_ext),
 
 scripts = ['synopsis', 'sxr-server']
 
-data_files = [('share/doc/Synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
+data_files = [('share/doc/synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
 data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
-data_files.append(('share/Synopsis-%s'%version, glob.glob('share/Synopsis/*.*')))
+data_files.append(('share/synopsis-%s'%version, glob.glob('share/synopsis/*.*')))
 
 #### add documentation
 
 def add_documentation(all, directory, files):
 
    if '.svn' in files: files.remove('.svn')
-   dest = directory.replace('share/doc/Synopsis',
-                            'share/doc/Synopsis-%s'%version)
+   dest = directory.replace('share/doc/synopsis',
+                            'share/doc/synopsis-%s'%version)
    all.append((dest,
                [os.path.join(directory, file)
                 for file in files
                 if os.path.isfile(os.path.join(directory, file))]))
 
 documentation = []
-os.path.walk('share/doc/Synopsis', add_documentation, documentation)
+os.path.walk('share/doc/synopsis', add_documentation, documentation)
 data_files.extend(documentation)
 
 setup(cmdclass={'config':config,

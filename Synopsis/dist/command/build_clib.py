@@ -96,8 +96,8 @@ class build_clib(Command):
                       os.path.join(build_path, tool),
                       1, 1, 0, None, self.verbose, self.dry_run)
         # copy pkgconfig file
-        copy_file(os.path.join(path, 'Synopsis.pc'),
-                  os.path.join(self.build_clib, 'Synopsis.pc'),
+        copy_file(os.path.join(path, 'synopsis.pc'),
+                  os.path.join(self.build_clib, 'synopsis.pc'),
                   1, 1, 0, None, self.verbose, self.dry_run)
 
     def get_source_files(self):
