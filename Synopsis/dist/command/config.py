@@ -66,7 +66,9 @@ class config(build_ext):
 
     def run(self):
 
-        self.config('src', self.build_ctemp, self.build_clib)
+        version = self.distribution.get_version()
+        self.config('src', self.build_ctemp, self.build_clib,
+                    '--enable-version=%s'%version)
         if not self.disable_gc and not self.with_gc_prefix:
             if os.name == 'nt':
                 # for the gc configuration on the win32 native platform
@@ -76,7 +78,7 @@ class config(build_ext):
 
         if os.name == 'nt':
             syn_cxx = '`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp)
-            syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
+            syn_cxx = syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
         else:
             syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
