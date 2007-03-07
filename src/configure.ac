@@ -10,7 +10,13 @@ dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.9 $)
-AC_INIT(libSynopsis, 0.8, synopsis-devel@fresco.org)
+AC_INIT(libSynopsis, 1.0, synopsis-devel@fresco.org)
+
+AC_ARG_ENABLE(version,
+  [  --enable-version=VERSION      specify the Synopsis version to build],
+  [version=$enableval],
+  [version="1.0"]
+)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
@@ -35,6 +41,19 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_CHECK_PROGS(AR, ar aal, ar)
 AC_SUBST(AR)
+AC_PROG_LN_S
+
+# Determine major, minor, and bugfix version
+if echo "$version" | grep -q '\.'; then
+    # there's one or more '.'s in release (e.g. 0.8 or 0.9.1)
+    major=$(echo "$version" | sed -e 's/\.[[0-9.]]*$//')
+    minor=$(echo "$version" | sed -e 's/^[[0-9]]*\.//')
+else
+    # there's no '.' in release (e.g. 9)
+    major=$version
+fi
+AC_SUBST(MAJOR, $major)
+AC_SUBST(MINOR, $minor)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_PROG(PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
