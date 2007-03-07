@@ -13,6 +13,7 @@ from distutils.file_util import copy_file
 from distutils.util import get_platform
 from distutils.spawn import spawn, find_executable
 from shutil import *
+from Synopsis.dist.command import copy_shared_library
 
 def collect_headers(arg, path, files):
     
@@ -51,14 +52,8 @@ class build_clib(Command):
 
     def run(self):
 
-        if os.name == 'nt':
-            LIBEXT = '.dll'
-        elif os.uname()[0] == 'Darwin':
-            LIBEXT = '.dylib'
-        else:
-            LIBEXT = sysconfig.get_config_var('SO')
-        target = 'libSynopsis%s'%LIBEXT
-        self.announce("building '%s'"%target)
+        version = self.distribution.get_version()
+        self.announce("building 'Synopsis' shared library")
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
@@ -73,10 +68,9 @@ class build_clib(Command):
 
         # copy library
         build_path = os.path.join(self.build_clib, 'lib')
-        mkpath (build_path, 0777, self.verbose, self.dry_run)
-        copy_file(os.path.join(path, os.path.join('lib', target)),
-                  os.path.join(build_path, target),
-                  1, 1, 0, None, self.verbose, self.dry_run)
+        copy_shared_library('Synopsis', version, path, build_path,
+                            self.verbose, self.dry_run)
+            
         # copy headers
         headers = []
         os.path.walk(os.path.join(self.build_ctemp, 'src', 'Synopsis'),

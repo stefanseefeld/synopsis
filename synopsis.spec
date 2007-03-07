@@ -73,7 +73,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root)
 %{_bindir}/*
-%{_libdir}/*.so
+%{_libdir}/*.so.*
 %dir %{py_sitedir}/Synopsis/
 %{py_sitedir}/Synopsis/*.py
 %{py_sitedir}/Synopsis/*.pyc
@@ -97,6 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 %files devel
 %defattr(-, root, root)
 %{_includedir}/Synopsis
+%{_libdir}/*.so
 %{_libdir}/pkgconfig/synopsis.pc
 
 %files doc

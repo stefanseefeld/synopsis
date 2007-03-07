@@ -16,16 +16,19 @@ LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 AR	:= @AR@
 RANLIB	:= @RANLIB@
+LN_S	:= @LN_S@
 CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@
-LIBRARY_EXT := @LIBEXT@
+DSO_EXT := @LIBEXT@
+MAJOR	:= @MAJOR@
+MINOR	:= @MINOR@
 
 ifneq ($(findstring -fPIC, $(CXXFLAGS)),)
 GC_CFLAGS := -fPIC
-GC_LIB	:= @GC_LIB@
 endif
+GC_LIB	:= @GC_LIB@
 ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 endif
@@ -42,7 +45,11 @@ endef
 
 define link_dso
 @echo linking $@
-$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
+rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
+$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) $(LDFLAGS) \
+  -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
+(cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
+(cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
 endef
 
 define link_app
@@ -79,7 +86,7 @@ HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 HDR_SXR_SYN:= $(patsubst %, %.sxr.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/display-symbols.cc)
 
-LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
+LIBRARY	:= lib/libSynopsis$(DSO_EXT)
 SUPPORT := lib/libSupport.a
 TOOLS	:= $(patsubst %, bin/%, $(TOOLS))
 TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
