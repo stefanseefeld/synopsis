@@ -60,6 +60,7 @@ List of options:
     --formatter=<type>        Select a formatter for <type>.
   -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
   -I <path>                   Add <path> to list of include paths.
+  --include=<file>            Preinclude <file>.
   -D <macro>                  Add <macro> to list of predefined macros.
 """
    
@@ -88,7 +89,8 @@ def make_processor(argv):
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
                                 'linker=', 'formatter=',
-                                'version', 'help', 'verbose', 'debug', 'profile'])
+                                'version', 'help', 'verbose', 'debug', 'profile',
+                                'include='])
     
     for o, a in opts:
         if o in ['-V', '--version']:
@@ -142,6 +144,10 @@ def make_processor(argv):
         elif o == '-I':
             if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
             parser_opts['cppflags'].append('-I%s'%a)
+
+        elif o == '--include':
+            if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+            parser_opts['cppflags'].append('-i%s'%a)
 
         elif o == '-D':
             if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []

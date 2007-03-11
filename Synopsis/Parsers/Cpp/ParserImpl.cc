@@ -129,6 +129,7 @@ PyObject *parse(PyObject *self, PyObject *args)
     }
     ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
 
+    std::vector<std::string> includes;
     for (std::vector<char const *>::iterator i = flags.begin();
 	 i != flags.end();
 	 ++i)
@@ -144,13 +145,23 @@ PyObject *parse(PyObject *self, PyObject *args)
 	  ctx.add_macro_definition(*i + 2, true);
 	else if (*(*i + 1) == 'U')
 	  ctx.remove_macro_definition(*i + 2);
+	else if (*(*i + 1) == 'i')
+	  includes.push_back(*i + 2);
       }
     }
 
     context_type::iterator_type first = ctx.begin();
-    context_type::iterator_type last = ctx.end();
+    context_type::iterator_type end = ctx.end();
 
-    while (first != last)
+    for (std::vector<std::string>::const_reverse_iterator i = includes.rbegin(),
+         e = includes.rend();
+         i != includes.rend(); /**/)
+    {
+      std::string filename(*i);
+      first.force_include(filename.c_str(), ++i == e);
+    }
+
+    while (first != end)
     {
       ofs << (*first).get_value();
       ++first;
