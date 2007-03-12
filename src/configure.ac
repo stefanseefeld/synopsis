@@ -38,6 +38,9 @@ AC_ARG_WITH([gc_prefix],
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_RANLIB
+AC_CHECK_PROGS(AR, ar aal, ar)
+AC_SUBST(AR)
 AC_PROG_LN_S
 
 # Determine major, minor, and bugfix version
@@ -66,6 +69,8 @@ if test "$ac_cv_enable_gc" == "yes"; then
   else
     GC_CPP="-I\${includedir}/Synopsis/gc/include"
     GC_LIB="Synopsis/gc/.libs/libgc.a"
+    dnl We need to link with posix threads since libgc wants it.
+    SYN_SEARCH_PTHREAD
   fi
 else
   GC_BRIDGE=$srcdir/Synopsis/PTree/GC-disabled.tmpl
@@ -75,12 +80,15 @@ AC_SUBST(GC_LIB)
 
 AC_SUBST_FILE(GC_BRIDGE)
 
+PLATFORM=`$PYTHON -c "import os; print os.name"`
+
 case `uname -s` in
 CYGWIN*)
     LIBEXT=".dll"
+    LDSHARED="$CXX -shared"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    if test `$PYTHON -c "import os; print os.name"` = nt; then
-      if test "$CXX" = "g++"; then
+    if test "$PLATFORM" == "nt"; then
+      if test "$CXX" == "g++"; then
         CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
         CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
@@ -88,13 +96,21 @@ CYGWIN*)
       fi
     fi
     ;;
+Darwin)
+    LIBEXT=".dylib"
+    LDSHARED="$CXX -dynamiclib"
+    CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
+    ;;
 *)
     LIBEXT=".so"
-    CXXFLAGS="$CXXFLAGS -fPIC"
+    LDSHARED="$CXX -shared"
+    CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
     ;;
 esac
 
+AC_SUBST(PLATFORM)
 AC_SUBST(LIBEXT)
+AC_SUBST(LDSHARED)
 
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh
                  Makefile 

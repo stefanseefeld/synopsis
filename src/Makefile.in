@@ -10,9 +10,13 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 builddir:= @builddir@
 
+PLATFORM:= @PLATFORM@
 SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
+AR	:= @AR@
+RANLIB	:= @RANLIB@
 LN_S	:= @LN_S@
 CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
@@ -28,8 +32,38 @@ endif
 GC_LIB	:= @GC_LIB@
 ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
-LIBS	+= -pthread
 endif
+
+define make_dep
+@echo generating dependencies for $(@D)/$(<F)
+$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+endef
+
+define compile
+@echo compiling $(@D)/$(@F)
+$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+endef
+
+ifeq ($(PLATFORM),nt)
+define link_dso
+@echo linking $@
+$(LDSHARED) $(LDFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+endef
+else
+define link_dso
+@echo linking $@
+rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
+$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) $(LDFLAGS) \
+  -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
+(cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
+(cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
+endef
+endif
+
+define link_app
+@echo linking $@
+$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
+endef
 
 SRC	:= Trace \
            PTree/Node PTree/Encoding PTree/operations \
@@ -71,17 +105,14 @@ vpath %.hh $(srcdir) $(builddir)
 all: $(TARGETS)
 
 $(LIBRARY): $(OBJ) $(GC_LIB)
-	rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
-	$(CXX) -shared -Wl,--soname,$(@F).$(MAJOR).$(MINOR) $(LDFLAGS) \
-          -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
-	(cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
-	(cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
+	$(link_dso)
 
 $(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
 	$(AR) cru $@ $^
+	$(RANLIB) $@
 
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
-	$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
+	$(link_app)
 
 doc: cxx.syn cxx-sxr.syn
 
@@ -98,12 +129,10 @@ cxx-sxr.syn: $(HDR_SXR_SYN) $(CC_SYN)
 	touch 'xref'
 
 %.d: %.cc
-	@echo generating dependencies for $(@D)/$(<F)
-	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+	$(make_dep)
 
 %.o: %.cc
-	@echo compiling $(@D)/$(@F)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(compile)
 
 Makefile: $(srcdir)/Makefile.in
 	./config.status --file Makefile
