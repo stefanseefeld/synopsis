@@ -7,7 +7,7 @@
 
 #include "Path.hh"
 
-#ifdef __WIN32__
+#ifdef _WIN32
 # include "Path-win32.cc"
 #else
 # include "Path-posix.cc"

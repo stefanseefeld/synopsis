@@ -42,7 +42,7 @@ private:
 
 //. create directory, makes all intermediate-level directories 
 //. needed to contain the leaf directory.
-void makedirs(const Path &) throw(std::runtime_error);
+void makedirs(const Path &);
 
 }
 

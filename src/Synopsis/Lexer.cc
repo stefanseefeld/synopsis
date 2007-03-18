@@ -9,6 +9,7 @@
 #include "Synopsis/Buffer.hh"
 #include "Synopsis/process_pragma.hh"
 #include <iostream>
+#include <string>
 #include <cassert>
 
 using namespace Synopsis;
@@ -114,15 +115,17 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     keywords_["__cdecl"] = Token::Ignore;
     keywords_["_fastcall"] = Token::Ignore;
     keywords_["__fastcall"] = Token::Ignore;
+    keywords_["_stdcall"] = Token::Ignore;
+    keywords_["__stdcall"] = Token::Ignore;
+    keywords_["__thiscall"] = Token::Ignore;
     keywords_["_based"] = Token::Ignore;
     keywords_["__based"] = Token::Ignore;
     keywords_["_asm"] = Token::ASM;
     keywords_["__asm"] = Token::ASM;
     keywords_["_inline"] = Token::INLINE;
     keywords_["__inline"] = Token::INLINE;
-    keywords_["_stdcall"] = Token::Ignore;
-    keywords_["__stdcall"] = Token::Ignore;
     keywords_["__declspec"] = Token::DECLSPEC;
+    keywords_["__pragma"] = Token::PRAGMA;
     keywords_["__int8"] = Token::CHAR;
     keywords_["__int16"] = Token::SHORT;
     keywords_["__int32"] = Token::INT;
@@ -200,6 +203,11 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
     else if(t == Token::DECLSPEC)
     {
       skip_declspec();
+      continue;
+    }
+    else if(t == Token::PRAGMA)
+    {
+      skip_pragma();
       continue;
     }
     if(t != '\n') break;
@@ -361,6 +369,25 @@ void Lexer::skip_declspec()
       if(c == '(') ++i;
       else if(c == ')') --i;
     } while(i > 0);
+  }
+}
+
+void Lexer::skip_pragma()
+{
+  char c = get_next_non_white_char();
+
+  if (c == '(')
+  {
+    size_t i = 1;
+    do
+    {
+      c = buffer_->get();
+      if (check_end_of_instruction(buffer_, c, "};")) return;
+      if(c == '(') ++i;
+      else if(c == ')') --i;
+    } while(i > 0);
+
+    c = get_next_non_white_char(); // assume ';'
   }
 }
 
