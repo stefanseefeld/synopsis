@@ -90,6 +90,8 @@ private:
   void skip_asm();
   //. skip __declspec(...).
   void skip_declspec();
+  //. skip __pragma(...);.
+  void skip_pragma();
 
   char get_next_non_white_char();
   Token::Type read_line();

@@ -211,6 +211,7 @@ struct Token
     Ignore  = 500,
     ASM,
     DECLSPEC,
+    PRAGMA,
     INT64,
     Comment // This could eventually be used to report all comments.
   };

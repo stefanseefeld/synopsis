@@ -118,6 +118,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["_inline"] = Token::INLINE;
     my_keywords["__inline"] = Token::INLINE;
     my_keywords["__declspec"] = Token::DECLSPEC;
+    my_keywords["__pragma"] = Token::PRAGMA;
     my_keywords["__int8"] = Token::CHAR;
     my_keywords["__int16"] = Token::SHORT;
     my_keywords["__int32"] = Token::INT;
@@ -201,6 +202,11 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
     else if(t == Token::DECLSPEC)
     {
       skip_declspec();
+      continue;
+    }
+    else if(t == Token::PRAGMA)
+    {
+      skip_pragma();
       continue;
     }
     if(t != '\n') break;
@@ -346,6 +352,25 @@ void Lexer::skip_declspec()
       if(c == '(') ++i;
       else if(c == ')') --i;
     } while(i > 0);
+  }
+}
+
+void Lexer::skip_pragma()
+{
+  char c = get_next_non_white_char();
+
+  if (c == '(')
+  {
+    size_t i = 1;
+    do
+    {
+      c = my_buffer->get();
+      if (check_end_of_instruction(my_buffer, c, "};")) return;
+      if(c == '(') ++i;
+      else if(c == ')') --i;
+    } while(i > 0);
+
+    c = get_next_non_white_char(); // assume ';'
   }
 }
 
