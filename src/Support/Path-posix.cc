@@ -90,7 +90,7 @@ std::string Path::normalize(const std::string &filename)
 namespace Synopsis
 {
 
-void makedirs(const Path &path) throw(std::runtime_error)
+void makedirs(const Path &path)
 {
   const std::string &dir = path.str();
   if (dir.empty()) throw std::runtime_error("empty path in 'makedirs'");

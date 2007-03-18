@@ -11,6 +11,7 @@
 #include <iterator>
 #include <string>
 #include <stdexcept>
+#include <algorithm>
 
 #if defined(PARSE_MSVC)
 #define _MSC_VER	1100

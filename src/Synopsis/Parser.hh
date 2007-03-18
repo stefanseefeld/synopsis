@@ -16,7 +16,7 @@ namespace Synopsis
 {
 
 class Lexer;
-class Token;
+struct Token;
 
 //. C++ Parser
 //.

@@ -9,6 +9,7 @@
 #include "Synopsis/Buffer.hh"
 #include <iostream>
 #include <cassert>
+#include <string>
 
 using namespace Synopsis;
 
@@ -107,14 +108,15 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__cdecl"] = Token::Ignore;
     my_keywords["_fastcall"] = Token::Ignore;
     my_keywords["__fastcall"] = Token::Ignore;
+    my_keywords["_stdcall"] = Token::Ignore;
+    my_keywords["__stdcall"] = Token::Ignore;
+    my_keywords["__thiscall"] = Token::Ignore;
     my_keywords["_based"] = Token::Ignore;
     my_keywords["__based"] = Token::Ignore;
     my_keywords["_asm"] = Token::ASM;
     my_keywords["__asm"] = Token::ASM;
     my_keywords["_inline"] = Token::INLINE;
     my_keywords["__inline"] = Token::INLINE;
-    my_keywords["_stdcall"] = Token::Ignore;
-    my_keywords["__stdcall"] = Token::Ignore;
     my_keywords["__declspec"] = Token::DECLSPEC;
     my_keywords["__int8"] = Token::CHAR;
     my_keywords["__int16"] = Token::SHORT;

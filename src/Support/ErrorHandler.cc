@@ -8,7 +8,7 @@
 #include "ErrorHandler.hh"
 #include <iostream>
 
-#ifndef __WIN32__
+#ifndef _WIN32
 # include <signal.h>
 # include <sys/wait.h>
 # ifdef __GLIBC__
@@ -20,7 +20,7 @@ namespace
 {
 Synopsis::ErrorHandler::Callback callback = 0;
 
-#ifndef __WIN32__
+#ifndef _WIN32
   struct sigaction olda;
   struct sigaction newa;
 #endif
@@ -39,7 +39,7 @@ void sighandler(int signo)
 {
   std::string signame = "Signal";
 
-#if !defined(__WIN32__)
+#ifndef _WIN32
   switch (signo)
   {
     case SIGABRT:
@@ -70,7 +70,7 @@ using namespace Synopsis;
 ErrorHandler::ErrorHandler(Callback c)
 {
   callback = c;
- #if !defined(__WIN32__)
+#ifndef _WIN32
   newa.sa_handler = &sighandler;
   sigaction(SIGSEGV, &newa, &olda);
   sigaction(SIGBUS, &newa, &olda);
@@ -80,7 +80,7 @@ ErrorHandler::ErrorHandler(Callback c)
 
 ErrorHandler::~ErrorHandler()
 {
-#if !defined(__WIN32__)
+#ifndef _WIN32
   sigaction(SIGABRT, &olda, 0);
   sigaction(SIGBUS, &olda, 0);
   sigaction(SIGSEGV, &olda, 0);
