@@ -90,7 +90,7 @@ std::string Path::normalize(const std::string &filename)
 namespace Synopsis
 {
 
-void makedirs(const Path &path) throw(std::runtime_error)
+void makedirs(const Path &path)
 {
   const std::string &dir = path.str();
   if (dir.empty()) throw std::runtime_error("empty path in 'makedirs'");
@@ -102,7 +102,7 @@ void makedirs(const Path &path) throw(std::runtime_error)
     int error;
     if ((error = stat(dir.substr(0, cursor).c_str(), &st)) == -1 &&
 	errno == ENOENT)
-      mkdir(dir.substr(0, cursor).c_str());
+      _mkdir(dir.substr(0, cursor).c_str());
     else if (error) throw std::runtime_error(strerror(errno));
   }
 }
