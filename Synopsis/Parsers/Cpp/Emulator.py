@@ -30,6 +30,7 @@ def find_ms_compiler_info():
     vc6 = ('SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products\\Microsoft Visual C++', 'ProductDir')
     vc7 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.0', 'InstallDir')
     vc71 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.1', 'InstallDir')
+    vc8 = ('SOFTWARE\\Microsoft\\VisualStudio\\8.0', 'InstallDir')
 
     vc6_macros =  [('__uuidof(x)', 'IID()'),
                    ('__int64', 'long long'),
@@ -79,7 +80,30 @@ def find_ms_compiler_info():
     vc71_paths = ['..\\..\\Vc7\\Include',
                   '..\\..\\Vc7\\PlatformSDK\\Include']
 
-    compilers = [(vc71, vc71_macros, vc71_paths),
+    vc8_macros = [('__cplusplus', '1'),
+                  ('__forceinline', '__inline'),
+                  ('__uuidof(x)', 'IID()'),
+                  ('__w64', ''),
+                  ('__int8', 'char'),
+                  ('__int16', 'short'),
+                  ('__int32', 'int'),
+                  ('__int64', 'long long'),
+                  ('__ptr64', ''),
+                  ('_MSC_VER', '1400'),
+                  ('_MSC_EXTENSIONS', ''),
+                  ('_WIN32', ''),
+                  ('_M_IX86', ''),
+                  ('_WCHAR_T_DEFINED', ''),
+                  ('_INTEGRAL_MAX_BITS', '64'),
+                  ('PASCAL', ''),
+                  ('RPC_ENTRY', ''),
+                  ('SHSTDAPI', 'HRESULT'),
+                  ('SHSTDAPI_(x)', 'x')]
+    vc8_paths = ['..\\..\\Vc\\Include',
+                 '..\\..\\Vc\\PlatformSDK\\Include']
+
+    compilers = [(vc8, vc8_macros, vc8_paths),
+                 (vc71, vc71_macros, vc71_paths),
                  (vc7, vc7_macros, vc7_paths),
                  (vc6, vc6_macros, vc6_paths)]
 
