@@ -94,6 +94,8 @@ CYGWIN*)
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
         LDFLAGS="-mno-cygwin $LDFLAGS"
       fi
+    else
+      PLATFORM="cygwin"
     fi
     ;;
 Darwin)

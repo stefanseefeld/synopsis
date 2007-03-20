@@ -48,12 +48,11 @@ def copy_shared_library(name, version, src, dest, verbose, dry_run):
     library = 'lib%s%s'%(name, LIBEXT)
 
     mkpath (dest, 0777, verbose, dry_run)
-    if os.name == 'posix':
+    if os.name == 'posix' and not os.uname()[0].startswith('CYGWIN'):
         # Copy versioned DSO
         copy_file(os.path.join(src, 'lib', '%s.%s'%(library, version)),
                   os.path.join(dest, '%s.%s'%(library, version)),
                   1, 1, 0, None, verbose, dry_run)
-        print 'yyy'
         for target in '%s.%s'%(library, major), library:
             src_file = os.path.join(src, 'lib', target)
             if (os.path.islink(src_file)) and not dry_run:

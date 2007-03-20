@@ -44,7 +44,7 @@ define compile
 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 endef
 
-ifeq ($(PLATFORM),nt)
+ifneq ($(findstring $(PLATFORM), nt cygwin),)
 define link_dso
 @echo linking $@
 $(LDSHARED) $(LDFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
