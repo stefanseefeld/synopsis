@@ -80,18 +80,22 @@ AC_SUBST(GC_LIB)
 
 AC_SUBST_FILE(GC_BRIDGE)
 
+PLATFORM=`$PYTHON -c "import os; print os.name"`
+
 case `uname -s` in
 CYGWIN*)
     LIBEXT=".dll"
     LDSHARED="$CXX -shared"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    if test `$PYTHON -c "import os; print os.name"` = nt; then
-      if test "$CXX" = "g++"; then
+    if test "$PLATFORM" == "nt"; then
+      if test "$CXX" == "g++"; then
         CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
         CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
         LDFLAGS="-mno-cygwin $LDFLAGS"
       fi
+    else
+      PLATFORM="cygwin"
     fi
     ;;
 Darwin)
