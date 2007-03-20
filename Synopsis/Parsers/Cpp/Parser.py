@@ -33,7 +33,7 @@ class Parser(Processor):
         if self.emulate_compiler is not None:
             info = get_compiler_info(self.language, self.emulate_compiler)
             flags += ['-I%s'%x for x in info.include_paths]
-            flags += ['-D%s=%s'%(x[0], x[1]) for x in info.macros]
+            flags += ['-D%s'%k + (v and '=%s'%v or '') for (k,v) in info.macros]
         for file in self.input:
             self.ast = parse(self.ast,
                              os.path.abspath(file),

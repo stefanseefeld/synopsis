@@ -28,10 +28,10 @@ from Synopsis.dist.command.clean import clean
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
 if not hasattr(DistributionMetadata, 'classifiers'):
-   DistributionMetadata.classifiers = None
-   DistributionMetadata.download_url = None
+    DistributionMetadata.classifiers = None
+    DistributionMetadata.download_url = None
 
-import os, sys, re, glob
+import os, sys, re, glob, shutil
 
 module_ext = sysconfig.get_config_var('SO')
 
@@ -58,6 +58,11 @@ ext_modules = [('Synopsis/Parsers/Cpp', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/Cxx', 'ParserImpl' + module_ext)]
 
 scripts = ['synopsis', 'sxr-server']
+if sys.platform == "win32":
+    for script in scripts:
+        filename = os.path.join('scripts', script)
+        shutil.copyfile(filename, filename + '.py')
+    scripts = [s + '.py' for s in scripts]
 
 data_files = [('share/doc/synopsis-%s'%version, ('README', 'COPYING', 'NEWS'))]
 data_files.append(('share/man/man1', glob.glob('share/man/man1/*.*')))
@@ -67,13 +72,13 @@ data_files.append(('share/synopsis-%s'%version, glob.glob('share/synopsis/*.*'))
 
 def add_documentation(all, directory, files):
 
-   if '.svn' in files: files.remove('.svn')
-   dest = directory.replace('share/doc/synopsis',
+    if '.svn' in files: files.remove('.svn')
+    dest = directory.replace('share/doc/synopsis',
                             'share/doc/synopsis-%s'%version)
-   all.append((dest,
-               [os.path.join(directory, file)
-                for file in files
-                if os.path.isfile(os.path.join(directory, file))]))
+    all.append((dest,
+                [os.path.join(directory, file)
+                 for file in files
+                 if os.path.isfile(os.path.join(directory, file))]))
 
 documentation = []
 os.path.walk('share/doc/synopsis', add_documentation, documentation)
