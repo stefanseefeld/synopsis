@@ -10,6 +10,7 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 builddir:= @builddir@
 
+PLATFORM:= @PLATFORM@
 SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
@@ -43,6 +44,12 @@ define compile
 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 endef
 
+ifneq ($(findstring $(PLATFORM), nt cygwin),)
+define link_dso
+@echo linking $@
+$(LDSHARED) $(LDFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+endef
+else
 define link_dso
 @echo linking $@
 rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
@@ -51,6 +58,7 @@ $(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) $(LDFLAGS) \
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
 endef
+endif
 
 define link_app
 @echo linking $@
