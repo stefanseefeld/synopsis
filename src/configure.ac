@@ -110,6 +110,7 @@ Darwin)
     ;;
 esac
 
+AC_SUBST(PLATFORM)
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
 
