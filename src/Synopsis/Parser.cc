@@ -13,6 +13,7 @@
 #include "Synopsis/Lexer.hh"
 #include <Synopsis/Trace.hh>
 #include <ostream>
+#include <typeinfo>
 
 namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;

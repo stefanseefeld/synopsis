@@ -5,6 +5,7 @@ conf()
 {
   (cd $1
    echo "Generating $1/configure..."
+   aclocal -I `echo /$1 | sed 's,/[^\\/]*,../,g'`config
    autoconf
   )
 }
@@ -13,6 +14,7 @@ conf_with_header()
 {
   (cd $1
    echo "Generating $1/configure..."
+   aclocal -I `echo /$1 | sed 's,/[^\\/]*,../,g'`config
    autoconf
    autoheader
   )

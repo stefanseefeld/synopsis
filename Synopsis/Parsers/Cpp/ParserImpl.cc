@@ -87,12 +87,20 @@ PyObject *parse(PyObject *self, PyObject *args)
 
   if (!input_file || *input_file == '\0')
   {
-    PyErr_SetString(PyExc_RuntimeError, "no input file");
+    PyErr_SetString(error, "no input file");
     return 0;
   }
   try
   {
     std::ifstream ifs(input_file);
+    if (!ifs)
+    {
+      std::string msg = "unable to read '";
+      msg += input_file;
+      msg += '\'';
+      PyErr_SetString(error, msg.c_str());
+      return 0;
+    }
     std::ofstream ofs(output_file ? output_file : trash.c_str());
 
     std::string input(std::istreambuf_iterator<char>(ifs.rdbuf()),
@@ -217,6 +225,6 @@ extern "C" void initParserImpl()
   module.set_attr("version", "0.1");
   Python::Object processor = Python::Object::import("Synopsis.Processor");
   Python::Object error_base = processor.attr("Error");
-  error = PyErr_NewException("ParserImpl.Error", error_base.ref(), 0);
+  error = PyErr_NewException("ParserImpl.CppError", error_base.ref(), 0);
   module.set_attr("Error", error);
 }

@@ -8,10 +8,13 @@
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/AST/TypeKit.hh>
 #include <Synopsis/Trace.hh>
+
+#define BOOST_WAVE_USE_DEPRECIATED_PREPROCESSING_HOOKS 1
+
 #include <boost/wave.hpp>
-#include <boost/wave/cpplexer/re2clex/cpp_re2c_lexer.hpp>
 #include <boost/wave/cpplexer/cpp_lex_token.hpp>
 #include <boost/wave/cpplexer/cpp_lex_iterator.hpp>
+#include <boost/wave/cpplexer/re2clex/cpp_re2c_lexer.hpp>
 #include <boost/wave/preprocessing_hooks.hpp>
 #include <stack>
 

@@ -21,7 +21,7 @@ CPPFLAGS+= @SYN_CPP@ @BOOST_CPPFLAGS@ -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@ @BOOST_LDFLAGS@
-LIBS	:= -lboost_wave -lboost_filesystem 
+LIBS	:= @BOOST_WAVE_LIB@ @BOOST_FILESYSTEM_LIB@
 LIBS	+= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
@@ -45,7 +45,7 @@ all: $(TARGET)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 Makefile: $(srcdir)/Makefile.in
-	$(SHELL) -ec 'cd .. && ./config.status --file wave/Makefile'
+	$(SHELL) -ec './config.status --file Makefile'
 
 $(TARGET): $(OBJ)
 	@echo linking $(@F)
