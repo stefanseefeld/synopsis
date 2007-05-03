@@ -16,6 +16,7 @@
 #include <cassert>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 using namespace Synopsis;
 namespace PT = Synopsis::PTree;
