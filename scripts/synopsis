@@ -41,27 +41,28 @@ def usage():
     print 'Usage : %s [options] <input files>'%'synopsis'
     print """
 List of options:
-  -h, --help                  Display usage summary.
-  -V, --version               Display version information.
-  -v  --verbose               Operate verbosely.
-  -d  --debug                 Operate in debug mode.
-  -o <file>, --output=<file>  Write output to <file>.
-  -p <lang>, --parser=<lang>  Select a parser for <lang>.
-  -Wp,<arg>[,<arg>...]        Send <args> to the parser.
-  --translate[=<markup>]      Translate comments to doc-strings, processing it as
-                                <markup> (typical values are 'javadoc' or 'rst').
-  --cfilter=<filter>          Specify a comment filter.
-  --cprocessor=<processor>    Specify a comment processor.
-  -Wc,<arg>[,<arg>...]        Send <args> to the comment translator.
+  -h, --help                 Display usage summary.
+  -V, --version              Display version information.
+  -v  --verbose              Operate verbosely.
+  -d  --debug                Operate in debug mode.
+  -o <file>, --output=<file> Write output to <file>.
+  -p <lang>, --parser=<lang> Select a parser for <lang>.
+  -Wp,<arg>[,<arg>...]       Send <args> to the parser.
+  --translate[=<markup>]     Translate comments to doc-strings, processing it as
+                             <markup> (typical values are 'javadoc' or 'rst').
+  --cfilter=<filter>         Specify a comment filter.
+  --cprocessor=<processor>   Specify a comment processor.
+  -Wc,<arg>[,<arg>...]       Send <args> to the comment translator.
   -l <processor>,
-    --linker=<processor>      Link, processing all declarations with <processor>.
-  -Wl,<arg>[,<arg>...]        Send <args> to the linker.
+    --linker=<processor>     Link, processing all declarations with <processor>.
+  -Wl,<arg>[,<arg>...]       Send <args> to the linker.
   -f <type>,
-    --formatter=<type>        Select a formatter for <type>.
-  -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
-  -I <path>                   Add <path> to list of include paths.
-  --include=<file>            Preinclude <file>.
-  -D <macro>                  Add <macro> to list of predefined macros.
+    --formatter=<type>       Select a formatter for <type>.
+  -Wf,<arg>[,<arg>...]       Send <args> to the formatter.
+  -I <path>                  Add <path> to list of include paths.
+  --include=<file>           Preinclude <file>.
+  -D <macro>                 Add <macro> to list of predefined macros.
+  -U <macro>                 Remove <macro> from list of predefined macros.
 """
    
 def make_processor(argv):
@@ -85,18 +86,17 @@ def make_processor(argv):
     help = False
 
     opts, args = getopt.getopt(argv,
-                               'o:p:l:f:I:D:W:jvhVdP',
+                               'o:p:l:f:I:D:U:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
                                 'linker=', 'formatter=',
                                 'version', 'help', 'verbose', 'debug', 'profile',
                                 'include='])
-    
     for o, a in opts:
         if o in ['-V', '--version']:
             print 'synopsis version %s'%config.version
             sys.exit(0)
-         
+
         if o in ['-v', '--verbose']: options['verbose'] = True
         elif o in ['-d', '--debug']: options['debug'] = True
         elif o in ['-P', '--profile']: options['profile'] = True
@@ -153,6 +153,10 @@ def make_processor(argv):
             if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
             parser_opts['cppflags'].append('-D%s'%a)
 
+        elif o == '-U':
+            if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+            parser_opts['cppflags'].append('-U%s'%a)
+
         elif o == '-W':
             if a[0] == "p":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
@@ -179,6 +183,9 @@ def make_processor(argv):
         if not (parser or linker or formatter):
             usage()
         sys.exit(0)
+    if not args:
+        usage()
+	sys.exit(0)
 
     # quick hack: if the parser is Cpp, rename the 'cppflags'
     # options to just 'flags'
