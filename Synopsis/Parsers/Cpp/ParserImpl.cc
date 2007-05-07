@@ -12,6 +12,7 @@
 #include <Support/ErrorHandler.hh>
 #include "ASTTranslator.hh"
 #include <memory>
+#include <sstream>
 
 using namespace Synopsis;
 namespace wave = boost::wave;
@@ -163,7 +164,7 @@ PyObject *parse(PyObject *self, PyObject *args)
 
     for (std::vector<std::string>::const_reverse_iterator i = includes.rbegin(),
          e = includes.rend();
-         i != includes.rend(); /**/)
+         i != e; /**/)
     {
       std::string filename(*i);
       first.force_include(filename.c_str(), ++i == e);
@@ -183,7 +184,10 @@ PyObject *parse(PyObject *self, PyObject *args)
     // some preprocessing error
     std::cerr << e.file_name() << "(" << e.line_no() << "): "
 	      << e.description() << std::endl;
-    Python::Object py_e((*error_type)());
+    std::ostringstream oss;
+    oss << e.file_name() << ':' << e.line_no() << " : " << e.description();
+    std::string what = oss.str();
+    Python::Object py_e((*error_type)(Python::Tuple(what.c_str())));
     py_e.set_attr("file_name", e.file_name());
     py_e.set_attr("line_no", e.line_no());
     py_e.set_attr("description", e.description());
@@ -195,7 +199,10 @@ PyObject *parse(PyObject *self, PyObject *args)
     // some lexing error
     std::cerr << e.file_name() << "(" << e.line_no() << "): "
 	      << e.description() << std::endl;
-    Python::Object py_e((*error_type)());
+    std::ostringstream oss;
+    oss << e.file_name() << ':' << e.line_no() << " : " << e.description();
+    std::string what = oss.str();
+    Python::Object py_e((*error_type)(Python::Tuple(what.c_str())));
     py_e.set_attr("file_name", e.file_name());
     py_e.set_attr("line_no", e.line_no());
     py_e.set_attr("description", e.description());
@@ -205,7 +212,7 @@ PyObject *parse(PyObject *self, PyObject *args)
   catch (std::exception const &e)
   {
     std::cerr << "Caught exception : " << e.what() << std::endl;
-    Python::Object py_e((*error_type)());
+    Python::Object py_e((*error_type)(Python::Tuple(e.what())));
     py_e.set_attr("file_name", "");
     py_e.set_attr("line_no", -1);
     py_e.set_attr("description", e.what());
