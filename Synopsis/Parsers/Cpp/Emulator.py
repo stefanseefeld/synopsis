@@ -286,7 +286,7 @@ class CompilerList(object):
         glob['version'] = version
         class Type(type):
             """Factory for CompilerInfo objects.
-            This is used to read in a emulation file."""
+            This is used to read in an emulation file."""
 
             def __init__(cls, name, bases, dict):
 
@@ -371,7 +371,7 @@ compiler_list = None
 
 
 def get_compiler_info(language, compiler = '', arguments = None):
-    """Returns the compiler info for the given compiler. If non is
+    """Returns the compiler info for the given compiler. If none is
     specified (''), return the first available one for the given language.
     The info is returned as a CompilerInfo object, or None if the compiler
     isn't found. 
