@@ -77,7 +77,8 @@ def make_processor(argv):
                 'c': Comments.CFilter,
                 'qt': Comments.QtFilter,
                 'java': Comments.JavaFilter}
-    cprocessors = []
+    cprocessors = {'previous': Comments.Previous,
+                   'grouper': Comments.Grouper}
     linker = None
     linker_opts = {'processors':[]}
     formatter = None
@@ -121,11 +122,12 @@ def make_processor(argv):
             translator_opts['filter'] = cfilters[a]()
 
         elif o == '--cprocessor':
-            if a not in ['previous', 'grouper']:
+            if a not in cprocessors:
                 error('%s is not a known comment processor.\n'
-                      '\t possible values are : previous, grouper'%a)
-            cprocessors.append({'previous':Comments.Previous,
-                                'grouper':Comments.Grouper}[a]())
+                      '\t possible values are : %s'
+                      %(a, ', '.join([p for p in cprocessors])))
+            if not translator_opts.get('processor'): translator_opts['processor'] = []
+            translator_opts['processor'].append(cprocessors[a]())
 
         elif o in ['-l', '--linker']:
             if not linker:
@@ -194,12 +196,8 @@ def make_processor(argv):
             parser_opts['flags'] = parser_opts['cppflags']
             del parser_opts['cppflags']
 
-    if cprocessors:
-        if len(cprocessors) > 1:
-            processor = Composite(cprocessors)
-        else:
-            processor = cprocessors[0]
-        translator_opts['processor'] = processor
+    if translator_opts.has_key('processor'):
+	processor = translator_opts['processor']
 
     options['input'] = args
 
