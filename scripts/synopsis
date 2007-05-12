@@ -123,7 +123,7 @@ def make_processor(argv):
         elif o == '--cprocessor':
             if a not in ['previous', 'grouper']:
                 error('%s is not a known comment processor.\n'
-                      '\t possible values are : previous, grouper')
+                      '\t possible values are : previous, grouper'%a)
             cprocessors.append({'previous':Comments.Previous,
                                 'grouper':Comments.Grouper}[a]())
 
