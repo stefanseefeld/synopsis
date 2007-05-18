@@ -74,16 +74,16 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Parser parser(lexer, symbols, Parser::GCC);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
-    if (!errors.size() && ptree)
-    {
-      ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
-      translator.translate(ptree, buffer);
-    }
-    else
+    if (!errors.empty())
     {
       for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
 	(*i)->write(std::cerr);
       throw std::runtime_error("The input contains errors.");
+    }
+    else if (ptree)
+    {
+      ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
+      translator.translate(ptree, buffer);
     }
   }
   catch (std::exception const &e)

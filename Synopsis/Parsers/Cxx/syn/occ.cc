@@ -168,23 +168,23 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
     swalker.set_store_links(new LinkStore(filter, &swalker));
 
-  PTree::Node *def = parser.parse();
+  PTree::Node *ptree = parser.parse();
   const Parser::ErrorList &errors = parser.errors();
-  if (!errors.size())
+  if (!errors.empty())
   {
-    swalker.translate(def);
+    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+      (*i)->write(std::cerr);
+    throw std::runtime_error("The input contains errors.");
+  }
+  else if (ptree)
+  {
+    swalker.translate(ptree);
       
     // Setup synopsis c++ to py convertor
     Translator translator(filter, ast);//declarations, types);
     translator.set_builtin_decls(builder.builtin_decls());
     // Convert!
     translator.translate(builder.scope());
-  }
-  else
-  {
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
-    throw std::runtime_error("The input contains errors.");
   }
 }
 
