@@ -80,20 +80,20 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       std::cout << "Parser::parse took " << timer.elapsed() 
 		<< " seconds" << std::endl;
     const Parser::ErrorList &errors = parser.errors();
-    if (!errors.size() && ptree)
+    if (!errors.empty())
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+        (*i)->write(std::cerr);
+      throw std::runtime_error("The input contains errors.");
+    }
+    else if (ptree)
     {
       ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
       timer.reset();
       translator.translate(ptree, buffer);
       if (profile)
-	std::cout << "ASTTranslator::translate took " << timer.elapsed() 
-		  << " seconds" << std::endl;
-    }
-    else
-    {
-      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-	(*i)->write(std::cerr);
-      throw std::runtime_error("The input contains errors.");
+        std::cout << "ASTTranslator::translate took " << timer.elapsed() 
+                  << " seconds" << std::endl;
     }
   }
   catch (std::exception const &e)
