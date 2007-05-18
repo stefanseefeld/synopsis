@@ -79,9 +79,15 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     PTree::Node *ptree = parser.parse();
     if (profile)
       std::cout << "C++ parser took " << timer.elapsed() 
-		<< " seconds" << std::endl;
+                << " seconds" << std::endl;
     const Parser::ErrorList &errors = parser.errors();
-    if (!errors.size() && ptree)
+    if (!errors.empty())
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+	(*i)->write(std::cerr);
+      throw std::runtime_error("The input contains errors.");
+    }
+    else if (ptree)
     {
       timer.reset();
       ASTTranslator translator(symbols.current_scope(),
@@ -124,14 +130,8 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
 		    << " seconds" << std::endl;
       }
     }
-    else
-    {
-      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-	(*i)->write(std::cerr);
-      throw std::runtime_error("The input contains errors.");
-    }
   }
-  catch (std::invalid_argument const &e)
+  catch (std::exception const &e)
   {
     PyErr_SetString(error, e.what());
     return 0;
