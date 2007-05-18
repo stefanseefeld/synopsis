@@ -31,13 +31,14 @@ class Parser(Processor):
         base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
         if self.emulate_compiler is not None:
             info = get_compiler_info(self.language, self.emulate_compiler)
-            flags += ['-I%s'%x for x in info.include_paths]
-            flags += ['-D%s'%k + (v and '=%s'%v or '') for (k,v) in info.macros]
+            system_flags = ['-I%s'%x for x in info.include_paths]
+            system_flags += ['-D%s'%k + (v and '=%s'%v or '') for (k,v) in info.macros]
         for file in self.input:
             self.ast = parse(self.ast,
                              os.path.abspath(file),
                              base_path,
                              self.cpp_output,
-                             self.language, flags, self.primary_file_only,
+                             self.language, system_flags, flags,
+                             self.primary_file_only,
                              self.verbose, self.debug, self.profile)
         return self.output_and_return_ast()
