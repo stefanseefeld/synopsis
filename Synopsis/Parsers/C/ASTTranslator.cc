@@ -230,7 +230,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
-    enode = PT::tail(enode, 0);
+    enode = PT::tail(enode, 2);
     // Skip comma
     if (enode && enode->car() && *enode->car() == ',') enode = PT::tail(enode, 0);
   }
