@@ -53,25 +53,29 @@ PyObject *parse(PyObject *self, PyObject *args)
   char const *base_path;
   char const *output_file;
   char const *language;
-  PyObject *py_flags;
-  std::vector<char const *> flags;
+  PyObject *py_system_flags;
+  PyObject *py_user_flags;
+  std::vector<char const *> system_flags;
+  std::vector<char const *> user_flags;
   PyObject *py_ast;
-  int main_file_only = 0;
+  int primary_file_only = 0;
   int verbose = 0;
   int debug = 0;
   int profile = 0;
-  if (!PyArg_ParseTuple(args, "OszzsO!iiii",
+  if (!PyArg_ParseTuple(args, "OszzsO!O!iiii",
 			&py_ast,
 			&input_file,
 			&base_path,
 			&output_file,
 			&language,
-			&PyList_Type, &py_flags,
-			&main_file_only,
+			&PyList_Type, &py_system_flags,
+			&PyList_Type, &py_user_flags,
+			&primary_file_only,
 			&verbose,
 			&debug,
 			&profile)
-      || !extract(py_flags, flags))
+      || !extract(py_system_flags, system_flags)
+      || !extract(py_user_flags, user_flags))
     return 0;
 
   Py_INCREF(error);
@@ -115,16 +119,20 @@ PyObject *parse(PyObject *self, PyObject *args)
                           ASTTranslator> context_type;
 
     context_type ctx(input.begin(), input.end(), input_file,
-		     ASTTranslator(language, input_file, base_path, main_file_only,
+		     ASTTranslator(language, input_file, base_path, primary_file_only,
 				   ast, verbose, debug));
 
     if (std::string(language) == "C")
     {
       ctx.set_language(wave::support_c99);
       // Remove the '__STDC_HOSTED__' macro as wave predefines it.
-      flags.erase(std::remove(flags.begin(), flags.end(),
-			      std::string("-D__STDC_HOSTED__=1")),
-		  flags.end());
+      system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                     std::string("-D__STDC_HOSTED__=1")),
+                         system_flags.end());
+      // Remove the '__STDC__' macro as wave predefines it.
+      system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                     std::string("-D__STDC__=1")),
+                         system_flags.end());
     }
     else
     {
@@ -132,15 +140,16 @@ PyObject *parse(PyObject *self, PyObject *args)
       // FIXME: should only enable in GCC compat mode.
       ctx.set_language(wave::enable_long_long(ctx.get_language()));
       // Remove the '__cplusplus' macro as wave predefines it.
-      flags.erase(std::remove(flags.begin(), flags.end(),
-			      std::string("-D__cplusplus=1")),
-		  flags.end());
+      system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                     std::string("-D__cplusplus=1")),
+                         system_flags.end());
     }
     ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
 
     std::vector<std::string> includes;
-    for (std::vector<char const *>::iterator i = flags.begin();
-	 i != flags.end();
+    // Insert the system_flags from the Emulator.
+    for (std::vector<char const *>::iterator i = system_flags.begin();
+	 i != system_flags.end();
 	 ++i)
     {
       if (**i == '-')
@@ -151,9 +160,30 @@ PyObject *parse(PyObject *self, PyObject *args)
 	  ctx.add_sysinclude_path(*i + 2);
 	}
 	else if (*(*i + 1) == 'D')
-	  ctx.add_macro_definition(*i + 2, true);
+          ctx.add_macro_definition(*i + 2, /*is_predefined=*/true);
 	else if (*(*i + 1) == 'U')
-	  ctx.remove_macro_definition(*i + 2);
+	  ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
+	else if (*(*i + 1) == 'i')
+	  includes.push_back(*i + 2);
+      }
+    }
+
+    // Insert the user_flags
+    for (std::vector<char const *>::iterator i = user_flags.begin();
+	 i != user_flags.end();
+	 ++i)
+    {
+      if (**i == '-')
+      {
+	if (*(*i + 1) == 'I')
+	{
+	  ctx.add_include_path(*i + 2);
+	  ctx.add_sysinclude_path(*i + 2);
+	}
+	else if (*(*i + 1) == 'D')
+	  ctx.add_macro_definition(*i + 2, /*is_predefined=*/false);
+	else if (*(*i + 1) == 'U')
+	  ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
 	else if (*(*i + 1) == 'i')
 	  includes.push_back(*i + 2);
       }
