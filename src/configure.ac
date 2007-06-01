@@ -80,7 +80,7 @@ AC_SUBST(GC_LIB)
 
 AC_SUBST_FILE(GC_BRIDGE)
 
-PLATFORM=`$PYTHON -c "import os; print os.name"`
+PLATFORM=`$PYTHON -c "import os; print os.name" | tr -d "\r"`
 
 case `uname -s` in
 CYGWIN*)
