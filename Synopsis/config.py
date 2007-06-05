@@ -15,3 +15,4 @@ import os, os.path
 version = 'devel'
 prefix = os.path.join(__file__, os.pardir, os.pardir)
 datadir = os.path.join(prefix, 'share', 'Synopsis')
+revision = 'unknown'
