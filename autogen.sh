@@ -20,6 +20,7 @@ conf_with_header()
   )
 }
 
+svn info | awk '/Revision:/ {print $2}' > revision
 conf src
 conf src/Synopsis/gc
 conf Synopsis/Parsers/Cpp/ucpp
