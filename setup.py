@@ -20,8 +20,7 @@ module_ext = sysconfig.get_config_var('SO')
 def prefix(list, pref): return [pref + x for x in list]
 
 version = '0.9.1'
-revision = [a.split()[1] for a in os.popen('svn info').readlines()
-            if a.startswith('Revision:')][0]
+revision = open('revision').read()[:-1]
 
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
