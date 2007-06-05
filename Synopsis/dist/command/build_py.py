@@ -17,5 +17,6 @@ class build_py(base):
 
         config_file = os.path.join(self.build_lib, 'Synopsis', 'config.py')
         self.announce("adjusting config parameters")
-        reset_config_variables(config_file, prefix=os.getcwd())
+        reset_config_variables(config_file, prefix=os.getcwd(),
+                               revision=self.distribution.revision)
 

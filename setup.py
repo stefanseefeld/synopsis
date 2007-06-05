@@ -10,27 +10,9 @@
 # Usage: python setup.py install
 #
 
+from Synopsis.dist.distribution import Distribution
 from distutils.core import setup
 from distutils import sysconfig
-
-from Synopsis.dist.command.config import config
-from Synopsis.dist.command.build_doc import build_doc
-from Synopsis.dist.command.build_clib import build_clib
-from Synopsis.dist.command.build_ext import build_ext
-from Synopsis.dist.command.build_py import build_py
-from Synopsis.dist.command.test import test
-from Synopsis.dist.command.install_clib import install_clib
-from Synopsis.dist.command.install_lib import install_lib
-from Synopsis.dist.command.install import install
-from Synopsis.dist.command.bdist_dpkg import bdist_dpkg
-from Synopsis.dist.command.clean import clean
-
-# patch distutils if it can't cope with the "classifiers" keyword
-from distutils.dist import DistributionMetadata
-if not hasattr(DistributionMetadata, 'classifiers'):
-    DistributionMetadata.classifiers = None
-    DistributionMetadata.download_url = None
-
 import os, sys, re, glob, shutil
 
 module_ext = sysconfig.get_config_var('SO')
@@ -38,6 +20,8 @@ module_ext = sysconfig.get_config_var('SO')
 def prefix(list, pref): return [pref + x for x in list]
 
 version = '0.9.1'
+revision = [a.split()[1] for a in os.popen('svn info').readlines()
+            if a.startswith('Revision:')][0]
 
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
@@ -85,19 +69,10 @@ documentation = []
 os.path.walk('share/doc/synopsis', add_documentation, documentation)
 data_files.extend(documentation)
 
-setup(cmdclass={'config':config,
-                'build_doc':build_doc,
-                'build_clib':build_clib,
-                'build_ext':build_ext,
-                'build_py':build_py,
-                'test':test,
-                'install_clib':install_clib,
-                'install_lib':install_lib,
-                'install':install,
-                'bdist_dpkg':bdist_dpkg,
-                'clean':clean},
+setup(distclass=Distribution,
       name="synopsis",
       version=version,
+      revision=revision,
       author="Stefan Seefeld",
       maintainer="Stefan Seefeld",
       author_email="stefan@fresco.org",

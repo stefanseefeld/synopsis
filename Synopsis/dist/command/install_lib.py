@@ -24,6 +24,7 @@ class install_lib(base):
         reset_config_variables(config_file,
                                prefix=prefix,
                                version=version,
+                               revision=self.distribution.revision,
                                datadir=datadir)
 
         # Make sure the new config file gets recompiled, or else python may
