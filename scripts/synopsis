@@ -95,7 +95,7 @@ def make_processor(argv):
                                 'include='])
     for o, a in opts:
         if o in ['-V', '--version']:
-            print 'synopsis version %s'%config.version
+            print 'synopsis version %s (revision %s)'%(config.version, config.revision)
             sys.exit(0)
 
         if o in ['-v', '--verbose']: options['verbose'] = True
