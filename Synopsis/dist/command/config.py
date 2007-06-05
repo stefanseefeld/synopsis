@@ -18,7 +18,8 @@ class config(build_ext):
 
     description = "configure the package"
 
-    user_options = build_ext.user_options[:] + [
+    user_options = [o for o in build_ext.user_options
+                    if o[0] in ['inplace', 'build-lib=', 'build-temp=']] + [
         ('prefix=', None,
          "installation prefix"),
         ('disable-gc', None,
@@ -77,8 +78,8 @@ class config(build_ext):
             self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
 
         if os.name == 'nt':
-            syn_cxx = '`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp)
-            syn_cxx = syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
+            syn_cxx = '`cygpath -a "%s/src"`'%os.path.abspath(self.build_ctemp)
+            #syn_cxx = syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
         else:
             syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
@@ -119,10 +120,10 @@ class config(build_ext):
             # a cygwin shell
             configure = ('../' * (build_temp.count('\\') + component.count('/')  + 2)
                          + component + '/configure')
-            python = '`cygpath -a %s`'%os.path.dirname(sys.executable)
+            python = '`cygpath -a "%s"`'%os.path.dirname(sys.executable)
             python += '/' + os.path.basename(sys.executable)
-            python.replace('\\', '\\\\\\\\\\\\\\\\')
-            prefix = '`cygpath -a %s`'%sys.prefix
+            #python.replace('\\', '\\\\\\\\\\\\\\\\')
+            prefix = '`cygpath -a "%s"`'%sys.prefix
         
         else:
             configure = srcdir + '/configure'
