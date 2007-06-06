@@ -114,6 +114,10 @@ AC_SUBST(PLATFORM)
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
 
+AC_LANG(C++)
+AC_BOOST([1.33])
+SYN_BOOST_LIB_FILESYSTEM
+
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh
                  Makefile 
                  synopsis.py 
