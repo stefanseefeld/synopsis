@@ -17,7 +17,8 @@ Configuring
 * If the sources are checked out from svn, run './autogen.sh' to generate
   the configure scripts. This step requires autoconf to be installed.
 
-* Run 'python setup.py config' to configure the subprojects.
+* Run 'python setup.py config' to configure the subprojects 
+  (see 'python setup.py config --help' for available options).
 
 * Be careful to pass the same '--prefix' option you are going to pass
   to the 'install' command, if you plan to install synopsis. See

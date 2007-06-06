@@ -7,5 +7,5 @@ Name: Synopsis
 Description: C/C++ source code introspection tool
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lSynopsis
-Cflags: -I${includedir} @GC_CPP@ @CPPFLAGS@
+Libs: @BOOST_LDFLAGS@ -L${libdir} -lSynopsis @BOOST_LIBS@
+Cflags: -I${includedir} @GC_CPP@ @BOOST_CPPFLAGS@ @CPPFLAGS@
