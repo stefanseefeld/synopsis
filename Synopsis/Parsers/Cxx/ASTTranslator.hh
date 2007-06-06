@@ -61,23 +61,23 @@ private:
 
   void declare(AST::Declaration);
 
-  AST::AST            my_ast;
-  AST::ASTKit         my_ast_kit;
-  AST::SourceFileKit  my_sf_kit;
-  AST::SourceFile     my_file;
-  std::string         my_raw_filename;
-  std::string         my_base_path;
-  bool                my_main_file_only;
-  unsigned long       my_lineno;
-  TypeTranslator      my_types;
-  Python::List        my_template_parameters;
-  ScopeStack          my_scope;
-  bool                my_in_class;
-  bool                my_verbose;
-  bool                my_debug;
-  Buffer             *my_buffer;
-  PTree::Declaration *my_declaration;
-  AST::Parameter      my_parameter;
+  AST::AST            ast_;
+  AST::ASTKit         ast_kit_;
+  AST::SourceFileKit  sf_kit_;
+  AST::SourceFile     file_;
+  std::string         raw_filename_;
+  std::string         base_path_;
+  bool                primary_file_only_;
+  unsigned long       lineno_;
+  TypeTranslator      types_;
+  Python::List        template_parameters_;
+  ScopeStack          scope_;
+  bool                in_class_;
+  bool                verbose_;
+  bool                debug_;
+  Buffer             *buffer_;
+  PTree::Declaration *declaration_;
+  AST::Parameter      parameter_;
 };
 
 #endif

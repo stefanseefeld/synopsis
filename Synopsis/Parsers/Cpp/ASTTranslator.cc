@@ -7,7 +7,7 @@
 
 #include "ASTTranslator.hh"
 #include <Synopsis/Trace.hh>
-#include <Support/Path.hh>
+#include <Support/path.hh>
 
 using namespace Synopsis;
 namespace wave = boost::wave;
@@ -131,13 +131,9 @@ void ASTTranslator::opened_include_file(std::string const &relname,
   includes.append(include);
   file_stack_.push(sf);
 
-  // The following confusing naming indicates something needs
-  // to be cleared up !
-  std::string abs_filename = Path(relname).abs().str();
+  std::string abs_filename = make_full_path(relname);
   // Only keep the first level of includes starting from the last unmasked file.
-  if (primary_file_only_ || 
-      (base_path_.size() && 
-       abs_filename.substr(0, base_path_.size()) != base_path_))
+  if (primary_file_only_ || !matches_path(abs_filename, base_path_))
     ++mask_counter_;
 }
 
@@ -200,15 +196,15 @@ AST::SourceFile ASTTranslator::lookup_source_file(std::string const &filename,
 {
   Trace trace("ASTTranslator::lookup_source_file", Trace::TRANSLATION);
   trace << filename << ' ' << primary;
-  Path path = Path(filename).abs();
-  path.strip(base_path_);
-  std::string short_name = path.str();
+
+  std::string long_name = make_full_path(filename);
+  std::string short_name = make_short_path(filename, base_path_);
 
   Python::Dict files = ast_.files();
   AST::SourceFile sf = files.get(short_name);
   if (!sf)
   {
-    sf = sf_kit_.create_source_file(short_name, filename);
+    sf = sf_kit_.create_source_file(short_name, long_name);
     files.set(short_name, sf);
   }
   if (sf && primary) sf.set_primary(true);

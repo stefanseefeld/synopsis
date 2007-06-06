@@ -17,12 +17,14 @@
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Support/ErrorHandler.hh>
-#include <Support/Path.hh>
+#include <Support/path.hh>
+#include <boost/filesystem/convenience.hpp>
 #include "ASTTranslator.hh"
 #include "SXRGenerator.hh"
 #include <fstream>
 
 using namespace Synopsis;
+namespace fs = boost::filesystem;
 
 namespace
 {
@@ -99,14 +101,9 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       if (syntax_prefix)
       {
 	timer.reset();
-	Path path(src);
-	path.abs();
- 	std::string long_filename = path.str();
-	Path base(base_path);
-	base.abs();
- 	path.strip(base.str());
- 	std::string short_filename = path.str();
- 	AST::SourceFile file = ast.files().get(short_filename);
+	std::string long_filename = make_full_path(src);
+	std::string short_filename = make_short_path(src, base_path);
+	AST::SourceFile file = ast.files().get(short_filename);
 	// Undo the preprocesser's macro expansions.
 	Python::Dict macro_calls = file.macro_calls();
 	for (Python::Dict::iterator l = macro_calls.begin(); l != macro_calls.end(); ++l)
@@ -121,7 +118,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
 	  }
 	}
 	std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
-	makedirs(Path(sxr).dirname());
+        create_directories(fs::path(sxr).branch_path());
  	std::ofstream ofs(sxr.c_str());
  	SXRGenerator generator(buffer, symbols.current_scope(), ofs);
  	generator.process(ptree);
