@@ -9,7 +9,7 @@
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
-#include <Support/Path.hh>
+#include <Support/path.hh>
 
 using Synopsis::Token;
 using Synopsis::Trace;
@@ -31,10 +31,8 @@ ASTTranslator::ASTTranslator(std::string const &filename,
 {
   Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
   // determine canonical filenames
-  Path path = Path(raw_filename_).abs();
-  std::string long_filename = path.str();
-  path.strip(base_path_);
-  std::string short_filename = path.str();
+  std::string long_filename = make_full_path(raw_filename_);
+  std::string short_filename = make_short_path(raw_filename_, base_path_);
 
   AST::SourceFile file = ast_.files().get(short_filename);
   if (file)
@@ -280,10 +278,8 @@ bool ASTTranslator::update_position(PT::Node *node)
     raw_filename_ = filename;
 
     // determine canonical filenames
-    Path path = Path(filename).abs();
-    std::string long_filename = path.str();
-    path.strip(base_path_);
-    std::string short_filename = path.str();
+    std::string long_filename = make_full_path(filename);
+    std::string short_filename = make_short_path(filename, base_path_);
 
     AST::SourceFile file = ast_.files().get(short_filename);
     if (file)

@@ -81,7 +81,7 @@ SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
 
 TSRC	:= $(patsubst %, tools/%.cc, $(TOOLS))
 
-SUP	:= $(patsubst %, Support/%.cc, Path ErrorHandler)
+SUP	:= $(patsubst %, Support/%.cc, ErrorHandler)
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/PTree/*.hh))
