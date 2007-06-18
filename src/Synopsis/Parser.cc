@@ -4246,7 +4246,7 @@ PT::Node *Parser::primary_expression()
       if (my_lexer.look_ahead() == '{' && my_ruleset & GCC)
       {
 	// GNU statement expression
-	PT::Block *block = compound_statement(block);
+	PT::Block *block = compound_statement();
 	if (!require(block, "compound-statement")) return 0;	
 	expr = block;
       }
