@@ -55,20 +55,21 @@ class FunctionScope;
 class Symbol
 {
 public:
-  Symbol(PTree::Encoding const &t, PTree::Node const *p, bool def, Scope *s)
-    : my_type(t), my_ptree(p), my_definition(def), my_scope(s) {}
+  Symbol(PTree::Encoding const &t, PTree::Node const *p, bool d, Scope *s)
+    : type_(t), ptree_(p), definition_(d), scope_(s) {}
   virtual ~Symbol(){}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
-  PTree::Encoding const & type() const { return my_type;}
-  PTree::Encoding const & name() const { return my_scope->name(this);}
-  PTree::Node const * ptree() const { return my_ptree;}
-  bool is_definition() const { return my_definition;}
-  Scope * scope() const { return my_scope;}
+  PTree::Encoding const & type() const { return type_;}
+  PTree::Encoding const & name() const { return scope_->reverse_lookup(this);}
+  //  std::string qname() const { return scope_->name(this);}
+  PTree::Node const * ptree() const { return ptree_;}
+  bool is_definition() const { return definition_;}
+  Scope * scope() const { return scope_;}
 private:
-  PTree::Encoding     my_type;
-  PTree::Node const * my_ptree;
-  bool                my_definition;
-  Scope             * my_scope;
+  PTree::Encoding     type_;
+  PTree::Node const * ptree_;
+  bool                definition_;
+  Scope             * scope_;
 };
 
 class VariableName : public Symbol
@@ -85,16 +86,16 @@ class ConstName : public VariableName
 public:
   ConstName(PTree::Encoding const &type, long v,
 	    PTree::Node const *ptree, bool def, Scope *s)
-    : VariableName(type, ptree, def, s), my_defined(true), my_value(v) {}
+    : VariableName(type, ptree, def, s), defined_(true), value_(v) {}
   ConstName(PTree::Encoding const &type,
 	    PTree::Node const *ptree, bool def, Scope *s)
-    : VariableName(type, ptree, def, s), my_defined(false) {}
+    : VariableName(type, ptree, def, s), defined_(false) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
-  bool defined() const { return my_defined;}
-  long value() const { return my_value;}
+  bool defined() const { return defined_;}
+  long value() const { return value_;}
 private:
-  bool my_defined;
-  long my_value;
+  bool defined_;
+  long value_;
 };
 
 class TypeName : public Symbol
@@ -111,12 +112,12 @@ class TypedefName : public TypeName
 public:
   TypedefName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope,
 	      Symbol const *aliased)
-    : TypeName(type, ptree, false, scope), my_aliased(aliased) {}
+    : TypeName(type, ptree, false, scope), aliased_(aliased) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
   //. The aliased symbol. This may be a TypeName, ClassTemplateName, or Dependent.
-  Symbol const *aliased() const { return my_aliased;}
+  Symbol const *aliased() const { return aliased_;}
 private:
-  Symbol const *my_aliased;
+  Symbol const *aliased_;
 };
 
 class ClassName : public TypeName
@@ -166,8 +167,8 @@ public:
   FunctionName(PTree::Encoding const &type, PTree::Node const *ptree,
 	       size_t params, size_t default_args, bool def, Scope *s)
     : Symbol(type, ptree, def, s),
-      my_params(params),
-      my_default_args(default_args) 
+      params_(params),
+      default_args_(default_args) 
   {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 
@@ -175,12 +176,12 @@ public:
   //. This will return 0 if the function definition hasn't been seen yet.
   FunctionScope *as_scope() const;
 
-  size_t params() const { return my_params;}
-  size_t default_args() const { return my_default_args;}
+  size_t params() const { return params_;}
+  size_t default_args() const { return default_args_;}
 
 private:
-  size_t my_params;
-  size_t my_default_args;
+  size_t params_;
+  size_t default_args_;
 };
 
 class FunctionTemplateName : public Symbol
@@ -189,20 +190,20 @@ public:
   FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree,
 		       size_t params, size_t default_args, bool def, Scope *s)
     : Symbol(type, ptree, def, s),
-      my_params(params),
-      my_default_args(default_args) {}
+      params_(params),
+      default_args_(default_args) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 
   //. Return the function scope associated with this symbol.
   //. This will return 0 if the function definition hasn't been seen yet.
   FunctionScope *as_scope() const;
 
-  size_t params() const { return my_params;}
-  size_t default_args() const { return my_default_args;}
+  size_t params() const { return params_;}
+  size_t default_args() const { return default_args_;}
 
 private:
-  size_t my_params;
-  size_t my_default_args;
+  size_t params_;
+  size_t default_args_;
 };
 
 class NamespaceName : public Symbol

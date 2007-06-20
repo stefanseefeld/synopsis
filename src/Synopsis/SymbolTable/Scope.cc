@@ -10,6 +10,7 @@
 #include <Synopsis/SymbolTable/Symbol.hh>
 #include <Synopsis/Trace.hh>
 #include <functional>
+#include <typeinfo>
 
 using namespace Synopsis;
 using namespace PTree;

@@ -10,6 +10,7 @@
 
 #include <string>
 #include <iostream>
+#include <cstring>
 #include <cassert>
 
 namespace Synopsis

@@ -456,10 +456,12 @@ bool Parser::lookup_class_name(PT::Encoding const &name)
   {
     my_symbol = declared;
     if (my_in_nested_name_specifier)
+    {
       if (my_symbol == ST::DEPENDENT)
 	my_qualifying_scope = ST::DEPENDENT_SCOPE;
       else
 	my_qualifying_scope = declared->scope()->find_scope(declared->ptree());
+    }
     return true;
   }
   else if (dynamic_cast<ST::DependentName const *>(declared))
@@ -4247,7 +4249,7 @@ PT::Node *Parser::primary_expression()
       {
 	// GNU statement expression
 	PT::Block *block = compound_statement();
-	if (!require(block, "compound-statement")) return 0;	
+	if (!require(block, "compound-statement")) return 0;
 	expr = block;
       }
       else
