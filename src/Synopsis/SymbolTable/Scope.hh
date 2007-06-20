@@ -124,7 +124,7 @@ public:
   //. return a set of matching symbols.
   virtual SymbolSet find(PTree::Encoding const &, LookupContext) const;
   //. Return the name with which the given symbol was declared.
-  PTree::Encoding const &name(Symbol const *s) const;
+  PTree::Encoding const &reverse_lookup(Symbol const *s) const;
   //. Remove the given symbol from the scope.
   //. s shall not be used after its removal.
   void remove(Symbol const *s);
@@ -170,7 +170,7 @@ inline Scope *Scope::global_scope()
   return scope;
 }
 
-inline PTree::Encoding const &Scope::name(Symbol const *s) const
+inline PTree::Encoding const &Scope::reverse_lookup(Symbol const *s) const
 {
   for (SymbolTable::const_iterator i = my_symbols.begin();
        i != my_symbols.end();
