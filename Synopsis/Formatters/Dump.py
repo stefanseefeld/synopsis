@@ -6,13 +6,12 @@
 #
 
 """
-Verbose attribute-oriented xml dump of AST, useful for validation,
+Verbose attribute-oriented xml dump of ASG, useful for validation,
 introspection, and debugging.
 """
 
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import Type, AST
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 

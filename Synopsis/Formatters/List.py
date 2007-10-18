@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
-class Formatter(Processor, AST.Visitor):
+class Formatter(Processor, ASG.Visitor):
     """Generate a high-level list of the content of a syn file.
     This formatter can lists source files (by name), as well as
     declarations (by name, type) contained in a given scope."""
@@ -54,7 +54,7 @@ class Formatter(Processor, AST.Visitor):
         return self.ir
 
 
-    def visitScope(self, node):
+    def visit_scope(self, node):
 
         if self.scope == node.name():
 
@@ -63,7 +63,7 @@ class Formatter(Processor, AST.Visitor):
             declarations = node.declarations()[:]
             declarations.sort(lambda x, y : cmp(x.name(), y.name()))
             for d in declarations:
-                if isinstance(d, AST.Builtin): continue
+                if isinstance(d, ASG.Builtin): continue
                 name = d.name()[-1]
                 _type = d.type()
                 print '%s : %s'%(name, _type)

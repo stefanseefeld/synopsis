@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
-class Previous(Processor, AST.Visitor):
+class Previous(Processor, ASG.Visitor):
      """A class that maps comments that begin with '<' to the previous
      declaration"""
 
@@ -37,8 +37,8 @@ class Previous(Processor, AST.Visitor):
 
           self.last = self.__laststack.pop()
 
-     def visitScope(self, scope):
-          """overrides visitScope() to set 'last' after each declaration"""
+     def visit_scope(self, scope):
+          """overrides visit_scope() to set 'last' after each declaration"""
 
           self.push()
           for decl in scope.declarations():
@@ -46,15 +46,15 @@ class Previous(Processor, AST.Visitor):
                self.last = decl
           self.pop()
 
-     def visitDeclaration(self, decl):
+     def visit_declaration(self, decl):
           self.process_comments(decl)
 
-     def visitBuiltin(self, decl):
+     def visit_builtin(self, decl):
           if decl.type() == 'EOS': # treat it if it is an 'end of scope' marker
                self.process_comments(decl)
 
-     def visitEnum(self, enum):
-          """Does the same as visitScope but for enum and enumerators"""
+     def visit_enum(self, enum):
+          """Does the same as visit_scope but for enum and enumerators"""
 
           self.push()
           for enumor in enum.enumerators():
@@ -63,7 +63,7 @@ class Previous(Processor, AST.Visitor):
           if enum.eos: enum.eos.accept(self)
           self.pop()
 
-     def visitEnumerator(self, enumor):
+     def visit_enumerator(self, enumor):
           """Checks previous comment and removes dummies"""
 
           self.process_comments(enumor)

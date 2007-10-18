@@ -5,12 +5,12 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.DocString import DocString
 from Synopsis.Processor import Processor, Parameter
 from Filter import *
 
-class Translator(Processor, AST.Visitor):
+class Translator(Processor, ASG.Visitor):
     """A Translator translates comments into documentation."""
 
     filter = Parameter(SSFilter(), 'A comment filter to apply.')
@@ -34,7 +34,7 @@ class Translator(Processor, AST.Visitor):
         return self.output_and_return_ir()
 
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
         """Map comments to a doc string."""
 
         comments = decl.annotations.get('comments')

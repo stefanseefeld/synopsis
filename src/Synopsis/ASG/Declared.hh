@@ -5,15 +5,15 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_Declared_hh
-#define _Synopsis_AST_Declared_hh
+#ifndef _Synopsis_ASG_Declared_hh
+#define _Synopsis_ASG_Declared_hh
 
-#include <Synopsis/AST/Type.hh>
-#include <Synopsis/AST/Declaration.hh>
+#include <Synopsis/ASG/Type.hh>
+#include <Synopsis/ASG/Declaration.hh>
 
 namespace Synopsis
 {
-namespace AST
+namespace ASG
 {
 
 class Declared : public Named

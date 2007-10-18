@@ -9,7 +9,7 @@
 """a TexInfo formatter """
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 from Synopsis.DocString import DocString
 import sys, getopt, os, os.path, string, re
 
@@ -20,7 +20,7 @@ def escape(text):
    return _tags.sub('@@', text).replace('{', '@{').replace('}', '@}')
 
 
-class MenuMaker(AST.Visitor):
+class MenuMaker(ASG.Visitor):
    """generate a texinfo menu for the declarations of a given scope"""
 
    def __init__(self, scope, os):
@@ -31,15 +31,15 @@ class MenuMaker(AST.Visitor):
    def write(self, text): self.__os.write(text)
    def start(self): self.write('@menu\n')
    def end(self): self.write('@end menu\n')
-   def visitDeclaration(self, node):
+   def visit_declaration(self, node):
 
       name = escape(Util.dotName(node.name(), self.__scope))
       self.write('* ' + name + '::\t' + node.type() + '\n')
 
-   visitGroup = visitDeclaration
-   visitEnum = visitDeclaration
+   visit_group = visit_declaration
+   visit_enum = visit_declaration
 
-class Formatter(Processor, Type.Visitor, AST.Visitor):
+class Formatter(Processor, Type.Visitor, ASG.Visitor):
    """The type visitors should generate names relative to the current scope.
    The generated references however are fully scoped names."""
 
@@ -79,28 +79,28 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
 
    #################### Type Visitor ###########################################
 
-   def visitBaseType(self, type):
+   def visit_base_type(self, type):
 
       self.__type_ref = Util.ccolonName(type.name())
       self.__type_label = Util.ccolonName(type.name())
         
-   def visitUnknown(self, type):
+   def visit_unknown(self, type):
 
       self.__type_ref = Util.ccolonName(type.name())
       self.__type_label = Util.ccolonName(type.name(), self.scope())
         
-   def visitDeclared(self, type):
+   def visit_declared(self, type):
 
       self.__type_label = Util.ccolonName(type.name(), self.scope())
       self.__type_ref = Util.ccolonName(type.name())
         
-   def visitModifier(self, type):
+   def visit_modifier(self, type):
 
       type.alias().accept(self)
       self.__type_ref = string.join(type.premod()) + " " + self.__type_ref + " " + string.join(type.postmod())
       self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
             
-   def visitParametrized(self, type):
+   def visit_parametrized(self, type):
 
       if type.template():
          type.template().accept(self)
@@ -112,28 +112,28 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
          parameters_label.append(self.__type_label)
       self.__type_label = type_label + string.join(parameters_label, ", ") + ">"
 
-   def visitFunctionType(self, type):
+   def visit_function_type(self, type):
 
       # TODO: this needs to be implemented
       self.__type_ref = 'function_type'
       self.__type_label = 'function_type'
 
-   #################### AST Visitor ############################################
+   #################### ASG Visitor ############################################
       
-   def visitDeclarator(self, node):
+   def visit_declarator(self, node):
 
       self.__declarator = node.name()
       for i in node.sizes():
          self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
 
-   def visitTypedef(self, typedef):
+   def visit_typedef(self, typedef):
 
       #self.write('@node ' + self.decl_label(typedef.name()) + '\n')
       self.write('@deftp ' + typedef.type() + ' {' + self.format_type(typedef.alias()) + '} {' + self.decl_label(typedef.name()) + '}\n')
       self.format_comments(typedef)
       self.write('@end deftp\n')
 
-   def visitVariable(self, variable):
+   def visit_variable(self, variable):
 
       #self.write('@node ' + self.decl_label(variable.name()) + '\n')
       self.write('@deftypevr {' + variable.type() + '} {' + self.format_type(variable.vtype()) + '} {' + self.decl_label(variable.name()) + '}\n')
@@ -141,11 +141,11 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.format_comments(variable)
       self.write('@end deftypevr\n')
 
-   def visitConst(self, const):
+   def visit_const(self, const):
 
       print "sorry, <const> not implemented"
 
-   def visitModule(self, module):
+   def visit_module(self, module):
 
       #self.write('@node ' + self.decl_label(module.name()) + '\n')
       self.write('@deftp ' + module.type() + ' ' + self.decl_label(module.name()) + '\n')
@@ -159,7 +159,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.scope().pop()
       self.write('@end deftp\n')
 
-   def visitClass(self, clas):
+   def visit_class(self, clas):
 
       #self.write('@node ' + self.decl_label(clas.name()) + '\n')
       self.write('@deftp ' + clas.type() + ' ' + self.decl_label(clas.name()) + '\n')
@@ -181,13 +181,13 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.scope().pop()
       self.write('@end deftp\n')
 
-   def visitInheritance(self, inheritance):
+   def visit_inheritance(self, inheritance):
 
       #map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
       #self.entity("classname", Util.ccolonName(inheritance.parent().name(), self.scope()))
       self.write('parent class')
 
-   def visitParameter(self, parameter):
+   def visit_parameter(self, parameter):
 
       #map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier())
       parameter.type().accept(self)
@@ -195,7 +195,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       label = self.write(' @var{' + parameter.identifier() + '}')
       #map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier())
 
-   def visitFunction(self, function):
+   def visit_function(self, function):
 
       ret = function.returnType()
       if ret:
@@ -216,7 +216,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.format_comments(function)
       self.write('@end deftypefn\n')
 
-   def visitOperation(self, operation):
+   def visit_operation(self, operation):
 
       ret = operation.returnType()
       if ret:
@@ -241,7 +241,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.format_comments(operation)
       self.write('@end deftypeop\n')
 
-   def visitEnumerator(self, enumerator):
+   def visit_enumerator(self, enumerator):
 
       self.write('@deftypevr {' + enumerator.type() + '} {} {' + self.decl_label(enumerator.name()) + '}')
       #FIXME !: how can values be represented in texinfo ?
@@ -250,7 +250,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.format_comments(enumerator)
       self.write('@end deftypevr\n')
 
-   def visitEnum(self, enum):
+   def visit_enum(self, enum):
       #self.write('@node ' + self.decl_label(enum.name()) + '\n')
       self.write('@deftp ' + enum.type() + ' ' + self.decl_label(enum.name()) + '\n')
       self.format_comments(enum)

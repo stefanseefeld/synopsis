@@ -5,7 +5,7 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTKit.hh>
+#include <Synopsis/ASG/ASGKit.hh>
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree.hh>
@@ -15,7 +15,7 @@
 #include <Synopsis/Lexer.hh>
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
-#include "ASTTranslator.hh"
+#include "ASGTranslator.hh"
 #include <Support/ErrorHandler.hh>
 #include <fstream>
 
@@ -51,7 +51,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     return 0;
 
   Py_INCREF(py_ir);
-  AST::IR ir(py_ir);
+  IR ir(py_ir);
   Py_INCREF(py_ir);
 
   std::set_unexpected(unexpected);
@@ -82,7 +82,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     }
     else if (ptree)
     {
-      ASTTranslator translator(src, base_path, primary_file_only, ir, verbose, debug);
+      ASGTranslator translator(src, base_path, primary_file_only, ir, verbose, debug);
       translator.translate(ptree, buffer);
     }
   }

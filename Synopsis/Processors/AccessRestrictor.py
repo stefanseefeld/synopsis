@@ -7,11 +7,11 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 
 import string
 
-class AccessRestrictor(Processor, AST.Visitor):
+class AccessRestrictor(Processor, ASG.Visitor):
    """This class processes declarations, and removes those that need greated
    access than the maximum passed to the constructor"""
 
@@ -49,12 +49,12 @@ class AccessRestrictor(Processor, AST.Visitor):
 
       self.__currscope.append(decl)
 
-   def visitDeclaration(self, decl):
+   def visit_declaration(self, decl):
 
       if decl.accessibility() > self.access: return
       self.add(decl)
 
-   def visitScope(self, scope):
+   def visit_scope(self, scope):
 
       if scope.accessibility() > self.access: return
       self.push()
@@ -62,5 +62,3 @@ class AccessRestrictor(Processor, AST.Visitor):
          decl.accept(self)
       scope.declarations()[:] = self.__currscope
       self.pop(scope)
-
-linkerOperation = AccessRestrictor

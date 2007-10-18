@@ -5,16 +5,16 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_Declaration_hh
-#define _Synopsis_AST_Declaration_hh
+#ifndef _Synopsis_ASG_Declaration_hh
+#define _Synopsis_ASG_Declaration_hh
 
 #include <Synopsis/Python/Object.hh>
-#include <Synopsis/AST/Visitor.hh>
-#include <Synopsis/AST/Type.hh>
+#include <Synopsis/ASG/Visitor.hh>
+#include <Synopsis/ASG/Type.hh>
 
 namespace Synopsis
 {
-namespace AST
+namespace ASG
 {
 
 enum Access
@@ -27,6 +27,7 @@ enum Access
 
 class Declaration;
 typedef Python::TypedList<Declaration> Declarations;
+}
 
 class SourceFile : public Python::Object
 {
@@ -43,9 +44,11 @@ public:
   }
   Python::List includes() { return attr("includes");}
   Python::Dict macro_calls() { return attr("macro_calls");}
-  Declarations declarations();
+  ASG::Declarations declarations();
 };
 
+namespace ASG
+{
 class Declaration : public Python::Object
 {
 public:
@@ -66,11 +69,8 @@ public:
 
   virtual void accept(Visitor *v) { v->visit_declaration(this);}
 
-  void assert_type(const char *type) { Python::Object::assert_type("Synopsis.AST", type);}
+  void assert_type(const char *type) { Python::Object::assert_type("Synopsis.ASG", type);}
 };
-
-inline Declarations SourceFile::declarations()
-{ return narrow<Declarations>(attr("declarations"));}
 
 //. A Builtin is a node to be used internally.
 //. Right now it's being used to capture comments
@@ -151,7 +151,7 @@ class Inheritance : public Python::Object
 public:
   Inheritance() {}
   Inheritance(const Python::Object &o, bool check = true)
-    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Inheritance");}
+    : Python::Object(o) { if (check) assert_type("Synopsis.ASG", "Inheritance");}
 
   //. Returns the Class object this inheritance refers to. The method
   //. returns a Type since typedefs to classes are preserved to
@@ -272,7 +272,7 @@ class Parameter : public Python::Object
 public:
   Parameter() {}
   Parameter(const Python::Object &o, bool check = true)
-    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Parameter");}
+    : Python::Object(o) { if (check) assert_type("Synopsis.ASG", "Parameter");}
 
   Modifiers premodifiers() const { return narrow<Modifiers>(attr("premodifiers")());}
   Modifiers postmodifiers() const { return narrow<Modifiers>(attr("postmodifiers")());}
@@ -336,6 +336,10 @@ public:
 };
 
 }
+
+inline ASG::Declarations SourceFile::declarations()
+{ return narrow<ASG::Declarations>(attr("declarations"));}
+
 }
 
 #endif

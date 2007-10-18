@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -25,7 +25,7 @@ class Inheritance(Part):
    def process(self, decl):
       "Walk the hierarchy to find inherited members to print."
 
-      if not isinstance(decl, AST.Class): return
+      if not isinstance(decl, ASG.Class): return
       self.write_start()
       names = decl.declarations()
       names = map(self._short_name, names)
@@ -52,10 +52,10 @@ class Inheritance(Part):
                continue
             # FIXME: This doesn't account for the inheritance type
             # (private etc)
-            if child.accessibility() == AST.PRIVATE:
+            if child.accessibility() == ASG.PRIVATE:
                continue
             # Don't include constructors and destructors!
-            if (isinstance(child, AST.Function) and
+            if (isinstance(child, ASG.Function) and
                 child.file().annotations['language'] == 'C++' and
                 len(child.realname()) > 1):
                if child.realname()[-1] == child.realname()[-2]: continue
@@ -73,7 +73,7 @@ class Inheritance(Part):
       self._process_superclasses(clas, names + child_names)
     
    def _short_name(self, decl):
-      if isinstance(decl, AST.Function):
+      if isinstance(decl, ASG.Function):
          return decl.realname()[-1]
       return decl.name()[-1]
     
@@ -85,7 +85,7 @@ class Inheritance(Part):
          parent = inheritance.parent()
          if isinstance(parent, Type.Declared):
             parent = parent.declaration()
-            if isinstance(parent, AST.Class):
+            if isinstance(parent, ASG.Class):
                self._process_class(parent, names)
                continue
          #print "Ignoring", parent.__class__.__name__, "parent of", clas.name()

@@ -45,7 +45,7 @@ public:
   PyObject* FuncPtr(Types::FuncPtr*);
   
   //
-  // types from the Synopsis.AST module
+  // types from the Synopsis.ASG module
   //
   PyObject* SourceFile(AST::SourceFile*);
   PyObject* Include(AST::Include*);

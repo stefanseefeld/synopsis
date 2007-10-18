@@ -1,7 +1,7 @@
-"""AST processors.
+"""ASG processors.
 
-There is much that can be done to an AST to manipulate it. This includes:
-merging multiple AST trees, mapping links to different languages, pruning the
+There is much that can be done to an ASG to manipulate it. This includes:
+merging multiple ASG trees, mapping links to different languages, pruning the
 tree, mapping names to different scopes, and dealing with comment prefixes and
 groupings."""
 
@@ -13,5 +13,4 @@ from ModuleFilter import *
 from XRefCompiler import *
 from AccessRestrictor import *
 from TypeMapper import *
-from LanguageMapper import *
 import Comments

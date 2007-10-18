@@ -56,7 +56,7 @@ class Base(Named):
 
    def __init__(self, language, name):
       Named.__init__(self, language, name)
-   def accept(self, visitor): visitor.visitBaseType(self)
+   def accept(self, visitor): visitor.visit_base_type(self)
    def __cmp__(self, other):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.name(),other.name())
@@ -67,7 +67,7 @@ class Dependent(Named):
 
    def __init__(self, language, name):
       Named.__init__(self, language, name)
-   def accept(self, visitor): visitor.visitDependent(self)
+   def accept(self, visitor): visitor.visit_dependent(self)
    def __cmp__(self, other):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.name(),other.name())
@@ -87,7 +87,7 @@ class Unknown(Named):
       self.base.__language = language
       self.__name = name
       self.__link = link
-   def accept(self, visitor): visitor.visitUnknown(self)
+   def accept(self, visitor): visitor.visit_unknown(self)
    def __cmp__(self, other):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.name(),other.name())
@@ -102,7 +102,7 @@ class Declared(Named):
    def declaration(self):
       """declaration object which corresponds to this type"""
       return self.__declaration
-   def accept(self, visitor): visitor.visitDeclared(self)
+   def accept(self, visitor): visitor.visit_declared(self)
    def __cmp__(self, other):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.name(),other.name())
@@ -117,7 +117,7 @@ class Template (Declared):
    def parameters(self):
       """list of type names used to declare this template"""
       return self.__parameters
-   def accept(self, visitor): visitor.visitTemplate(self)
+   def accept(self, visitor): visitor.visit_template(self)
    def __cmp__(self, other):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.parameters(),other.parameters())
@@ -142,7 +142,7 @@ class Modifier(Type):
    def postmod(self):
       """the modifier string"""
       return self.__postmod
-   def accept(self, visitor): visitor.visitModifier(self)
+   def accept(self, visitor): visitor.visit_modifier(self)
 
    def set_alias(self, alias): self.__alias = alias
    def __cmp__(self, other):
@@ -167,7 +167,7 @@ class Array (Type):
    """primary type this array decorates"""
    def sizes(self): return self.__sizes
    """dimensions of the array"""
-   def accept(self, visitor): visitor.visitArray(self)
+   def accept(self, visitor): visitor.visit_array(self)
    def set_alias(self, alias): self.__alias = alias
    def __cmp__(self, other):
       "Comparison operator"
@@ -191,7 +191,7 @@ class Parametrized(Type):
    def parameters(self):
       """list of types for which this template is instanciated"""
       return self.__parameters
-   def accept(self, visitor): visitor.visitParametrized(self)
+   def accept(self, visitor): visitor.visit_parametrized(self)
    def set_template(self, type): self.__template = type
    def __cmp__(self, other):
       "Comparison operator"
@@ -216,7 +216,7 @@ class Function(Type):
    def parameters(self):
       """list of nested parameter types"""
       return self.__params
-   def accept(self, visitor): visitor.visitFunctionType(self)
+   def accept(self, visitor): visitor.visit_function_type(self)
    
    def set_returnType(self, returnType): self.__returnType = returnType
 
@@ -254,12 +254,12 @@ class Dictionary(dict):
 
 class Visitor:
    """Visitor for Type objects"""
-   def visitBaseType(self, type): return
-   def visitUnknown(self, type): return
-   def visitDeclared(self, type): return
-   def visitModifier(self, type): return
-   def visitArray(self, type): return
-   def visitTemplate(self, type): return
-   def visitParametrized(self, type): return
-   def visitFunctionType(self, type): return
-   def visitDependent(self, type): return
+   def visit_base_type(self, type): return
+   def visit_unknown(self, type): return
+   def visit_declared(self, type): return
+   def visit_modifier(self, type): return
+   def visit_array(self, type): return
+   def visit_template(self, type): return
+   def visit_parametrized(self, type): return
+   def visit_function_type(self, type): return
+   def visit_dependent(self, type): return

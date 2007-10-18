@@ -6,9 +6,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
-
-import string
+from Synopsis import Type, Util
 
 class TypeMapper(Processor, Type.Visitor):
    """Base class for type mapping"""

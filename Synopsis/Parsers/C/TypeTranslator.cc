@@ -12,7 +12,7 @@ using namespace Synopsis;
 
 namespace
 {
-  AST::ScopedName qname(std::string const &name) { return AST::ScopedName(name);}
+  ASG::ScopedName qname(std::string const &name) { return ASG::ScopedName(name);}
 }
 
 TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
@@ -38,18 +38,18 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base(qname("__builtin_va_list"))));
 }
 
-AST::Type TypeTranslator::lookup(PTree::Encoding const &name)
+ASG::Type TypeTranslator::lookup(PTree::Encoding const &name)
 {
   Trace trace("TypeTranslator::lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   my_name = name;
-  AST::Type type;
+  ASG::Type type;
   decode_type(name.begin(), type);
   return type;
 }
 
-AST::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
-						AST::TypeList &parameters)
+ASG::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
+						ASG::TypeList &parameters)
 {
   Trace trace("TypeTranslator::lookup_function_types", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -60,7 +60,7 @@ AST::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
   ++i;
   while (true)
   {
-    AST::Type parameter;
+    ASG::Type parameter;
     i = decode_type(i, parameter);
     if (parameter)
       parameters.append(parameter);
@@ -68,17 +68,17 @@ AST::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
       break;
   }
   ++i; // skip over '_'
-  AST::Type return_type;
+  ASG::Type return_type;
   i = decode_type(i, return_type);
   return return_type;
 }
 
-AST::Type TypeTranslator::declare(AST::ScopedName name,
-				  AST::Declaration declaration)
+ASG::Type TypeTranslator::declare(ASG::ScopedName name,
+				  ASG::Declaration declaration)
 {
   Trace trace("TypeTranslator::declare", Trace::SYMBOLLOOKUP);
   trace << name;
-  AST::Type type = my_type_kit.create_declared(name, declaration);
+  ASG::Type type = my_type_kit.create_declared(name, declaration);
   my_types.attr("__setitem__")(Python::Tuple(name, type));
   return type;
 }
@@ -99,12 +99,12 @@ PTree::Encoding::iterator TypeTranslator::decode_name(PTree::Encoding::iterator 
 }
 
 PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator i,
-						      AST::Type &type)
+						      ASG::Type &type)
 {
   Trace trace("TypeTranslator::decode_type", Trace::PARSING);
-  AST::Modifiers premod, postmod;
+  ASG::Modifiers premod, postmod;
   std::string name;
-  AST::Type base;
+  ASG::Type base;
 
   // Loop forever until broken
   while (i != my_name.end() && !name.length() && !base)
@@ -190,7 +190,7 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 // 	break;
       case '_':
 	--i;
-	type = AST::Type();
+	type = ASG::Type();
 	return i; // end of func params
       case 'F':
 	i = decode_func_ptr(i, base, postmod);
@@ -219,12 +219,12 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
   {
     // FIXME
     // 	std::cerr << "no type or name found decoding " << m_string << std::endl;
-    type = AST::Type();
+    type = ASG::Type();
     return i;
   }
   if (!base)
   {
-    base = my_types.attr("get")(Python::Tuple(AST::ScopedName(name)));
+    base = my_types.attr("get")(Python::Tuple(ASG::ScopedName(name)));
     if (!base) throw std::runtime_error("Unknown symbol: " + name);
   }
   if (premod.empty() && postmod.empty())
@@ -236,12 +236,12 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 }
 
 PTree::Encoding::iterator TypeTranslator::decode_func_ptr(PTree::Encoding::iterator i,
-							  AST::Type &type,
-							  AST::Modifiers &postmod)
+							  ASG::Type &type,
+							  ASG::Modifiers &postmod)
 {
   Trace trace("TypeTranslator::decode_func_ptr", Trace::PARSING);
   // Function ptr. Encoded same as function
-  AST::Modifiers premod;
+  ASG::Modifiers premod;
   // Move * from postmod to funcptr's premod. This makes the output be
   // "void (*convert)()" instead of "void (convert)()*"
   if (postmod.size() > 0 && postmod.get(0) == "*")
@@ -249,10 +249,10 @@ PTree::Encoding::iterator TypeTranslator::decode_func_ptr(PTree::Encoding::itera
     premod.append(postmod.get(0));
     postmod.erase(postmod.begin());
   }
-  AST::TypeList parameters;
+  ASG::TypeList parameters;
   while (true)
   {
-    AST::Type parameter;
+    ASG::Type parameter;
     i = decode_type(i, parameter);
     if (parameter)
       parameters.append(parameter);

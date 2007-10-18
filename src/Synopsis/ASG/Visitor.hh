@@ -5,12 +5,12 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_Visitor_hh
-#define _Synopsis_AST_Visitor_hh
+#ifndef _Synopsis_ASG_Visitor_hh
+#define _Synopsis_ASG_Visitor_hh
 
 namespace Synopsis
 {
-namespace AST
+namespace ASG
 {
 
 class Declaration;

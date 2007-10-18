@@ -5,17 +5,14 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_IR_hh
-#define _Synopsis_AST_IR_hh
+#ifndef _Synopsis_ASG_IR_hh
+#define _Synopsis_ASG_IR_hh
 
 #include <Synopsis/Python/Object.hh>
-#include <Synopsis/AST/Declaration.hh>
+#include <Synopsis/ASG/Declaration.hh>
 
 namespace Synopsis
 {
-namespace AST
-{
-
 class IR : public Python::Object
 {
 public:
@@ -28,7 +25,6 @@ public:
   void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.IR", "IR");}
 };
 
-}
 }
 
 #endif

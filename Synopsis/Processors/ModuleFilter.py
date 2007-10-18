@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG, Type
 
-class ModuleFilter(Processor, AST.Visitor):
+class ModuleFilter(Processor, ASG.Visitor):
     """A processor that filters modules."""
 
     modules = Parameter([], 'List of modules to be filtered out.')
@@ -51,16 +51,16 @@ class ModuleFilter(Processor, AST.Visitor):
 
         self.__currscope.append(decl)
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
         """Adds declaration to scope"""
 
         self.add(decl)
 
-    visitBuiltin = visitDeclaration
-    visitGroup = visitDeclaration
-    visitEnum = visitDeclaration
+    visit_builtin = visit_declaration
+    visit_group = visit_declaration
+    visit_enum = visit_declaration
 
-    def visitModule(self, module):
+    def visit_module(self, module):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 
@@ -73,7 +73,7 @@ class ModuleFilter(Processor, AST.Visitor):
         module.declarations()[:] = self.__currscope
         # count the number of non-forward declarations in the current scope
         count = reduce(lambda x, y: x + y,
-                       [not isinstance(x, (AST.Forward, AST.Builtin))
+                       [not isinstance(x, (ASG.Forward, ASG.Builtin))
                                        for x in self.__currscope],
                        0)
         if not self.remove_empty or count: self.pop(module)

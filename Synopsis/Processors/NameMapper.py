@@ -7,15 +7,15 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 
-class NameMapper(Processor, AST.Visitor):
+class NameMapper(Processor, ASG.Visitor):
     """Abstract base class for name mapping."""
 
-    def visitGroup(self, node):
+    def visit_group(self, node):
         """Recursively visits declarations under this group/scope/etc"""
 
-        self.visitDeclaration(node)
+        self.visit_declaration(node)
         for declaration in node.declarations():
             declaration.accept(self)   
 
@@ -38,7 +38,7 @@ class NamePrefixer(NameMapper):
 
         # Now we need to put the declarations in actual nested MetaModules
         for index in range(len(self.prefix), 0, -1):
-            module = AST.MetaModule(self.type, self.prefix[:index])
+            module = ASG.MetaModule(self.type, self.prefix[:index])
             module.declarations().extend(self.ir.declarations)
             self.ir.types[module.name()] = Type.Declared('',
                                                          module.name(),
@@ -47,7 +47,7 @@ class NamePrefixer(NameMapper):
 
         return self.output_and_return_ir()
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
         """Changes the name of this declaration and its associated type"""
 
         # Change the name of the decl

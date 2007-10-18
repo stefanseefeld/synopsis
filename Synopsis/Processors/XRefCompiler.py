@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import AST, Type, Util
 
 import os.path, cPickle, urllib
 

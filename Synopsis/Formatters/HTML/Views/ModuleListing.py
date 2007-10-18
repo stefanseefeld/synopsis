@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -50,7 +50,7 @@ class ModuleListing(View):
    def _child_filter(self, child):
       """Returns true if the given child declaration is to be included"""
 
-      if not isinstance(child, AST.Module): return 0
+      if not isinstance(child, ASG.Module): return 0
       if self.child_types and child.type() not in self.child_types:
          return 0
       return 1

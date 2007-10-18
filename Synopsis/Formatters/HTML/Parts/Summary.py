@@ -15,7 +15,7 @@ from Synopsis.Formatters.HTML.Tags import *
 class Summary(Part):
     """Formatting summary visitor. This formatter displays a summary for each
     declaration, with links to the details if there is one. All of this is
-    controlled by the ASTFormatters."""
+    controlled by the ASGFormatters."""
 
     fragments = Parameter([DeclarationSummaryFormatter(), SummaryCommenter()],
                          '')

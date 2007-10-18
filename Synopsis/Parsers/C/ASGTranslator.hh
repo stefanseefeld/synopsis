@@ -5,11 +5,11 @@
 // see the file COPYING for details.
 //
 
-#ifndef ASTTranslator_hh_
-#define ASTTranslator_hh_
+#ifndef ASGTranslator_hh_
+#define ASGTranslator_hh_
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/AST/TypeKit.hh>
+#include <Synopsis/ASG/ASGKit.hh>
+#include <Synopsis/ASG/TypeKit.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/Buffer.hh>
 #include "TypeTranslator.hh"
@@ -17,17 +17,17 @@
 
 using namespace Synopsis;
 
-class ASTTranslator : private PTree::Visitor
+class ASGTranslator : private PTree::Visitor
 {
 public:
-  ASTTranslator(std::string const &filename,
+  ASGTranslator(std::string const &filename,
 		std::string const &base_path, bool primary_file_only,
-		AST::IR a, bool v, bool d);
+		IR a, bool v, bool d);
 
   void translate(PTree::Node *, Buffer &);
 
 private:
-  typedef std::stack<AST::Scope> ScopeStack;
+  typedef std::stack<ASG::Scope> ScopeStack;
 
   virtual void visit(PTree::List *);
   virtual void visit(PTree::Declarator *);
@@ -38,9 +38,9 @@ private:
   virtual void visit(PTree::Typedef *);
 
   void translate_parameters(PTree::Node *,
-			    AST::TypeList, AST::Function::Parameters &);
+			    ASG::TypeList, ASG::Function::Parameters &);
 
-  void add_comments(AST::Declaration, PTree::Node *);
+  void add_comments(ASG::Declaration, PTree::Node *);
   //. Update positional information for the given
   //. node. This will reset 'my_lineno' and may change
   //. 'my_file'.
@@ -48,12 +48,12 @@ private:
   //. according to the current file and the 'primary_file_only' flag.
   bool update_position(PTree::Node *);
 
-  void declare(AST::Declaration);
+  void declare(ASG::Declaration);
 
-  AST::IR             my_ir;
-  AST::ASTKit         my_ast_kit;
-  AST::SourceFileKit  my_sf_kit;
-  AST::SourceFile     my_file;
+  IR                  my_ir;
+  ASG::ASGKit         my_ast_kit;
+  SourceFileKit       my_sf_kit;
+  SourceFile          my_file;
   std::string         my_raw_filename;
   std::string         my_base_path;
   bool                my_primary_file_only;

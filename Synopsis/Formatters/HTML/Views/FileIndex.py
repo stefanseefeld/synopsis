@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -87,7 +87,7 @@ class FileIndex(View):
          if not entry: continue
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
-         if isinstance(decl, AST.Function): print_name = decl.realname()
+         if isinstance(decl, ASG.Function): print_name = decl.realname()
          else: print_name = name
          # Increase scope
          i = 0

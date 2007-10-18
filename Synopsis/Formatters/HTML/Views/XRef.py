@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -100,7 +100,7 @@ class XRef(View):
       destructors"""
 
       name = decl.name()
-      if isinstance(decl, AST.Function) and len(name) > 1:
+      if isinstance(decl, ASG.Function) and len(name) > 1:
          real = decl.realname()[-1]
          if name[-2] == real:
             return 'Constructor '
@@ -144,7 +144,7 @@ class XRef(View):
          for file, line, scope in target_data[2]:
             self.process_link(file, line, scope)
          self.write('</ul></li>\n')
-      if isinstance(decl, AST.Scope):
+      if isinstance(decl, ASG.Scope):
          self.write('<li>Declarations:<ul>\n')
          for child in decl.declarations():
             file, line = child.file().name, child.line()

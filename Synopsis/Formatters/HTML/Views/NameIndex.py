@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG, Type
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -81,7 +81,7 @@ class NameIndex(View):
         # Fill the dict
         [hasher(t) for t in self.processor.ir.types.values()
          if isinstance(t, Type.Declared) and
-         not isinstance(t.declaration(), AST.Builtin)]
+         not isinstance(t.declaration(), ASG.Builtin)]
 
         # Now sort the dict
         def name_cmp(a,b):
@@ -99,7 +99,7 @@ class NameIndex(View):
 
         name = type.name()
         decl = type.declaration() # non-declared types are filtered out
-        if isinstance(decl, AST.Function):
+        if isinstance(decl, ASG.Function):
             realname = escape(decl.realname()[-1]) + '()'
         else:
             realname = escape(name[-1])

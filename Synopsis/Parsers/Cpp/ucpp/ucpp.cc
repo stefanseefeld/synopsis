@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/AST/TypeKit.hh>
+#include <Synopsis/ASG/ASGKit.hh>
+#include <Synopsis/ASG/TypeKit.hh>
 #include <Support/Path.hh>
 #include <Support/ErrorHandler.hh>
 #include <vector>
@@ -33,20 +33,20 @@ const char *language;
 std::string base_path;
 // these python objects need to be referenced as pointers
 // since the python runtime environment has to be initiaized first
-std::auto_ptr<AST::ASTKit> ast_kit;
-std::auto_ptr<AST::SourceFileKit> sf_kit;
-std::auto_ptr<AST::TypeKit> types;
-std::auto_ptr<AST::IR> ir;
-std::auto_ptr<AST::SourceFile> source_file;
+std::auto_ptr<ASG::ASGKit> ast_kit;
+std::auto_ptr<SourceFileKit> sf_kit;
+std::auto_ptr<ASG::TypeKit> types;
+std::auto_ptr<IR> ir;
+std::auto_ptr<SourceFile> source_file;
 const char *input = 0;
 
 //. creates new SourceFile object and store it into ast
-AST::SourceFile create_source_file(const std::string &filename, bool primary)
+SourceFile create_source_file(const std::string &filename, bool primary)
 {
   Path path = Path(filename).abs();
   path.strip(base_path);
   std::string name = path.str();
-  AST::SourceFile sf = sf_kit->create_source_file(name, filename);
+  SourceFile sf = sf_kit->create_source_file(name, filename);
   Python::Dict files = ir->files();
   files.set(name, sf);
   if (primary) sf.set_primary(true);
@@ -55,12 +55,12 @@ AST::SourceFile create_source_file(const std::string &filename, bool primary)
 
 //. creates new or returns existing SourceFile object
 //. with the given filename
-AST::SourceFile lookup_source_file(const std::string &filename, bool primary)
+SourceFile lookup_source_file(const std::string &filename, bool primary)
 {
   Python::Dict files = ir->files();
   Path path = Path(filename).abs();
   path.strip(base_path);
-  AST::SourceFile sf = files.get(path.str());
+  SourceFile sf = files.get(path.str());
   if (sf && primary) sf.set_primary(true);
   return sf ? sf : create_source_file(filename, primary);
 }
@@ -71,15 +71,15 @@ void create_macro(const char *filename, int line,
 		  int vaarg, const char *text)
 {
   Python::Tuple name(macro_name);
-  AST::SourceFile sf = lookup_source_file(filename, true);
+  SourceFile sf = lookup_source_file(filename, true);
   Python::List params;
   if (args)
   {
     for (int i = 0; i < num_args; ++i) params.append(args[i]);
     if (vaarg) params.append("...");
   }
-  AST::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
-  AST::Declared declared = types->create_declared(name, macro);
+  ASG::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
+  ASG::Declared declared = types->create_declared(name, macro);
 
   Python::List declarations = ir->declarations();
   declarations.append(macro);
@@ -138,10 +138,10 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // since everything in this file is accessed only during the execution
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
-    ir.reset(new AST::IR(py_ir));
-    ast_kit.reset(new AST::ASTKit());
-    sf_kit.reset(new AST::SourceFileKit(language));
-    types.reset(new AST::TypeKit(language));
+    ir.reset(new IR(py_ir));
+    ast_kit.reset(new ASG::ASGKit());
+    sf_kit.reset(new SourceFileKit(language));
+    types.reset(new ASG::TypeKit(language));
 
     if (py_base_path)
     {
@@ -149,7 +149,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       base_path = path.abs().str();
     }
 
-    source_file.reset(new AST::SourceFile(lookup_source_file(input, true)));
+    source_file.reset(new SourceFile(lookup_source_file(input, true)));
 
     // ucpp considers __STDC__ to be predefined, and doesn't allow
     // us to set it explicitely.
@@ -246,7 +246,7 @@ extern "C"
       else
 	std::cout << "returning to file " << abs_filename << std::endl;
 
-    source_file.reset(new AST::SourceFile(lookup_source_file(abs_filename, true)));
+    source_file.reset(new SourceFile(lookup_source_file(abs_filename, true)));
   }
 
   //. This function is a callback from the ucpp code to store macro
@@ -283,9 +283,9 @@ extern "C"
     Path path = Path(target).abs();
 
 //     bool main = !base_path || strncmp(path.str().c_str(), base_path, strlen(base_path));
-    AST::SourceFile target_file = lookup_source_file(path.str(), false);
+    SourceFile target_file = lookup_source_file(path.str(), false);
 
-    AST::Include include = sf_kit->create_include(target_file, name, is_macro, is_next);
+    Include include = sf_kit->create_include(target_file, name, is_macro, is_next);
     Python::List includes = source_file->includes();
     includes.append(include);
   }

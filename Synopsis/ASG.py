@@ -8,7 +8,7 @@
 
 """Abstract Syntax Tree classes.
 
-This file contains classes which encapsulate nodes in the AST. The base class
+This file contains classes which encapsulate nodes in the ASG. The base class
 is the Declaration class that encapsulates a named declaration. All names used
 are scoped tuples.
 
@@ -75,11 +75,11 @@ class Declaration:#(object):
       return self.__name
    def accept(self, visitor):
       """Visit the given visitor"""
-      visitor.visitDeclaration(self)
+      visitor.visit_declaration(self)
    def accessibility(self):
       """One of the accessibility constants.
       This may be one of DEFAULT, PUBLIC, PROTECTED or PRIVATE, which are
-      defined at module scope (Synopsis.AST)"""
+      defined at module scope (Synopsis.ASG)"""
       return self.__accessibility
 
    def set_name(self, name):
@@ -99,11 +99,11 @@ class Builtin (Declaration):
 
       Declaration.__init__(self, file, line, type, name)
 
-   def accept(self, visitor): visitor.visitBuiltin(self)
+   def accept(self, visitor): visitor.visit_builtin(self)
 
 class Macro (Declaration):
    """A preprocessor macro. Note that macros are not strictly part of the
-   AST, and as such are always in the global scope. A macro is "temporary" if
+   ASG, and as such are always in the global scope. A macro is "temporary" if
    it was #undefined in the same file it was #defined in."""
 
    def __init__(self, file, line, type, name, parameters, text):
@@ -123,14 +123,14 @@ class Macro (Declaration):
       """Returns the replacement text for this macro as a string"""
       return self.__text
 
-   def accept(self, visitor): visitor.visitMacro(self)
+   def accept(self, visitor): visitor.visit_macro(self)
 
 class Forward (Declaration):
    """Forward declaration"""
 
    def __init__(self, file, line, type, name):
       Declaration.__init__(self, file, line, type, name)
-   def accept(self, visitor): visitor.visitForward(self)
+   def accept(self, visitor): visitor.visit_forward(self)
 
 class Group (Declaration):
    """Base class for groups which contain declarations.
@@ -147,7 +147,7 @@ class Group (Declaration):
       return self.__declarations
    def accept(self, visitor):
       #print "group accept", visitor
-      visitor.visitGroup(self)
+      visitor.visit_group(self)
 
 class Scope (Group):
    """Base class for scopes (named groups)."""
@@ -155,14 +155,14 @@ class Scope (Group):
    def __init__(self, file, line, type, name):
       Group.__init__(self, file, line, type, name)
 
-   def accept(self, visitor): visitor.visitScope(self)
+   def accept(self, visitor): visitor.visit_scope(self)
 
 class Module (Scope):
    """Module class"""
    def __init__(self, file, line, type, name):
       Scope.__init__(self, file, line, type, name)
 
-   def accept(self, visitor): visitor.visitModule(self)
+   def accept(self, visitor): visitor.visit_module(self)
 
 class MetaModule (Module):
    """Module Class that references all places where this Module occurs"""
@@ -172,7 +172,7 @@ class MetaModule (Module):
    def module_declarations(self):
       """The module declarations this metamodule subsumes"""
       return self.__module_declarations
-   def accept(self, visitor): visitor.visitMetaModule(self)
+   def accept(self, visitor): visitor.visit_meta_module(self)
 
 class Inheritance:
    """Inheritance class. This class encapsulates the information about an
@@ -190,7 +190,7 @@ class Inheritance:
    def attributes(self):
       """Attributes such as 'virtual', 'public' etc"""
       return self.__attributes
-   def accept(self, visitor): visitor.visitInheritance(self)
+   def accept(self, visitor): visitor.visit_inheritance(self)
    
    def set_parent(self, parent): self.__parent = parent
 
@@ -210,7 +210,7 @@ class Class (Scope):
       return self.__template
    def set_template(self, template):
       self.__template = template
-   def accept(self, visitor): visitor.visitClass(self)
+   def accept(self, visitor): visitor.visit_class(self)
 
 class Typedef (Declaration):
    """Typedef class.
@@ -228,7 +228,7 @@ class Typedef (Declaration):
       """True if alias type was constructed here.
       For example, typedef struct _Foo {} Foo;"""
       return self.__constr
-   def accept(self, visitor): visitor.visitTypedef(self)
+   def accept(self, visitor): visitor.visit_typedef(self)
 
    def set_alias(self, type): self.__alias = type
 
@@ -242,7 +242,7 @@ class Enumerator (Declaration):
    def value(self):
       """The string value of this enumerator"""
       return self.__value
-   def accept(self, visitor): visitor.visitEnumerator(self)
+   def accept(self, visitor): visitor.visit_enumerator(self)
 
 class Enum (Declaration):
    """Enum declaration. The actual names and values are encapsulated by
@@ -261,7 +261,7 @@ class Enum (Declaration):
    def enumerators(self):
       """List of Enumerator objects"""
       return self.__enumerators
-   def accept(self, visitor): visitor.visitEnum(self)
+   def accept(self, visitor): visitor.visit_enum(self)
 
 class Variable (Declaration):
    """Variable definition"""
@@ -278,7 +278,7 @@ class Variable (Declaration):
       """True if the type was constructed here.
       For example: struct Foo {} myFoo;"""
       return self.__constr
-   def accept(self, visitor): visitor.visitVariable(self)
+   def accept(self, visitor): visitor.visit_variable(self)
 
    def set_vtype(self, vtype): self.__vtype = vtype
     
@@ -297,7 +297,7 @@ class Const (Declaration):
    def value(self):
       """The string value of this type"""
       return self.__value
-   def accept(self, visitor): visitor.visitConst(self)
+   def accept(self, visitor): visitor.visit_const(self)
    
    def set_ctype(self, ctype): self.__ctype = ctype
     
@@ -327,7 +327,7 @@ class Parameter:
    def value(self):
       """The string value of this parameter"""
       return self.__value
-   def accept(self, visitor): visitor.visitParameter(self)
+   def accept(self, visitor): visitor.visit_parameter(self)
    
    def set_type(self, type): self.__type = type
 
@@ -378,7 +378,7 @@ class Function (Declaration):
    def set_template(self, template):
       self.__template = template
 
-   def accept(self, visitor): visitor.visitFunction(self)
+   def accept(self, visitor): visitor.visit_function(self)
 
    def set_returnType(self, type): self.__returnType = type
 
@@ -392,37 +392,36 @@ class Operation (Function):
    """
    def __init__(self, file, line, type, premod, returnType, postmod, name, realname):
       Function.__init__(self, file, line, type, premod, returnType, postmod, name, realname)
-   def accept(self, visitor): visitor.visitOperation(self)
+   def accept(self, visitor): visitor.visit_operation(self)
 
 class Visitor :
-   """Visitor for AST nodes"""
-   def visitAST(self, node):
-      for declaration in node.declarations(): declaration.accept(self)
-   def visitDeclaration(self, node): return
-   def visitBuiltin(self, node):
+   """Visitor for ASG nodes"""
+
+   def visit_declaration(self, node): return
+   def visit_builtin(self, node):
       """Visit a Builtin instance. By default do nothing. Processors who
       operate on Builtin nodes have to provide an appropriate implementation."""
       pass
-   def visitMacro(self, node): self.visitDeclaration(node)
-   def visitForward(self, node): self.visitDeclaration(node)
-   def visitGroup(self, node):
-      self.visitDeclaration(node)
+   def visit_macro(self, node): self.visit_declaration(node)
+   def visit_forward(self, node): self.visit_declaration(node)
+   def visit_group(self, node):
+      self.visit_declaration(node)
       for declaration in node.declarations(): declaration.accept(self)
-   def visitScope(self, node): self.visitGroup(node)
-   def visitModule(self, node): self.visitScope(node)
-   def visitMetaModule(self, node): self.visitModule(node)
-   def visitClass(self, node): self.visitScope(node)
-   def visitTypedef(self, node): self.visitDeclaration(node)
-   def visitEnumerator(self, node): self.visitDeclaration(node)
-   def visitEnum(self, node):
-      self.visitDeclaration(node)
+   def visit_scope(self, node): self.visit_group(node)
+   def visit_module(self, node): self.visit_scope(node)
+   def visit_meta_module(self, node): self.visit_module(node)
+   def visit_class(self, node): self.visit_scope(node)
+   def visit_typedef(self, node): self.visit_declaration(node)
+   def visit_enumerator(self, node): self.visit_declaration(node)
+   def visit_enum(self, node):
+      self.visit_declaration(node)
       for enum in node.enumerators(): enum.accept(self)
       if node.eos: node.eos.accept(self)
-   def visitVariable(self, node): self.visitDeclaration(node)
-   def visitConst(self, node): self.visitDeclaration(node)
-   def visitFunction(self, node):
-      self.visitDeclaration(node)
+   def visit_variable(self, node): self.visit_declaration(node)
+   def visit_const(self, node): self.visit_declaration(node)
+   def visit_function(self, node):
+      self.visit_declaration(node)
       for parameter in node.parameters(): parameter.accept(self)
-   def visitOperation(self, node): self.visitFunction(node)
-   def visitParameter(self, node): return
-   def visitInheritance(self, node): return
+   def visit_operation(self, node): self.visit_function(node)
+   def visit_parameter(self, node): return
+   def visit_inheritance(self, node): return

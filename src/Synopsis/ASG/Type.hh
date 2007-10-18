@@ -5,16 +5,16 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_Type_hh
-#define _Synopsis_AST_Type_hh
+#ifndef _Synopsis_ASG_Type_hh
+#define _Synopsis_ASG_Type_hh
 
 #include <Synopsis/Python/Object.hh>
 #include <Synopsis/Python/TypedList.hh>
-#include <Synopsis/AST/Visitor.hh>
+#include <Synopsis/ASG/Visitor.hh>
 
 namespace Synopsis
 {
-namespace AST
+namespace ASG
 {
 
 typedef Python::TypedList<std::string> ScopedName;

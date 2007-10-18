@@ -7,9 +7,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 
-class ScopeStripper(Processor, AST.Visitor):
+class ScopeStripper(Processor, ASG.Visitor):
     """Strip common prefix from the declaration's name.
     Keep a list of root nodes, such that children whos parent
     scopes are not accepted but which themselfs are correct can
@@ -77,7 +77,7 @@ class ScopeStripper(Processor, AST.Visitor):
     def strip(self, declaration):
         """test whether the declaration matches one of the prefixes, strip
         it off, and return success. Success means that the declaration matches
-        the prefix set and thus should not be removed from the AST."""
+        the prefix set and thus should not be removed from the ASG."""
 
         passed = 0
         if not self.__scope: return 1
@@ -93,7 +93,7 @@ class ScopeStripper(Processor, AST.Visitor):
         return passed
 
 
-    def visitScope(self, scope):
+    def visit_scope(self, scope):
 
         root = self.strip(scope) and not self.__in
         if root:
@@ -104,36 +104,36 @@ class ScopeStripper(Processor, AST.Visitor):
         if root: self.__in = 0
 
 
-    def visitClass(self, clas):
+    def visit_class(self, clas):
 
-        self.visitScope(clas)
+        self.visit_scope(clas)
         templ = clas.template()
         if templ:
             name = self.strip_name(templ.name())
             if name: templ.set_name(name)
 
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
 
         if self.strip(decl) and not self.__in:
             self.__root.append(decl)
 
 
-    def visitEnumerator(self, enumerator):
+    def visit_enumerator(self, enumerator):
 
         self.strip(enumerator)
 
 
-    def visitEnum(self, enum):
+    def visit_enum(self, enum):
 
-        self.visitDeclaration(enum)
+        self.visit_declaration(enum)
         for e in enum.enumerators():
             e.accept(self)
 
 
-    def visitFunction(self, function):
+    def visit_function(self, function):
 
-        self.visitDeclaration(function)
+        self.visit_declaration(function)
         for parameter in function.parameters():
             parameter.accept(self)
         templ = function.template()
@@ -142,14 +142,14 @@ class ScopeStripper(Processor, AST.Visitor):
             if name: templ.set_name(name)
 
 
-    def visitOperation(self, operation):
+    def visit_operation(self, operation):
 
-        self.visitFunction(operation)
+        self.visit_function(operation)
 
 
-    def visitMetaModule(self, module):
+    def visit_meta_module(self, module):
 
-        self.visitScope(module)
+        self.visit_scope(module)
         for decl in module.module_declarations():
             name = self.strip_name(decl.name())
             if name: decl.set_name(name)

@@ -222,14 +222,14 @@ class View(Parametrized):
 
    def toc(self):
       """Retrieves the TOC for this view. This method assumes that the view
-      generates info for the the whole AST, which could be the Scope,
+      generates info for the the whole ASG, which could be the Scope,
       the Source (source code) or the XRef (cross reference info).
       The default implementation returns None."""
 
       pass
        
    def process(self):
-      """Process the AST, creating view-specific html pages."""
+      """Process the ASG, creating view-specific html pages."""
 
       pass
 

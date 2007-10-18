@@ -6,12 +6,10 @@
 # see the file COPYING for details.
 #
 
-import string
-
 from Synopsis.Processor import Composite, Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG, Type
 
-class Linker(Composite, AST.Visitor, Type.Visitor):
+class Linker(Composite, ASG.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
 
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
@@ -22,7 +20,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       self.set_parameters(kwds)
       self.ir = self.merge_input(ir)
 
-      root = AST.MetaModule("", [])
+      root = ASG.MetaModule("", [])
       self.__scopes = [root]
       global_dict = {}
       self.__dict_map = {id(root) : global_dict}
@@ -38,7 +36,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          print 'linker error :', e
 
       for file in self.ir.files.values():
-         self.visitSourceFile(file)
+         self.visit_source_file(file)
 
       if self.remove_empty_modules:
          import ModuleFilter
@@ -100,31 +98,31 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
    #################### Type Visitor ###########################################
 
-   def visitBaseType(self, type):
+   def visit_base_type(self, type):
 
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
 
-   def visitUnknown(self, type):
+   def visit_unknown(self, type):
 
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
 
-   def visitDeclared(self, type):
+   def visit_declared(self, type):
 
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
       else:
          print "Couldn't find declared type:",type.name()
 
-   def visitTemplate(self, type):
+   def visit_template(self, type):
 
       # Should be a Declared with the same name
       if not self.types.has_key(type.name()):
          return
       declared = self.types[type.name()]
       if isinstance(declared, Type.Unknown):
-         #the type was declared in a file for which no AST is retained
+         #the type was declared in a file for which no ASG is retained
          return
       elif not isinstance(declared, Type.Declared):
          print "Warning: template declaration was not a declaration:",type.name(),declared.__class__.__name__
@@ -138,21 +136,21 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       else:
          print "Warning: template type disappeared:",type.name()
 
-   def visitModifier(self, type):
+   def visit_modifier(self, type):
 
       alias = self.link_type(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
-   def visitArray(self, type):
+   def visit_array(self, type):
 
       alias = self.link_type(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
-   def visitParametrized(self, type):
+   def visit_parametrized(self, type):
 
       templ = self.link_type(type.template())
       if templ is not type.template():
@@ -163,7 +161,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          type.parameters().append(self.link_type(param))
       self.__type = type
 
-   def visitFunctionType(self, type):
+   def visit_function_type(self, type):
 
       ret = self.link_type(type.returnType())
       if ret is not type.returnType():
@@ -174,9 +172,9 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          type.parameters().append(self.link_type(param))
       self.__type = type
 
-   #################### AST Visitor ############################################
+   #################### ASG Visitor ############################################
 
-   def visitSourceFile(self, file):
+   def visit_source_file(self, file):
       """Resolves any duplicates in the list of declarations from this
       file"""
 
@@ -197,16 +195,16 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
         
       # TODO: includes.
 
-   def visitModule(self, module):
+   def visit_module(self, module):
 
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.type(),module.name())
+         metamodule = ASG.MetaModule(module.type(),module.name())
          self.append(metamodule)
 
-      elif not isinstance(metamodule, AST.MetaModule):
-         raise TypeError, 'symbol type mismatch: Synopsis.AST.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
+      elif not isinstance(metamodule, ASG.MetaModule):
+         raise TypeError, 'symbol type mismatch: Synopsis.ASG.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
 
       metamodule.module_declarations().append(module)
 
@@ -231,15 +229,15 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
             comments.extend(new_comments)
 
 
-   def visitMetaModule(self, module):        
+   def visit_meta_module(self, module):        
 
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.type(),module.name())
+         metamodule = ASG.MetaModule(module.type(),module.name())
          self.append(metamodule)
-      elif not isinstance(metamodule, AST.MetaModule):
-         raise TypeError, 'symbol type mismatch: Synopsis.AST.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
+      elif not isinstance(metamodule, ASG.MetaModule):
+         raise TypeError, 'symbol type mismatch: Synopsis.ASG.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
          
       metamodule.module_declarations().extend(module.module_declarations())
       self.merge_comments(metamodule, module)
@@ -260,9 +258,9 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       decls = self.top().declarations()
       if dict.has_key(name):
          prev = dict[name]
-         if not isinstance(prev, AST.Forward):
+         if not isinstance(prev, ASG.Forward):
             return
-         if not isinstance(decl, AST.Forward):
+         if not isinstance(decl, ASG.Forward):
             decls.remove(prev)
             decls.append(decl)
             dict[name] = decl # overwrite prev
@@ -270,39 +268,39 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       decls.append(decl)
       dict[name] = decl
 
-   def visitBuiltin(self, builtin):
+   def visit_builtin(self, builtin):
       """preserve builtins unconditionally"""
 
       decls = self.top().declarations()
       decls.append(builtin)
 
-   def visitNamed(self, decl):
+   def visit_named(self, decl):
 
       name = decl.name()
       if self.lookup(decl.name()): return
       self.add_declaration(decl)
 
-   visitDeclaration = add_declaration
-   visitForward = add_declaration
-   visitEnum = add_declaration
+   visit_declaration = add_declaration
+   visit_forward = add_declaration
+   visit_enum = add_declaration
 
-   def visitFunction(self, func):
+   def visit_function(self, func):
 
-      if not isinstance(self.top(), AST.Class):
+      if not isinstance(self.top(), ASG.Class):
          for decl in self.top().declarations():
-            if not isinstance(decl, AST.Function): continue
+            if not isinstance(decl, ASG.Function): continue
             if func.name() == decl.name():
                return
       ret = self.link_type(func.returnType())
       if ret is not func.returnType():
          func.set_returnType(ret)
       for param in func.parameters():
-         self.visitParameter(param)
+         self.visit_parameter(param)
       self.top().declarations().append(func)
 
-   visitOperation = visitFunction
+   visit_operation = visit_function
 
-   def visitVariable(self, var):
+   def visit_variable(self, var):
 
       #if not scopedNameOkay(var.name()): return
       vt = self.link_type(var.vtype())
@@ -310,34 +308,34 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          var.set_vtype(vt)
       self.add_declaration(var)
 
-   def visitTypedef(self, tdef):
+   def visit_typedef(self, tdef):
 
       alias = self.link_type(tdef.alias())
       if alias is not tdef.alias():
          tdef.set_alias(alias)
       self.add_declaration(tdef)
 
-   def visitClass(self, clas):
+   def visit_class(self, clas):
 
       name = clas.name()
       prev = self.lookup(name)
       if prev:
-         if isinstance(prev, AST.Forward):
+         if isinstance(prev, ASG.Forward):
             # Forward declaration, replace it
             self.top().declarations().remove(prev)
             del self.top_dict()[name]
-         elif isinstance(prev, AST.Class):
+         elif isinstance(prev, ASG.Class):
             # Previous class. Would ignore duplicate but clas may have
             # class declarations that prev doesn't. (forward declared
             # nested -- see ThreadData.hh for example)
             self.push(prev)
             for decl in clas.declarations():
-               if isinstance(decl, AST.Class):
+               if isinstance(decl, ASG.Class):
                   decl.accept(self)
             self.pop()
             return
          else:
-            raise TypeError, 'symbol type mismatch: Synopsis.AST.Class and %s both match "%s"'%(prev.__class__, '::'.join(name))
+            raise TypeError, 'symbol type mismatch: Synopsis.ASG.Class and %s both match "%s"'%(prev.__class__, '::'.join(name))
 
       self.add_declaration(clas)
       for parent in clas.parents():
@@ -348,7 +346,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       for decl in decls: decl.accept(self)
       self.pop()
 
-   def visitInheritance(self, parent):
+   def visit_inheritance(self, parent):
 
       type = parent.parent()
       if isinstance(type, Type.Declared) or isinstance(type, Type.Unknown):
@@ -363,19 +361,19 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
                # Error
                return
             decl = ltype.declaration()
-            if isinstance(decl, AST.Class):
+            if isinstance(decl, ASG.Class):
                type.set_template(decl.template())
       else:
          # Unknown type in class inheritance
          pass
 
-   def visitParameter(self, param):
+   def visit_parameter(self, param):
 
       type = self.link_type(param.type())
       if type is not param.type():
          param.set_type(type)
 
-   def visitConst(self, const):
+   def visit_const(self, const):
 
       ct = self.link_type(const.ctype())
       if ct is not const.ctype():

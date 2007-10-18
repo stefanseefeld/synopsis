@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.Tags import *
 from Tree import Tree
 
@@ -46,7 +46,7 @@ class ModuleTree(Tree):
 
     def _child_filter(self, child):
 
-        return isinstance(child, AST.Module)
+        return isinstance(child, ASG.Module)
 
     def _link_href(self, module):
 

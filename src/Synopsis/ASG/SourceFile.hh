@@ -5,15 +5,13 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_AST_SourceFile_hh
-#define _Synopsis_AST_SourceFile_hh
+#ifndef _Synopsis_ASG_SourceFile_hh
+#define _Synopsis_ASG_SourceFile_hh
 
 #include <Synopsis/Python/Object.hh>
-#include <Synopsis/AST/Declaration.hh>
+#include <Synopsis/ASG/Declaration.hh>
 
 namespace Synopsis
-{
-namespace AST
 {
 
 class Include : public Python::Object
@@ -38,7 +36,6 @@ public:
   long diff() { return narrow<long>(attr("diff"));}
 };
 
-}
 }
 
 #endif

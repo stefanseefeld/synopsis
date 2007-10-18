@@ -10,7 +10,7 @@ This module contains the class for sorting Scopes.
 """
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
 import string
 
@@ -55,7 +55,7 @@ class ScopeSorter(Parametrized):
    struct_as_class = Parameter(False, '') 
 
    def __init__(self, scope=None):
-      "Optional scope starts using that AST.Scope"
+      "Optional scope starts using that ASG.Scope"
 
       self.__scope = None
       if scope: self.set_scope(scope)
@@ -73,9 +73,9 @@ class ScopeSorter(Parametrized):
       self.__sorted_secnames = 0
       scopename = scope.name()
       for decl in scope.declarations():
-         if isinstance(decl, AST.Forward): continue
-         if isinstance(decl, AST.Builtin): continue
-         if isinstance(decl, AST.Group) and decl.__class__.__name__ == 'Group':
+         if isinstance(decl, ASG.Forward): continue
+         if isinstance(decl, ASG.Builtin): continue
+         if isinstance(decl, ASG.Group) and decl.__class__.__name__ == 'Group':
             self._handle_group(decl)
             continue
          name, section = decl.name(), self._section_of(decl)
@@ -98,7 +98,7 @@ class ScopeSorter(Parametrized):
       section = string.capitalize(decl.type())
       if self.struct_as_class and section == 'Struct':
          section = 'Class'
-      if decl.accessibility != AST.DEFAULT:
+      if decl.accessibility != ASG.DEFAULT:
          section = _axs_str[decl.accessibility()]+section
       return section
 

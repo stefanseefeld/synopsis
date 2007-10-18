@@ -6,10 +6,10 @@
 #
 
 from Synopsis.Processor import Processor
-from Synopsis import AST
+from Synopsis import ASG
 import re
 
-class Filter(Processor, AST.Visitor):
+class Filter(Processor, ASG.Visitor):
     """Base class for comment filters."""
 
     def process(self, ir, **kwds):
@@ -24,13 +24,13 @@ class Filter(Processor, AST.Visitor):
         return self.output_and_return_ir()
 
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
 
         comments = decl.annotations.get('comments', [])
         comments[:] = [c is not None and self.filter_comment(c) or None
                        for c in comments]
 
-    visitBuiltin = visitDeclaration
+    visit_builtin = visit_declaration
 
     def filter_comment(self, comment):
         """Filter comment."""

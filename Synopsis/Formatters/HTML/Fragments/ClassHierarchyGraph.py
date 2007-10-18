@@ -6,10 +6,10 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import IR, AST, Type
+from Synopsis import IR
 from Synopsis.Processor import InvalidCommand
 from ClassHierarchySimple import ClassHierarchySimple
-import os, string
+import os
 
 class ClassHierarchyGraph(ClassHierarchySimple):
     """Prints a graphical hierarchy for classes, using the Dot formatter.

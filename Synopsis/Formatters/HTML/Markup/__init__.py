@@ -7,7 +7,7 @@
 """Markup formatters."""
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG, Type
 from Synopsis.Formatters.HTML.Tags import escape
 import re
 
@@ -111,9 +111,9 @@ class Formatter(Parametrized):
         if not scope: return None
         if not isinstance(scope, Type.Declared): return None
         scope = scope.declaration()
-        if not isinstance(scope, AST.Scope): return None
+        if not isinstance(scope, ASG.Scope): return None
         for decl in scope.declarations():
-            if isinstance(decl, AST.Function):
+            if isinstance(decl, ASG.Function):
                 if decl.realname()[-1] == name:
                     return self.processor.toc.lookup(decl.name())
         # Failed

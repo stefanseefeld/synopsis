@@ -9,11 +9,11 @@
 """a BoostBook formatter"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Type, Util
 
-import sys, getopt, os, os.path, string, re
+import sys, getopt, os, os.path, string
 
-class Formatter(Processor, Type.Visitor, AST.Visitor):
+class Formatter(Processor, Type.Visitor, ASG.Visitor):
    """
    The type visitors should generate names relative to the current scope.
    The generated references however are fully scoped names
@@ -107,28 +107,28 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
    def type_label(self): return self.__type_label
    #################### Type Visitor ##########################################
 
-   def visitBaseType(self, type):
+   def visit_base_type(self, type):
 
       self.__type_ref = Util.ccolonName(type.name())
       self.__type_label = Util.ccolonName(type.name())
         
-   def visitUnknown(self, type):
+   def visit_unknown(self, type):
 
       self.__type_ref = Util.ccolonName(type.name())
       self.__type_label = Util.ccolonName(type.name(), self.scope())
 
-   def visitDeclared(self, type):
+   def visit_declared(self, type):
 
       self.__type_label = Util.ccolonName(type.name(), self.scope())
       self.__type_ref = Util.ccolonName(type.name())
 
-   def visitModifier(self, type):
+   def visit_modifier(self, type):
 
       type.alias().accept(self)
       self.__type_ref = string.join(type.premod()) + " " + self.__type_ref + " " + string.join(type.postmod())
       self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
 
-   def visitParametrized(self, type):
+   def visit_parametrized(self, type):
 
       type.template().accept(self)
       type_label = self.__type_label + "&lt;"
@@ -143,7 +143,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       type.accept(self)
       return self.__type_label
 
-   def visitFunctionType(self, type):
+   def visit_function_type(self, type):
 
       # TODO: this needs to be implemented
       self.__type_ref = 'function_type'
@@ -154,20 +154,20 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       text = doc.replace('\n\n', '</para><para>')
       self.write(self.entity("para", text)+'\n')
 
-   #################### AST Visitor ###########################################
+   #################### ASG Visitor ###########################################
          
-   def visitDeclarator(self, node):
+   def visit_declarator(self, node):
       self.__declarator = node.name()
       for i in node.sizes():
          self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
 
-   def visitTypedef(self, typedef):
+   def visit_typedef(self, typedef):
 
       self.start_entity("typedef", name=Util.ccolonName(self.scope(), typedef.name()))
       self.write_entity("type", self.format_type(typedef.alias()))
       self.end_entity("typedef")
 
-   def visitVariable(self, variable):
+   def visit_variable(self, variable):
 
       self.start_entity("fieldsynopsis")
       variable.vtype().accept(self)
@@ -175,11 +175,11 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.entity("varname", variable.name()[-1])
       self.end_entity("fieldsynopsis")
 
-   def visitConst(self, const):
+   def visit_const(self, const):
 
       print "sorry, <const> not implemented"
 
-   def visitModule(self, module):
+   def visit_module(self, module):
 
       self.start_entity("namespace", name=Util.ccolonName(self.scope(), module.name()))
       self.write("\n")
@@ -189,7 +189,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.pop_scope()
       self.end_entity("namespace")
 
-   def visitClass(self, clas):
+   def visit_class(self, clas):
 
       self.start_entity("class", name=Util.ccolonName(self.scope(), clas.name()))
       # clas.type()
@@ -205,7 +205,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.pop_scope()
       self.end_entity("class")
 
-   def visitInheritance(self, inheritance):
+   def visit_inheritance(self, inheritance):
 
       if len(inheritance.attributes()):
          self.start_entity("inherit", access=inheritance.attributes()[0])
@@ -214,7 +214,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.write_entity("classname", self.format_type(inheritance.parent()))
       self.end_entity("inherit")
 
-   def visitParameter(self, parameter):
+   def visit_parameter(self, parameter):
 
       self.start_entity("parameter", name=parameter.identifier())
       self.write_entity("param_type", self.format_type(parameter.type()))
@@ -223,14 +223,14 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.end_entity("parameter")
       self.write("\n")
 
-   def visitFunction(self, function):
+   def visit_function(self, function):
 
       self.start_entity("function", name=Util.ccolonName(self.scope(), function.realname()))
       self.do_function(function)
       self.end_entity("function")
       self.write("\n")
 
-   def visitOperation(self, operation):
+   def visit_operation(self, operation):
 
       name = operation.name()
       tag = None
@@ -268,11 +268,11 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
          self.end_entity("throws")
          self.write("\n")
 
-   def visitEnumerator(self, enumerator):
+   def visit_enumerator(self, enumerator):
 
       print "sorry, <enumerator> not implemented"
 
-   def visitEnum(self, enum):
+   def visit_enum(self, enum):
 
       print "sorry, <enum> not implemented"
 

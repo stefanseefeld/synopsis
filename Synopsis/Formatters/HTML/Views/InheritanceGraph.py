@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import IR, AST, Type, Util
+from Synopsis import IR, Type, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -32,14 +32,14 @@ class DeclarationFinder(Type.Visitor):
       #    return None
       return self.__decl
 	    
-   def visitBaseType(self, type): return
-   def visitUnknown(self, type): return
-   def visitDeclared(self, type): self.__decl = type.declaration()
-   def visitModifier(self, type): type.alias().accept(self)
-   def visitArray(self, type): type.alias().accept(self)
-   def visitTemplate(self, type): self.__decl = type.declaration()
-   def visitParametrized(self, type): type.template().accept(self)
-   def visitFunctionType(self, type): return
+   def visit_base_type(self, type): return
+   def visit_unknown(self, type): return
+   def visit_declared(self, type): self.__decl = type.declaration()
+   def visit_modifier(self, type): type.alias().accept(self)
+   def visit_array(self, type): type.alias().accept(self)
+   def visit_template(self, type): self.__decl = type.declaration()
+   def visit_parametrized(self, type): type.template().accept(self)
+   def visit_function_type(self, type): return
 	
 def find_common_name(graph):
    common_name = list(graph[0])

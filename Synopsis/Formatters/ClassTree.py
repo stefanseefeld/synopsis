@@ -8,7 +8,7 @@
 
 """Contains the utility class ClassTree, for creating inheritance trees."""
 
-from Synopsis import AST, Type
+from Synopsis import ASG, Type
 
 
 def sort(list):
@@ -17,7 +17,7 @@ def sort(list):
    list.sort()
    return list
 
-class ClassTree(AST.Visitor):
+class ClassTree(ASG.Visitor):
    """Maintains a tree of classes directed by inheritance. This object always
    exists in HTML, since it is used for other things such as printing class bases."""
    # TODO - only create if needed (if Info tells us to)
@@ -125,14 +125,14 @@ class ClassTree(AST.Visitor):
             classes.extend( self.superclasses(name) )
             classes.extend( self.subclasses(name) )
    #
-   # AST Visitor
+   # ASG Visitor
    #
 
-   def visitScope(self, scope):
+   def visit_scope(self, scope):
       for decl in scope.declarations():
          decl.accept(self)
 
-   def visitClass(self, clas):
+   def visit_class(self, clas):
       """Adds this class and all edges to the lists"""
       name = clas.name()
       self.add_class(name)

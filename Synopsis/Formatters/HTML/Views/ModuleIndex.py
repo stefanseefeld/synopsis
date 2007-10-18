@@ -7,12 +7,12 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 class ModuleIndex(View):
-   """A module for indexing AST.Modules. Each module gets its own view with a
+   """A module for indexing ASG.Modules. Each module gets its own view with a
    list of nested scope declarations with documentation. It is intended to go in
    the left frame..."""
 
@@ -33,7 +33,7 @@ class ModuleIndex(View):
    def process(self):
 
       self.__modules = [d for d in self.processor.ir.declarations
-                        if isinstance(d, AST.Module)]
+                        if isinstance(d, ASG.Module)]
       while self.__modules:
          m = self.__modules.pop(0)
          self.process_module_index(m)
@@ -91,7 +91,7 @@ class ModuleIndex(View):
          # Get a list of children of this type
          for child in sorter.children(section):
             # Print out summary for the child
-            if not isinstance(child, AST.Scope):
+            if not isinstance(child, ASG.Scope):
                continue
             if heading:
                self.write(heading)
@@ -99,7 +99,7 @@ class ModuleIndex(View):
             label = Util.ccolonName(child.name(), module.name())
             label = escape(label)
             label = replace_spaces(label)
-            if isinstance(child, AST.Module):
+            if isinstance(child, ASG.Module):
                index_url = rel(self.__filename,
                                self.directory_layout.module_index(child.name()))
                self.write(href(index_url, label, target='detail'))
@@ -115,5 +115,5 @@ class ModuleIndex(View):
 
       # Queue child modules
       for child in sorter.children():
-         if isinstance(child, AST.Module):
+         if isinstance(child, ASG.Module):
             self.__modules.append(child)

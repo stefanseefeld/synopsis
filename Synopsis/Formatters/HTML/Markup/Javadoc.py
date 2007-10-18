@@ -5,10 +5,9 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
-import string, re
+import re
 
 class Javadoc(Formatter):
     """A formatter that formats comments similar to Javadoc.

@@ -5,7 +5,7 @@
 // see the file COPYING for details.
 //
 
-#include "ASTTranslator.hh"
+#include "ASGTranslator.hh"
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
@@ -13,9 +13,9 @@
 
 using namespace Synopsis;
 
-ASTTranslator::ASTTranslator(std::string const &filename,
+ASGTranslator::ASGTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
-			     Synopsis::AST::IR ir, bool v, bool d)
+			     Synopsis::IR ir, bool v, bool d)
   : my_ir(ir),
     my_ast_kit(),
     my_sf_kit("C"),
@@ -29,14 +29,14 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_buffer(0),
     my_declaration(0)
 {
-  Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::ASGTranslator", Trace::TRANSLATION);
   // determine canonical filenames
   Path path = Path(my_raw_filename).abs();
   std::string long_filename = path.str();
   path.strip(my_base_path);
   std::string short_filename = path.str();
 
-  AST::SourceFile file = my_ir.files().get(short_filename);
+  SourceFile file = my_ir.files().get(short_filename);
   if (file)
     my_file = file;
   else
@@ -46,22 +46,22 @@ ASTTranslator::ASTTranslator(std::string const &filename,
   }
 }
 
-void ASTTranslator::translate(PTree::Node *ptree, Buffer &buffer)
+void ASGTranslator::translate(PTree::Node *ptree, Buffer &buffer)
 {
-  Trace trace("ASTTranslator::translate", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::translate", Trace::TRANSLATION);
   my_buffer = &buffer;
   ptree->accept(this);
 }
 
-void ASTTranslator::visit(PTree::List *node)
+void ASGTranslator::visit(PTree::List *node)
 {
   if (node->car()) node->car()->accept(this);
   if (node->cdr()) node->cdr()->accept(this);
 }
 
-void ASTTranslator::visit(PTree::Declarator *declarator)
+void ASGTranslator::visit(PTree::Declarator *declarator)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
   if (!my_declaration || !PTree::first(declarator)) return; // empty
 
@@ -73,18 +73,18 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     trace << "declare function " << name << " (" << type << ')' 
 	  << my_raw_filename << ':' << my_lineno;
 
-    AST::TypeList parameter_types;
-    AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
-    AST::Function::Parameters parameters;
+    ASG::TypeList parameter_types;
+    ASG::Type return_type = my_types.lookup_function_types(type, parameter_types);
+    ASG::Function::Parameters parameters;
     PTree::Node *p = PTree::rest(declarator);
     while (p && p->car() && *p->car() != '(') p = PTree::rest(p);
     translate_parameters(PTree::second(p), parameter_types, parameters);
 
     size_t length = (name.front() - 0x80);
-    AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Modifiers pre;
-    AST::Modifiers post;
-    AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
+    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ASG::Modifiers pre;
+    ASG::Modifiers post;
+    ASG::Function function = my_ast_kit.create_function(my_file, my_lineno,
 							"function",
 							pre,
 							return_type,
@@ -98,9 +98,9 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
   }
   else
   {
-    AST::Type t = my_types.lookup(type);
+    ASG::Type t = my_types.lookup(type);
     size_t length = (name.front() - 0x80);
-    AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
 
     std::string vtype;// = my_builder->scope()->type();
     if (vtype == "class" || vtype == "struct" || vtype == "union")
@@ -111,7 +111,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 	vtype = "local ";
       vtype += "variable";
     }
-    AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
+    ASG::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
     if (my_declaration) add_comments(variable, my_declaration->get_comments());
     add_comments(variable, declarator->get_comments());
@@ -119,9 +119,9 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
   }
 }
 
-void ASTTranslator::visit(PTree::Declaration *declaration)
+void ASGTranslator::visit(PTree::Declaration *declaration)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declaration *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::Declaration *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
   my_declaration = declaration;
@@ -129,9 +129,9 @@ void ASTTranslator::visit(PTree::Declaration *declaration)
   my_declaration = 0;
 }
 
-void ASTTranslator::visit(PTree::FunctionDefinition *def)
+void ASGTranslator::visit(PTree::FunctionDefinition *def)
 {
-  Trace trace("ASTTranslator::visit(PTree::FunctionDefinition *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::FunctionDefinition *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
   my_declaration = def;
@@ -141,9 +141,9 @@ void ASTTranslator::visit(PTree::FunctionDefinition *def)
   my_declaration = 0;
 }
 
-void ASTTranslator::visit(PTree::ClassSpec *class_spec)
+void ASGTranslator::visit(PTree::ClassSpec *class_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::ClassSpec *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::ClassSpec *)", Trace::TRANSLATION);
   
   bool visible = update_position(class_spec);
 
@@ -154,8 +154,8 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
 
     std::string type = PTree::reify(PTree::first(class_spec));
     std::string name = PTree::reify(PTree::second(class_spec));
-    AST::ScopedName qname(name);
-    AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
+    ASG::ScopedName qname(name);
+    ASG::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
 						     type, qname);
     add_comments(forward, class_spec->get_comments());
     if (visible) declare(forward);
@@ -184,8 +184,8 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
     body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 2));
   }
 
-  AST::ScopedName qname(name);
-  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
+  ASG::ScopedName qname(name);
+  ASG::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
   add_comments(class_, class_spec->get_comments());
   if (visible) declare(class_);
   my_types.declare(qname, class_);
@@ -194,9 +194,9 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
   my_scope.pop();
 }
 
-void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
+void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::EnumSpec *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::EnumSpec *)", Trace::TRANSLATION);
 
   bool visible = update_position(enum_spec);
   std::string name;
@@ -210,9 +210,9 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
   else
     name = PTree::reify(PTree::second(enum_spec));
 
-  AST::Enumerators enumerators;
+  ASG::Enumerators enumerators;
   PTree::Node *enode = PTree::second(PTree::third(enum_spec));
-  AST::Enumerator enumerator;
+  ASG::Enumerator enumerator;
   while (enode)
   {
     // quite a costly way to update the line number...
@@ -221,14 +221,14 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
     if (penumor->is_atom())
     {
       // Just a name
-      AST::ScopedName qname(PTree::reify(penumor));
+      ASG::ScopedName qname(PTree::reify(penumor));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     else
     {
       // Name = Value
-      AST::ScopedName qname(PTree::reify(PTree::first(penumor)));
+      ASG::ScopedName qname(PTree::reify(PTree::first(penumor)));
       std::string value;
       if (PTree::length(penumor) == 3)
         value = PTree::reify(PTree::third(penumor));
@@ -243,21 +243,21 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
   // Add a dummy enumerator at the end to absorb trailing comments.
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
   enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
-					    AST::ScopedName(std::string("dummy")), "");
+					    ASG::ScopedName(std::string("dummy")), "");
   add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
-  // Create AST.Enum object
-  AST::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
+  // Create ASG.Enum object
+  ASG::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
   add_comments(enum_, enum_spec);
 
   if (visible) declare(enum_);
-  my_types.declare(AST::ScopedName(name), enum_);
+  my_types.declare(ASG::ScopedName(name), enum_);
 }
 
-void ASTTranslator::visit(PTree::Typedef *typed)
+void ASGTranslator::visit(PTree::Typedef *typed)
 {
-  Trace trace("ASTTranslator::visit(PTree::Typedef *)", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::visit(PTree::Typedef *)", Trace::TRANSLATION);
 
   bool visible = update_position(typed);
 
@@ -277,10 +277,10 @@ void ASTTranslator::visit(PTree::Typedef *typed)
 	  << my_raw_filename << ':' << my_lineno;
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
-    AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Type alias = my_types.lookup(type);
+    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ASG::Type alias = my_types.lookup(type);
     // FIXME: need to honour constr parameter
-    AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
+    ASG::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
 							     "typedef",
 							     qname,
 							     alias, false);
@@ -290,21 +290,21 @@ void ASTTranslator::visit(PTree::Typedef *typed)
   }
 }
 
-void ASTTranslator::translate_parameters(PTree::Node *node,
-					 AST::TypeList types,
-					 AST::Function::Parameters &parameters)
+void ASGTranslator::translate_parameters(PTree::Node *node,
+					 ASG::TypeList types,
+					 ASG::Function::Parameters &parameters)
 {
-  Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::translate_parameters", Trace::TRANSLATION);
   while (node)
   {
     // A parameter has a type, possibly a name and possibly a value.
     // Treat the value as a string, i.e. don't analyse the expression further.
     std::string name, value;
-    AST::Modifiers premods, postmods;
+    ASG::Modifiers premods, postmods;
     if (*node->car() == ',')
       node = node->cdr();
     PTree::Node *parameter = PTree::first(node);
-    AST::Type type = types.get(0);
+    ASG::Type type = types.get(0);
     types.del(0); // pop one value
 
     // Discover contents. Ptree may look like:
@@ -369,16 +369,16 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
       // Find value
       if (value_ix >= 0) value = PTree::reify(PTree::nth(parameter, value_ix));
     }
-    AST::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
+    ASG::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
 						   name, value);
     parameters.append(p);
     node = PTree::rest(node);
   }
 }
 
-void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
+void ASGTranslator::add_comments(ASG::Declaration declarator, PTree::Node *c)
 {
-  Trace trace("ASTTranslator::add_comments", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::add_comments", Trace::TRANSLATION);
   if (!declarator || !c) return;
   
   Python::List comments;
@@ -444,9 +444,9 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
   declarator.annotations().set("comments", comments);
 }
 
-bool ASTTranslator::update_position(PTree::Node *node)
+bool ASGTranslator::update_position(PTree::Node *node)
 {
-  Trace trace("ASTTranslator::update_position", Trace::TRANSLATION);
+  Trace trace("ASGTranslator::update_position", Trace::TRANSLATION);
 
   std::string filename;
   my_lineno = my_buffer->origin(node->begin(), filename);
@@ -465,7 +465,7 @@ bool ASTTranslator::update_position(PTree::Node *node)
     path.strip(my_base_path);
     std::string short_filename = path.str();
 
-    AST::SourceFile file = my_ir.files().get(short_filename);
+    SourceFile file = my_ir.files().get(short_filename);
     if (file)
       my_file = file;
     else
@@ -477,9 +477,9 @@ bool ASTTranslator::update_position(PTree::Node *node)
   return true;
 }
 
-// FIXME: AST should derive from Scope (a global scope IsA scope...)
+// FIXME: ASG should derive from Scope (a global scope IsA scope...)
 //        This method exists because currently it is not.
-void ASTTranslator::declare(AST::Declaration declaration)
+void ASGTranslator::declare(ASG::Declaration declaration)
 {
   if (my_scope.size())
     my_scope.top().declarations().append(declaration);

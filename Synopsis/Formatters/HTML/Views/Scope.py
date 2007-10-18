@@ -8,7 +8,7 @@
 
 from Synopsis import config
 from Synopsis.Processor import Parameter
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -18,9 +18,9 @@ import time, pdb
 class Scope(View):
     """A module for creating a view for each Scope with summaries and
     details. This module is highly modular, using the classes from
-    ASTFormatter to do the actual formatting. The classes to use may be
+    ASGFormatter to do the actual formatting. The classes to use may be
     controlled via the config script, resulting in a very configurable output.
-    @see ASTFormatter The ASTFormatter module
+    @see ASGFormatter The ASGFormatter module
     @see Config.Formatters.HTML.ScopeViews Config for ScopeViews
     """
 
@@ -77,7 +77,7 @@ class Scope(View):
          
             # Queue child scopes
             for child in self.processor.sorter.children():
-                if isinstance(child, AST.Scope):
+                if isinstance(child, ASG.Scope):
                     self.__scopes.append(child)
 
     def register_filenames(self):
@@ -97,7 +97,7 @@ class Scope(View):
          
             # Queue child scopes
             for child in self.processor.sorter.children():
-                if isinstance(child, AST.Scope):
+                if isinstance(child, ASG.Scope):
                     self.__scopes.append(child)
      
     def process_scope(self, scope):

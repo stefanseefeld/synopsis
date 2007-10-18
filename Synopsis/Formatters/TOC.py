@@ -8,7 +8,7 @@
 
 """Table of Contents classes"""
 
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 
 import string, re
 
@@ -20,7 +20,7 @@ class Linker:
 
    def link(decl): pass
 
-class TOC(AST.Visitor):
+class TOC(ASG.Visitor):
    """Maintains a dictionary of all declarations which can be looked up
    to create cross references. Names are fully scoped."""
 
@@ -100,19 +100,14 @@ class TOC(AST.Visitor):
          self.insert(entry)
          line = fin.readline()
     
-   def visitAST(self, ast):
-
-      for decl in ast.declarations():
-         decl.accept(self)
-
-   def visitDeclaration(self, decl):
+   def visit_declaration(self, decl):
 
       file = decl.file()
       entry = TOC.Entry(decl.name(), self.linker.link(decl),
                         file and file.annotations['language'] or '', "decl")
       self.insert(entry)
 
-   def visitForward(self, decl):
+   def visit_forward(self, decl):
       pass
 
 

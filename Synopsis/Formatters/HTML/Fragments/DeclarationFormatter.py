@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Fragment import Fragment
 from Synopsis.Formatters.HTML.Tags import *
 from SourceLinker import SourceLinker
@@ -127,7 +127,7 @@ class DeclarationFormatter(Fragment):
         premod = self.format_modifiers(decl.premodifier())
         type = self.format_type(decl.returnType())
         name = self.label(decl.name(), decl.realname())
-        # Special C++ functions  TODO: maybe move to a separate AST formatter...
+        # Special C++ functions  TODO: maybe move to a separate ASG formatter...
         if decl.file().annotations['language'] == 'C++' and len(decl.realname())>1:
             lt = decl.realname()[-2].find('<') # check whether this is a template
             sname = lt == -1 and decl.realname()[-2] or decl.realname()[-2][:lt]

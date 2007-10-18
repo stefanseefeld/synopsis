@@ -11,7 +11,7 @@ import os.path
 class FileTree:
    """Maintains a tree of directories and files.
     
-   The FileTree is constructed using the SourceFiles in the AST. Each
+   The FileTree is constructed using the SourceFiles in the ASG. Each
    SourceFile has a list of declarations in it already. The FileTree object
    organises these lists into a tree structure, where each node is a
    directory or a source file."""
@@ -89,7 +89,7 @@ class FileTree:
       parent.children.append(new_file)
     
    def set_ir(self, ir):
-      """Sets the AST to use and builds the tree of Nodes"""
+      """Sets the ASG to use and builds the tree of Nodes"""
       self.__ir = ir
       if ir is None:
          self.__dirs = None

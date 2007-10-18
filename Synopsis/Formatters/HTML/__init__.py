@@ -7,7 +7,7 @@
 
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import IR, AST
+from Synopsis import IR, ASG
 from Synopsis.DocString import DocString
 from Synopsis.FileTree import FileTree as SourceFileTree
 from Synopsis.Formatters.TOC import TOC
@@ -100,10 +100,10 @@ class Formatter(Processor):
 
         self.set_parameters(kwds)
 
-        # FIXME: wrap the declarations into a single AST.Module
+        # FIXME: wrap the declarations into a single ASG.Module
         #        during processing, but put the original ir back at the end.
         ir = self.merge_input(ir)
-        root = AST.Module(None, -1, 'Global', ())
+        root = ASG.Module(None, -1, 'Global', ())
         root.declarations()[:] = ir.declarations
         self.ir = IR.IR(ir.files, [root], ir.types)
 
@@ -164,7 +164,7 @@ class Formatter(Processor):
                              self.content[0].root()[0] or self.content[0].filename())
 
         for frame in frames: frame.process()
-        # Return original AST, not the synthetic AST.Module created above.
+        # Return original ASG, not the synthetic ASG.Module created above.
         return ir
 
     def has_view(self, name):

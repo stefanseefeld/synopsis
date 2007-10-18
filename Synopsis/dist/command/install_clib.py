@@ -20,7 +20,7 @@ def header_collector(prefix):
         """Collect headers to be installed."""
 
         # For now at least the following are not part of the public API
-        if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
+        if os.path.split(path)[1] in ['Support', 'Python', 'ASG']:
             return
         arg.extend([(os.path.join(path, f), os.path.join(path, f)[len(prefix) + 1:])
                     for f in files

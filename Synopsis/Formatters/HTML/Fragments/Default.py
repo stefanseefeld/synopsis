@@ -9,7 +9,7 @@
 from Synopsis.Formatters.HTML.Fragment import Fragment
 
 class Default(Fragment):
-   """A base AST strategy that calls format_declaration for all types"""
+   """A base ASG strategy that calls format_declaration for all types"""
 
    # All these use the same method:
    def format_forward(self, decl): return self.format_declaration(decl)

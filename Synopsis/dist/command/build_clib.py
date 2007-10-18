@@ -18,7 +18,7 @@ from Synopsis.dist.command import copy_shared_library
 def collect_headers(arg, path, files):
     
     # For now at least the following are not part of the public API
-    if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
+    if os.path.split(path)[1] in ['Support', 'Python', 'ASG']:
         return
     arg.extend([os.path.join(path, f) for f in files
                 if f.endswith('.hh') or f.endswith('.h')])

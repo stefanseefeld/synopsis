@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.Processors.Transformer import Transformer
 import re
 
@@ -34,7 +34,7 @@ class Grouper(Transformer):
                 self.pop_group()
 
     def finalize(self):
-        """replace the AST with the newly created one"""
+        """replace the ASG with the newly created one"""
 
         self.strip_dangling_groups()
         super(Grouper, self).finalize()
@@ -102,7 +102,7 @@ class Grouper(Transformer):
                 if tag.start('open') > 0:
                     c = c[:tag.start('open')]
                     comments.append(c)
-                group = AST.Group(decl.file(), decl.line(), 'group', [label])
+                group = ASG.Group(decl.file(), decl.line(), 'group', [label])
                 group.annotations['comments'] = comments
                 comments = []
                 self.push_group(group)
@@ -117,12 +117,12 @@ class Grouper(Transformer):
         decl.annotations['comments'] = comments
 
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
 
         self.process_comments(decl)
         self.add(decl)
         
-    def visitScope(self, scope):
+    def visit_scope(self, scope):
         """Visits all children of the scope in a new scope. The value of
         current_scope() at the end of the list is used to replace scope's list of
         declarations - hence you can remove (or insert) declarations from the
@@ -134,8 +134,8 @@ class Grouper(Transformer):
         scope.declarations()[:] = self.current_scope()
         self.pop(scope)
 
-    def visitEnum(self, enum):
-        """Does the same as visitScope, but for the enum's list of
+    def visit_enum(self, enum):
+        """Does the same as visit_scope, but for the enum's list of
         enumerators"""
 
         self.process_comments(enum)
@@ -144,10 +144,10 @@ class Grouper(Transformer):
         enum.enumerators()[:] = self.current_scope()
         self.pop(enum)
 
-    def visitEnumerator(self, enumor):
+    def visit_enumerator(self, enumor):
         """Removes dummy enumerators"""
 
-        if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
+        if enumor.type() == "dummy": return #This wont work since Core.ASG.Enumerator forces type to "enumerator"
         if not len(enumor.name()): return # workaround.
         self.add(enumor)
 

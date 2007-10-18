@@ -5,12 +5,12 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.Processor import Processor
 
-class Transformer(Processor, AST.Visitor):
-    """A class that creates a new AST from an old one. This is a helper base for
-    more specialized classes that manipulate the AST based on
+class Transformer(Processor, ASG.Visitor):
+    """A class that creates a new ASG from an old one. This is a helper base for
+    more specialized classes that manipulate the ASG based on
     the comments in the nodes"""
 
     def __init__(self, **kwds):
@@ -32,7 +32,7 @@ class Transformer(Processor, AST.Visitor):
         return self.output_and_return_ir()
 
     def finalize(self):
-        """replace the AST with the newly created one"""
+        """replace the ASG with the newly created one"""
 
         self.ir.declarations[:] = self.__current
 
@@ -59,6 +59,6 @@ class Transformer(Processor, AST.Visitor):
 
         return self.__current
 
-    def visitBuiltin(self, decl):
+    def visit_builtin(self, decl):
 
-        self.visitDeclaration(decl)
+        self.visit_declaration(decl)

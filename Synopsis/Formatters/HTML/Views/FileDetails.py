@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Source import *
@@ -95,8 +95,8 @@ class FileDetails(View):
       self.write('<h2 class="heading">Declarations in this file:</h2>')
       # Sort items (by name)
       items = [(d.type(), d.name(), d) for d in file.declarations]
-      # ignore AST.Builtin
-      items = [i for i in items if not isinstance(i[2], AST.Builtin)]
+      # ignore ASG.Builtin
+      items = [i for i in items if not isinstance(i[2], ASG.Builtin)]
       items.sort()
       curr_scope = None
       curr_type = None

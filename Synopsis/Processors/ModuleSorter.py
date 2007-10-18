@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
-class ModuleSorter(Processor, AST.Visitor):
+class ModuleSorter(Processor, ASG.Visitor):
     """A processor that sorts declarations in a module alphabetically."""
 
     def process(self, ir, **kwds):
@@ -25,7 +25,7 @@ class ModuleSorter(Processor, AST.Visitor):
         return self.output_and_return_ir()
 
 
-    def visitMetaModule(self, module):
+    def visit_meta_module(self, module):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 

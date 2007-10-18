@@ -279,7 +279,7 @@ Translator::Translator(FileFilter* filter, PyObject *ast)
   : m_ast(ast), m_filter(filter)
 {
   Trace trace("Translator::Translator", Trace::TRANSLATION);
-  m_ast_module  = PyImport_ImportModule("Synopsis.AST");
+  m_ast_module  = PyImport_ImportModule("Synopsis.ASG");
   assertObject(m_ast_module);
   m_sf_module  = PyImport_ImportModule("Synopsis.SourceFile");
   assertObject(m_sf_module);

@@ -8,7 +8,7 @@
 #ifndef TypeTranslator_hh_
 #define TypeTranslator_hh_
 
-#include <Synopsis/AST/TypeKit.hh>
+#include <Synopsis/ASG/TypeKit.hh>
 #include <Synopsis/PTree.hh>
 #include <string>
 #include <vector>
@@ -22,23 +22,23 @@ public:
 
   //. look up and return the named type. If this is a derived type,
   //. it may create a modifier and return that.
-  AST::Type lookup(PTree::Encoding const &name);
-  AST::Type lookup_function_types(PTree::Encoding const &name, AST::TypeList &);
-  AST::Type declare(AST::ScopedName name,
-		    AST::Declaration declaration);
+  ASG::Type lookup(PTree::Encoding const &name);
+  ASG::Type lookup_function_types(PTree::Encoding const &name, ASG::TypeList &);
+  ASG::Type declare(ASG::ScopedName name,
+		    ASG::Declaration declaration);
 
 private:
 
-  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, AST::Type &);
+  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, ASG::Type &);
   PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
-					    AST::Type &type,
-					    AST::Modifiers &postmod);
+					    ASG::Type &type,
+					    ASG::Modifiers &postmod);
   PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
 					std::string &name);
 
   Python::Object  my_types;
-  AST::TypeKit    my_type_kit;
-  AST::SourceFile my_file;
+  ASG::TypeKit    my_type_kit;
+  SourceFile      my_file;
   PTree::Encoding my_name;
   bool            my_verbose;
   bool            my_debug;  
