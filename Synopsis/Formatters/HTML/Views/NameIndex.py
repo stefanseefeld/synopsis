@@ -79,7 +79,7 @@ class NameIndex(View):
             if dict.has_key(key): dict[key].append(type)
             else: dict[key] = [type]
         # Fill the dict
-        [hasher(t) for t in self.processor.ast.types().values()
+        [hasher(t) for t in self.processor.ir.types.values()
          if isinstance(t, Type.Declared) and
          not isinstance(t.declaration(), AST.Builtin)]
 

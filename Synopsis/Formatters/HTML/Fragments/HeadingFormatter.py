@@ -44,7 +44,7 @@ class HeadingFormatter(Fragment):
         """Formats a reference to each parent scope, starting at the first
         non-module scope."""
 
-        types = self.processor.ast.types()
+        types = self.processor.ir.types
 
         scope, text = [], []
         for name in scoped_name[:-1]:
@@ -63,7 +63,7 @@ class HeadingFormatter(Fragment):
     def format_module_of_name(self, scoped_name):
         """Formats a reference to each parent scope and this one."""
 
-        types = self.processor.ast.types()
+        types = self.processor.ir.types
 
         scope, text = [], []
         last_decl = None

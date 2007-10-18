@@ -42,7 +42,7 @@ class FileDetails(View):
    def register_filenames(self):
       """Registers a view for each file indexed."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             filename = self.directory_layout.file_details(filename)
             self.processor.register_filename(filename, self, file)
@@ -50,7 +50,7 @@ class FileDetails(View):
    def process(self):
       """Creates a view for each known source file."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             self.process_file(filename, file)
             
@@ -75,7 +75,7 @@ class FileDetails(View):
 
       # Print list of includes
       try:
-         sourcefile = self.processor.ast.files()[filename]
+         sourcefile = self.processor.ir.files[filename]
          # Only show files from the project
          includes = [i for i in sourcefile.includes
                      if i.target.annotations['primary']]

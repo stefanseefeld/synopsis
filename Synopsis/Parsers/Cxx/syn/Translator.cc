@@ -286,9 +286,9 @@ Translator::Translator(FileFilter* filter, PyObject *ast)
   m_type_module = PyImport_ImportModule("Synopsis.Type");
   assertObject(m_type_module);
   
-  m_declarations = PyObject_CallMethod(m_ast, "declarations", "");
+  m_declarations = PyObject_GetAttrString(m_ast, "declarations");
   assertObject(m_declarations);
-  m_dictionary = PyObject_CallMethod(m_ast, "types", "");
+  m_dictionary = PyObject_GetAttrString(m_ast, "types");
   assertObject(m_dictionary);
   
   m = new Private(this);
@@ -346,7 +346,7 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
 
   // Translate the sourcefiles, making sure the declarations list is done
   // for each
-  PyObject* pyfiles = PyObject_CallMethod(m_ast, "files", 0);
+  PyObject* pyfiles = PyObject_GetAttrString(m_ast, "files");
   assertObject(pyfiles);
   assert(PyDict_Check(pyfiles));
   
@@ -534,7 +534,7 @@ PyObject *Translator::SourceFile(AST::SourceFile* file)
 {
   // don't construct, but instead find existing python object !
   Trace trace("Translator::SourceFile", Trace::TRANSLATION);
-  PyObject *files = PyObject_CallMethod(m_ast, "files", "");
+  PyObject *files = PyObject_GetAttrString(m_ast, "files");
   assertObject(files);
   PyObject *pyfile = PyDict_GetItemString(files, const_cast<char *>(file->filename().c_str()));
   if (!pyfile) // the file wasn't found, create it now

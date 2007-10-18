@@ -19,10 +19,10 @@ class Parser(Processor):
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
    
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = ast
+        self.ir = ir
 
         if self.preprocess:
 
@@ -42,22 +42,22 @@ class Parser(Processor):
                 else:
                     i_file = os.path.join(tempfile.gettempdir(),
                                           'synopsis-%s.i'%os.getpid())
-                self.ast = cpp.process(self.ast,
-                                       cpp_output = i_file,
-                                       input = [file],
-                                       primary_file_only = self.primary_file_only,
-                                       verbose = self.verbose,
-                                       debug = self.debug)
+                self.ir = cpp.process(self.ir,
+                                      cpp_output = i_file,
+                                      input = [file],
+                                      primary_file_only = self.primary_file_only,
+                                      verbose = self.verbose,
+                                      debug = self.debug)
 
 
-            self.ast = omni.parse(self.ast, i_file,
-                                  os.path.abspath(file),
-                                  self.primary_file_only,
-                                  os.path.abspath(self.base_path) + os.sep,
-                                  self.verbose,
-                                  self.debug)
+            self.ir = omni.parse(self.ir, i_file,
+                                 os.path.abspath(file),
+                                 self.primary_file_only,
+                                 os.path.abspath(self.base_path) + os.sep,
+                                 self.verbose,
+                                 self.debug)
 
             if self.preprocess: os.remove(i_file)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 

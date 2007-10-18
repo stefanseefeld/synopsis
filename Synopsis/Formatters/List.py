@@ -21,13 +21,13 @@ class Formatter(Processor, AST.Visitor):
                        'IDL' : '::',
                        'Python' : '.'}
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         if self.show_files:
-            for name, sf in self.ast.files().iteritems():
+            for name, sf in self.ir.files.iteritems():
                 print '%s (language=%s, primary=%d)'\
                       %(sf.name, sf.annotations['language'], sf.annotations['primary'])
 
@@ -39,7 +39,7 @@ class Formatter(Processor, AST.Visitor):
                 
             # Now guess the current language by looking at the
             # first declaration.
-            d = len(self.ast.declarations()) and self.ast.declarations()[0]
+            d = len(self.ir.declarations) and self.ir.declarations[0]
             sf = d and d.file() or None
             if not sf: # d was a MetaModule, so let's assume C++ or IDL.
                 self.sep = '::'
@@ -48,10 +48,10 @@ class Formatter(Processor, AST.Visitor):
                 self.sep = self.scope_separator[lang]
 
 
-            for d in self.ast.declarations():
+            for d in self.ir.declarations:
                 d.accept(self)
                 
-        return self.ast
+        return self.ir
 
 
     def visitScope(self, node):

@@ -11,18 +11,18 @@ from Synopsis import AST
 class ModuleSorter(Processor, AST.Visitor):
     """A processor that sorts declarations in a module alphabetically."""
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         self.__scopestack = []
         self.__currscope = []
 
-        for decl in self.ast.declarations():
+        for decl in self.ir.declarations:
             decl.accept(self)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
 
     def visitMetaModule(self, module):

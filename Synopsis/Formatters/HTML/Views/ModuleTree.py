@@ -39,7 +39,7 @@ class ModuleTree(Tree):
         self.start_file()
         self.write_navigation_bar()
         # FIXME: see HTML.Formatter
-        module = self.processor.ast.declarations()[0]
+        module = self.processor.ir.declarations[0]
         self.index_module(module, module.name())
         self.end_tree()
         self.end_file()

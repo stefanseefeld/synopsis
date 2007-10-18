@@ -9,7 +9,7 @@
 #define _Synopsis_AST_ASTKit_hh
 
 #include <Synopsis/Python/Kit.hh>
-#include <Synopsis/AST/AST.hh>
+#include <Synopsis/AST/IR.hh>
 #include <Synopsis/AST/SourceFile.hh>
 #include <Synopsis/AST/Declaration.hh>
 
@@ -18,13 +18,19 @@ namespace Synopsis
 namespace AST
 {
 
+class IRKit : public Python::Kit
+{
+public:
+  IRKit() : Python::Kit("Synopsis.IR") {}
+
+  IR create_ir() { return create<IR>("IR");}
+};
+
 // basically a factory for all AST types
 class ASTKit : public Python::Kit
 {
 public:
   ASTKit() : Python::Kit("Synopsis.AST") {}
-
-  AST create_ast() { return create<AST>("AST");}
 
   Declaration create_declaration(const SourceFile &sf, long line,
 				 const char *type, const ScopedName &name)

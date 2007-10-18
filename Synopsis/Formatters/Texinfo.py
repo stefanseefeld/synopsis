@@ -43,19 +43,19 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
    """The type visitors should generate names relative to the current scope.
    The generated references however are fully scoped names."""
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
       self.__os = open(self.output, 'w+')
       self.__scope = []
       self.__indent = 0
 
-      for d in self.ast.declarations():
+      for d in self.ir.declarations:
          d.accept(self)
 
-      return self.ast
+      return self.ir
 
    def scope(self): return self.__scope
    def write(self, text): self.__os.write(text)

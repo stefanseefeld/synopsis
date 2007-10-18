@@ -42,7 +42,7 @@ class ModuleListing(View):
       self.write_navigation_bar()
       self.write('<ul class="tree">')
       # FIXME: see HTML.Formatter
-      module = self.processor.ast.declarations()[0]
+      module = self.processor.ir.declarations[0]
       self.index_module(module, module.name())
       self.write('</ul>')
       self.end_file()

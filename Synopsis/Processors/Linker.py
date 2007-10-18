@@ -17,10 +17,10 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
    sort_modules = Parameter(True, 'Sort module content alphabetically.')
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
       root = AST.MetaModule("", [])
       self.__scopes = [root]
@@ -28,33 +28,33 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       self.__dict_map = {id(root) : global_dict}
       self.__dicts = [global_dict]
 
-      self.types = self.ast.types()
+      self.types = self.ir.types
       
-      declarations = self.ast.declarations()
+      declarations = self.ir.declarations
       try:
          for decl in declarations: decl.accept(self)
          declarations[:] = root.declarations()
       except TypeError, e:
          print 'linker error :', e
 
-      for file in self.ast.files().values():
+      for file in self.ir.files.values():
          self.visitSourceFile(file)
 
       if self.remove_empty_modules:
          import ModuleFilter
-         self.ast = ModuleFilter.ModuleFilter().process(self.ast)
+         self.ir = ModuleFilter.ModuleFilter().process(self.ir)
 
       if self.sort_modules:
          import ModuleSorter
-         self.ast = ModuleSorter.ModuleSorter().process(self.ast)
+         self.ir = ModuleSorter.ModuleSorter().process(self.ir)
          
 
       # now deal with the sub-processors, if any
       output = self.output
-      self.ast = Composite.process(self, self.ast, input=[], output='')
+      self.ir = Composite.process(self, self.ir, input=[], output='')
       self.output = output
       
-      return self.output_and_return_ast()
+      return self.output_and_return_ir()
 
    def lookup(self, name):
       """look whether the current scope already contains

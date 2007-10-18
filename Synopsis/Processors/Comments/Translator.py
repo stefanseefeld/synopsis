@@ -19,19 +19,19 @@ class Translator(Processor, AST.Visitor):
     concatenate = Parameter(False, 'Whether or not to concatenate adjacent comments.')
     primary_only = Parameter(True, 'Whether or not to preserve secondary comments.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
         if self.filter:
-            self.ast = self.filter.process(self.ast)
+            self.ir = self.filter.process(self.ir)
         if self.processor:
-            self.ast = self.processor.process(self.ast)
+            self.ir = self.processor.process(self.ir)
 
-        for decl in self.ast.declarations():
+        for decl in self.ir.declarations:
             decl.accept(self)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
 
     def visitDeclaration(self, decl):

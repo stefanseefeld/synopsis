@@ -12,16 +12,16 @@ import re
 class Filter(Processor, AST.Visitor):
     """Base class for comment filters."""
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
 
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
-        for decl in ast.declarations():
+        for decl in ir.declarations:
             decl.accept(self)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
 
     def visitDeclaration(self, decl):

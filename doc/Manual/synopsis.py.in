@@ -33,7 +33,7 @@ class MyHTML(HTML.Formatter):
 
    xref = Parameter('', 'xref file usef for cross referencing')
     
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
         
       self.set_parameters(kwds)
 
@@ -45,7 +45,7 @@ class MyHTML(HTML.Formatter):
                       InheritanceGraph(),
                       NameIndex()]
       
-      return HTML.Formatter.process(self, ast)
+      return HTML.Formatter.process(self, ir)
 
 sxr = SXR.Formatter(url = '/sxr',
                     src_dir = '@topdir@',

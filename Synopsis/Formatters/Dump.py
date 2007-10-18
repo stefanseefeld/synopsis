@@ -29,10 +29,10 @@ class Formatter(Processor):
    show_files = Parameter(True, 'output files')
    stylesheet = Parameter(config.datadir + '/dump.css', 'stylesheet to be referenced for rendering')
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
       
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
       self.handlers = {types.NoneType : self.visit_none,
                        types.TypeType : self.visit_type,
@@ -54,20 +54,20 @@ class Formatter(Processor):
       if self.stylesheet:
          self.os.write("<?xml-stylesheet href='%s' type='text/css'?>\n"%self.stylesheet)
 
-      self.os.write("<ast>\n")
+      self.os.write("<ir>\n")
 
       if self.show_declarations:
-         self.write_declarations(self.ast.declarations())
+         self.write_declarations(self.ir.declarations)
          
       if self.show_types:
-         self.write_types(self.ast.types())
+         self.write_types(self.ir.types)
 
       if self.show_files:
-         self.write_files(self.ast.files())
+         self.write_files(self.ir.files)
 
-      self.os.write("</ast>\n")
+      self.os.write("</ir>\n")
 
-      return self.ast
+      return self.ir
 
    def push(self, name):
 

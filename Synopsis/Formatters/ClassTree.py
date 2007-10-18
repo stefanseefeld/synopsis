@@ -1,4 +1,3 @@
-# $Id: ClassTree.py,v 1.8 2003/11/13 17:30:06 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -128,11 +127,6 @@ class ClassTree(AST.Visitor):
    #
    # AST Visitor
    #
-
-   def visitAST(self, ast):
-
-      for decl in ast.declarations():
-         decl.accept(self)
 
    def visitScope(self, scope):
       for decl in scope.declarations():

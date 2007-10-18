@@ -439,11 +439,11 @@ class Formatter(Processor):
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    base_url = Parameter(None, 'base url to use for generated links')
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
       global verbose, debug
       
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
       verbose = self.verbose
       debug = self.debug
 
@@ -458,7 +458,7 @@ class Formatter(Processor):
       else:
          print "Error: Unknown format. Available formats are:",
          print string.join(formats.keys(), ', ')
-         return self.ast
+         return self.ir
 
       # we only need the toc if format=='html'
       if format == 'html':
@@ -481,7 +481,7 @@ class Formatter(Processor):
          generator = SingleInheritanceGenerator(dotfile, self.layout,
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
-                                                -1, self.ast.types(),
+                                                -1, self.ir.types,
                                                 toc, self.prefix, False,
                                                 self.bgcolor)
       elif self.type == 'class':
@@ -498,10 +498,10 @@ class Formatter(Processor):
          
 
       if self.type == 'file':
-         for f in self.ast.files().values():
+         for f in self.ir.files.values():
             generator.visit_file(f)
       else:
-         for d in self.ast.declarations():
+         for d in self.ir.declarations:
             d.accept(generator)
       dotfile.write("}\n")
       dotfile.close()
@@ -517,5 +517,5 @@ class Formatter(Processor):
          _format(tmpfile, self.output, format)
          os.remove(tmpfile)
 
-      return self.ast
+      return self.ir
 

@@ -25,10 +25,10 @@ class Parser(Processor):
    base_path = Parameter(None, 'path prefix to strip off of the filenames')
    language = Parameter('C++', 'source code programming language of the given input file')
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = ast
+      self.ir = ir
 
       # Accept either a string or a list.
       flags = type(self.flags) is str and self.flags.split() or self.flags
@@ -38,11 +38,11 @@ class Parser(Processor):
          flags += ['-I%s'%x for x in info.include_paths]
          flags += ['-D%s'%k + (v and '=%s'%v or '') for (k,v) in info.macros]
       for file in self.input:
-         self.ast = ucpp.parse(self.ast,
-                               os.path.abspath(file),
-                               base_path,
-                               self.cpp_output,
-                               self.language, flags, self.primary_file_only,
-                               self.verbose, self.debug)
-      return self.output_and_return_ast()
+         self.ir = ucpp.parse(self.ir,
+                              os.path.abspath(file),
+                              base_path,
+                              self.cpp_output,
+                              self.language, flags, self.primary_file_only,
+                              self.verbose, self.debug)
+      return self.output_and_return_ir()
 

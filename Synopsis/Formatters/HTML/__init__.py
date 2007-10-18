@@ -7,7 +7,7 @@
 
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import IR, AST
 from Synopsis.DocString import DocString
 from Synopsis.FileTree import FileTree as SourceFileTree
 from Synopsis.Formatters.TOC import TOC
@@ -96,16 +96,16 @@ class Formatter(Processor):
     markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
                                   'Markup-specific formatters.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
 
         # FIXME: wrap the declarations into a single AST.Module
-        #        during processing, but put the original ast back at the end.
-        ast = self.merge_input(ast)
+        #        during processing, but put the original ir back at the end.
+        ir = self.merge_input(ir)
         root = AST.Module(None, -1, 'Global', ())
-        root.declarations()[:] = ast.declarations()
-        self.ast = AST.AST(ast.files(), [root], ast.types())
+        root.declarations()[:] = ir.declarations
+        self.ir = IR.IR(ir.files, [root], ir.types)
 
         self.directory_layout.init(self)
         self.documentation = DocCache(self, self.markup_formatters)
@@ -117,7 +117,7 @@ class Formatter(Processor):
 
         # Create the file tree (shared by file listing / tree views).
         self.file_tree = SourceFileTree()
-        self.file_tree.set_ast(self.ast)
+        self.file_tree.set_ir(self.ir)
 
         # Create the cross reference table (shared by XRef / Scope views)
         self.xref = CrossReferencer()
@@ -165,7 +165,7 @@ class Formatter(Processor):
 
         for frame in frames: frame.process()
         # Return original AST, not the synthetic AST.Module created above.
-        return ast
+        return ir
 
     def has_view(self, name):
         """test whether the given view is part of the views list."""

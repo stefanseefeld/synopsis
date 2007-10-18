@@ -34,14 +34,14 @@ void unexpected()
 
 PyObject *parse(PyObject * /* self */, PyObject *args)
 {
-  PyObject *py_ast;
+  PyObject *py_ir;
   const char *src, *cppfile;
   char const * base_path = "";
   char const * syntax_prefix = 0;
   char const * xref_prefix = 0;
   int primary_file_only, verbose, debug;
   if (!PyArg_ParseTuple(args, "Ossizzzii",
-                        &py_ast, &cppfile, &src,
+                        &py_ir, &cppfile, &src,
                         &primary_file_only,
                         &base_path,
                         &syntax_prefix,
@@ -50,9 +50,9 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
                         &debug))
     return 0;
 
-  Py_INCREF(py_ast);
-  AST::AST ast(py_ast);
-  Py_INCREF(py_ast);
+  Py_INCREF(py_ir);
+  AST::IR ir(py_ir);
+  Py_INCREF(py_ir);
 
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
@@ -82,7 +82,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     }
     else if (ptree)
     {
-      ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
+      ASTTranslator translator(src, base_path, primary_file_only, ir, verbose, debug);
       translator.translate(ptree, buffer);
     }
   }
@@ -91,7 +91,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     PyErr_SetString(error, e.what());
     return 0;
   }
-  return py_ast;
+  return py_ir;
 }
 
 PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},

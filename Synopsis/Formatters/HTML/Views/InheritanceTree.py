@@ -35,7 +35,7 @@ class InheritanceTree(View):
         self.write(entity('h1', "Inheritance Tree"))
         self.write('<ul>')
         # FIXME: see HTML.Formatter
-        module = self.processor.ast.declarations()[0]
+        module = self.processor.ir.declarations[0]
         for r in self.processor.class_tree.roots():
             self.process_inheritance(r, module.name())
         self.write('</ul>')

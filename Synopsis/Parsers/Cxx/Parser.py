@@ -28,10 +28,10 @@ class Parser(Processor):
    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = ast
+      self.ir = ir
 
       if self.preprocess:
 
@@ -54,25 +54,25 @@ class Parser(Processor):
             else:
                ii_file = os.path.join(tempfile.gettempdir(),
                                       'synopsis-%s.ii'%os.getpid())
-            self.ast = cpp.process(self.ast,
-                                   cpp_output = ii_file,
-                                   input = [file],
-                                   primary_file_only = self.primary_file_only,
-                                   verbose = self.verbose,
-                                   debug = self.debug)
+            self.ir = cpp.process(self.ir,
+                                  cpp_output = ii_file,
+                                  input = [file],
+                                  primary_file_only = self.primary_file_only,
+                                  verbose = self.verbose,
+                                  debug = self.debug)
 
-         self.ast = occ.parse(self.ast, ii_file,
-                              os.path.abspath(file),
-                              self.primary_file_only,
-                              os.path.abspath(self.base_path) + os.sep,
-                              self.syntax_prefix,
-                              self.xref_prefix,
-                              self.verbose,
-                              self.debug)
+         self.ir = occ.parse(self.ir, ii_file,
+                             os.path.abspath(file),
+                             self.primary_file_only,
+                             os.path.abspath(self.base_path) + os.sep,
+                             self.syntax_prefix,
+                             self.xref_prefix,
+                             self.verbose,
+                             self.debug)
 
          if self.preprocess: os.remove(ii_file)
 
-      return self.output_and_return_ast()
+      return self.output_and_return_ir()
 
    def dump(self, **kwds):
       """Run the occ directly without ast intervention."""

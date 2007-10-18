@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import Type, AST, Util
+from Synopsis import IR, Type, AST, Util
 from Synopsis.SourceFile import *
 import idlast, idltype, idlvisitor, idlutil
 import _omniidl
@@ -432,7 +432,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
 #    def visitValueAbs(self, node):     return
 #    def visitValue(self, node):        return
 
-def parse(ast, cppfile, src, primary_file_only,
+def parse(ir, cppfile, src, primary_file_only,
           base_path, verbose, debug):
    global basename, strip, sourcefile
 
@@ -448,12 +448,12 @@ def parse(ast, cppfile, src, primary_file_only,
 
    sourcefile = SourceFile(strip_filename(src), src, 'IDL')
    sourcefile.annotations['primary'] = True
-   new_ast = AST.AST()
-   new_ast.files()[sourcefile.name] = sourcefile
-   type_trans = TypeTranslator(new_ast.types())
-   ast_trans = ASTTranslator(new_ast.declarations(), type_trans, primary_file_only)
+   new_ir = IR.IR()
+   new_ir.files[sourcefile.name] = sourcefile
+   type_trans = TypeTranslator(new_ir.types)
+   ast_trans = ASTTranslator(new_ir.declarations, type_trans, primary_file_only)
    tree.accept(ast_trans)
-   sourcefile.declarations[:] = new_ast.declarations()
-   ast.merge(new_ast)
+   sourcefile.declarations[:] = new_ir.declarations
+   ir.merge(new_ir)
    _omniidl.clear()
-   return ast
+   return ir

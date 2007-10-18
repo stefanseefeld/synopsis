@@ -83,15 +83,15 @@ class Formatter(Processor):
     sxr_template = Parameter(os.path.join(config.datadir, 'sxr-template.html'), 'html template to be used by the sxr.cgi script')
     stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         if not os.path.exists(self.output): os.makedirs(self.output)
 
         xref = XRefCompiler(prefix = self.xref_prefix)
-        self.ast = xref.process(self.ast, output = os.path.join(self.output, 'xref_db'))
+        self.ir = xref.process(self.ir, output = os.path.join(self.output, 'xref_db'))
 
         content = [SXRIndex(sxr_cgi = self.url,
                             template = Template(template = self.sxr_template)),
@@ -111,10 +111,10 @@ class Formatter(Processor):
                               detail = [],
                               content = content,
                               stylesheet = self.stylesheet)
-        self.ast = html.process(self.ast, output = self.output)
+        self.ir = html.process(self.ir, output = self.output)
         
         if self.sxr_template:
             copyfile(self.sxr_template,
                      os.path.join(self.output, 'sxr-template.html'))
             
-        return self.ast
+        return self.ir

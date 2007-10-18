@@ -37,7 +37,7 @@ class Scope(View):
 
         self.__scopes = []
         self.__toc = TOC(self.directory_layout)
-        for d in self.processor.ast.declarations():
+        for d in self.processor.ir.declarations:
             d.accept(self.__toc)
       
     def toc(self):
@@ -69,7 +69,7 @@ class Scope(View):
         """Creates a view for every Scope."""
 
         # FIXME: see HTML.Formatter
-        module = self.processor.ast.declarations()[0]
+        module = self.processor.ir.declarations[0]
         self.__scopes = [module]
         while self.__scopes:
             scope = self.__scopes.pop(0)
@@ -84,7 +84,7 @@ class Scope(View):
         """Registers a view for every Scope."""
 
         # FIXME: see HTML.Formatter
-        self.__scopes = [self.processor.ast.declarations()[0]]
+        self.__scopes = [self.processor.ir.declarations[0]]
         while self.__scopes:
             scope = self.__scopes.pop(0)
             if scope.name():

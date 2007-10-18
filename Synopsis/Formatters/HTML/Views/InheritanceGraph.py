@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import AST, Type, Util
+from Synopsis import IR, AST, Type, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -61,7 +61,7 @@ class InheritanceGraph(View):
    def register(self, frame):
 
       super(InheritanceGraph, self).register(frame)
-      self.decl_finder = DeclarationFinder(self.processor.ast.types(),
+      self.decl_finder = DeclarationFinder(self.processor.ir.types,
                                            self.processor.verbose)
 
    def filename(self):
@@ -140,7 +140,7 @@ class InheritanceGraph(View):
             self.write('<div class="inheritance-group">')
             scoped_name = name.split('::')
             type_str = ''
-            types = self.processor.ast.types()
+            types = self.processor.ir.types
             type = types.get(scoped_name, None)
             if isinstance(type, Type.Declared):
                type_str = type.declaration().type() + ' '
@@ -154,9 +154,9 @@ class InheritanceGraph(View):
             output = os.path.join(self.processor.output,
                                   os.path.splitext(self.filename())[0]) + '-%s'%count
             dot = Dot.Formatter()
-            ast = AST.AST({}, declarations, self.processor.ast.types())
+            ir = IR.IR({}, declarations, self.processor.ir.types)
             try:
-               dot.process(ast,
+               dot.process(ir,
                            output=output,
                            format='html',
                            toc_in=[toc_file],

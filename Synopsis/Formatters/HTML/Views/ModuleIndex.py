@@ -32,7 +32,7 @@ class ModuleIndex(View):
 
    def process(self):
 
-      self.__modules = [d for d in self.processor.ast.declarations()
+      self.__modules = [d for d in self.processor.ir.declarations
                         if isinstance(d, AST.Module)]
       while self.__modules:
          m = self.__modules.pop(0)

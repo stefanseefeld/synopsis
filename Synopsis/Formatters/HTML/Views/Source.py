@@ -72,7 +72,7 @@ class Source(View):
         # Get the TOC
         self.__toc = self.processor.toc
         # create a view for each primary file
-        for file in self.processor.ast.files().values():
+        for file in self.processor.ir.files.values():
             if file.annotations['primary']:
                 self.process_node(file)
 
@@ -80,7 +80,7 @@ class Source(View):
     def register_filenames(self):
         """Registers a view for every source file"""
 
-        for file in self.processor.ast.files().values():
+        for file in self.processor.ir.files.values():
             if file.annotations['primary']:
                 filename = file.name
                 filename = self.directory_layout.file_source(filename)

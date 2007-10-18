@@ -15,15 +15,15 @@ using namespace Synopsis;
 
 ASTTranslator::ASTTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
-			     Synopsis::AST::AST ast, bool v, bool d)
-  : my_ast(ast),
+			     Synopsis::AST::IR ir, bool v, bool d)
+  : my_ir(ir),
     my_ast_kit(),
     my_sf_kit("C"),
     my_raw_filename(filename),
     my_base_path(base_path),
     my_primary_file_only(primary_file_only),
     my_lineno(0),
-    my_types(my_ast.types(), v, d),
+    my_types(my_ir.types(), v, d),
     my_verbose(v),
     my_debug(d),
     my_buffer(0),
@@ -36,13 +36,13 @@ ASTTranslator::ASTTranslator(std::string const &filename,
   path.strip(my_base_path);
   std::string short_filename = path.str();
 
-  AST::SourceFile file = my_ast.files().get(short_filename);
+  AST::SourceFile file = my_ir.files().get(short_filename);
   if (file)
     my_file = file;
   else
   {
     my_file = my_sf_kit.create_source_file(short_filename, long_filename);
-    my_ast.files().set(short_filename, my_file);
+    my_ir.files().set(short_filename, my_file);
   }
 }
 
@@ -465,13 +465,13 @@ bool ASTTranslator::update_position(PTree::Node *node)
     path.strip(my_base_path);
     std::string short_filename = path.str();
 
-    AST::SourceFile file = my_ast.files().get(short_filename);
+    AST::SourceFile file = my_ir.files().get(short_filename);
     if (file)
       my_file = file;
     else
     {
       my_file = my_sf_kit.create_source_file(short_filename, long_filename);
-      my_ast.files().set(short_filename, my_file);
+      my_ir.files().set(short_filename, my_file);
     }
   }
   return true;
@@ -484,5 +484,5 @@ void ASTTranslator::declare(AST::Declaration declaration)
   if (my_scope.size())
     my_scope.top().declarations().append(declaration);
   else
-    my_ast.declarations().append(declaration);    
+    my_ir.declarations().append(declaration);    
 }

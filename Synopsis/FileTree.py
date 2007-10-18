@@ -52,7 +52,7 @@ class FileTree:
    def __init__(self):
       self.__dirs = None
       self.__root = None
-      self.__ast = None
+      self.__ir = None
       
    def __add_dir(self, path):
       """Recursively add a directory to the tree"""
@@ -88,10 +88,10 @@ class FileTree:
       new_file = FileTree.File(file, filename, decls)
       parent.children.append(new_file)
     
-   def set_ast(self, ast):
+   def set_ir(self, ir):
       """Sets the AST to use and builds the tree of Nodes"""
-      self.__ast = ast
-      if ast is None:
+      self.__ir = ir
+      if ir is None:
          self.__dirs = None
          self.__root = None
          return
@@ -99,7 +99,7 @@ class FileTree:
       self.__dirs = {}
       self.__root = FileTree.Directory('', '')
       # Add each file to the hierarchy
-      for filename, file in ast.files().items():
+      for filename, file in ir.files.items():
          if file.annotations['primary']:
             self.__add_file(filename, file.declarations)
       # Clean up dict
@@ -107,7 +107,7 @@ class FileTree:
 	    
    def root(self):
       """Returns the root node in the file tree, which is a Directory
-      object. The root node is created by set_ast()."""
+      object. The root node is created by set_ir()."""
       return self.__root
  
 

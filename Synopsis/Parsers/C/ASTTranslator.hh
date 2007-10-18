@@ -22,7 +22,7 @@ class ASTTranslator : private PTree::Visitor
 public:
   ASTTranslator(std::string const &filename,
 		std::string const &base_path, bool primary_file_only,
-		AST::AST a, bool v, bool d);
+		AST::IR a, bool v, bool d);
 
   void translate(PTree::Node *, Buffer &);
 
@@ -50,7 +50,7 @@ private:
 
   void declare(AST::Declaration);
 
-  AST::AST            my_ast;
+  AST::IR             my_ir;
   AST::ASTKit         my_ast_kit;
   AST::SourceFileKit  my_sf_kit;
   AST::SourceFile     my_file;

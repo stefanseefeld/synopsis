@@ -16,9 +16,6 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
-import Type
-import sys, cPickle
-
 # Accessibility constants
 DEFAULT = 0
 PUBLIC = 1
@@ -28,82 +25,6 @@ PRIVATE = 3
 def ccmp(a,b):
    """Compares classes of two objects"""
    return cmp(type(a),type(b)) or cmp(a.__class__,b.__class__)
-
-def load(filename):
-   """Loads an AST object from the given filename"""
-
-   file = open(filename, 'rb')
-   unpickler = cPickle.Unpickler(file)
-   ast = unpickler.load()
-   file.close()
-   return ast
-
-class AST:
-   """Top-level Abstract Syntax Tree.
-   The AST represents the whole AST for a file or group of files as a list of
-   declarations and a types dictionary.
-   """
-
-   def __init__(self, files=None, declarations=None, typedict=None):
-      """Constructor"""
-
-      if files is None: files = {}
-      if declarations is None: declarations = []
-      if typedict is None: typedict = Type.Dictionary()
-      self.__files	    = files
-      self.__declarations = list(declarations)
-      self.__types	    = typedict
-
-   def files(self):
-      """The files this AST represents. Returns a dictionary mapping
-      filename to SourceFile objects."""	
-      return self.__files
-
-   def declarations(self):
-      """List of Declaration objects. These are the declarations at file scope"""
-      return self.__declarations
-
-   def types(self):
-      """Dictionary of types. This is a Type.Dictionary object"""
-      return self.__types
-
-   def accept(self, visitor):
-      """Accept the given visitor"""
-      visitor.visitAST(self)
-
-   def save(self, filename):
-      """Saves an AST object to the given filename"""
-
-      file = open(filename, 'wb')
-      pickler = cPickle.Pickler(file, 1)
-      pickler.dump(self)
-      file.close()
-
-   def merge(self, other_ast):
-      """Merges another AST. Files and declarations are appended to those in
-      this AST, and types are merged by overwriting existing types -
-      Unduplicator is responsible for sorting out the mess this may cause :)"""
-      self.__types.merge(other_ast.types())
-      self.__declarations.extend(other_ast.declarations())
-      #merge files
-      replacement = {}
-      for filename, file in other_ast.files().items():
-         if not self.__files.has_key(filename):
-            self.__files[filename] = file
-            continue
-         myfile = self.__files[filename]
-         replacement[file] = myfile
-         # the 'main' flag dominates...
-         if not myfile.annotations['primary']:
-            myfile.annotations['primary'] = file.annotations['primary']
-         myfile.declarations.extend(file.declarations)
-         myfile.includes.extend(file.includes)
-      # fix dangling inclusions of 'old' files
-      for r in replacement:
-         for f in self.__files.values():
-            for i in f.includes:
-               if i.target == r:
-                  i.target = replacement[r]
 
 
 class Debugger(type):

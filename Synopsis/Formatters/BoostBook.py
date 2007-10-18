@@ -19,10 +19,10 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
    The generated references however are fully scoped names
    """
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
       
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
       self.__os = open(self.output, 'w')
       self.__scope = ()
@@ -30,12 +30,12 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.__indent = 0
       self.__type_label = ''
       
-      for d in ast.declarations():
+      for d in ir.declarations:
          d.accept(self)
 
       self.__os.close()
       
-      return self.ast
+      return self.ir
 
    def scope(self): return self.__scope
    def push_scope(self, newscope):

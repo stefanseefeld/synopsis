@@ -25,27 +25,27 @@ class NamePrefixer(NameMapper):
     prefix = Parameter([], 'the prefix which to prepend to all declared types')
     type = Parameter('Language', 'type to use for the new toplevel modules')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         if not self.prefix:
-            return self.output_and_return_ast()
+            return self.output_and_return_ir()
 
-        for decl in self.ast.declarations():
+        for decl in self.ir.declarations:
             decl.accept(self)
 
         # Now we need to put the declarations in actual nested MetaModules
         for index in range(len(self.prefix), 0, -1):
             module = AST.MetaModule(self.type, self.prefix[:index])
-            module.declarations().extend(self.ast.declarations())
-            self.ast.types()[module.name()] = Type.Declared('',
-                                                            module.name(),
-                                                            module)
-            self.ast.declarations()[:] = [module]
+            module.declarations().extend(self.ir.declarations)
+            self.ir.types[module.name()] = Type.Declared('',
+                                                         module.name(),
+                                                         module)
+            self.ir.declarations[:] = [module]
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
     def visitDeclaration(self, decl):
         """Changes the name of this declaration and its associated type"""
@@ -56,10 +56,10 @@ class NamePrefixer(NameMapper):
         decl.set_name(new_name)
         # Change the name of the associated type
         try:
-            type = self.ast.types()[name]
-            del self.ast.types()[name]
+            type = self.ir.types[name]
+            del self.ir.types[name]
             type.set_name(new_name)
-            self.ast.types()[new_name] = type
+            self.ir.types[new_name] = type
         except KeyError, msg:
             if self.verbose: print "Warning: Unable to map name of type:",msg
 

@@ -24,20 +24,20 @@ class ScopeStripper(Processor, AST.Visitor):
         self.__in = 0
 
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
         if self.scope:
 
             self.__scope = tuple(self.scope.split('::'))
             # strip prefixes and remove non-matching declarations
-            self.strip_declarations(self.ast.declarations())
+            self.strip_declarations(self.ir.declarations)
 
             # Remove types not in strip
-            self.strip_types(self.ast.types())
+            self.strip_types(self.ir.types)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
       
     def strip_name(self, name):

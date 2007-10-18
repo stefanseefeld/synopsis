@@ -36,7 +36,7 @@ std::string base_path;
 std::auto_ptr<AST::ASTKit> ast_kit;
 std::auto_ptr<AST::SourceFileKit> sf_kit;
 std::auto_ptr<AST::TypeKit> types;
-std::auto_ptr<AST::AST> ast;
+std::auto_ptr<AST::IR> ir;
 std::auto_ptr<AST::SourceFile> source_file;
 const char *input = 0;
 
@@ -47,7 +47,7 @@ AST::SourceFile create_source_file(const std::string &filename, bool primary)
   path.strip(base_path);
   std::string name = path.str();
   AST::SourceFile sf = sf_kit->create_source_file(name, filename);
-  Python::Dict files = ast->files();
+  Python::Dict files = ir->files();
   files.set(name, sf);
   if (primary) sf.set_primary(true);
   return sf;
@@ -57,7 +57,7 @@ AST::SourceFile create_source_file(const std::string &filename, bool primary)
 //. with the given filename
 AST::SourceFile lookup_source_file(const std::string &filename, bool primary)
 {
-  Python::Dict files = ast->files();
+  Python::Dict files = ir->files();
   Path path = Path(filename).abs();
   path.strip(base_path);
   AST::SourceFile sf = files.get(path.str());
@@ -81,12 +81,12 @@ void create_macro(const char *filename, int line,
   AST::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
   AST::Declared declared = types->create_declared(name, macro);
 
-  Python::List declarations = ast->declarations();
+  Python::List declarations = ir->declarations();
   declarations.append(macro);
 
   // FIXME: the 'types' attribute is not (yet) a dict type
   // so we have to do the call conversions manually...
-  Python::Object types = ast->types();
+  Python::Object types = ir->types();
   types.attr("__setitem__")(Python::Tuple(name, declared));
 }
 
@@ -118,9 +118,9 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     char *output;
     PyObject *py_flags;
     std::vector<const char *> flags;
-    PyObject *py_ast;
+    PyObject *py_ir;
     if (!PyArg_ParseTuple(args, "OszzsO!iii",
-                          &py_ast,
+                          &py_ir,
                           &input,
                           &py_base_path,
                           &output,
@@ -134,11 +134,11 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     
     Py_INCREF(py_error);
     std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
-    Py_INCREF(py_ast);
+    Py_INCREF(py_ir);
     // since everything in this file is accessed only during the execution
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
-    ast.reset(new AST::AST(py_ast));
+    ir.reset(new AST::IR(py_ir));
     ast_kit.reset(new AST::ASTKit());
     sf_kit.reset(new AST::SourceFileKit(language));
     types.reset(new AST::TypeKit(language));
@@ -192,19 +192,19 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       PyErr_SetObject(py_error, py_e.ref());
     }
 
-    Python::Dict files = ast->files();
+    Python::Dict files = ir->files();
     Path path = Path(input).abs();
     path.strip(base_path);
     files.set(path.str(), *source_file);
 
-    py_ast = ast->ref(); // add new reference
+    py_ir = ir->ref(); // add new reference
     // make sure these objects are deleted before the python runtime
     source_file.reset();
     types.reset();
     ast_kit.reset();
     sf_kit.reset();
-    ast.reset();
-    return py_ast;
+    ir.reset();
+    return py_ir;
   }
   catch (const std::exception &e)
   {

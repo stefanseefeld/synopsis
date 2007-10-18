@@ -6,7 +6,7 @@
 #
 
 from Processor import Processor, Error
-import AST
+import IR
 from getoptions import get_options
 
 import sys
@@ -66,9 +66,9 @@ def process(argv = sys.argv, **commands):
     if args: props['input'] = args
 
     if command in commands:
-        ast = AST.AST()
+        ir = IR.IR()
         try:
-            commands[command].process(ast, **props)
+            commands[command].process(ir, **props)
         except Error, e:
             error(str(e))
         except KeyboardInterrupt, e:

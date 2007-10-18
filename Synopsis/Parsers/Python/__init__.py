@@ -21,10 +21,10 @@ class Parser(Processor):
     base_path = Parameter('', 'Path prefix to strip off of input file names.')
     syntax_prefix = Parameter(None, 'Path prefix (directory) to contain syntax info.')
     
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = ast
+        self.ir = ir
         self.scopes = []
       
         # Create return type for Python functions:
@@ -41,7 +41,7 @@ class Parser(Processor):
         for file in self.input:
             self.process_file(file)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
 
     def process_file(self, filename):
@@ -56,7 +56,7 @@ class Parser(Processor):
         short_filename = filename[len(self.base_path):]
         sourcefile = SourceFile(short_filename, filename, 'Python')
         sourcefile.annotations['primary'] = True
-        self.ast.files()[short_filename] = sourcefile
+        self.ir.files[short_filename] = sourcefile
 
         package = None
         package_name = []
@@ -77,7 +77,7 @@ class Parser(Processor):
                 if package:
                     package.declarations().append(module)
                 else:
-                    self.ast.declarations().append(module)
+                    self.ir.declarations.append(module)
 
                 package = module
 
@@ -89,7 +89,7 @@ class Parser(Processor):
                 dirname = os.path.dirname(filename)
                 module_name = os.path.splitext(os.path.basename(dirname))[0]
                 module = AST.Module(sourcefile, -1, 'package', [module_name])
-                self.ast.declarations().append(module)
+                self.ir.declarations.append(module)
         else:
             module_name = os.path.splitext(basename)[0]
             if package:
@@ -98,9 +98,9 @@ class Parser(Processor):
                 package.declarations().append(module)
             else:
                 module = AST.Module(sourcefile, -1, 'module', [module_name])
-                self.ast.declarations().append(module)
+                self.ir.declarations.append(module)
 
-        translator = ASTTranslator(module, self.ast.types())
+        translator = ASTTranslator(module, self.ir.types)
         if self.syntax_prefix is None:
             xref = None
         else:

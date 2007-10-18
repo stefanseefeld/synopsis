@@ -143,7 +143,7 @@ void error()
             << std::endl;
 }
 
-void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
+void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
 {
   Trace trace("RunOpencxx", Trace::TRANSLATION);
   std::set_unexpected(unexpected);
@@ -181,7 +181,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     swalker.translate(ptree);
       
     // Setup synopsis c++ to py convertor
-    Translator translator(filter, ast);//declarations, types);
+    Translator translator(filter, ir);//declarations, types);
     translator.set_builtin_decls(builder.builtin_decls());
     // Convert!
     translator.translate(builder.scope());
@@ -195,11 +195,11 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   Environment::do_init_static();
   PTree::Encoding::do_init_static();
 
-  PyObject *ast;
+  PyObject *ir;
   const char *src, *cppfile;
   int primary_file_only, verbose, debug;
   if (!PyArg_ParseTuple(args, "Ossizzzii",
-                        &ast, &cppfile, &src,
+                        &ir, &cppfile, &src,
                         &primary_file_only,
                         &syn_base_path,
                         &syn_syntax_prefix,
@@ -210,7 +210,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   Py_INCREF(py_error);
   std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
-  Py_INCREF(ast);
+  Py_INCREF(ir);
 
   if (verbose) ::verbose = true;
   if (debug) Trace::enable(Trace::ALL);
@@ -223,7 +223,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   }
 
   // Setup the filter
-  FileFilter filter(ast, src, syn_base_path, syn_primary_only);
+  FileFilter filter(ir, src, syn_base_path, syn_primary_only);
   if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
   if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
 
@@ -231,7 +231,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   // Run OCC to generate the AST
   try
   {
-    RunOpencxx(source_file, cppfile, ast);
+    RunOpencxx(source_file, cppfile, ir);
   }
   catch (const std::exception &e)
   {
@@ -250,7 +250,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   // Delete all the AST:: and Types:: objects we created
   FakeGC::delete_all();
-  return ast;
+  return ir;
 }
 
 PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},

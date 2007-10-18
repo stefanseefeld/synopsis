@@ -71,14 +71,14 @@ namespace
 //. The returned SourceFile object is a slice of the original python object
 //. and should be merged back at the end of the parsing such that the other
 //. parts not mirrored here are preserved.
-AST::SourceFile *import_source_file(PyObject *ast,
+AST::SourceFile *import_source_file(PyObject *ir,
 				    const std::string &name,
 				    const std::string &long_name,
 				    bool main)
 {
   AST::SourceFile *sourcefile = new AST::SourceFile(name, long_name, main);
 
-  PyObject *files = PyObject_CallMethod(ast, "files", "");
+  PyObject *files = PyObject_GetAttrString(ir, "files");
   assert(files);
   PyObject *py_source_file = PyDict_GetItemString(files, const_cast<char *>(name.c_str()));
   Py_DECREF(files);

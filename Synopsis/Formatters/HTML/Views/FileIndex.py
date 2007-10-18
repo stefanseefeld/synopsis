@@ -42,7 +42,7 @@ class FileIndex(View):
    def register_filenames(self):
       """Registers a view for each file indexed."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             filename = self.directory_layout.file_index(filename)
             self.processor.register_filename(filename, self, file)
@@ -50,7 +50,7 @@ class FileIndex(View):
    def process(self):
       """Creates a view for each known file."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             self.process_scope(filename, file)
 

@@ -104,7 +104,7 @@ class Formatter(Parametrized):
         realname()'s of all the functions compared to ref."""
 
         try:
-            scope = self.processor.ast.types()[scope]
+            scope = self.processor.ir.types[scope]
         except KeyError:
             #print "No parent scope:",decl.name()[:-1]
             return None

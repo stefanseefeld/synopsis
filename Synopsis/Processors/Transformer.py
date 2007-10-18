@@ -20,21 +20,21 @@ class Transformer(Processor, AST.Visitor):
         self.__scopes = []
         self.__current = []
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
-        for decl in ast.declarations():
+        for decl in ir.declarations:
             decl.accept(self)
 
         self.finalize()
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
     def finalize(self):
         """replace the AST with the newly created one"""
 
-        self.ast.declarations()[:] = self.__current
+        self.ir.declarations[:] = self.__current
 
     def push(self):
         """Pushes the current scope onto the stack and starts a new one"""

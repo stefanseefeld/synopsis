@@ -14,19 +14,19 @@ class ModuleFilter(Processor, AST.Visitor):
     modules = Parameter([], 'List of modules to be filtered out.')
     remove_empty = Parameter(True, 'Whether or not to remove empty modules.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         self.__scopestack = []
         self.__currscope = []
 
-        for decl in self.ast.declarations():
+        for decl in self.ir.declarations:
            decl.accept(self)
-        self.ast.declarations()[:] = self.__currscope
+        self.ir.declarations[:] = self.__currscope
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
     def push(self):
         """Pushes the current scope onto the stack and starts a new one"""

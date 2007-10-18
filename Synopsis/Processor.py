@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-import AST
+import IR
 
 class Error(Exception):
    """An exception a processor may raise during processing."""
@@ -93,23 +93,23 @@ class Processor(Parametrized):
    debug = Parameter(False, "generate debug traces")
    profile = Parameter(False, "output profile data")
    input = Parameter([], "input files to process")
-   output = Parameter('', "output file to save the ast to")
+   output = Parameter('', "output file to save the ir to")
 
-   def merge_input(self, ast):
-      """Join the given ast with a set of asts to be read from 'input' parameter"""
+   def merge_input(self, ir):
+      """Join the given IR with a set of IRs to be read from 'input' parameter"""
       input = getattr(self, 'input', [])
       for file in input:
-         ast.merge(AST.load(file))
-      return ast
+         ir.merge(IR.load(file))
+      return ir
 
-   def output_and_return_ast(self):
+   def output_and_return_ir(self):
       """writes output if the 'output' attribute is set, then returns"""
       output = getattr(self, 'output', None)
       if output:
-         self.ast.save(output)
-      return self.ast
+         self.ir.save(output)
+      return self.ir
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
       """The process method provides the interface to be implemented by subclasses.
       
       Commonly used arguments are 'input' and 'output'. If 'input' is defined,
@@ -119,13 +119,13 @@ class Processor(Parametrized):
 
       # override default parameter values
       self.set_parameters(kwds)
-      # merge in ast from 'input' parameter if given
-      self.ast = self.merge_input(ast)
+      # merge in IR from 'input' parameter if given
+      self.ir = self.merge_input(ir)
 
       # do the real work here...
       
-      # write to output (if given) and return ast
-      return self.output_and_return_ast()
+      # write to output (if given) and return IR
+      return self.output_and_return_ir()
 
 class Composite(Processor):
    """A Composite processor."""
@@ -139,14 +139,14 @@ class Composite(Processor):
       if processors: self.processors = processors
       self.set_parameters(kwds)
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
       """apply a list of processors. The 'input' value is passed to the first
       processor only, the 'output' to the last. 'verbose' and 'debug' are
       passed down if explicitely given as named values.
       All other keywords are ignored."""
 
       if not self.processors:
-         return super(Composite, self).process(ast, **kwds)
+         return super(Composite, self).process(ir, **kwds)
 
       self.set_parameters(kwds)
 
@@ -157,7 +157,7 @@ class Composite(Processor):
          if self.verbose: my_kwds['verbose'] = self.verbose
          if self.debug: my_kwds['debug'] = self.debug
          if self.profile: my_kwds['profile'] = self.profile
-         return self.processors[0].process(ast, **my_kwds)
+         return self.processors[0].process(ir, **my_kwds)
 
       # more than one processor...
       # call the first, passing the 'input' parameter, if present
@@ -166,7 +166,7 @@ class Composite(Processor):
       if self.verbose: my_kwds['verbose'] = self.verbose
       if self.debug: my_kwds['debug'] = self.debug
       if self.profile: my_kwds['profile'] = self.profile
-      ast = self.processors[0].process(ast, **my_kwds)
+      ir = self.processors[0].process(ir, **my_kwds)
 
       # deal with all between the first and the last;
       # they only get 'verbose', 'debug', and 'profile' flags
@@ -176,21 +176,21 @@ class Composite(Processor):
       if self.profile: my_kwds['profile'] = self.profile
       if len(self.processors) > 2:
          for p in self.processors[1:-1]:
-            ast = p.process(ast, **my_kwds)
+            ir = p.process(ir, **my_kwds)
 
       # call the last, passing the 'output' parameter, if present
       if self.output: my_kwds['output'] = self.output
-      ast = self.processors[-1].process(ast, **my_kwds)
+      ir = self.processors[-1].process(ir, **my_kwds)
 
-      return ast
+      return ir
    
 class Store(Processor):
    """Store is a convenience class useful to write out the intermediate
-   state of the ast within a pipeline such as represented by the 'Composite'"""
+   state of the IR within a pipeline such as represented by the 'Composite'"""
 
-   def process(self, ast, **kwds):
-      """Simply store the current ast in the 'output' file."""
+   def process(self, ir, **kwds):
+      """Simply store the current IR in the 'output' file."""
 
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
-      return self.output_and_return_ast()
+      self.ir = self.merge_input(ir)
+      return self.output_and_return_ir()

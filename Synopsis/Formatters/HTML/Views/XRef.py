@@ -81,7 +81,7 @@ class XRef(View):
       file_link = rel(self.filename(), file_link) + "#%d"%line
       # Try and make a descriptive
       desc = ''
-      type = self.processor.ast.types().get(scope)
+      type = self.processor.ir.types.get(scope)
       if isinstance(type, Type.Declared):
          desc = ' ' + type.declaration().type()
       # Try and find a link to the scope
@@ -118,14 +118,14 @@ class XRef(View):
       self.write(entity('a', '', name=Util.quote(escape(jname))))
       desc = ''
       decl = None
-      type = self.processor.ast.types().get(name)
+      type = self.processor.ir.types.get(name)
       if isinstance(type, Type.Declared):
          decl = type.declaration()
          desc = self.describe_decl(decl)
       self.write(entity('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
-         type = self.processor.ast.types().get(name, None)
+         type = self.processor.ir.types.get(name, None)
          if isinstance(type, Type.Declared):
             link = self.directory_layout.link(type.declaration())
             self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')

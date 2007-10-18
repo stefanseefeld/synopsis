@@ -12,19 +12,19 @@ class Previous(Processor, AST.Visitor):
      """A class that maps comments that begin with '<' to the previous
      declaration"""
 
-     def process(self, ast, **kwds):
+     def process(self, ir, **kwds):
           """decorates process() to initialise last and laststack"""
 
           self.set_parameters(kwds)
-          self.ast = self.merge_input(ast)
+          self.ir = self.merge_input(ir)
 
           self.last = None
           self.__laststack = []
-          for decl in ast.declarations():
+          for decl in ir.declarations:
                decl.accept(self)
                self.last = decl
 
-          return self.output_and_return_ast()
+          return self.output_and_return_ir()
 
      def push(self):
           """decorates push() to also push 'last' onto 'laststack'"""

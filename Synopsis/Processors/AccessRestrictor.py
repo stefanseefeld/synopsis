@@ -1,4 +1,3 @@
-# $Id: AccessRestrictor.py,v 1.3 2003/11/11 06:03:59 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -23,18 +22,18 @@ class AccessRestrictor(Processor, AST.Visitor):
       self.__scopestack = []
       self.__currscope = []
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
       if self.access is not None:
 
-         for decl in ast.declarations():
+         for decl in ir.declarations:
             decl.accept(self)
-         ast.declarations()[:] = self.__currscope
+         ir.declarations()[:] = self.__currscope
 
-      return self.output_and_return_ast()
+      return self.output_and_return_ir()
 
    def push(self):
 
