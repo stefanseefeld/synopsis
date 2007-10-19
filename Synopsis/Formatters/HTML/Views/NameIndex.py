@@ -70,10 +70,10 @@ class NameIndex(View):
 
         dict = {}
         def hasher(type):
-            name = type.name()
+            name = type.name
             try: key = name[-1][0]
             except:
-                print 'name:',name, 'type:',repr(type)
+                print 'name:',name, 'type:',repr(type), id(type)
                 raise
             if key >= 'a' and key <= 'z': key = chr(ord(key) - 32)
             if dict.has_key(key): dict[key].append(type)
@@ -81,11 +81,11 @@ class NameIndex(View):
         # Fill the dict
         [hasher(t) for t in self.processor.ir.types.values()
          if isinstance(t, Type.Declared) and
-         not isinstance(t.declaration(), ASG.Builtin)]
+         not isinstance(t.declaration, ASG.Builtin)]
 
         # Now sort the dict
         def name_cmp(a,b):
-            a, b = a.name(), b.name()
+            a, b = a.name, b.name
             res = cmp(a[-1],b[-1])
             if res == 0: res = cmp(a,b)
             return res
@@ -97,14 +97,14 @@ class NameIndex(View):
     def _process_item(self, type):
         """Process the given name for output"""
 
-        name = type.name()
-        decl = type.declaration() # non-declared types are filtered out
+        name = type.name
+        decl = type.declaration # non-declared types are filtered out
         if isinstance(decl, ASG.Function):
-            realname = escape(decl.realname()[-1]) + '()'
+            realname = escape(decl.real_name[-1]) + '()'
         else:
             realname = escape(name[-1])
         self.write('\n')
         title = escape('::'.join(name))
-        type = decl.type()
+        type = decl.type
         name = self.reference(name, (), realname, title=title)+' '+type
         self.write(div('nameindex-item', name))

@@ -102,9 +102,9 @@ class TOC(ASG.Visitor):
     
    def visit_declaration(self, decl):
 
-      file = decl.file()
-      entry = TOC.Entry(decl.name(), self.linker.link(decl),
-                        file and file.annotations['language'] or '', "decl")
+      file = decl.file
+      entry = TOC.Entry(decl.name, self.linker.link(decl),
+                        file and file.annotations['language'] or '', 'decl')
       self.insert(entry)
 
    def visit_forward(self, decl):

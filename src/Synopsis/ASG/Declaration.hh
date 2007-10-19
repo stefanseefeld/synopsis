@@ -56,14 +56,14 @@ public:
   Declaration(const Python::Object &o, bool check = true)
     : Python::Object(o) { if (check) assert_type("Declaration");}
 
-  SourceFile file() const { return narrow<SourceFile>(attr("file")());}
-  long line() const { return narrow<long>(attr("line")());}
-  std::string language() const { return narrow<std::string>(attr("language")());}
-  std::string type() const { return narrow<std::string>(attr("type")());}
-  ScopedName name() const { return attr("name")();}
+  SourceFile file() const { return narrow<SourceFile>(attr("file"));}
+  long line() const { return narrow<long>(attr("line"));}
+  std::string language() const { return narrow<std::string>(attr("language"));}
+  std::string type() const { return narrow<std::string>(attr("type"));}
+  ScopedName name() const { return attr("name");}
   Python::Dict annotations() { return attr("annotations");}
   Access accessibility() const 
-  { return static_cast<Access>(narrow<long>(attr("accessibility")()));}
+  { return static_cast<Access>(narrow<long>(attr("accessibility")));}
   void accessibility(Access a) const 
   { attr("accessibility")(Python::Tuple(static_cast<long>(a)));}
 
@@ -92,8 +92,8 @@ public:
   Macro(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Macro");}
 
-  Python::List parameters() { return attr("parameters")();}
-  std::string text() { return narrow<std::string>(attr("text")());}
+  Python::List parameters() { return attr("parameters");}
+  std::string text() { return narrow<std::string>(attr("text"));}
 
   virtual void accept(Visitor *v) { v->visit_macro(this);}
 };
@@ -126,7 +126,7 @@ public:
   Scope(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Scope");}
 
-  Python::List declarations() const { return attr("declarations")();}
+  Python::List declarations() const { return attr("declarations");}
 
   virtual void accept(Visitor *v) { v->visit_scope(this);}
 };
@@ -194,9 +194,9 @@ public:
     : Declaration(o, false) { if (check) assert_type("Typedef");}
 
   //. Returns the Type object this typedef aliases
-  Type alias() const { return attr("alias")();}
+  Type alias() const { return attr("alias");}
   //. Returns true if the Type object was constructed inside the typedef
-  bool constructed() const { return narrow<bool>(attr("constr")());}
+  bool constructed() const { return narrow<bool>(attr("constr"));}
 
   virtual void accept(Visitor *v) { v->visit_typedef(this);}
 };
@@ -212,7 +212,7 @@ public:
     : Declaration(o, false) { if (check) assert_type("Enumerator");}
 
   //. Returns the value of this enumerator
-  std::string value() const { return narrow<std::string>(attr("value")());}
+  std::string value() const { return narrow<std::string>(attr("value"));}
 
   virtual void accept(Visitor *v) { v->visit_enumerator(this);}
 };
@@ -228,7 +228,7 @@ public:
     : Declaration(o, false) { if (check) assert_type("Enum");}
 
   //. Returns the vector of Enumerators
-  Python::List enumerators() { return attr("enumerators")();}
+  Python::List enumerators() { return attr("enumerators");}
 
   virtual void accept(Visitor *v) { v->visit_enum(this);}
 };
@@ -242,11 +242,11 @@ public:
     : Declaration(o, false) { if (check) assert_type("Variable");}
 
   //. Returns the Type object of this variable
-  Type vtype() const { return attr("vtype")();}
+  Type vtype() const { return attr("vtype");}
   //. Returns true if the Type object was constructed inside the variable
-  bool constructed() const { return attr("constr")();}
+  bool constructed() const { return attr("constr");}
   //. Returns the array sizes vector
-  Python::List sizes() const { return attr("sizes")();}
+  Python::List sizes() const { return attr("sizes");}
 
   virtual void accept(Visitor *v) { v->visit_variable(this);}
 };
@@ -260,9 +260,9 @@ public:
     : Declaration(o, false) { if (check) assert_type("Const");}
 
   //. Returns the Type object of this const
-  Type ctype() const { return attr("ctype")();}
+  Type ctype() const { return attr("ctype");}
   //. Returns the value of this enumerator
-  std::string value() const { return narrow<std::string>(attr("value")());}
+  std::string value() const { return narrow<std::string>(attr("value"));}
 
   virtual void accept(Visitor *v) { v->visit_const(this);}
 };
@@ -274,11 +274,11 @@ public:
   Parameter(const Python::Object &o, bool check = true)
     : Python::Object(o) { if (check) assert_type("Synopsis.ASG", "Parameter");}
 
-  Modifiers premodifiers() const { return narrow<Modifiers>(attr("premodifiers")());}
-  Modifiers postmodifiers() const { return narrow<Modifiers>(attr("postmodifiers")());}
-  Type type() const { return narrow<Type>(attr("type")());}
-  std::string name() const { return narrow<std::string>(attr("identifier")());}
-  std::string value() const { return narrow<std::string>(attr("value")());}
+  Modifiers premodifiers() const { return narrow<Modifiers>(attr("premodifiers"));}
+  Modifiers postmodifiers() const { return narrow<Modifiers>(attr("postmodifiers"));}
+  Type type() const { return narrow<Type>(attr("type"));}
+  std::string name() const { return narrow<std::string>(attr("identifier"));}
+  std::string value() const { return narrow<std::string>(attr("value"));}
 
   virtual void accept(Visitor *v) { v->visit_parameter(this);}
 };
@@ -300,13 +300,13 @@ public:
 //   typedef std::vector<std::string> Mods;
 
   //. Returns the return Type
-  Type return_type() const { return attr("returnType")();}
+  Type return_type() const { return attr("return_type");}
 
   //. Returns the real name of this function
-  ScopedName real_name() const { return attr("realname")();}
+  ScopedName real_name() const { return attr("real_name");}
 
   //. Returns the vector of parameters
-  Parameters parameters() const { return attr("parameters")();}
+  Parameters parameters() const { return attr("parameters");}
 
   //. Returns the Template object if this is a template
 //   Types::Template* template_type()

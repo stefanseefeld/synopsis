@@ -11,7 +11,7 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import ASG, Type, Util
 from Synopsis.DocString import DocString
-import sys, getopt, os, os.path, string, re
+import sys, getopt, os, os.path, re
 
 
 _tags = re.compile(r'@(?!(table|item|samp|end))')
@@ -33,8 +33,8 @@ class MenuMaker(ASG.Visitor):
    def end(self): self.write('@end menu\n')
    def visit_declaration(self, node):
 
-      name = escape(Util.dotName(node.name(), self.__scope))
-      self.write('* ' + name + '::\t' + node.type() + '\n')
+      name = escape(Util.dotName(node.name, self.__scope))
+      self.write('* ' + name + '::\t' + node.type + '\n')
 
    visit_group = visit_declaration
    visit_enum = visit_declaration
@@ -81,36 +81,36 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
    def visit_base_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name())
-      self.__type_label = Util.ccolonName(type.name())
+      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = Util.ccolonName(type.name)
         
    def visit_unknown(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name())
-      self.__type_label = Util.ccolonName(type.name(), self.scope())
+      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = Util.ccolonName(type.name, self.scope())
         
    def visit_declared(self, type):
 
-      self.__type_label = Util.ccolonName(type.name(), self.scope())
-      self.__type_ref = Util.ccolonName(type.name())
+      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_ref = Util.ccolonName(type.name)
         
    def visit_modifier(self, type):
 
-      type.alias().accept(self)
-      self.__type_ref = string.join(type.premod()) + " " + self.__type_ref + " " + string.join(type.postmod())
-      self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
+      type.alias.accept(self)
+      self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
+      self.__type_label = ''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod)
             
    def visit_parametrized(self, type):
 
-      if type.template():
-         type.template().accept(self)
-         type_label = self.__type_label + "<"
-      else: type_label = "(unknown)<"
+      if type.template:
+         type.template.accept(self)
+         type_label = self.__type_label + '<'
+      else: type_label = '(unknown)<'
       parameters_label = []
-      for p in type.parameters():
+      for p in type.parameters:
          p.accept(self)
          parameters_label.append(self.__type_label)
-      self.__type_label = type_label + string.join(parameters_label, ", ") + ">"
+      self.__type_label = type_label + ', '.join(parameters_label) + '>'
 
    def visit_function_type(self, type):
 
@@ -122,21 +122,21 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
       
    def visit_declarator(self, node):
 
-      self.__declarator = node.name()
-      for i in node.sizes():
-         self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
+      self.__declarator = node.name
+      for i in node.sizes:
+         self.__declarator[-1] = self.__declarator[-1] + '[%d]'%i
 
    def visit_typedef(self, typedef):
 
-      #self.write('@node ' + self.decl_label(typedef.name()) + '\n')
-      self.write('@deftp ' + typedef.type() + ' {' + self.format_type(typedef.alias()) + '} {' + self.decl_label(typedef.name()) + '}\n')
+      #self.write('@node ' + self.decl_label(typedef.name) + '\n')
+      self.write('@deftp ' + typedef.type + ' {' + self.format_type(typedef.alias) + '} {' + self.decl_label(typedef.name) + '}\n')
       self.format_comments(typedef)
       self.write('@end deftp\n')
 
    def visit_variable(self, variable):
 
-      #self.write('@node ' + self.decl_label(variable.name()) + '\n')
-      self.write('@deftypevr {' + variable.type() + '} {' + self.format_type(variable.vtype()) + '} {' + self.decl_label(variable.name()) + '}\n')
+      #self.write('@node ' + self.decl_label(variable.name) + '\n')
+      self.write('@deftypevr {' + variable.type + '} {' + self.format_type(variable.vtype) + '} {' + self.decl_label(variable.name) + '}\n')
       #FIXME !: how can values be represented in texinfo ?
       self.format_comments(variable)
       self.write('@end deftypevr\n')
@@ -147,112 +147,114 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
    def visit_module(self, module):
 
-      #self.write('@node ' + self.decl_label(module.name()) + '\n')
-      self.write('@deftp ' + module.type() + ' ' + self.decl_label(module.name()) + '\n')
+      #self.write('@node ' + self.decl_label(module.name) + '\n')
+      self.write('@deftp ' + module.type + ' ' + self.decl_label(module.name) + '\n')
       self.format_comments(module)
-      self.scope().append(module.name()[-1])
+      self.scope().append(module.name[-1])
       #menu = MenuMaker(self.scope(), self.__os)
       #menu.start()
-      #for declaration in module.declarations(): declaration.accept(menu)
+      #for declaration in module.declarations: declaration.accept(menu)
       #menu.end()
-      for declaration in module.declarations(): declaration.accept(self)
+      for declaration in module.declarations: declaration.accept(self)
       self.scope().pop()
       self.write('@end deftp\n')
 
-   def visit_class(self, clas):
+   def visit_class(self, class_):
 
-      #self.write('@node ' + self.decl_label(clas.name()) + '\n')
-      self.write('@deftp ' + clas.type() + ' ' + self.decl_label(clas.name()) + '\n')
-      if len(clas.parents()):
+      #self.write('@node ' + self.decl_label(clas.name) + '\n')
+      self.write('@deftp ' + class_.type + ' ' + self.decl_label(class_.name) + '\n')
+      if len(class_.parents):
          self.write('parents:')
          first = 1
-         for parent in clas.parents():
+         for parent in class_.parents:
             if not first: self.write(', ')
             else: self.write(' ')
             parent.accept(self)
          self.write('\n')
-      self.format_comments(clas)
-      self.scope().append(clas.name()[-1])
+      self.format_comments(class_)
+      self.scope().append(class_.name[-1])
       #menu = MenuMaker(self.scope(), self.__os)
       #menu.start()
-      #for declaration in clas.declarations(): declaration.accept(menu)
+      #for d in class_.declarations: d.accept(menu)
       #menu.end()
-      for declaration in clas.declarations(): declaration.accept(self)
+      for d in class_.declarations:
+         d.accept(self)
       self.scope().pop()
       self.write('@end deftp\n')
 
    def visit_inheritance(self, inheritance):
 
       #map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
-      #self.entity("classname", Util.ccolonName(inheritance.parent().name(), self.scope()))
+      #self.entity("classname", Util.ccolonName(inheritance.parent().name, self.scope()))
       self.write('parent class')
 
    def visit_parameter(self, parameter):
 
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier())
-      parameter.type().accept(self)
+      #map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier)
+      parameter.type.accept(self)
       label = self.write('{' + self.type_label() + '}')
-      label = self.write(' @var{' + parameter.identifier() + '}')
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier())
+      label = self.write(' @var{' + parameter.name + '}')
+      #map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier)
 
    def visit_function(self, function):
 
-      ret = function.returnType()
+      ret = function.return_type
       if ret:
          ret.accept(self)
          ret_label = '{' + self.type_label() + '}'
       else:
          ret_label = '{}'
-      #self.write('@node ' + self.decl_label(function.realname()) + '\n')
-      self.write('@deftypefn ' + function.type() + ' ' + ret_label + ' ' + self.decl_label(function.realname()) + ' (')
+      #self.write('@node ' + self.decl_label(function.real_name) + '\n')
+      self.write('@deftypefn ' + function.type + ' ' + ret_label + ' ' + self.decl_label(function.real_name) + ' (')
       first = 1
-      for parameter in function.parameters():
+      for parameter in function.parameters:
          if not first: self.write(', ')
          else: self.write(' ')
          parameter.accept(self)
          first = 0
       self.write(')\n')
-      #    map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions())
+      #    map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions)
       self.format_comments(function)
       self.write('@end deftypefn\n')
 
    def visit_operation(self, operation):
 
-      ret = operation.returnType()
+      ret = operation.return_type
       if ret:
          ret.accept(self)
          ret_label = '{' + self.type_label() + '}'
       else:
          ret_label = '{}'
       try:
-         #self.write('@node ' + self.decl_label(operation.name()) + '\n')
-         self.write('@deftypeop ' + operation.type() + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.realname()) + ' (')
+         #self.write('@node ' + self.decl_label(operation.name) + '\n')
+         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
       except:
-         print operation.realname()
+         print operation.real_name
          sys.exit(0)
       first = 1
-      for parameter in operation.parameters():
+      for parameter in operation.parameters:
          if not first: self.write(', ')
          else: self.write(' ')
          parameter.accept(self)
          first = 0
       self.write(')\n')
-      #    map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions())
+      #    map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions)
       self.format_comments(operation)
       self.write('@end deftypeop\n')
 
    def visit_enumerator(self, enumerator):
 
-      self.write('@deftypevr {' + enumerator.type() + '} {} {' + self.decl_label(enumerator.name()) + '}')
+      self.write('@deftypevr {' + enumerator.type + '} {} {' + self.decl_label(enumerator.name) + '}')
       #FIXME !: how can values be represented in texinfo ?
-      if enumerator.value(): self.write('\n')
+      if enumerator.value: self.write('\n')
       else: self.write('\n')
       self.format_comments(enumerator)
       self.write('@end deftypevr\n')
 
    def visit_enum(self, enum):
-      #self.write('@node ' + self.decl_label(enum.name()) + '\n')
-      self.write('@deftp ' + enum.type() + ' ' + self.decl_label(enum.name()) + '\n')
+      #self.write('@node ' + self.decl_label(enum.name) + '\n')
+      self.write('@deftp ' + enum.type + ' ' + self.decl_label(enum.name) + '\n')
       self.format_comments(enum)
-      for enumerator in enum.enumerators(): enumerator.accept(self)
+      for enumerator in enum.enumerators:
+         enumerator.accept(self)
       self.write('@end deftp\n')

@@ -162,57 +162,57 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
    def visit_base_type(self, type):
       "Sets the label to be a reference to the type's name"
 
-      self.__type_label = self.reference(type.name())
+      self.__type_label = self.reference(type.name)
         
    def visit_unknown(self, type):
       "Sets the label to be a reference to the type's link"
 
-      self.__type_label = self.reference(type.link())
+      self.__type_label = self.reference(type.link)
         
    def visit_declared(self, type):
       "Sets the label to be a reference to the type's name"
 
-      self.__type_label = self.reference(type.name())
+      self.__type_label = self.reference(type.name)
 
    def visit_dependent(self, type):
       "Sets the label to be the type's name (which has no proper scope)"
 
-      self.__type_label = type.name()[-1]
+      self.__type_label = type.name[-1]
         
    def visit_modifier(self, type):
       "Adds modifiers to the formatted label of the modifier's alias"
 
-      alias = self.format_type(type.alias())
+      alias = self.format_type(type.alias)
       def amp(x):
          if x == '&': return '&amp;'
          return x
-      pre = ''.join(['%s&#160;'%amp(x) for x in type.premod()])
-      post = ''.join([amp(x) for x in type.postmod()])
+      pre = ''.join(['%s&#160;'%amp(x) for x in type.premod])
+      post = ''.join([amp(x) for x in type.postmod])
       self.__type_label = "%s%s%s"%(pre,alias,post)
             
    def visit_parametrized(self, type):
       "Adds the parameters to the template name in angle brackets"
 
-      if type.template():
-         type_label = self.reference(type.template().name())
+      if type.template:
+         type_label = self.reference(type.template.name)
       else:
          type_label = "(unknown)"
-      params = map(self.format_type, type.parameters())
+      params = [self.format_type(p) for p in type.parameters]
       self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(params))
 
    def visit_template(self, type):
       "Labs the template with the parameters"
 
       self.__type_label = "template&lt;%s&gt;"%(
-         ','.join(['typename %s'%self.format_type(p) for p in type.parameters()])
+         ','.join(['typename %s'%self.format_type(p) for p in type.parameters])
          )
 
    def visit_function_type(self, type):
       "Labels the function type with return type, name and parameters"
       
-      ret = self.format_type(type.returnType())
-      params = map(self.format_type, type.parameters())
-      pre = ''.join(type.premod())
+      ret = self.format_type(type.return_type)
+      params = map(self.format_type, type.parameters)
+      pre = ''.join(type.premod)
       if self.__id_holder:
          ident = self.__id_holder[0]
          del self.__id_holder[0]

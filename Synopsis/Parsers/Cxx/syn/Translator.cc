@@ -524,7 +524,7 @@ void Translator::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 
   PyDict_SetItemString(annotations, "comments", comments);
   // Also set the accessability..
-  PyObject_CallMethod(pydecl, "set_accessibility", "i", int(cdecl->access()));
+  PyObject_SetAttrString(pydecl, "accessibility", PyInt_FromLong(int(cdecl->access())));
   Py_DECREF(annotations);
   Py_DECREF(comments);
 }
@@ -650,7 +650,7 @@ PyObject *Translator::Scope(AST::Scope* decl)
   scope = PyObject_CallMethod(m_ast_module, "Scope", "OiOO",
                               file = m->py(decl->file()), decl->line(),
                               type = m->py(decl->type()), name = m->Tuple(decl->name()));
-  PyObject *decls = PyObject_CallMethod(scope, "declarations", 0);
+  PyObject *decls = PyObject_GetAttrString(scope, "declarations");
   PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
   addComments(scope, decl);
   Py_DECREF(file);
@@ -667,7 +667,7 @@ PyObject *Translator::Namespace(AST::Namespace* decl)
   module = PyObject_CallMethod(m_ast_module, "Module", "OiOO",
                                file = m->py(decl->file()), decl->line(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name()));
-  PyObject *decls = PyObject_CallMethod(module, "declarations", 0);
+  PyObject *decls = PyObject_GetAttrString(module, "declarations");
   PyObject *new_decls = m->List(decl->declarations());
   PyObject_CallMethod(decls, "extend", "O", new_decls);
   addComments(module, decl);
@@ -701,14 +701,14 @@ PyObject *Translator::Class(AST::Class* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
   PyObject *new_decls, *new_parents;
-  PyObject *decls = PyObject_CallMethod(clas, "declarations", 0);
+  PyObject *decls = PyObject_GetAttrString(clas, "declarations");
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
-  PyObject *parents = PyObject_CallMethod(clas, "parents", 0);
+  PyObject *parents = PyObject_GetAttrString(clas, "parents");
   PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
   if (decl->template_type())
   {
-    PyObject* ttype;
-    PyObject_CallMethod(clas, "set_template", "O", ttype = m->py(decl->template_type()));
+    PyObject* ttype = m->py(decl->template_type());
+    PyObject_SetAttrString(clas, "template", ttype);
     Py_DECREF(ttype);
   }
   addComments(clas, decl);
@@ -836,12 +836,12 @@ PyObject *Translator::Function(AST::Function* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
   PyObject* new_params;
-  PyObject* params = PyObject_CallMethod(func, "parameters", 0);
+  PyObject* params = PyObject_GetAttrString(func, "parameters");
   PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {
-    PyObject* ttype;
-    PyObject_CallMethod(func, "set_template", "O", ttype = m->py(decl->template_type()));
+    PyObject* ttype = m->py(decl->template_type());
+    PyObject_SetAttrString(func, "template", ttype);
     Py_DECREF(ttype);
   }
   addComments(func, decl);
@@ -869,12 +869,12 @@ PyObject *Translator::Operation(AST::Operation* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
   PyObject* new_params;
-  PyObject* params = PyObject_CallMethod(oper, "parameters", 0);
+  PyObject* params = PyObject_GetAttrString(oper, "parameters");
   PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {
-    PyObject* ttype;
-    PyObject_CallMethod(oper, "set_template", "O", ttype = m->py(decl->template_type()));
+    PyObject* ttype = m->py(decl->template_type());
+    PyObject_SetAttrString(oper, "template", ttype);
     Py_DECREF(ttype);
   }
   addComments(oper, decl);

@@ -104,7 +104,7 @@ class ASGTranslator:
             self.handlers[symbol.decorator] = self.handle_decorator
 
         self._any_type = Type.Base('Python',('',))
-        self._sourcefile = scope.file()
+        self._sourcefile = scope.file
         self._col = 0
         self._lineno = 1
         self._parameters = []
@@ -242,7 +242,7 @@ class ASGTranslator:
         def_token = nodes[0 + offset]
         self.handle_token(def_token[1])
         name_token = nodes[1 + offset]
-        name = tuple(self._scopes[-1].name() + (name_token[1],))
+        name = tuple(self._scopes[-1].name + (name_token[1],))
         self.handle_name_as_xref(name, name_token[1])
         # Handle the parameters.
         self.handle(nodes[2 + offset])
@@ -253,7 +253,7 @@ class ASGTranslator:
         else:
             function = ASG.Function(self._sourcefile, self._lineno, 'function', '',
                                     self._any_type, '', name, name[-1])
-        function.parameters().extend(self._parameters)
+        function.parameters.extend(self._parameters)
 
         colon_token = nodes[3 + offset]
         self.handle_token(colon_token[1])
@@ -263,7 +263,7 @@ class ASGTranslator:
         if docstring:
             function.annotations['doc'] = docstring
 
-        self._scopes[-1].declarations().append(function)
+        self._scopes[-1].declarations.append(function)
 
         # Don't traverse the function body, since the ASG doesn't handle
         # local declarations anyways.
@@ -293,7 +293,7 @@ class ASGTranslator:
                     #       to set its value.
                     old = self._parameters[-1]
                     parameter = ASG.Parameter('', self._any_type, '',
-                                              old.identifier(),
+                                              old.name,
                                               stringify(args[0]))
                     self._parameters[-1] = parameter
                 elif args[0][0] == token.DOUBLESTAR:
@@ -323,7 +323,7 @@ class ASGTranslator:
         class_token = nodes[0]
         self.handle_token(class_token[1])
         name_token = nodes[1]
-        name = tuple(self._scopes[-1].name() + (name_token[1],))        
+        name = tuple(self._scopes[-1].name + (name_token[1],))        
         self.handle_name_as_xref(name, name_token[1])
         base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
         self.handle_tokens(nodes[2])
@@ -344,7 +344,7 @@ class ASGTranslator:
                     #        It assumes that names are either local or fully qualified.
                     if len(base) == 1:
                         # Name is unqualified. Qualify it.
-                        base = self._scopes[-1].name() + tuple(base)
+                        base = self._scopes[-1].name + tuple(base)
                     if self._types.has_key(base):
                         base = self._types[base]
                     else:
@@ -359,12 +359,12 @@ class ASGTranslator:
             body = nodes[3]
 
         class_ = ASG.Class(self._sourcefile, self._lineno, 'class', name)
-        class_.parents().extend(bases)
+        class_.parents.extend(bases)
         docstring = self.extract_docstring(nodes[-1])
         if docstring:
             class_.annotations['doc'] = docstring
-        self._scopes[-1].declarations().append(class_)
-        self._types[class_.name()] = Type.Declared('Python', class_.name(), class_)
+        self._scopes[-1].declarations.append(class_)
+        self._types[class_.name] = Type.Declared('Python', class_.name, class_)
 
         self._scopes.append(class_)
         self.handle(body)

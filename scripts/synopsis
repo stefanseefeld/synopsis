@@ -8,7 +8,7 @@
 
 from Synopsis import config
 from Synopsis.getoptions import get_options
-from Synopsis import AST
+from Synopsis import IR
 from Synopsis.Processor import Processor, Composite, Error
 from Synopsis.Processors import *
 
@@ -205,7 +205,7 @@ def make_processor(argv):
 
 def main():
     processor = make_processor(sys.argv[1:])
-    processor.process(AST.AST())
+    processor.process(IR.IR())
 
 if __name__ == '__main__':
 

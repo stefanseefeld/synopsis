@@ -74,7 +74,7 @@ class RST(Formatter):
                     if ref.resolved or not ref.hasattr("refname"):
                         return
                     name = ref['name']
-                    uri = formatter.lookup_symbol(name, decl.name())
+                    uri = formatter.lookup_symbol(name, decl.name)
                     if uri:
                         ref.resolved = 1
                         ref['refuri'] = rel(view.filename(), uri)

@@ -40,7 +40,7 @@ class ModuleTree(Tree):
         self.write_navigation_bar()
         # FIXME: see HTML.Formatter
         module = self.processor.ir.declarations[0]
-        self.index_module(module, module.name())
+        self.index_module(module, module.name)
         self.end_tree()
         self.end_file()
 
@@ -50,7 +50,7 @@ class ModuleTree(Tree):
 
     def _link_href(self, module):
 
-        return self.directory_layout.module_index(module.name())
+        return self.directory_layout.module_index(module.name)
 
     def get_children(self, decl):
 
@@ -67,7 +67,7 @@ class ModuleTree(Tree):
     def index_module(self, module, scope):
         """Write a link for this module and recursively visit child modules."""
 
-        name = module.name()
+        name = module.name
         # Find children, and sort so that compound children (packages) go first
         children = self.get_children(module)
         children.sort(lambda a,b,g=self.get_children:

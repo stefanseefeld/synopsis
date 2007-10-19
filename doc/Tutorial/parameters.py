@@ -5,17 +5,17 @@ with a listing of all parameters for inclusion into the tutorial."""
 
 from Synopsis.import_processor import import_processor
 from Synopsis.Processor import Parametrized
-import sys, string, types
+import sys, types
 
 def name_of_instance(instance):
-   name = string.split(instance.__module__, '.')
+   name = instance.__module__.split('.')
    if name[-1] != instance.__class__.__name__:
       name.append(instance.__class__.__name__)
    
    return '%s'%'.'.join(name)
 
 def id_of_instance(instance):
-   name = string.split(instance.__module__, '.')[-2:]
+   name = instance.__module__.split('.')[-2:]
    if name[-1] != instance.__class__.__name__:
       name = [name[-1], instance.__class__.__name__]
    return '%s'%'-'.join(name)

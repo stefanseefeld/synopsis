@@ -20,20 +20,20 @@ class Cxx2IDL(TypeMapper):
 
     def visit_unknown(self, unknown):
 
-        name = unknown.name()
-        if unknown.language() != "C++": return
+        name = unknown.name
+        if unknown.language != "C++": return
         if name[0][0:4] == "POA_":
             interface = map(None, name)
             interface[0] = interface[0][4:]
             unknown.resolve("IDL", name, tuple(interface))
             if self.verbose:
-               print "mapping", string.join(name, "::"), "to", string.join(interface, "::")
+               print 'mapping', '::'.join(name), 'to', '::'.join(interface)
         elif name[-1][-4:] == "_ptr" or name[-1][-4:] == "_var":
             interface = map(None, name)
             interface[-1] = interface[-1][:-4]
             unknown.resolve("IDL", name, tuple(interface))
             if self.verbose:
-               print "mapping", string.join(name, "::"), "to", string.join(interface, "::")
+               print 'mapping', '::'.join(name), 'to', '::'.join(interface)
 
 idl = Composite(IDL.Parser(),
                 Linker(Comments.Translator(filter = Comments.SSDFilter(),

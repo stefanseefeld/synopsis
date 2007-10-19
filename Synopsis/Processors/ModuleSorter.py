@@ -29,5 +29,5 @@ class ModuleSorter(Processor, ASG.Visitor):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 
-        def compare(a, b): return cmp(a.name(), b.name())
-        module.declarations().sort(compare)
+        def compare(a, b): return cmp(a.name, b.name)
+        module.declarations.sort(compare)

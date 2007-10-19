@@ -31,7 +31,7 @@ class AccessRestrictor(Processor, ASG.Visitor):
 
          for decl in ir.declarations:
             decl.accept(self)
-         ir.declarations()[:] = self.__currscope
+         ir.declarations = self.__currscope
 
       return self.output_and_return_ir()
 
@@ -51,14 +51,14 @@ class AccessRestrictor(Processor, ASG.Visitor):
 
    def visit_declaration(self, decl):
 
-      if decl.accessibility() > self.access: return
+      if decl.accessibility > self.access: return
       self.add(decl)
 
    def visit_scope(self, scope):
 
-      if scope.accessibility() > self.access: return
+      if scope.accessibility > self.access: return
       self.push()
-      for decl in scope.declarations():
+      for decl in scope.declarations:
          decl.accept(self)
-      scope.declarations()[:] = self.__currscope
+      scope.declarations = self.__currscope
       self.pop(scope)

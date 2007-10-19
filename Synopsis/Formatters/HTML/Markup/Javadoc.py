@@ -140,7 +140,7 @@ class Javadoc(Formatter):
                     name = target
                 else:
                     name = name.strip()
-                target = self.lookup_symbol(name, decl.name())
+                target = self.lookup_symbol(name, decl.name)
                 if target:
                     url = rel(view.filename(), target)
                     text += href(url, name)

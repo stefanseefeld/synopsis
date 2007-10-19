@@ -16,8 +16,8 @@ class NameMapper(Processor, ASG.Visitor):
         """Recursively visits declarations under this group/scope/etc"""
 
         self.visit_declaration(node)
-        for declaration in node.declarations():
-            declaration.accept(self)   
+        for d in node.declarations:
+            d.accept(self)   
 
 class NamePrefixer(NameMapper):
     """This class adds a prefix to all declaration and type names."""
@@ -39,10 +39,10 @@ class NamePrefixer(NameMapper):
         # Now we need to put the declarations in actual nested MetaModules
         for index in range(len(self.prefix), 0, -1):
             module = ASG.MetaModule(self.type, self.prefix[:index])
-            module.declarations().extend(self.ir.declarations)
-            self.ir.types[module.name()] = Type.Declared('',
-                                                         module.name(),
-                                                         module)
+            module.declarations.extend(self.ir.declarations)
+            self.ir.types[module.name] = Type.Declared('',
+                                                       module.name,
+                                                       module)
             self.ir.declarations[:] = [module]
 
         return self.output_and_return_ir()
@@ -51,14 +51,14 @@ class NamePrefixer(NameMapper):
         """Changes the name of this declaration and its associated type"""
 
         # Change the name of the decl
-        name = decl.name()
+        name = decl.name
         new_name = tuple(self.prefix + list(name))
-        decl.set_name(new_name)
+        decl.name = new_name
         # Change the name of the associated type
         try:
             type = self.ir.types[name]
             del self.ir.types[name]
-            type.set_name(new_name)
+            type.name = new_name
             self.ir.types[new_name] = type
         except KeyError, msg:
             if self.verbose: print "Warning: Unable to map name of type:",msg

@@ -52,7 +52,7 @@ class HeadingFormatter(Fragment):
             if types.has_key(scope):
                 ns_type = types[scope]
                 if isinstance(ns_type, Type.Declared):
-                    decl = ns_type.declaration()
+                    decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Skip modules
                         continue
@@ -72,7 +72,7 @@ class HeadingFormatter(Fragment):
             if types.has_key(scope):
                 ns_type = types[scope]
                 if isinstance(ns_type, Type.Declared):
-                    decl = ns_type.declaration()
+                    decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Only do modules
                         text.append(self.reference(scope))
@@ -85,11 +85,11 @@ class HeadingFormatter(Fragment):
         """Formats the module by linking to each parent scope in the name."""
 
         # Module details are only printed at the top of their view
-        if not module.name():
+        if not module.name:
             type, name = 'Global', 'Module'
         else:
-            type = module.type().capitalize()
-            name = self.format_name(module.name())
+            type = module.type.capitalize()
+            name = self.format_name(module.name)
         name = entity('h1', '%s %s'%(type, name))
         return name
 
@@ -98,48 +98,48 @@ class HeadingFormatter(Fragment):
 
         return self.format_module(module)
 
-    def format_class(self, clas):
+    def format_class(self, class_):
         """Formats the class by linking to each parent scope in the name."""
 
         # Calculate the module string
-        decl, module = self.format_module_of_name(clas.name())
+        decl, module = self.format_module_of_name(class_.name)
         if decl:
-            module = '%s %s'%(decl.type(), module)
+            module = '%s %s'%(decl.type, module)
             module = div('class-module', module)
         else:
             module = ''
 
         # Calculate template string
-        templ = clas.template()
+        templ = class_.template
         if templ:
-            params = templ.parameters()
+            params = templ.parameters
             params = ', '.join([self.format_parameter(p) for p in params])
             templ = div('class-template', "template &lt;%s&gt;"%params)
         else:
             templ = ''
 
         # Calculate class name string
-        type = clas.type()
-        name = self.format_name_in_module(clas.name())
+        type = class_.type
+        name = self.format_name_in_module(class_.name)
         name = div('class-name', '%s %s'%(type, name))
 
         # Calculate file-related string
-        file_name = rel(self.processor.output, clas.file().name)
+        file_name = rel(self.processor.output, class_.file.name)
         # Try the file index view first
-        file_link = self.directory_layout.file_index(clas.file().name)
+        file_link = self.directory_layout.file_index(class_.file.name)
         if self.processor.filename_info(file_link):
             file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
-            file_link = self.directory_layout.file_source(clas.file().name)
+            file_link = self.directory_layout.file_source(class_.file.name)
             if self.processor.filename_info(file_link):
                 file_ref = href(rel(self.formatter.filename(), file_link), file_name)
             else:
                 file_ref = file_name
 
         links = div('file', 'File: %s'%file_ref)
-        if self.xref: links += ' %s'%div('xref', self.xref.format_class(clas))
-        if self.source: links += ' %s'%div('source', self.source.format_class(clas))
+        if self.xref: links += ' %s'%div('xref', self.xref.format_class(class_))
+        if self.source: links += ' %s'%div('source', self.source.format_class(class_))
         info = div('links', links)
 
         return '%s%s%s%s'%(module, templ, name, info)
@@ -149,16 +149,16 @@ class HeadingFormatter(Fragment):
 
         chunks = []
         # Premodifiers
-        chunks.extend([span("keyword", m) for m in parameter.premodifier()])
+        chunks.extend([span("keyword", m) for m in parameter.premodifier])
         # Param Type
-        typestr = self.format_type(parameter.type())
+        typestr = self.format_type(parameter.type)
         if typestr: chunks.append(typestr)
         # Postmodifiers
-        chunks.extend([span("keyword", m) for m in parameter.postmodifier()])
-        # Param identifier
-        if len(parameter.identifier()) != 0:
-            chunks.append(span("variable", parameter.identifier()))
+        chunks.extend([span("keyword", m) for m in parameter.postmodifier])
+        # Param name
+        if len(parameter.name) != 0:
+            chunks.append(span("variable", parameter.name))
         # Param value
-        if len(parameter.value()) != 0:
-            chunks.append(" = " + span("value", parameter.value()))
+        if len(parameter.value) != 0:
+            chunks.append(" = " + span("value", parameter.value))
         return ' '.join(chunks)

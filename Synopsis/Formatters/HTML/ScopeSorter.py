@@ -71,14 +71,14 @@ class ScopeSorter(Parametrized):
       self.__scope = scope
       self.__sorted_sections = 0
       self.__sorted_secnames = 0
-      scopename = scope.name()
-      for decl in scope.declarations():
+      scopename = scope.name
+      for decl in scope.declarations:
          if isinstance(decl, ASG.Forward): continue
          if isinstance(decl, ASG.Builtin): continue
          if isinstance(decl, ASG.Group) and decl.__class__.__name__ == 'Group':
             self._handle_group(decl)
             continue
-         name, section = decl.name(), self._section_of(decl)
+         name, section = decl.name, self._section_of(decl)
          if len(name) > 1 and name[:-1] != scopename: continue
          self._add_decl(decl, name, section)
       self._sort_sections()
@@ -95,11 +95,11 @@ class ScopeSorter(Parametrized):
 
    def _section_of(self, decl):
 
-      section = string.capitalize(decl.type())
+      section = decl.type.capitalize()
       if self.struct_as_class and section == 'Struct':
          section = 'Class'
       if decl.accessibility != ASG.DEFAULT:
-         section = _axs_str[decl.accessibility()]+section
+         section = _axs_str[decl.accessibility] + section
       return section
 
    def _sort_sections(self): pass
@@ -114,10 +114,10 @@ class ScopeSorter(Parametrized):
    def _handle_group(self, group):
       """Handles a group"""
 
-      section = group.name()[-1]
-      self._add_decl(group, group.name(), section)
-      for decl in group.declarations():
-         name = decl.name()
+      section = group.name[-1]
+      self._add_decl(group, group.name, section)
+      for decl in group.declarations:
+         name = decl.name
          self._add_decl(decl, name, section)
 
    def sort_sections(self):
@@ -126,7 +126,7 @@ class ScopeSorter(Parametrized):
       if self.__sorted_sections: return
       for children in self.__section_dict.values()+[self.__children]:
          dict = {}
-         for child in children: dict[child.name()] = child
+         for child in children: dict[tuple(child.name)] = child
          names = dict.keys()
          names.sort()
          del children[:]

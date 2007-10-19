@@ -129,10 +129,10 @@ class DirectoryLayout (TOC.Linker):
         
         if isinstance(decl, ASG.Scope):
             # This is a class or module, so it has its own file
-            return self.scope(decl.name())
+            return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it
-        filename = self.scope(decl.name()[:-1])
-        anchor = escape(decl.name()[-1].replace(' ','.'))
+        filename = self.scope(decl.name[:-1])
+        anchor = escape(decl.name[-1].replace(' ','.'))
         return filename + '#' + anchor
 
 class NestedDirectoryLayout(DirectoryLayout):

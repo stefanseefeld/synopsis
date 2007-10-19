@@ -64,13 +64,13 @@ class ModuleFilter(Processor, ASG.Visitor):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 
-        if module.name() in self.modules:
+        if module.name in self.modules:
            return
         
         self.push()
-        for decl in module.declarations():
-            decl.accept(self)
-        module.declarations()[:] = self.__currscope
+        for d in module.declarations:
+            d.accept(self)
+        module.declarations = self.__currscope
         # count the number of non-forward declarations in the current scope
         count = reduce(lambda x, y: x + y,
                        [not isinstance(x, (ASG.Forward, ASG.Builtin))

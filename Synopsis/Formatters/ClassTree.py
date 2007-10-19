@@ -129,22 +129,22 @@ class ClassTree(ASG.Visitor):
    #
 
    def visit_scope(self, scope):
-      for decl in scope.declarations():
-         decl.accept(self)
+      for d in scope.declarations:
+         d.accept(self)
 
-   def visit_class(self, clas):
+   def visit_class(self, class_):
       """Adds this class and all edges to the lists"""
-      name = clas.name()
-      self.add_class(name)
-      for inheritance in clas.parents():
-         parent = inheritance.parent()
+
+      self.add_class(class_.name)
+      for inheritance in class_.parents:
+         parent = inheritance.parent
          if hasattr(parent, 'declaration'):	
-            self.add_inheritance(parent.declaration().name(), name)
-         elif isinstance(parent, Type.Parametrized) and parent.template():
-            self.add_inheritance(parent.template().name(), name)
+            self.add_inheritance(parent.declaration.name, class_.name)
+         elif isinstance(parent, Type.Parametrized) and parent.template:
+            self.add_inheritance(parent.template.name, class_.name)
          elif isinstance(parent, Type.Unknown):
-            self.add_inheritance(parent.link(), name)
-      for decl in clas.declarations():
-         decl.accept(self)
+            self.add_inheritance(parent.link, class_.name)
+      for d in class_.declarations:
+         d.accept(self)
 
 

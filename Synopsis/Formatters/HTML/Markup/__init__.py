@@ -101,20 +101,20 @@ class Formatter(Parametrized):
     def _find_method_entry(self, name, scope):
         """Tries to find a TOC entry for a method adjacent to decl. The
         enclosing scope is found using the types dictionary, and the
-        realname()'s of all the functions compared to ref."""
+        real_name's of all the functions compared to ref."""
 
         try:
             scope = self.processor.ir.types[scope]
         except KeyError:
-            #print "No parent scope:",decl.name()[:-1]
+            #print "No parent scope:",decl.name[:-1]
             return None
         if not scope: return None
         if not isinstance(scope, Type.Declared): return None
-        scope = scope.declaration()
+        scope = scope.declaration
         if not isinstance(scope, ASG.Scope): return None
-        for decl in scope.declarations():
-            if isinstance(decl, ASG.Function):
-                if decl.realname()[-1] == name:
-                    return self.processor.toc.lookup(decl.name())
+        for d in scope.declarations:
+            if isinstance(d, ASG.Function):
+                if d.real_name[-1] == name:
+                    return self.processor.toc.lookup(d.name)
         # Failed
         return None

@@ -44,7 +44,7 @@ class ModuleIndex(View):
       linked fully scoped name, where each scope has a link to the relevant
       index."""
 
-      name = module.name()
+      name = module.name
       if not name: return 'Global Index'
       links = []
       for depth in range(0, len(name)):
@@ -61,12 +61,12 @@ class ModuleIndex(View):
       sorter.sort_section_names()
       sorter.sort_sections()
 
-      self.__filename = self.directory_layout.module_index(module.name())
-      self.__title = Util.ccolonName(module.name()) or 'Global Module'
+      self.__filename = self.directory_layout.module_index(module.name)
+      self.__title = Util.ccolonName(module.name) or 'Global Module'
       self.__title = self.__title + ' Index'
       # Create file
       self.start_file()
-      #target = rel(self.__filename, self.directory_layout.scope(module.name()))
+      #target = rel(self.__filename, self.directory_layout.scope(module.name))
       #link = href(target, self.__title, target='content')
       self.write(self.make_view_heading(module))
 
@@ -74,8 +74,8 @@ class ModuleIndex(View):
 
       # Make script to switch main frame upon load
       load_script = '<!--\n'
-      if toc[module.name()]:
-         target = rel(self.__filename, toc[module.name()].link)
+      if toc[module.name]:
+         target = rel(self.__filename, toc[module.name].link)
          load_script = load_script + 'window.parent.frames["content"].location="%s";\n'%target
       load_script = load_script + 'function go(index,detail) {\n'\
                     'window.parent.frames["index"].location=index;\n'\
@@ -96,15 +96,15 @@ class ModuleIndex(View):
             if heading:
                self.write(heading)
                heading = None
-            label = Util.ccolonName(child.name(), module.name())
+            label = Util.ccolonName(child.name, module.name)
             label = escape(label)
             label = replace_spaces(label)
             if isinstance(child, ASG.Module):
                index_url = rel(self.__filename,
-                               self.directory_layout.module_index(child.name()))
+                               self.directory_layout.module_index(child.name))
                self.write(href(index_url, label, target='detail'))
             else:
-               entry = toc[child.name()]
+               entry = toc[child.name]
                if entry:
                   url = rel(self.__filename, entry.link)
                   self.write(href(url, label, target='content'))

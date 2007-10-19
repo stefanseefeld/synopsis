@@ -17,20 +17,19 @@ class ClassHierarchySimple(Fragment):
       return '%s %s'%(self.format_modifiers(inheritance.attributes()),
                       self.format_type(inheritance.parent()))
 
-   def format_class(self, clas):
+   def format_class(self, class_):
 
       # Print out a list of the parents
       super = sub = ''
-      if clas.parents():
-         parents = map(self.format_inheritance, clas.parents())
-         super = string.join(parents, ", ")
+      if class_.parents:
+         parents = [self.format_inheritance(i) for i in class_.parents]
+         super = ', '.join(parents)
          super = div('superclasses', "Superclasses: "+super)
 
       # Print subclasses
-      subs = self.processor.class_tree.subclasses(clas.name())
+      subs = self.processor.class_tree.subclasses(class_.name)
       if subs:
-         refs = map(self.reference, subs)
-         sub = string.join(refs, ", ")
+         sub = ', '.join([self.reference(s) for s in subs])
          sub = div('subclasses', "Known subclasses: "+sub) 
 	
       return super + sub

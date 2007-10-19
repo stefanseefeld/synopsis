@@ -87,8 +87,8 @@ class Scope(View):
         self.__scopes = [self.processor.ir.declarations[0]]
         while self.__scopes:
             scope = self.__scopes.pop(0)
-            if scope.name():
-                filename = self.directory_layout.scope(scope.name())
+            if scope.name:
+                filename = self.directory_layout.scope(scope.name)
             else:
                 filename = self.root()[0]
             self.processor.register_filename(filename, self, scope)
@@ -104,7 +104,7 @@ class Scope(View):
         """Creates a view for the given scope"""
 
         # Open file and setup scopes
-        self.__scope = scope.name()
+        self.__scope = scope.name
         if self.__scope:
             self.__filename = self.directory_layout.scope(self.__scope)
         else:

@@ -64,7 +64,7 @@ class ScopeStripper(Processor, ASG.Visitor):
                 del types[name]
                 name = self.strip_name(name)
                 if name:
-                    type.set_name(name)
+                    type.name = name
                     types[name] = type
             except:
                 print "ERROR Processing:", name, types[name]
@@ -82,14 +82,14 @@ class ScopeStripper(Processor, ASG.Visitor):
         passed = 0
         if not self.__scope: return 1
         depth = len(self.__scope)
-        name = declaration.name()
+        name = declaration.name
         if name[0:depth] == self.__scope and len(name) > depth:
             if self.verbose: print "symbol", '::'.join(name),
-            declaration.set_name(name[depth:])
-            if self.verbose: print "stripped to", '::'.join(declaration.name())
+            declaration.name = name[depth:]
+            if self.verbose: print "stripped to", '::'.join(declaration.name)
             passed = 1
         if self.verbose and not passed:
-            print "symbol", '::'.join(declaration.name()), "removed"
+            print "symbol", '::'.join(declaration.name), "removed"
         return passed
 
 
@@ -99,18 +99,18 @@ class ScopeStripper(Processor, ASG.Visitor):
         if root:
             self.__in = 1
             self.__root.append(scope)
-        for declaration in scope.declarations():
+        for declaration in scope.declarations:
             declaration.accept(self)
         if root: self.__in = 0
 
 
-    def visit_class(self, clas):
+    def visit_class(self, class_):
 
-        self.visit_scope(clas)
-        templ = clas.template()
+        self.visit_scope(class_)
+        templ = class_.template
         if templ:
-            name = self.strip_name(templ.name())
-            if name: templ.set_name(name)
+            name = self.strip_name(templ.name)
+            if name: templ.name = name
 
 
     def visit_declaration(self, decl):
@@ -127,19 +127,19 @@ class ScopeStripper(Processor, ASG.Visitor):
     def visit_enum(self, enum):
 
         self.visit_declaration(enum)
-        for e in enum.enumerators():
+        for e in enum.enumerators:
             e.accept(self)
 
 
     def visit_function(self, function):
 
         self.visit_declaration(function)
-        for parameter in function.parameters():
+        for parameter in function.parameters:
             parameter.accept(self)
-        templ = function.template()
+        templ = function.template
         if templ:
-            name = self.strip_name(templ.name())
-            if name: templ.set_name(name)
+            name = self.strip_name(templ.name)
+            if name: templ.name = name
 
 
     def visit_operation(self, operation):
@@ -150,6 +150,6 @@ class ScopeStripper(Processor, ASG.Visitor):
     def visit_meta_module(self, module):
 
         self.visit_scope(module)
-        for decl in module.module_declarations():
-            name = self.strip_name(decl.name())
-            if name: decl.set_name(name)
+        for decl in module.module_declarations:
+            name = self.strip_name(decl.name)
+            if name: decl.name = name

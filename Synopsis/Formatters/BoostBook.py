@@ -11,7 +11,7 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import ASG, Type, Util
 
-import sys, getopt, os, os.path, string
+import sys, getopt, os, os.path
 
 class Formatter(Processor, Type.Visitor, ASG.Visitor):
    """
@@ -109,34 +109,34 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
    def visit_base_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name())
-      self.__type_label = Util.ccolonName(type.name())
+      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = Util.ccolonName(type.name)
         
    def visit_unknown(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name())
-      self.__type_label = Util.ccolonName(type.name(), self.scope())
+      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = Util.ccolonName(type.name, self.scope())
 
    def visit_declared(self, type):
 
-      self.__type_label = Util.ccolonName(type.name(), self.scope())
-      self.__type_ref = Util.ccolonName(type.name())
+      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_ref = Util.ccolonName(type.name)
 
    def visit_modifier(self, type):
 
-      type.alias().accept(self)
-      self.__type_ref = string.join(type.premod()) + " " + self.__type_ref + " " + string.join(type.postmod())
-      self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
+      type.alias.accept(self)
+      self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
+      self.__type_label = ''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod)
 
    def visit_parametrized(self, type):
 
-      type.template().accept(self)
+      type.template.accept(self)
       type_label = self.__type_label + "&lt;"
       parameters_label = []
-      for p in type.parameters():
+      for p in type.parameters:
          p.accept(self)
          parameters_label.append(self.__type_label)
-      self.__type_label = type_label + string.join(parameters_label, ", ") + "&gt;"
+      self.__type_label = type_label + ', '.join(parameters_label) + '&gt;'
 
    def format_type(self, type):
 
@@ -157,22 +157,22 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
    #################### ASG Visitor ###########################################
          
    def visit_declarator(self, node):
-      self.__declarator = node.name()
-      for i in node.sizes():
-         self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
+      self.__declarator = node.name
+      for i in node.sizes:
+         self.__declarator[-1] = self.__declarator[-1] + '[%d]'%i
 
    def visit_typedef(self, typedef):
 
-      self.start_entity("typedef", name=Util.ccolonName(self.scope(), typedef.name()))
-      self.write_entity("type", self.format_type(typedef.alias()))
+      self.start_entity("typedef", name=Util.ccolonName(self.scope(), typedef.name))
+      self.write_entity("type", self.format_type(typedef.alias))
       self.end_entity("typedef")
 
    def visit_variable(self, variable):
 
       self.start_entity("fieldsynopsis")
-      variable.vtype().accept(self)
+      variable.vtype.accept(self)
       self.entity("type", self.type_label())
-      self.entity("varname", variable.name()[-1])
+      self.entity("varname", variable.name[-1])
       self.end_entity("fieldsynopsis")
 
    def visit_const(self, const):
@@ -181,27 +181,27 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
    def visit_module(self, module):
 
-      self.start_entity("namespace", name=Util.ccolonName(self.scope(), module.name()))
+      self.start_entity("namespace", name=Util.ccolonName(self.scope(), module.name))
       self.write("\n")
       self.process_doc(module.annotations.get('doc', ''))
-      self.push_scope(module.name())
-      for declaration in module.declarations(): declaration.accept(self)
+      self.push_scope(module.name)
+      for declaration in module.declarations: declaration.accept(self)
       self.pop_scope()
       self.end_entity("namespace")
 
-   def visit_class(self, clas):
+   def visit_class(self, class_):
 
-      self.start_entity("class", name=Util.ccolonName(self.scope(), clas.name()))
-      # clas.type()
-      if len(clas.parents()):
-         for parent in clas.parents(): parent.accept(self)
-      self.push_scope(clas.name())
-      if clas.annotations.has_key('doc'):
+      self.start_entity("class", name=Util.ccolonName(self.scope(), class_.name))
+      # class_.type
+      for p in class_.parents:
+         p.accept(self)
+      self.push_scope(class_.name)
+      if class_.annotations.has_key('doc'):
          self.start_entity("purpose")
-         self.process_doc(clas.annotations.get['doc'])
+         self.process_doc(class_.annotations.get['doc'])
          self.end_entity("purpose")
-      for declaration in clas.declarations():
-         declaration.accept(self)
+      for d in class_.declarations:
+         d.accept(self)
       self.pop_scope()
       self.end_entity("class")
 
@@ -216,23 +216,23 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
    def visit_parameter(self, parameter):
 
-      self.start_entity("parameter", name=parameter.identifier())
-      self.write_entity("param_type", self.format_type(parameter.type()))
-      #map(lambda m, this=self: this.write_entity("modifier", m), parameter.premodifier())
-      #map(lambda m, this=self: this.write_entity("modifier", m), parameter.postmodifier())
+      self.start_entity("parameter", name=parameter.name)
+      self.write_entity("param_type", self.format_type(parameter.type))
+      #map(lambda m, this=self: this.write_entity("modifier", m), parameter.premodifier)
+      #map(lambda m, this=self: this.write_entity("modifier", m), parameter.postmodifier)
       self.end_entity("parameter")
       self.write("\n")
 
    def visit_function(self, function):
 
-      self.start_entity("function", name=Util.ccolonName(self.scope(), function.realname()))
+      self.start_entity("function", name=Util.ccolonName(self.scope(), function.real_name))
       self.do_function(function)
       self.end_entity("function")
       self.write("\n")
 
    def visit_operation(self, operation):
 
-      name = operation.name()
+      name = operation.name
       tag = None
       if len(name) > 1:
          if name[-1] == name[-2]:
@@ -243,7 +243,7 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
             self.start_entity(tag)
       if tag is None:
          tag = "method"
-         self.start_entity(tag, name=Util.ccolonName(self.scope(), operation.realname()))
+         self.start_entity(tag, name=Util.ccolonName(self.scope(), operation.real_name))
       self.do_function(operation)
       self.end_entity(tag)
       self.write("\n")
@@ -251,9 +251,9 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
    def do_function(self, func):
       """Stuff common to functions and methods, contructors, destructors"""
 
-      for parameter in func.parameters(): parameter.accept(self)
-      if func.returnType():
-         self.write_entity("type", self.format_type(func.returnType()))
+      for parameter in func.parameters: parameter.accept(self)
+      if func.return_type:
+         self.write_entity("type", self.format_type(func.return_type))
          self.write("\n")
       if func.annotations.has_key('doc'):
          self.start_entity("purpose")
@@ -261,9 +261,9 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
          self.end_entity("purpose")
          self.write("\n")
 	
-      if func.exceptions():
+      if func.exceptions:
          self.start_entity("throws")
-         for ex in func.exceptions():
+         for ex in func.exceptions:
             self.write_entity("simpara", ex)
          self.end_entity("throws")
          self.write("\n")

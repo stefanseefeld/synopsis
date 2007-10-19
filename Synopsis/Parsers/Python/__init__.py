@@ -75,7 +75,7 @@ class Parser(Processor):
                                           %''.join(package_name))
                 module = ASG.Module(sourcefile, -1, 'package', package_name)
                 if package:
-                    package.declarations().append(module)
+                    package.declarations.append(module)
                 else:
                     self.ir.declarations.append(module)
 
@@ -95,7 +95,7 @@ class Parser(Processor):
             if package:
                 module = ASG.Module(sourcefile, -1, 'module',
                                     package_name + [module_name])
-                package.declarations().append(module)
+                package.declarations.append(module)
             else:
                 module = ASG.Module(sourcefile, -1, 'module', [module_name])
                 self.ir.declarations.append(module)
@@ -109,4 +109,4 @@ class Parser(Processor):
             if not os.path.exists(dirname):
                 os.makedirs(dirname, 0755)
         translator.process_file(filename, xref)
-        sourcefile.declarations.extend(module.declarations())
+        sourcefile.declarations.extend(module.declarations)

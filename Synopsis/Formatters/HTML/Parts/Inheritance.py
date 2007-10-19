@@ -27,8 +27,7 @@ class Inheritance(Part):
 
       if not isinstance(decl, ASG.Class): return
       self.write_start()
-      names = decl.declarations()
-      names = map(self._short_name, names)
+      names = [self._short_name(n) for n in decl.declarations]
       self._process_superclasses(decl, names)
       self.write_end()
 
@@ -43,7 +42,7 @@ class Inheritance(Part):
       # Iterate through the sections
       for section in sorter.sections():
          # Write a heading
-         heading = section+'s Inherited from '+ Util.ccolonName(clas.name(), self.scope())
+         heading = section+'s Inherited from '+ Util.ccolonName(clas.name, self.scope())
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
          for child in sorter.children(section):
@@ -52,14 +51,14 @@ class Inheritance(Part):
                continue
             # FIXME: This doesn't account for the inheritance type
             # (private etc)
-            if child.accessibility() == ASG.PRIVATE:
+            if child.accessibility == ASG.PRIVATE:
                continue
             # Don't include constructors and destructors!
             if (isinstance(child, ASG.Function) and
-                child.file().annotations['language'] == 'C++' and
-                len(child.realname()) > 1):
-               if child.realname()[-1] == child.realname()[-2]: continue
-               elif child.realname()[-1] == "~"+child.realname()[-2]: continue
+                child.file.annotations['language'] == 'C++' and
+                len(child.real_name) > 1):
+               if child.real_name[-1] == child.real_name[-2]: continue
+               elif child.real_name[-1] == "~"+child.real_name[-2]: continue
             # FIXME: skip overriden declarations
             child_names.append(child_name)
             # Check section heading
@@ -74,21 +73,21 @@ class Inheritance(Part):
     
    def _short_name(self, decl):
       if isinstance(decl, ASG.Function):
-         return decl.realname()[-1]
-      return decl.name()[-1]
+         return decl.real_name[-1]
+      return decl.name[-1]
     
-   def _process_superclasses(self, clas, names):
+   def _process_superclasses(self, class_, names):
       """Iterates through the superclasses of clas and calls _process_clas for
       each"""
 
-      for inheritance in clas.parents():
-         parent = inheritance.parent()
+      for inheritance in class_.parents:
+         parent = inheritance.parent
          if isinstance(parent, Type.Declared):
-            parent = parent.declaration()
+            parent = parent.declaration
             if isinstance(parent, ASG.Class):
                self._process_class(parent, names)
                continue
-         #print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
+         #print "Ignoring", parent.__class__.__name__, "parent of", clas.name
          pass #ignore
      
    def write_section_start(self, heading):

@@ -19,12 +19,12 @@ class ClassHierarchyGraph(ClassHierarchySimple):
     def format_class(self, clas):
 
         from Synopsis.Formatters import Dot
-        super = self.processor.class_tree.superclasses(clas.name())
-        sub = self.processor.class_tree.subclasses(clas.name())
+        super = self.processor.class_tree.superclasses(clas.name)
+        sub = self.processor.class_tree.subclasses(clas.name)
         if len(super) == 0 and len(sub) == 0:
             # Skip classes with a boring graph
             return ''
-        #label = self.processor.files.scoped_special('inheritance', clas.name())
+        #label = self.processor.files.scoped_special('inheritance', clas.name)
         label = self.formatter.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
         ir = IR.IR({}, [clas], self.processor.ir.types)

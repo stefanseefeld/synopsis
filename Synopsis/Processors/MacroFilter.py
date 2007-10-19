@@ -27,6 +27,6 @@ class MacroFilter(Processor, ASG.Visitor):
 
     def visit_macro(self, node):
 
-        if self._pattern.match(node.name()[-1]):
+        if self._pattern.match(node.name[-1]):
             # Macros always live in the top-most scope.
             self.ir.declarations.remove(node)

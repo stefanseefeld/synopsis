@@ -83,7 +83,7 @@ class XRef(View):
       desc = ''
       type = self.processor.ir.types.get(scope)
       if isinstance(type, Type.Declared):
-         desc = ' ' + type.declaration().type()
+         desc = ' ' + type.declaration.type
       # Try and find a link to the scope
       scope_text = '::'.join(scope)
       entry = self.processor.toc[scope]
@@ -99,14 +99,14 @@ class XRef(View):
       """Returns a description of the declaration. Detects constructors and
       destructors"""
 
-      name = decl.name()
+      name = decl.name
       if isinstance(decl, ASG.Function) and len(name) > 1:
-         real = decl.realname()[-1]
+         real = decl.real_name[-1]
          if name[-2] == real:
             return 'Constructor '
          elif real[0] == '~' and name[-2] == real[1:]:
             return 'Destructor '
-      return decl.type().capitalize() + ' '
+      return decl.type.capitalize() + ' '
 
    def process_name(self, name):
       """Outputs the info for a given name"""
@@ -120,14 +120,14 @@ class XRef(View):
       decl = None
       type = self.processor.ir.types.get(name)
       if isinstance(type, Type.Declared):
-         decl = type.declaration()
+         decl = type.declaration
          desc = self.describe_decl(decl)
       self.write(entity('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
          type = self.processor.ir.types.get(name, None)
          if isinstance(type, Type.Declared):
-            link = self.directory_layout.link(type.declaration())
+            link = self.directory_layout.link(type.declaration)
             self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:
          self.write('<li>Defined at:<ul>\n')
@@ -146,12 +146,12 @@ class XRef(View):
          self.write('</ul></li>\n')
       if isinstance(decl, ASG.Scope):
          self.write('<li>Declarations:<ul>\n')
-         for child in decl.declarations():
-            file, line = child.file().name, child.line()
+         for child in decl.declarations:
+            file, line = child.file.name, child.line
             file_link = self.directory_layout.file_source(file)
             file_link = rel(self.filename(),file_link) + '#%d'%line
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
-            cname = child.name()
+            cname = child.name
             entry = self.processor.toc[cname]
             type = self.describe_decl(child)
             if entry:

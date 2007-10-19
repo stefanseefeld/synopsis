@@ -18,8 +18,8 @@ class Filter(Processor, ASG.Visitor):
 
         self.ir = self.merge_input(ir)
 
-        for decl in ir.declarations:
-            decl.accept(self)
+        for d in ir.declarations:
+            d.accept(self)
 
         return self.output_and_return_ir()
 

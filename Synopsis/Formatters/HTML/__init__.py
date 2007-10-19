@@ -104,7 +104,7 @@ class Formatter(Processor):
         #        during processing, but put the original ir back at the end.
         ir = self.merge_input(ir)
         root = ASG.Module(None, -1, 'Global', ())
-        root.declarations()[:] = ir.declarations
+        root.declarations = ir.declarations
         self.ir = IR.IR(ir.files, [root], ir.types)
 
         self.directory_layout.init(self)
@@ -112,7 +112,7 @@ class Formatter(Processor):
 
         # Create the class tree (shared by inheritance graph / tree views).
         self.class_tree = ClassTree()
-        for d in root.declarations():
+        for d in root.declarations:
             d.accept(self.class_tree)
 
         # Create the file tree (shared by file listing / tree views).

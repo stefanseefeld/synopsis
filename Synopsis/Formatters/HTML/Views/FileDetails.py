@@ -94,7 +94,7 @@ class FileDetails(View):
 
       self.write('<h2 class="heading">Declarations in this file:</h2>')
       # Sort items (by name)
-      items = [(d.type(), d.name(), d) for d in file.declarations]
+      items = [(d.type, d.name, d) for d in file.declarations]
       # ignore ASG.Builtin
       items = [i for i in items if not isinstance(i[2], ASG.Builtin)]
       items.sort()

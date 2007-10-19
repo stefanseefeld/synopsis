@@ -40,7 +40,7 @@ class Formatter(Processor, ASG.Visitor):
             # Now guess the current language by looking at the
             # first declaration.
             d = len(self.ir.declarations) and self.ir.declarations[0]
-            sf = d and d.file() or None
+            sf = d and d.file or None
             if not sf: # d was a MetaModule, so let's assume C++ or IDL.
                 self.sep = '::'
             else:
@@ -56,23 +56,23 @@ class Formatter(Processor, ASG.Visitor):
 
     def visit_scope(self, node):
 
-        if self.scope == node.name():
+        if self.scope == node.name:
 
             # We found the right scope.
             # List all declarations directly contained in it.
-            declarations = node.declarations()[:]
-            declarations.sort(lambda x, y : cmp(x.name(), y.name()))
+            declarations = node.declarations[:]
+            declarations.sort(lambda x, y : cmp(x.name, y.name))
             for d in declarations:
                 if isinstance(d, ASG.Builtin): continue
-                name = d.name()[-1]
-                _type = d.type()
+                name = d.name[-1]
+                _type = d.type
                 print '%s : %s'%(name, _type)
-        elif (len(node.name()) < self.scope and
-              self.scope[0:len(node.name())] == node.name()):
+        elif (len(node.name) < self.scope and
+              self.scope[0:len(node.name)] == node.name):
 
             # We found a parent scope.
             # Visit child scopes.
-            for d in node.declarations():
+            for d in node.declarations:
                 d.accept(self)
 
 

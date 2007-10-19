@@ -20,9 +20,9 @@ class Previous(Processor, ASG.Visitor):
 
           self.last = None
           self.__laststack = []
-          for decl in ir.declarations:
-               decl.accept(self)
-               self.last = decl
+          for d in ir.declarations:
+               d.accept(self)
+               self.last = d
 
           return self.output_and_return_ir()
 
@@ -41,23 +41,23 @@ class Previous(Processor, ASG.Visitor):
           """overrides visit_scope() to set 'last' after each declaration"""
 
           self.push()
-          for decl in scope.declarations():
-               decl.accept(self)
-               self.last = decl
+          for d in scope.declarations:
+               d.accept(self)
+               self.last = d
           self.pop()
 
      def visit_declaration(self, decl):
           self.process_comments(decl)
 
      def visit_builtin(self, decl):
-          if decl.type() == 'EOS': # treat it if it is an 'end of scope' marker
+          if decl.type == 'EOS': # treat it if it is an 'end of scope' marker
                self.process_comments(decl)
 
      def visit_enum(self, enum):
           """Does the same as visit_scope but for enum and enumerators"""
 
           self.push()
-          for enumor in enum.enumerators():
+          for enumor in enum.enumerators:
                enumor.accept(self)
                self.last = enumor
           if enum.eos: enum.eos.accept(self)
@@ -78,7 +78,7 @@ class Previous(Processor, ASG.Visitor):
                first = comments[0]
                if first and first[0] == "<" and self.last:
                     if self.debug:
-                         print 'found comment for previous in', decl.name()
+                         print 'found comment for previous in', decl.name
                     comments = self.last.annotations.get('comments', [])
                     comments.append(first[1:]) # Remove '<'
                     self.last.annotations['comments'] = comments

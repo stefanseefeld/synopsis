@@ -34,11 +34,11 @@ class DeclarationFinder(Type.Visitor):
 	    
    def visit_base_type(self, type): return
    def visit_unknown(self, type): return
-   def visit_declared(self, type): self.__decl = type.declaration()
-   def visit_modifier(self, type): type.alias().accept(self)
-   def visit_array(self, type): type.alias().accept(self)
-   def visit_template(self, type): self.__decl = type.declaration()
-   def visit_parametrized(self, type): type.template().accept(self)
+   def visit_declared(self, type): self.__decl = type.declaration
+   def visit_modifier(self, type): type.alias.accept(self)
+   def visit_array(self, type): type.alias.accept(self)
+   def visit_template(self, type): self.__decl = type.declaration
+   def visit_parametrized(self, type): type.template.accept(self)
    def visit_function_type(self, type): return
 	
 def find_common_name(graph):
@@ -143,7 +143,7 @@ class InheritanceGraph(View):
             types = self.processor.ir.types
             type = types.get(scoped_name, None)
             if isinstance(type, Type.Declared):
-               type_str = type.declaration().type() + ' '
+               type_str = type.declaration.type + ' '
             self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:
             if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))

@@ -43,7 +43,7 @@ class ModuleListing(View):
       self.write('<ul class="tree">')
       # FIXME: see HTML.Formatter
       module = self.processor.ir.declarations[0]
-      self.index_module(module, module.name())
+      self.index_module(module, module.name)
       self.write('</ul>')
       self.end_file()
 
@@ -51,7 +51,7 @@ class ModuleListing(View):
       """Returns true if the given child declaration is to be included"""
 
       if not isinstance(child, ASG.Module): return 0
-      if self.child_types and child.type() not in self.child_types:
+      if self.child_types and child.type not in self.child_types:
          return 0
       return 1
 
@@ -59,7 +59,7 @@ class ModuleListing(View):
       """Returns the link to the given declaration"""
 
       return rel(self.filename(),
-                 self.directory_layout.module_index(module.name()))
+                 self.directory_layout.module_index(module.name))
 
    def _get_children(self, decl):
       """Returns the children of the given declaration"""
@@ -78,7 +78,7 @@ class ModuleListing(View):
    def index_module(self, module, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
-      my_scope = module.name()
+      my_scope = module.name
       # Find children, and sort so that compound children (packages) go first
       children = self._get_children(module)
       children.sort(lambda a,b,g=self._get_children:

@@ -117,7 +117,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
    def scope(self): return self.__scope[-1].name()
 
    def add_declaration(self, declaration):
-      self.__scope[-1].declarations().append(declaration)
+      self.__scope[-1].declarations.append(declaration)
 
    def addType(self, name, type):
 
@@ -139,7 +139,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       self.addType(['CORBA', 'Object'], Type.Declared('IDL', ['CORBA', 'Object'], object))
       for n in node.declarations():
          n.accept(self)
-      for d in self.__scope[-1].declarations():
+      for d in self.__scope[-1].declarations:
          self.declarations.append(d)
 
    def visitModule(self, node):
@@ -174,7 +174,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
             clas.annotations['comments'] = comments
       for i in node.inherits():
          parent = self.getType(i.scopedName())
-         clas.parents().append(ASG.Inheritance("", parent, []))
+         clas.parents.append(ASG.Inheritance("", parent, []))
       for c in node.contents(): c.accept(self)
       self.__scope.pop()
         
@@ -321,7 +321,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          self.addType(type, array)
       name = list(self.scope())
       name.append(node.declarator().identifier())
-      self.__scope[-1].declarations().append(
+      self.__scope[-1].declarations.append(
          ASG.Operation(sourcefile, node.line(), 'case',
 			  [], self.getType(type), [], name, name[-1]))
 
@@ -351,7 +351,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       name.append(node.identifier())
       enum = ASG.Enumerator(sourcefile, node.line(), name, "")
       self.addType(name, Type.Declared('IDL', name, enum))
-      self.__enum.enumerators().append(enum)
+      self.__enum.enumerators.append(enum)
 
    def visitEnum(self, node):
 
@@ -401,24 +401,24 @@ class ASGTranslator(idlvisitor.AstVisitor):
       else: pre.append("inout")
       post = []
       name = self.__types.internalize(node.paramType())
-      operation.parameters().append(ASG.Parameter(pre, self.getType(name), post, node.identifier()))
+      operation.parameters.append(ASG.Parameter(pre, self.getType(name), post, node.identifier()))
     
    def visitOperation(self, node):
 
       visible = node.mainFile() or not self.__mainfile_only
       pre = []
       if node.oneway(): pre.append("oneway")
-      returnType = self.__types.internalize(node.returnType())
+      return_type = self.__types.internalize(node.returnType())
       name = list(self.scope())
       name.append(node.identifier())
-      self.__operation = ASG.Operation(sourcefile, node.line(), 'operation', pre, self.getType(returnType), [], name, name[-1])
+      self.__operation = ASG.Operation(sourcefile, node.line(), 'operation', pre, self.getType(return_type), [], name, name[-1])
       comments = [c.text() for c in node.comments()]
       if comments:
          self.__operation.annotations['comments'] = comments
       for p in node.parameters(): p.accept(self)
       for e in node.raises():
          exception = self.getType(e.scopedName())
-         self.__operation.exceptions().append(exception)
+         self.__operation.exceptions.append(exception)
             
       if visible:
          self.add_declaration(self.__operation)

@@ -129,62 +129,62 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
       """Returns the name of the given class node, relative to all its
       parents. This makes the graph simpler by making the names shorter"""
 
-      base = node.name()
-      for i in node.parents():
+      base = node.name
+      for i in node.parents:
          try:
-            parent = i.parent()
-            pname = parent.name()
+            parent = i.parent
+            pname = parent.name
             for j in range(len(base)):
                if j > len(pname) or pname[j] != base[j]:
                   # Base is longer than parent name, or found a difference
                   base[j:] = []
                   break
          except: pass # typedefs etc may cause errors here.. ignore
-      if not node.parents():
+      if not node.parents:
          base = self.scope()
-      return Util.ccolonName(node.name(), base)
+      return Util.ccolonName(node.name, base)
 
    #################### Type Visitor ##########################################
 
    def visit_modifier(self, type):
 
-      self.format_type(type.alias())
-      self.__type_label = ''.join(type.premod()) + self.__type_label
-      self.__type_label = self.__type_label + ''.join(type.postmod())
+      self.format_type(type.alias)
+      self.__type_label = ''.join(type.premod) + self.__type_label
+      self.__type_label = self.__type_label + ''.join(type.postmod)
 
    def visit_unknown(self, type):
 
-      self.__type_ref = self.toc and self.toc[type.link()] or None
-      self.__type_label = Util.ccolonName(type.name(), self.scope())
+      self.__type_ref = self.toc and self.toc[type.link] or None
+      self.__type_label = Util.ccolonName(type.name, self.scope())
         
    def visit_base(self, type):
 
       self.__type_ref = None
-      self.__type_label = type.name()[-1]
+      self.__type_label = type.name[-1]
 
    def visit_dependent(self, type):
 
       self.__type_ref = None
-      self.__type_label = type.name()[-1]
+      self.__type_label = type.name[-1]
         
    def visit_declared(self, type):
 
-      self.__type_ref = self.toc and self.toc[type.declaration().name()] or None
-      if isinstance(type.declaration(), ASG.Class):
-         self.__type_label = self.get_class_name(type.declaration())
+      self.__type_ref = self.toc and self.toc[type.declaration.name] or None
+      if isinstance(type.declaration, ASG.Class):
+         self.__type_label = self.get_class_name(type.declaration)
       else:
-         self.__type_label = Util.ccolonName(type.declaration().name(), self.scope())
+         self.__type_label = Util.ccolonName(type.declaration.name, self.scope())
 
    def visit_parametrized(self, type):
 
-      if type.template():
-         type_ref = self.toc and self.toc[type.template().name()] or None
-         type_label = Util.ccolonName(type.template().name(), self.scope())
+      if type.template:
+         type_ref = self.toc and self.toc[type.template.name] or None
+         type_label = Util.ccolonName(type.template.name, self.scope())
       else:
          type_ref = None
          type_label = "(unknown)"
       parameters_label = []
-      for p in type.parameters():
+      for p in type.parameters:
          parameters_label.append(self.format_type(p))
       self.__type_ref = type_ref
       self.__type_label = type_label + "<" + ','.join(parameters_label) + ">"
@@ -194,13 +194,13 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
       def clip(x, max=20):
          if len(x) > max: return '...'
          return x
-      self.__type_label = "template<%s>"%(clip(','.join([clip(self.format_type(p)) for p in type.parameters()]), 40))
+      self.__type_label = "template<%s>"%(clip(','.join([clip(self.format_type(p)) for p in type.parameters]), 40))
 
    #################### ASG Visitor ###########################################
 
    def visit_inheritance(self, node):
 
-      self.format_type(node.parent())
+      self.format_type(node.parent)
       if self.type_ref():
          self.write_node(self.type_ref().link, self.type_label(), self.type_label())
       elif self.toc:
@@ -213,15 +213,15 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
       if self.__operations is not None: self.__operations.append([])
       if self.__attributes is not None: self.__attributes.append([])
       name = self.get_class_name(node)
-      ref = self.toc and self.toc[node.name()] or None
-      for d in node.declarations(): d.accept(self)
+      ref = self.toc and self.toc[node.name] or None
+      for d in node.declarations: d.accept(self)
       # NB: old version of dot needed the label surrounded in {}'s (?)
       label = name
-      if node.template():
+      if node.template:
          if self.direction == 'vertical':
-            label = self.format_type(node.template()) + '\\n' + label
+            label = self.format_type(node.template) + '\\n' + label
          else:
-            label = self.format_type(node.template()) + ' ' + label
+            label = self.format_type(node.template) + ' ' + label
       if self.__operations or self.__attributes:
          label = label + '\\n'
          if self.__operations:
@@ -240,15 +240,15 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
          #       but also derived types such as pointers, references, STL containers, etc.
          #
          # find attributes of type 'Class' so we can link to it
-         for a in filter(lambda a:isinstance(a, ASG.Variable), node.declarations()):
-            if isinstance(a.vtype(), Type.Declared):
-               d = a.vtype().declaration()
+         for a in filter(lambda a:isinstance(a, ASG.Variable), node.declarations):
+            if isinstance(a.vtype, Type.Declared):
+               d = a.vtype.declaration
                if isinstance(d, ASG.Class) and self.nodes.has_key(self.get_class_name(d)):
                   self.write_edge(self.get_class_name(node), self.get_class_name(d),
                                   arrowtail='ediamond')
 
-      for inheritance in node.parents():
-         inheritance.accept(self)
+      for p in node.parents:
+         p.accept(self)
          self.write_edge(self.type_label(), name, arrowtail='empty')
       if self.__no_descend: return
       if self.__operations: self.__operations.pop()
@@ -257,12 +257,12 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
    def visit_operation(self, operation):
 
       if self.__operations:
-         self.__operations[-1].append(operation.realname())
+         self.__operations[-1].append(operation.real_name)
 
    def visit_variable(self, variable):
 
       if self.__attributes:
-         self.__attributes[-1].append(variable.name())
+         self.__attributes[-1].append(variable.name)
 
 class SingleInheritanceGenerator(InheritanceGenerator):
    """A Formatter that generates an inheritance graph for a specific class.
@@ -283,7 +283,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
    def visit_declared(self, type):
       if self.__current < self.__levels or self.__levels == -1:
          self.__current = self.__current + 1
-         type.declaration().accept(self)
+         type.declaration.accept(self)
          self.__current = self.__current - 1
       # to restore the ref/label...
       InheritanceGenerator.visit_declared(self, type)
@@ -292,7 +292,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
         
    def visit_inheritance(self, node):
 
-      node.parent().accept(self)
+      node.parent.accept(self)
       if self.type_label():
          if self.type_ref():
             self.write_node(self.type_ref().link, self.type_label(), self.type_label())
@@ -311,7 +311,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
       if self.__current == 1:
          self.write_node('', name, name, style='filled', color='lightgrey')
       else:
-         ref = self.toc and self.toc[node.name()] or None
+         ref = self.toc and self.toc[node.name] or None
          if ref:
             self.write_node(ref.link, name, name)
          elif self.toc:
@@ -319,8 +319,8 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          else:
             self.write_node('', name, name)
 
-      for inheritance in node.parents():
-         inheritance.accept(self)
+      for p in node.parents:
+         p.accept(self)
          if self.nodes.has_key(self.type_label()):
             self.write_edge(self.type_label(), name, arrowtail='empty')
       # if this is the main class and if there is a type dictionary,
@@ -332,15 +332,15 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          self.__levels = 0
          for t in self.__types.values():
             if isinstance(t, Type.Declared):
-               child = t.declaration()
+               child = t.declaration
                if isinstance(child, ASG.Class):
-                  for inheritance in child.parents():
-                     type = inheritance.parent()
+                  for i in child.parents:
+                     type = i.parent
                      type.accept(self)
                      if self.type_ref():
-                        if self.type_ref().name == node.name():
+                        if self.type_ref().name == node.name:
                            child_label = self.get_class_name(child)
-                           ref = self.toc and self.toc[child.name()] or None
+                           ref = self.toc and self.toc[child.name] or None
                            if ref:
                               self.write_node(ref.link, child_label, child_label)
                            elif self.toc:

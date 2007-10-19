@@ -78,7 +78,7 @@ class FileIndex(View):
 
       self.write('<b>Declarations:</b><br/>\n')
       # Sort items (by name)
-      items = [(d.name(), d) for d in file.declarations]
+      items = [(d.name, d) for d in file.declarations]
       items.sort()
       scope, last = [], []
       for name, decl in items:
@@ -87,7 +87,7 @@ class FileIndex(View):
          if not entry: continue
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
-         if isinstance(decl, ASG.Function): print_name = decl.realname()
+         if isinstance(decl, ASG.Function): print_name = decl.real_name
          else: print_name = name
          # Increase scope
          i = 0
@@ -110,7 +110,7 @@ class FileIndex(View):
          # Now print the actual item
          label = escape(Util.ccolonName(print_name, scope))
          label = replace_spaces(label)
-         title = '(%s)'%decl.type()
+         title = '(%s)'%decl.type
          self.write(div('href',href(link, label, target='content', title=title)))
          # Store this name incase, f.ex, its a class and the next item is
          # in that class scope
