@@ -14,8 +14,8 @@ class ClassHierarchySimple(Fragment):
 
    def format_inheritance(self, inheritance):
 
-      return '%s %s'%(self.format_modifiers(inheritance.attributes()),
-                      self.format_type(inheritance.parent()))
+      return '%s %s'%(self.format_modifiers(inheritance.attributes),
+                      self.format_type(inheritance.parent))
 
    def format_class(self, class_):
 
@@ -33,3 +33,5 @@ class ClassHierarchySimple(Fragment):
          sub = div('subclasses', "Known subclasses: "+sub) 
 	
       return super + sub
+
+   format_class_template = format_class

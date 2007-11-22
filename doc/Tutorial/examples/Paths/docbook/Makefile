@@ -9,10 +9,10 @@ all: Paths
 Paths: Paths.xml
 	mkdir -p $@
 	cp synopsis.css $@
-	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ html.xsl $<
+	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ html.xsl Reference.xml
 
 Paths.xml: Paths.syn
-	$(synopsis) docbook --output=$@ $<
+	$(synopsis) docbook --title='The Title' --output=$@ $<
 
 Paths.syn: $(syn)
 	$(synopsis) link --output=$@ $^

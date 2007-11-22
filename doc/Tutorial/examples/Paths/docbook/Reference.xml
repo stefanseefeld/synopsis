@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<book xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Paths Reference</title>
+
+    <releaseinfo>Version X.Y</releaseinfo>
+    <author>
+      <firstname>Stefan</firstname>
+      <surname>Seefeld</surname>
+    </author>
+  </bookinfo>
+
+  <preface id="preface">
+    <title>Preface</title>
+
+    <prefaceinfo>
+      <abstract>
+        <para>
+          This preface introduces the Paths Reference.
+        </para>
+      </abstract>
+    </prefaceinfo>
+
+    <section>
+      <title>Organization</title>
+      <para>
+        Some words about the organization of this reference.
+      </para>
+    </section>
+    <section>
+      <title>Further Reading</title>
+      <variablelist>
+        <varlistentry>
+          <term>More about Paths</term>
+          <listitem>
+            <ulink url="http://en.wikipedia.org/wiki/Path_%28topology%29"/>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+  </preface>
+  <chapter id="reference">
+    <title>Reference</title>
+    <abstract>This chapter contains a reference of the <code>Paths</code> module.</abstract>
+    <xi:include href="Paths.xml">
+      <xi:fallback>The generated reference...</xi:fallback>
+    </xi:include>
+  </chapter>
+</book>

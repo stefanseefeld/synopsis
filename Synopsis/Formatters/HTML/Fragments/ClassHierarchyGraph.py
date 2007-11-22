@@ -16,18 +16,18 @@ class ClassHierarchyGraph(ClassHierarchySimple):
    
     @see Formatters.Dot
     """
-    def format_class(self, clas):
+    def format_class(self, class_):
 
         from Synopsis.Formatters import Dot
-        super = self.processor.class_tree.superclasses(clas.name)
-        sub = self.processor.class_tree.subclasses(clas.name)
+        super = self.processor.class_tree.superclasses(class_.name)
+        sub = self.processor.class_tree.subclasses(class_.name)
         if len(super) == 0 and len(sub) == 0:
             # Skip classes with a boring graph
             return ''
         #label = self.processor.files.scoped_special('inheritance', clas.name)
         label = self.formatter.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
-        ir = IR.IR({}, [clas], self.processor.ir.types)
+        ir = IR.IR({}, [class_], self.processor.ir.types)
         dot = Dot.Formatter()
         dot.toc = self.processor.toc
         try:

@@ -6,7 +6,6 @@
 # see the file COPYING for details.
 #
 
-import string
 import Util
 
 def ccmp(a,b):
@@ -40,7 +39,7 @@ class Named(Type):
 
    def __init__(self, language, name):
       Type.__init__(self, language)
-      self.name = name
+      self._name = name
 
    def _set_name(self, name): self._name = tuple(name)
    name = property(lambda self: self._name, _set_name)
@@ -134,7 +133,7 @@ class Modifier(Type):
    def __str__(self): 
       return "%s%s%s"%(''.join(['%s '%s for s in self.premod]),
                        str(self.alias),
-                       ''.join(self.__postmod))
+                       ''.join(self.postmod))
 
 class Array(Type):
    """a modifier that adds array dimensions to a type"""
@@ -168,8 +167,8 @@ class Parametrized(Type):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.template,other.template)
    def __str__(self):
-      return "%s<%s>"%(self.template.name,
-                       ','.join([str(p) for p in self.parameters]))
+      return "%s<%s>"%('::'.join(self.template.name),
+                       ','.join([str(a) for a in self.parameters]))
 
 class Function(Type):
    """Class for function pointer types."""

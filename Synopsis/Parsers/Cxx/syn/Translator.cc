@@ -695,22 +695,26 @@ PyObject *Translator::Class(AST::Class* decl)
 {
   Trace trace("Translator::Class", Trace::TRANSLATION);
   PyObject *clas, *file, *type, *name;
-  clas = PyObject_CallMethod(m_ast_module, "Class", "OiOO",
-                             file = m->py(decl->file()), decl->line(),
-                             type = m->py(decl->type()), name = m->Tuple(decl->name()));
+  char const *class_ = decl->template_type() ? "ClassTemplate" : "Class";
+  clas = PyObject_CallMethod(m_ast_module, const_cast<char *>(class_), "OiOO",
+                             file = m->py(decl->file()),
+                             decl->line(),
+                             type = m->py(decl->type()),
+                             name = m->Tuple(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
   PyObject *new_decls, *new_parents;
   PyObject *decls = PyObject_GetAttrString(clas, "declarations");
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
-  PyObject *parents = PyObject_GetAttrString(clas, "parents");
-  PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
   if (decl->template_type())
   {
     PyObject* ttype = m->py(decl->template_type());
     PyObject_SetAttrString(clas, "template", ttype);
     Py_DECREF(ttype);
   }
+
+  PyObject *parents = PyObject_GetAttrString(clas, "parents");
+  PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
   addComments(clas, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -828,22 +832,23 @@ PyObject *Translator::Function(AST::Function* decl)
 {
   Trace trace("Translator::Function", Trace::TRANSLATION);
   PyObject *func, *file, *type, *name, *pre, *ret, *post, *realname;
-  func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOO",
+  char const *class_ = decl->template_type() ? "FunctionTemplate" : "Function";
+  func = PyObject_CallMethod(m_ast_module, const_cast<char *>(class_), "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
-  PyObject* new_params;
-  PyObject* params = PyObject_GetAttrString(func, "parameters");
-  PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {
     PyObject* ttype = m->py(decl->template_type());
     PyObject_SetAttrString(func, "template", ttype);
     Py_DECREF(ttype);
   }
+  PyObject* new_params;
+  PyObject* params = PyObject_GetAttrString(func, "parameters");
+  PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   addComments(func, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -861,22 +866,23 @@ PyObject *Translator::Operation(AST::Operation* decl)
 {
   Trace trace("Translator::Operation", Trace::TRANSLATION);
   PyObject *oper, *file, *type, *name, *pre, *ret, *post, *realname;
-  oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOO",
+  char const *class_ = decl->template_type() ? "OperationTemplate" : "Operation";
+  oper = PyObject_CallMethod(m_ast_module, const_cast<char *>(class_), "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
-  PyObject* new_params;
-  PyObject* params = PyObject_GetAttrString(oper, "parameters");
-  PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {
     PyObject* ttype = m->py(decl->template_type());
     PyObject_SetAttrString(oper, "template", ttype);
     Py_DECREF(ttype);
   }
+  PyObject* new_params;
+  PyObject* params = PyObject_GetAttrString(oper, "parameters");
+  PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   addComments(oper, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -888,6 +894,34 @@ PyObject *Translator::Operation(AST::Operation* decl)
   Py_DECREF(params);
   Py_DECREF(new_params);
   return oper;
+}
+
+PyObject *Translator::UsingDirective(AST::UsingDirective* u)
+{
+  Trace trace("Translator::UsingDirective", Trace::TRANSLATION);
+  PyObject *dir, *file, *line, *type, *name;
+  dir = PyObject_CallMethod(m_ast_module, "UsingDirective", "OiOO",
+                            file = m->py(u->file()), u->line(),
+                            type = m->py(u->type()), name = m->Tuple(u->name()));
+  Py_DECREF(file);
+  Py_DECREF(line);
+  Py_DECREF(type);
+  Py_DECREF(name);
+  return dir;
+}
+
+PyObject *Translator::UsingDeclaration(AST::UsingDeclaration* u)
+{
+  Trace trace("Translator::UsingDeclaration", Trace::TRANSLATION);
+  PyObject *decl, *file, *line, *type, *name;
+  decl = PyObject_CallMethod(m_ast_module, "UsingDeclaration", "OiOO",
+                             file = m->py(u->file()), u->line(),
+                             type = m->py(u->type()), name = m->Tuple(u->name()));
+  Py_DECREF(file);
+  Py_DECREF(line);
+  Py_DECREF(type);
+  Py_DECREF(name);
+  return decl;
 }
 
 void Translator::visit_declaration(AST::Declaration* decl)
@@ -979,6 +1013,14 @@ void Translator::visit_inheritance(AST::Inheritance* decl)
 void Translator::visit_parameter(AST::Parameter* decl)
 {
   m->add(decl, Parameter(decl));
+}
+void Translator::visit_using_directive(AST::UsingDirective* u)
+{
+  m->add(u, UsingDirective(u));
+}
+void Translator::visit_using_declaration(AST::UsingDeclaration* u)
+{
+  m->add(u, UsingDeclaration(u));
 }
 
 //

@@ -155,10 +155,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
       templ = self.link_type(type.template)
       if templ is not type.template:
          type.template = templ
-      params = tuple(type.parameters)
-      del type.parameters[:]
-      for param in params:
-         type.parameters.append(self.link_type(param))
+      type.parameters = [self.link_type(p) for p in type.parameters]
       self.__type = type
 
    def visit_function_type(self, type):
@@ -357,7 +354,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
                return
             decl = ltype.declaration
             if isinstance(decl, ASG.Class):
-               type.set_template(decl.template)
+               type.template = decl.template
       else:
          # Unknown type in class inheritance
          pass

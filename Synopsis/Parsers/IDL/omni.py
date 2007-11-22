@@ -60,8 +60,8 @@ class TypeTranslator(idlvisitor.TypeVisitor):
    def visitBaseType(self, idltype):
 
       type = Type.Base("IDL", (self.__basetypes[idltype.kind()],))
-      self.types[type.name()] = type
-      self.__result = type.name()
+      self.types[type.name] = type
+      self.__result = type.name
 
    def visitStringType(self, idltype):
 
@@ -95,7 +95,7 @@ class TypeTranslator(idlvisitor.TypeVisitor):
       #    self.__result_type = "sequence<" + self.__result_type + ", " +\
       #                         str(type.bound()) + ">"
       type = Type.Parametrized("IDL", self.types[["sequence"]], [ptype])
-      name  = ["sequence<" + Util.ccolonName(ptype.name()) + ">"]
+      name  = ["sequence<" + Util.ccolonName(ptype.name) + ">"]
       self.types[name] = type
       self.__result = name
         
@@ -114,7 +114,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       self.__operation = None
       self.__enum = None
         
-   def scope(self): return self.__scope[-1].name()
+   def scope(self): return self.__scope[-1].name
 
    def add_declaration(self, declaration):
       self.__scope[-1].declarations.append(declaration)
@@ -230,7 +230,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          d_comments = comments + [c.text() for c in d.comments()]
          if d_comments:
             typedef.annotations['comments'] = d_comments
-         self.addType(typedef.name(), Type.Declared('IDL', typedef.name(), typedef))
+         self.addType(typedef.name, Type.Declared('IDL', typedef.name, typedef))
          if visible:
             self.add_declaration(typedef)
 
@@ -258,7 +258,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          d_comments = comments + [c.text() for c in d.comments()]
          if d_comments:
             member.annotations['comments'] = d_comments
-         self.addType(member.name(), Type.Declared('IDL', member.name(), member))
+         self.addType(member.name, Type.Declared('IDL', member.name, member))
          if visible:
             self.add_declaration(member)
 

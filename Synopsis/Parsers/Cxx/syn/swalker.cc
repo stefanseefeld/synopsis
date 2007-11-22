@@ -1559,6 +1559,8 @@ void SWalker::visit(PTree::EnumSpec *node)
 void SWalker::visit(PTree::UsingDirective *node)
 {
   STrace trace("SWalker::visit(PTree::UsingDirective*)");
+  update_line_number(node);
+
   if (my_links) my_links->span(PTree::first(node), "keyword");
   PTree::Node *p = PTree::rest(node);
   if (my_links) my_links->span(PTree::first(p), "keyword");
@@ -1599,7 +1601,7 @@ void SWalker::visit(PTree::UsingDirective *node)
       std::string alias = parse_name(PTree::first(p));
       my_builder->add_aliased_using_namespace(type, alias);
     }
-    else my_builder->add_using_namespace(type);
+    else my_builder->add_using_directive(my_lineno, type);
   }
   catch (const TranslateError& e)
   {
@@ -1640,7 +1642,7 @@ void SWalker::visit(PTree::UsingDeclaration *node)
     Types::Named* type = my_lookup->lookupType(name);
     if (my_links) my_links->link(p_name, type);
     // Let builder do all the work
-    my_builder->add_using_declaration(type);
+    my_builder->add_using_declaration(my_lineno, type);
   }
   catch (const TranslateError& e)
   {

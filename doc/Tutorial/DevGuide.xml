@@ -32,13 +32,13 @@
         The Synopsis Project was founded to support the documentation of the
         <emphasis>Fresco</emphasis> code base, which used a number of different programming 
         languages such as C++, Python, and IDL. The initial design focussed on 
-        a high-level, multi-language <emphasis>Abstract Syntax Tree</emphasis> which would 
+        a high-level, multi-language <emphasis>Abstract Semantic Graph</emphasis> which would 
         be manipulated using python <emphasis>Processor</emphasis> objects to generate 
         documentation in a variety of formats including postscript and html.
       </para>
       <para>
         To support multiple languges, Synopsis uses python extension modules
-        to generate a language-neutral AST. The IDL parser is based on
+        to generate a language-neutral ASG. The IDL parser is based on
         <ulink url="http://omniorb.sf.net">omniORB</ulink>, the original C parser
         was based on <ulink url="http://ctool.sf.net">ctool</ulink>, and the C++ parser
         on <ulink url="http://www.csg.is.titech.ac.jp/~chiba/openc++.html">OpenC++</ulink>.
@@ -60,7 +60,7 @@
           to parse and analyze IDL, C, C++, and Python code. While the former
           provides fine-grained access to the low-level representations such as
           <emphasis>Parse Tree</emphasis> and <emphasis>Symbol Table</emphasis>,
-          the latter operates on an <emphasis>Abstract Syntax Tree</emphasis>.
+          the latter operates on an <emphasis>Abstract Semantic Graph</emphasis>.
         </para>
         <para>
           Most of the <type>Processor</type>classes from the Python API are written
@@ -109,10 +109,8 @@
       <ulink url="http://synopsis.fresco.org/docs/Tutorial">Tutorial</ulink>, so only
       things that are specific to development are mentioned here. As explained in the
       previous chapter, synopsis was originally designed for code documentation. To
-      support this, An 'Abstract Syntax Tree' representation is used. The term may be
-      considered a bit misleading, as it isn't really related to language syntax (in
-      particular as it is multi-language !). Only declarations are stored, together with
-      comments preceeding them.
+      support this, An 'Abstract Semantic Graph' representation is used. Only declarations
+      are stored, together with comments preceeding them.
     </para>
     <section id="pipeline">
       <title>The Processor Pipeline</title>
@@ -128,8 +126,8 @@
         This way, a user can define his own pipeline, or even define his own processor.
       </para>
       <para>
-        Processors take an AST as input, and return an AST as output. One particular
-        processor as <type>Formatters.Dump.Processor</type>, which dumps an AST into
+        Processors take an ASG as input, and return an ASG as output. One particular
+        processor as <type>Formatters.Dump.Processor</type>, which dumps an ASG into
         an XML file. This may be useful for debugging purposes.
       </para>
       <para>
@@ -173,11 +171,11 @@
       <title>Python Regression Tests</title>
       <para>
         The python tests mainly consist in some synopsis script, defining a specific
-        AST processor pipeline, together with some input in one of the supported
+        ASG processor pipeline, together with some input in one of the supported
         languages.
       </para>
       <para>
-        The result will be an AST that is dumped as <emphasis>XML</emphasis> to a 
+        The result will be an ASG that is dumped as <emphasis>XML</emphasis> to a 
         file for simple validation.
       </para>
     </section>

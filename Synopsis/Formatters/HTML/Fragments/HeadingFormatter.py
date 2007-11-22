@@ -109,6 +109,43 @@ class HeadingFormatter(Fragment):
         else:
             module = ''
 
+        # Calculate class name string
+        type = class_.type
+        name = self.format_name_in_module(class_.name)
+        name = div('class-name', '%s %s'%(type, name))
+
+        # Calculate file-related string
+        file_name = rel(self.processor.output, class_.file.name)
+        # Try the file index view first
+        file_link = self.directory_layout.file_index(class_.file.name)
+        if self.processor.filename_info(file_link):
+            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
+        else:
+            # Try source file next
+            file_link = self.directory_layout.file_source(class_.file.name)
+            if self.processor.filename_info(file_link):
+                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+            else:
+                file_ref = file_name
+
+        links = div('file', 'File: %s'%file_ref)
+        if self.xref: links += ' %s'%div('xref', self.xref.format_class(class_))
+        if self.source: links += ' %s'%div('source', self.source.format_class(class_))
+        info = div('links', links)
+
+        return '%s%s%s'%(module, name, info)
+
+    def format_class_template(self, class_):
+        """Formats the class template by linking to each parent scope in the name."""
+
+        # Calculate the module string
+        decl, module = self.format_module_of_name(class_.name)
+        if decl:
+            module = '%s %s'%(decl.type, module)
+            module = div('class-module', module)
+        else:
+            module = ''
+
         # Calculate template string
         templ = class_.template
         if templ:

@@ -8,7 +8,8 @@
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Type, Util, ScopeSorter
+from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
     from Markup.RST import RST
@@ -23,11 +24,18 @@ def escape(text):
         text = text.replace(*p)
     return text
 
-languages = {
-    'IDL': 'idl',
-    'C++': 'c++',
-    'C': 'c',
-    'Python': 'idl' # Hack: Python isn't recognized by the docbook XSL stylesheets (as of 1.72)
+_summary_syntax = {
+    'IDL': Syntax,
+    'C++': CxxSummarySyntax,
+    'C': CxxSummarySyntax,
+    'Python': Syntax
+    }
+
+_detail_syntax = {
+    'IDL': Syntax,
+    'C++': CxxDetailSyntax,
+    'C': CxxDetailSyntax,
+    'Python': Syntax
     }
 
 class FormatterBase:
@@ -38,6 +46,7 @@ class FormatterBase:
         self.__scope = ()
         self.__scopestack = []
         self.__indent = 0
+        self.__elements = []
 
     def scope(self): return self.__scope
     def push_scope(self, newscope):
@@ -60,15 +69,17 @@ class FormatterBase:
     def start_element(self, type, **params):
         """Write the start of an element, ending with a newline"""
 
+        self.__elements.append(type)
         param_text = ''
         if params: param_text = ' ' + ' '.join(['%s="%s"'%(p[0].lower(), p[1]) for p in params.items()])
         self.write('<' + type + param_text + '>')
         self.__indent = self.__indent + 2
         self.write('\n')
 
-    def end_element(self, type):
+    def end_element(self):
         """Write the end of an element, starting with a newline"""
 
+        type = self.__elements.pop()
         self.__indent = self.__indent - 2
         self.write('\n</' + type + '>')
 
@@ -109,47 +120,8 @@ class FormatterBase:
 
 
 
-class SummaryFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
+class SummaryFormatter(FormatterBase, ASG.Visitor):
     """A SummaryFormatter."""
-
-    #################### Type Visitor ##########################################
-
-    def visit_base_type(self, type):
-
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name)
-
-    def visit_unknown(self, type):
-
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name, self.scope())
-        
-    def visit_declared(self, type):
-
-        self.__type_label = Util.ccolonName(type.name, self.scope())
-        self.__type_ref = Util.ccolonName(type.name)
-
-    def visit_modifier(self, type):
-
-        type.alias.accept(self)
-        self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
-        self.__type_label = escape(''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod))
-
-    def visit_parametrized(self, type):
-
-        type.template.accept(self)
-        type_label = self.__type_label + '&lt;'
-        parameters_label = []
-        for p in type.parameters:
-            p.accept(self)
-            parameters_label.append(self.__type_label)
-        self.__type_label = type_label + ', '.join(parameters_label) + '&gt;'
-
-    def visit_function_type(self, type):
-
-        # TODO: this needs to be implemented
-        self.__type_ref = 'function_type'
-        self.__type_label = 'function_type'
 
     def process_doc(self, decl):
 
@@ -159,101 +131,19 @@ class SummaryFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
     #################### ASG Visitor ###########################################
 
-    def visit_declarator(self, node):
+    def visit_declaration(self, declaration):
 
-        self.__declarator = node.name
-        for i in node.sizes:
-            self.__declarator[-1] = self.__declarator[-1] + '[%d]'%i
-
-    def visit_typedef(self, typedef):
-
-        print "sorry, <typedef> not implemented"
-
-    def visit_variable(self, variable):
-
-        variable.vtype.accept(self)
-        text = self.__type_label
-        text += ' %s;'%variable.name[-1]
-        self.write_element('synopsis', text)
-        self.write('\n')
-        self.process_doc(variable)
-
-    def visit_const(self, const):
-
-        print "sorry, <const> not implemented"
-
-    def visit_module(self, module):
-
-        self.start_element('section')
-        self.write_element('title', '%s %s'%(module.type, module.name[-1]))
-        self.write('\n')
-        self.process_doc(module)
-        self.push_scope(module.name)
-        for d in module.declarations:
-            d.accept(self)
-        self.pop_scope()
-        self.end_element('section')
-
-    def visit_class(self, class_):
-
-        self.start_element('section')
-        self.write_element('title', '%s %s'%(class_.type, class_.name[-1]))
-        self.write('\n')
-        # Summary
-        self.process_doc(class_)
-        self.start_element('section')
-        self.write_element('title', 'Members')
-        self.write('\n')
-        self.push_scope(class_.name)
-        for d in class_.declarations:
-            d.accept(self)
-        self.pop_scope()
-        #for p in class_.parents:
-        #    p.accept(self)
-        self.end_element("section")
-        self.end_element("section")
-
-    def visit_inheritance(self, inheritance):
-
-        for a in inheritance.attributes: self.element("modifier", a)
-        self.element("classname", Util.ccolonName(inheritance.parent.name, self.scope()))
-
-    def visit_parameter(self, parameter):
-
-        parameter.type.accept(self)
-
-    def visit_function(self, function):
+        language = declaration.file.annotations['language']
+        syntax = _summary_syntax[language](self.output)
+        declaration.accept(syntax)
+        syntax.finish()
+        self.process_doc(declaration)
         
-        print "sorry, <function> not implemented"
 
-    def visit_operation(self, operation):
-
-        self.__language = operation.file.annotations['language']
-        text = ''
-        if self.__language == 'IDL' and operation.type == 'attribute':
-            operation.return_type.accept(self)
-            text = '%s attribute %s%s;'%(''.join(operation.premodifiers),
-                                         escape(self.__type_label), operation.real_name)
-        else:
-            ret = operation.return_type
-            if ret:
-                ret.accept(self)
-                text = '%s '%self.__type_label
-            elif self.__language == 'Python':
-                text = 'def '
-            text += operation.real_name[-1]
-            text += '('
-            params = []
-            for p in operation.parameters:
-                p.accept(self)
-                param_text = ' '.join(p.premodifier + [self.__type_label] + [p.name] + p.postmodifier)
-                if p.value:
-                    param_text += '= %s'%p.value
-                params.append(param_text)
-            text += ', '.join(params)
-            text += ');'
-        self.write_element('synopsis', text)
-        self.write('\n')
+    visit_module = visit_declaration
+    visit_class = visit_declaration
+    def visit_meta_module(self, meta):
+        self.visit_module(meta.module_declarations[0])
 
     def visit_enumerator(self, enumerator):
         print "sorry, <enumerator> not implemented"
@@ -263,6 +153,7 @@ class SummaryFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
 
 class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
+
 
     #################### Type Visitor ##########################################
 
@@ -312,79 +203,101 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
     #################### ASG Visitor ###########################################
 
-    def visit_declarator(self, node):
+    def visit_declaration(self, declaration):
 
-        self.__declarator = node.name
-        for i in node.sizes:
-            self.__declarator[-1] = self.__declarator[-1] + '[%d]'%i
-
-    def visit_typedef(self, typedef):
-
-        print "sorry, <typedef> not implemented"
-
-    def visit_variable(self, variable):
-
-        variable.vtype.accept(self)
-        text = self.__type_label
-        text += ' %s;'%variable.name[-1]
-        self.write_element('synopsis', text)
-        self.write('\n')
-        self.process_doc(variable)
-
-    def visit_const(self, const):
-
-        print "sorry, <const> not implemented"
+        language = declaration.file.annotations['language']
+        syntax = _detail_syntax[language](self.output)
+        declaration.accept(syntax)
+        syntax.finish()
+        self.process_doc(declaration)
+        
 
     def visit_module(self, module):
 
         self.start_element('section')
-        self.write_element('title', '%s %s'%(module.type, module.name[-1]))
+        title = module.name and '%s %s'%(module.type, module.name[-1]) or 'Global Module'
+        self.write_element('title', title)
         self.write('\n')
+
+        sorter = ScopeSorter.ScopeSorter()
+        sorter.sort(module)
+
         self.start_element('section')
         self.write_element('title', 'Summary')
         self.write('\n')
         summary = SummaryFormatter(self.processor, self.output)
-        for d in module.declarations:
-            d.accept(summary)
-        self.end_element('section')
+        for s in sorter.keys():
+            if s[-1] == 's': title = s + 'es Summary'
+            else: title = s + 's Summary'
+            self.start_element('section')
+            self.write_element('title', title)
+            for d in sorter[s]:
+                d.accept(summary)
+            self.end_element()
+        self.end_element()
         self.write('\n')
         self.start_element('section')
         self.write_element('title', 'Details')
         self.write('\n')
         self.process_doc(module)
         self.push_scope(module.name)
-        for d in module.declarations:
-            d.accept(self)
+        for s in sorter.keys():
+            if s[-1] == 's': title = s + 'es Details'
+            else: title = s + 's Details'
+            self.start_element('section')
+            self.write_element('title', title)
+            for d in sorter[s]:
+                d.accept(self)
+            self.end_element()
         self.pop_scope()
-        self.end_element('section')
+        self.end_element()
         self.write('\n')
-        self.end_element('section')
+        self.end_element()
         self.write('\n')
+
 
     def visit_class(self, class_):
 
         self.start_element('section')
-        self.write_element('title', '%s %s'%(class_.type, class_.name[-1]))
+        title = '%s %s'%(class_.type, class_.name[-1])
+        self.write_element('title', title)
         self.write('\n')
+
+        sorter = ScopeSorter.ScopeSorter()
+        sorter.sort(class_)
+
         self.start_element('section')
         self.write_element('title', 'Summary')
         self.write('\n')
         summary = SummaryFormatter(self.processor, self.output)
-        for d in class_.declarations:
-            d.accept(summary)
-        self.end_element('section')
+        summary.process_doc(class_)
+        for s in sorter.keys():
+            if s[-1] == 's': title = s + 'es Summary'
+            else: title = s + 's Summary'
+            self.start_element('section')
+            self.write_element('title', title)
+            for d in sorter[s]:
+                d.accept(summary)
+            self.end_element()
+        self.end_element()
         self.write('\n')
         self.start_element('section')
         self.write_element('title', 'Details')
         self.write('\n')
         self.process_doc(class_)
         self.push_scope(class_.name)
-        for d in class_.declarations:
-            d.accept(self)
+        for s in sorter.keys():
+            if s[-1] == 's': title = s + 'es Details'
+            else: title = s + 's Details'
+            self.start_element('section')
+            self.write_element('title', title)
+            for d in sorter[s]:
+                d.accept(self)
+            self.end_element()
         self.pop_scope()
-        self.end_element('section')
+        self.end_element()
         self.write('\n')
-        self.end_element('section')
+        self.end_element()
         self.write('\n')
 
 
@@ -403,32 +316,10 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
     def visit_operation(self, operation):
 
-        self.__language = operation.file.annotations['language']
-        text = ''
-        if self.__language == 'IDL' and operation.type == 'attribute':
-            operation.return_type.accept(self)
-            text = '%s attribute %s%s;'%(''.join(operation.premodifiers),
-                                         self.__type_label, operation.real_name)
-        else:
-            ret = operation.return_type
-            if ret:
-                ret.accept(self)
-                text = '%s '%self.__type_label
-            elif self.__language == 'Python':
-                text = 'def '
-            text += operation.real_name[-1]
-            text += '('
-            params = []
-            for p in operation.parameters:
-                p.accept(self)
-                param_text = ' '.join(p.premodifier + [self.__type_label] + [p.name] + p.postmodifier)
-                if p.value:
-                    param_text += '= %s'%p.value
-                params.append(param_text)
-            text += ', '.join(params)
-            text += ');'
-        self.write_element('synopsis', text)
-        self.write('\n')
+        language = operation.file.annotations['language']
+        syntax = _detail_syntax[language](self.output)
+        operation.accept(syntax)
+        syntax.finish()
 
     def visit_enumerator(self, enumerator):
         print "sorry, <enumerator> not implemented"
@@ -492,6 +383,7 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
     markup_formatters = Parameter({'rst':RST()},
                                   'Markup-specific formatters.')
+    title = Parameter(None, 'title to be used in top-level section')
    
     def process(self, ir, **kwds):
 
@@ -502,8 +394,9 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
 
         output = open(self.output, 'w')
         output.write('<section>\n')
+        if self.title:
+            output.write('<title>%s</title>\n'%self.title)
         detail_formatter = DetailFormatter(self, output)
-
         for d in self.ir.declarations:
             d.accept(detail_formatter)
 

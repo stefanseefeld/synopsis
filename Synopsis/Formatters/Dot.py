@@ -217,7 +217,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
       for d in node.declarations: d.accept(self)
       # NB: old version of dot needed the label surrounded in {}'s (?)
       label = name
-      if node.template:
+      if type(node) is ASG.ClassTemplate and node.template:
          if self.direction == 'vertical':
             label = self.format_type(node.template) + '\\n' + label
          else:

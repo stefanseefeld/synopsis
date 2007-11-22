@@ -50,12 +50,15 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
                            'format_module':[],
                            'format_meta_module':[],
                            'format_class':[],
+                           'format_class_template':[],
                            'format_typedef':[],
                            'format_enum':[],
                            'format_variable':[],
                            'format_const':[],
                            'format_function':[],
-                           'format_operation':[]}
+                           'format_function_template':[],
+                           'format_operation':[],
+                           'format_operation_template':[]}
 
       for fragment in self.fragments:
          fragment.register(self)
@@ -138,12 +141,15 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
    def visit_module(self, decl):	self.format_declaration(decl, 'format_module')
    def visit_meta_module(self, decl): self.format_declaration(decl, 'format_meta_module')
    def visit_class(self, decl): self.format_declaration(decl, 'format_class')
+   def visit_class_template(self, decl): self.format_declaration(decl, 'format_class_template')
    def visit_typedef(self, decl): self.format_declaration(decl, 'format_typedef')
    def visit_enum(self, decl): self.format_declaration(decl, 'format_enum')
    def visit_variable(self, decl): self.format_declaration(decl, 'format_variable')
    def visit_const(self, decl): self.format_declaration(decl, 'format_const')
    def visit_function(self, decl): self.format_declaration(decl, 'format_function')
+   def visit_function_template(self, decl): self.format_declaration(decl, 'format_function_template')
    def visit_operation(self, decl): self.format_declaration(decl, 'format_operation')
+   def visit_operation_template(self, decl): self.format_declaration(decl, 'format_operation_template')
 
 
    #################### Type Formatter/Visitor #################################
@@ -197,8 +203,8 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
          type_label = self.reference(type.template.name)
       else:
          type_label = "(unknown)"
-      params = [self.format_type(p) for p in type.parameters]
-      self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(params))
+      parameters = [self.format_type(p) for a in type.parameters]
+      self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(parameters))
 
    def visit_template(self, type):
       "Labs the template with the parameters"

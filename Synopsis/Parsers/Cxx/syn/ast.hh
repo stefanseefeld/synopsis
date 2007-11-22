@@ -1027,6 +1027,21 @@ public:
     accept(Visitor*);
 };
 
+class UsingDirective : public Declaration
+{
+public:
+  UsingDirective(SourceFile* file, int line, const ScopedName& name)
+    : Declaration(file, line, "using namespace", name) {}
+  virtual void accept(Visitor*);
+};
+
+class UsingDeclaration : public Declaration
+{
+public:
+  UsingDeclaration(SourceFile* file, int line, const ScopedName& name)
+    : Declaration(file, line, "using", name) {}
+  virtual void accept(Visitor*);
+};
 
 //. The Visitor for the AST hierarchy. This class is just an interface
 //. really. It is abstract, and you must reimplement any methods you want.
@@ -1054,6 +1069,8 @@ public:
     virtual void visit_function(Function*);
     virtual void visit_operation(Operation*);
     virtual void visit_parameter(Parameter*);
+    virtual void visit_using_directive(UsingDirective*);
+    virtual void visit_using_declaration(UsingDeclaration*);
 };
 
 } // namespace AST

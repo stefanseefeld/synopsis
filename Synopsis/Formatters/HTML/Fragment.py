@@ -69,9 +69,12 @@ class Fragment(object):
    def format_module(self, decl): pass
    def format_meta_module(self, decl): pass
    def format_class(self, decl): pass
+   def format_class_template(self, decl): pass
    def format_typedef(self, decl): pass
    def format_enum(self, decl): pass
    def format_variable(self, decl): pass
    def format_const(self, decl): pass
    def format_function(self, decl): pass
+   def format_function_template(self, decl): pass
    def format_operation(self, decl): pass
+   def format_operation_template(self, decl): pass

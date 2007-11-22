@@ -23,61 +23,70 @@ PROTECTED = 2
 PRIVATE = 3
 
 def ccmp(a,b):
-   """Compares classes of two objects"""
-   return cmp(type(a),type(b)) or cmp(a.__class__,b.__class__)
+    """Compares classes of two objects"""
+    return cmp(type(a),type(b)) or cmp(a.__class__,b.__class__)
 
 
 class Debugger(type):
-   """Wrap the object's 'accept' method, printing out the visitor's type.
-   Useful for tracing visitors visiting declarations."""
+    """Wrap the object's 'accept' method, printing out the visitor's type.
+    Useful for tracing visitors visiting declarations."""
 
-   def __init__(cls, name, bases, dict):
+    def __init__(cls, name, bases, dict):
 
-       accept = dict['accept']
-       "The original instancemethod."
+        accept = dict['accept']
+        "The original instancemethod."
        
-       def accept_wrapper(self, visitor):
-           "The wrapper. The original 'accept' method is part of its closure."
-           print '%s accepting %s.%s'%(self.__class__.__name__,
-                                       visitor.__module__,
-                                       visitor.__class__.__name__)
-           accept(self, visitor)
+        def accept_wrapper(self, visitor):
+            "The wrapper. The original 'accept' method is part of its closure."
+            print '%s accepting %s.%s'%(self.__class__.__name__,
+                                        visitor.__module__,
+                                        visitor.__class__.__name__)
+            accept(self, visitor)
 
-       setattr(cls, 'accept', accept_wrapper)
+        setattr(cls, 'accept', accept_wrapper)
+
 
 class Declaration(object):
-   """Declaration base class. Every declaration has a name, type,
-   accessibility and annotations. The default accessibility is DEFAULT except for
-   C++ where the Parser always sets it to one of the other three. """
+    """Declaration base class. Every declaration has a name, type,
+    accessibility and annotations. The default accessibility is DEFAULT except for
+    C++ where the Parser always sets it to one of the other three. """
     
-   #__metaclass__ = Debugger
+    #__metaclass__ = Debugger
 
-   def __init__(self, file, line, type, name):
+    def __init__(self, file, line, type, name):
 
-      self.file  = file
-      self.line  = line
-      self.name = name
-      self.type = type
-      self.accessibility = DEFAULT
-      self.annotations = {}
+        self.file  = file
+        self.line  = line
+        self.name = name
+        self.type = type
+        self.accessibility = DEFAULT
+        self.annotations = {}
 
-   def _set_name(self, name): self._name = tuple(name)
-   name = property(lambda self: self._name, _set_name)
+    def _set_name(self, name): self._name = tuple(name)
+    name = property(lambda self: self._name, _set_name)
 
-   def accept(self, visitor):
-      """Visit the given visitor"""
-      visitor.visit_declaration(self)
+    def accept(self, visitor):
+        """Visit the given visitor"""
+        visitor.visit_declaration(self)
 
 
 class Builtin(Declaration):
-   """An ast node for internal use only."""
-
-   def __init__(self, file, line, type, name):
-      """Constructor"""
-
-      Declaration.__init__(self, file, line, type, name)
+   """A node for internal use only."""
 
    def accept(self, visitor): visitor.visit_builtin(self)
+
+
+class UsingDirective(Builtin):
+   """Import one module's content into another."""
+
+   def accept(self, visitor): visitor.visit_using_directive(self)
+
+
+class UsingDeclaration(Builtin):
+   """Import a declaration into this module."""
+
+   def accept(self, visitor): visitor.visit_using_declaration(self)
+
 
 class Macro(Declaration):
    """A preprocessor macro. Note that macros are not strictly part of the
@@ -120,12 +129,13 @@ class Group(Declaration):
       visitor.visit_group(self)
 
 
-class Scope(Group):
+class Scope(Declaration):
    """Base class for scopes (named groups)."""
 
    def __init__(self, file, line, type, name):
 
-      Group.__init__(self, file, line, type, name)
+      Declaration.__init__(self, file, line, type, name)
+      self.declarations = []
 
    def accept(self, visitor): visitor.visit_scope(self)
 
@@ -163,15 +173,24 @@ class Inheritance(object):
    
 
 class Class(Scope):
-   """Class class."""
 
    def __init__(self, file, line, type, name):
 
       Scope.__init__(self, file, line, type, name)
       self.parents = []
-      self.template = None
 
    def accept(self, visitor): visitor.visit_class(self)
+
+
+class ClassTemplate(Class):
+
+   def __init__(self, file, line, type, name, template = None):
+
+      Scope.__init__(self, file, line, type, name)
+      self.parents = []
+      self.template = template
+
+   def accept(self, visitor): visitor.visit_class_template(self)
 
 
 class Typedef(Declaration):
@@ -250,7 +269,9 @@ class Parameter(object):
       #print "Parameter.__cmp__"
       return cmp(self.type,other.type)
    def __str__(self):
-      return "%s%s%s"%(self.premodifier,str(self.type),self.postmodifier)
+      return "%s%s%s"%(' '.join(self.premodifier),
+                       str(self.type),
+                       ' '.join(self.postmodifier))
 
 class Function(Declaration):
    """Function declaration.
@@ -265,7 +286,6 @@ class Function(Declaration):
       self.parameters = []
       self.postmodifier = postmod
       self.exceptions = []
-      self.template = None
 
    real_name = property(lambda self: self.name[:-1] + (self._real_name,))
 
@@ -275,22 +295,45 @@ class Function(Declaration):
       "Recursively compares the typespec of the function"
       return ccmp(self,other) or cmp(self.parameters, other.parameters)
 
+
+class FunctionTemplate(Function):
+
+   def __init__(self, file, line, type, premod, return_type, postmod, name, real_name, template = None):
+      Function.__init__(self, file, line, type, premod, return_type, postmod, name, real_name)
+      self.template = template
+
+   def accept(self, visitor): visitor.visit_function_template(self)
+
+
 class Operation(Function):
    """Operation class. An operation is related to a Function and is currently
    identical.
    """
    def __init__(self, file, line, type, premod, return_type, postmod, name, real_name):
       Function.__init__(self, file, line, type, premod, return_type, postmod, name, real_name)
+
    def accept(self, visitor): visitor.visit_operation(self)
 
-class Visitor :
+
+class OperationTemplate(Operation):
+
+   def __init__(self, file, line, type, premod, return_type, postmod, name, real_name, template = None):
+      Operation.__init__(self, file, line, type, premod, return_type, postmod, name, real_name)
+      self.template = template
+
+   def accept(self, visitor): visitor.visit_operation_template(self)
+
+
+class Visitor(object):
    """Visitor for ASG nodes"""
 
-   def visit_declaration(self, node): return
+   def visit_declaration(self, node): pass
    def visit_builtin(self, node):
       """Visit a Builtin instance. By default do nothing. Processors who
       operate on Builtin nodes have to provide an appropriate implementation."""
       pass
+   def visit_using_directive(self, node): self.visit_builtin(node)
+   def visit_using_declaration(self, node): self.visit_builtin(node)
    def visit_macro(self, node): self.visit_declaration(node)
    def visit_forward(self, node): self.visit_declaration(node)
    def visit_group(self, node):
@@ -300,6 +343,7 @@ class Visitor :
    def visit_module(self, node): self.visit_scope(node)
    def visit_meta_module(self, node): self.visit_module(node)
    def visit_class(self, node): self.visit_scope(node)
+   def visit_class_template(self, node): self.visit_class(node)
    def visit_typedef(self, node): self.visit_declaration(node)
    def visit_enumerator(self, node): self.visit_declaration(node)
    def visit_enum(self, node):
@@ -313,6 +357,8 @@ class Visitor :
    def visit_function(self, node):
       self.visit_declaration(node)
       for parameter in node.parameters: parameter.accept(self)
+   def visit_function_template(self, node): self.visit_function(node)
    def visit_operation(self, node): self.visit_function(node)
-   def visit_parameter(self, node): return
-   def visit_inheritance(self, node): return
+   def visit_operation_template(self, node): self.visit_operation(node)
+   def visit_parameter(self, node): pass
+   def visit_inheritance(self, node): pass

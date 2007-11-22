@@ -78,6 +78,8 @@ class DeclarationFormatter(Fragment):
         if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
         return chunk
 
+    format_class_template = format_class
+
     def format_typedef(self, decl):
         "(typedef type, typedef name)"
 
@@ -144,6 +146,36 @@ class DeclarationFormatter(Fragment):
             type = replace_spaces(type)
         if decl.type == 'attribute': name = '%s %s %s'%(name, postmod, raises)
         else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
+
+        chunk = '%s'%div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+
+        return chunk
+
+    def format_function_template(self, decl):
+        "(return type, func + params + exceptions)"
+
+        premod = self.format_modifiers(decl.premodifier)
+        type = self.format_type(decl.return_type)
+        name = self.label(decl.name, decl.real_name)
+        # Special C++ functions  TODO: maybe move to a separate ASG formatter...
+        if decl.file.annotations['language'] == 'C++' and len(decl.real_name)>1:
+            lt = decl.real_name[-2].find('<') # check whether this is a template
+            sname = lt == -1 and decl.real_name[-2] or decl.real_name[-2][:lt]
+            if decl.real_name[-1] == sname: type = '<i>constructor</i>'
+            elif decl.real_name[-1] == '~'+sname: type = '<i>destructor</i>'
+            elif decl.real_name[-1] == '(conversion)': name = '(%s)'%type
+        params = self.format_parameters(decl.parameters)
+        postmod = self.format_modifiers(decl.postmodifier)
+        raises = self.format_exceptions(decl)
+        # prepend the type by the premodifier(s)
+        type = '%s %s'%(premod,type)
+        # Prevent linebreaks on shorter lines
+        if len(type) < 60:
+            type = replace_spaces(type)
+        if decl.type == 'attribute': name = '%s %s %s'%(name, postmod, raises)
+        else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
         # treat template syntax like a premodifier
         if decl.template:
             templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
@@ -160,6 +192,11 @@ class DeclarationFormatter(Fragment):
 
         # Default operation is same as function, and quickest way is to assign:
         return self.format_function(decl)
+
+    def format_operation_template(self, decl):
+
+        # Default operation is same as function, and quickest way is to assign:
+        return self.format_function_template(decl)
 
     def format_parameter(self, parameter):
         """Returns one string for the given parameter"""

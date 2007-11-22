@@ -840,9 +840,9 @@ public:
     }
 };
 
-void Builder::do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope)
+void Builder::do_add_using_directive(ScopeInfo* target, ScopeInfo* scope)
 {
-    STrace trace("Builder::addUsingNamespace");
+    STrace trace("Builder::do_add_using_directive");
 
     // Check if 'scope' already has 'target' in its using list
     ScopeSearch& uses = scope->using_scopes;
@@ -893,16 +893,20 @@ void Builder::do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope)
     ScopeSearch used_by_copy = scope->used_by;
     iter = used_by_copy.begin();
     while (iter != used_by_copy.end())
-        do_add_using_namespace(target, *iter++);
+        do_add_using_directive(target, *iter++);
 }
 
 // Add a namespace using declaration.
-void Builder::add_using_namespace(Types::Named* type)
+AST::UsingDirective *Builder::add_using_directive(int line, Types::Named* type)
 {
-    STrace trace("Builder::usingNamespace");
+    STrace trace("Builder::using_directive");
     AST::Scope* ast_scope = Types::declared_cast<AST::Scope>(type);
     ScopeInfo* target = find_info(ast_scope);
-    do_add_using_namespace(target, m_scopes.back());
+    do_add_using_directive(target, m_scopes.back());
+    
+    AST::UsingDirective* u = new AST::UsingDirective(m_file, line, type->name());
+    add(u);
+    return u;
 }
 
 
@@ -923,10 +927,12 @@ void Builder::add_aliased_using_namespace(Types::Named* type, const std::string&
 }
 
 // Add a using declaration.
-void Builder::add_using_declaration(Types::Named* type)
+AST::UsingDeclaration *Builder::add_using_declaration(int line, Types::Named* type)
 {
     // Add it to the current scope
-    add(type);
+    AST::UsingDeclaration* u = new AST::UsingDeclaration(m_file, line, type->name());
+    add(u);
+    return u;
 }
 
 // vim: set ts=8 sts=4 sw=4 et:

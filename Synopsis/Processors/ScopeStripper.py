@@ -107,6 +107,11 @@ class ScopeStripper(Processor, ASG.Visitor):
     def visit_class(self, class_):
 
         self.visit_scope(class_)
+
+
+    def visit_class_template(self, class_):
+
+        self.visit_class(class_)
         templ = class_.template
         if templ:
             name = self.strip_name(templ.name)
@@ -136,10 +141,14 @@ class ScopeStripper(Processor, ASG.Visitor):
         self.visit_declaration(function)
         for parameter in function.parameters:
             parameter.accept(self)
-        templ = function.template
-        if templ:
-            name = self.strip_name(templ.name)
-            if name: templ.name = name
+
+
+    def visit_function_template(self, function):
+
+        self.visit_function(function)
+        if function.template:
+            name = self.strip_name(function.template.name)
+            if name: function.template.name = name
 
 
     def visit_operation(self, operation):
@@ -147,9 +156,14 @@ class ScopeStripper(Processor, ASG.Visitor):
         self.visit_function(operation)
 
 
+    def visit_operation_template(self, operation):
+
+        self.visit_function_template(operation)
+
+
     def visit_meta_module(self, module):
 
         self.visit_scope(module)
-        for decl in module.module_declarations:
-            name = self.strip_name(decl.name)
-            if name: decl.name = name
+        for d in module.module_declarations:
+            name = self.strip_name(d.name)
+            if name: d.name = name

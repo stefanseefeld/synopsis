@@ -209,14 +209,14 @@ public:
     // Using methods
     //
 
-    //. Add a namespace using declaration.
-    void add_using_namespace(Types::Named* type);
+    //. Add a using directive.
+    AST::UsingDirective *add_using_directive(int, Types::Named* type);
 
     //. Add a namespace alias using declaration.
     void add_aliased_using_namespace(Types::Named* type, const std::string& alias);
 
     //. Add a using declaration.
-    void add_using_declaration(Types::Named* type);
+    AST::UsingDeclaration *add_using_declaration(int, Types::Named* type);
 
 
     //. Maps a scoped name into a vector of scopes and the final type. Returns
@@ -273,7 +273,7 @@ private:
     std::string dump_search(ScopeInfo* scope);
 
     //. Recursively adds 'target' as using in 'scope'
-    void do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope);
+    void do_add_using_directive(ScopeInfo* target, ScopeInfo* scope);
 
     //. A class that compares Scopes
     class EqualScope;

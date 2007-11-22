@@ -389,6 +389,16 @@ Parameter::accept(Visitor* visitor)
     visitor->visit_parameter(this);
 }
 
+void UsingDirective::accept(Visitor* visitor)
+{
+    visitor->visit_using_directive(this);
+}
+
+void UsingDeclaration::accept(Visitor* visitor)
+{
+    visitor->visit_using_declaration(this);
+}
+
 
 Comment::Comment(SourceFile* file, int line, const std::string& text, bool suspect)
         : m_file(file), m_line(line), m_text(text), m_suspect(suspect)
@@ -457,6 +467,12 @@ void Visitor::visit_operation(Operation* d)
     visit_function(d);
 }
 void Visitor::visit_parameter(Parameter* d)
+{ }
+
+void Visitor::visit_using_directive(UsingDirective* u)
+{ }
+
+void Visitor::visit_using_declaration(UsingDeclaration* u)
 { }
 
 // vim: set ts=8 sts=4 sw=4 et:
