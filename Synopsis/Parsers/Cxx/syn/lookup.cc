@@ -614,7 +614,6 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
     while (s_iter != search.end())
     {
         ScopeInfo* scope = *s_iter++;
-
         // Check if dict has it
         if (scope->dict->has_key(name))
         {
@@ -637,23 +636,32 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
             Types::Unknown* unknown = 0;
             Named::vector::iterator r_iter = results.begin();
             while (r_iter != results.end())
-                if ((unknown = dynamic_cast<Types::Unknown*>(*r_iter)) != 0)
-                    r_iter = results.erase(r_iter);
-                else if (!func_okay && !isType(*r_iter))
-                    r_iter = results.erase(r_iter);
-                else
-                    ++r_iter;
+              if ((unknown = dynamic_cast<Types::Unknown*>(*r_iter)) != 0)
+                r_iter = results.erase(r_iter);
+              else if (!func_okay && !isType(*r_iter))
+                r_iter = results.erase(r_iter);
+              else
+                ++r_iter;
             // Should be either 1 non-unknowns left or nothing but with
             // 'unknown' set
             if (results.size() == 0 && unknown != 0)
-                return unknown;
+              return unknown;
             if (results.size() == 0)
-                // This means there was only functions in the list, which we are
-                // ignoring
-                continue;
+              // This means there was only functions in the list, which we are
+              // ignoring
+              continue;
             if (results.size() == 1)
-                // Exactly one match! return it
-                return results[0];
+            {
+              // Exactly one match! return it
+              Types::Named* type = results[0];
+              Types::Declared* d = dynamic_cast<Types::Declared* >(type);
+              if (d)
+              {
+                AST::UsingDeclaration *u = dynamic_cast<AST::UsingDeclaration*>(d->declaration());
+                if (u) type = u->target();
+              }
+              return type;
+            }
             // Store in class var?
             LOG("Multiple candidates!");
 #ifdef DEBUG
@@ -661,8 +669,15 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
             for (r_iter = save_results.begin(); r_iter != save_results.end(); ++r_iter)
                 LOG(" - '" << (*r_iter)->name() << "' - " << typeid(**r_iter).name());
 #endif
-
-            return results[0];
+            Types::Named* type = results[0];
+            // If we are looking at a 'declared' UsingDeclaration, return the referenced target.
+            Types::Declared* d = dynamic_cast<Types::Declared* >(type);
+            if (d)
+            {
+              AST::UsingDeclaration *u = dynamic_cast<AST::UsingDeclaration*>(d->declaration());
+              if (u) type = u->target();
+            }
+            return type;
         }
     }
     return 0;

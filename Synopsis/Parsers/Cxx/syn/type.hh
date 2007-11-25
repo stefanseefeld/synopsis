@@ -314,7 +314,7 @@ class Parameterized : public Type
 {
 public:
     //. Constructor
-    Parameterized(Template* templ, const Type::vector& params);
+    Parameterized(Named* templ, const Type::vector& params);
 
     //. Destructor
     ~Parameterized();
@@ -327,7 +327,7 @@ public:
     //
 
     //. Returns the Template type this is an instance of
-    Template* template_type()
+    Named* template_type()
     {
         return m_template;
     }
@@ -345,8 +345,8 @@ public:
     }
 
 private:
-    //. The Template object
-    Template* m_template;
+    //. The Template object, either a Template or a Dependent.
+    Named* m_template;
     //. The vector of parameter Types
     Type::vector m_params;
 };

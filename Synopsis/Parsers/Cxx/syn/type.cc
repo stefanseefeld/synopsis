@@ -173,7 +173,7 @@ Array::accept(Visitor* visitor)
 // Class Types::Parameterized
 //
 
-Parameterized::Parameterized(Template* t, const Type::vector& params)
+Parameterized::Parameterized(Named* t, const Type::vector& params)
         : m_template(t), m_params(params)
 {}
 

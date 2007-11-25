@@ -706,10 +706,13 @@ void SWalker::translate_template_params(PTree::Node *params)
     }
     else if (*PTree::first(param) == "template")
     {
-      // A non-type parameter that is templatized
-      // eg: template< class A, template<class T> class B = foo > C;
-      // FIXME.
-      LOG("templated non-type template parameter!");
+      // A template template parameter.
+      PTree::Node *id = PTree::nth(param, 5);
+      if (id) 
+      {
+        Types::Dependent* dep = my_builder->create_dependent(parse_name(id));
+        my_builder->add(dep);
+      }
       nodeLOG(param);
     }
     else

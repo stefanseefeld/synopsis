@@ -519,6 +519,10 @@ void Builder::start_function_impl(const ScopedName& name)
     // Create the Namespace
     AST::Namespace* ns = new AST::Namespace(m_file, 0, "function", name);
     ScopeInfo* ns_info = find_info(ns);
+    // if this is a function template, add the template parameter scope for
+    // dependent types.
+    if (m_scopes.back()->scope_decl->type() == "template")
+      ns_info->search.push_back(m_scopes.back());
     ScopeInfo* scope_info;
     if (name.size() > 1)
     {
@@ -930,7 +934,7 @@ void Builder::add_aliased_using_namespace(Types::Named* type, const std::string&
 AST::UsingDeclaration *Builder::add_using_declaration(int line, Types::Named* type)
 {
     // Add it to the current scope
-    AST::UsingDeclaration* u = new AST::UsingDeclaration(m_file, line, type->name());
+    AST::UsingDeclaration* u = new AST::UsingDeclaration(m_file, line, type);
     add(u);
     return u;
 }

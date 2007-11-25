@@ -41,6 +41,7 @@ class Dictionary;
 namespace Types
 {
 class Type;
+class Named;
 class Declared;
 class Template;
 }
@@ -1038,9 +1039,12 @@ public:
 class UsingDeclaration : public Declaration
 {
 public:
-  UsingDeclaration(SourceFile* file, int line, const ScopedName& name)
-    : Declaration(file, line, "using", name) {}
+  UsingDeclaration(SourceFile* file, int line, Types::Named *d);
+
+  Types::Named* target() { return m_target;}
   virtual void accept(Visitor*);
+private:
+  Types::Named* m_target;
 };
 
 //. The Visitor for the AST hierarchy. This class is just an interface

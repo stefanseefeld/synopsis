@@ -345,15 +345,17 @@ Types::Parameterized* Decoder::decodeTemplate()
     Types::Type* type = m_lookup->lookupType(name);
     // if type is declared and declaration is class and class is template..
     Types::Declared* declared = dynamic_cast<Types::Declared*>(type);
-    Types::Template* templ = 0;
+    Types::Named* templ = 0;
     if (declared)
     {
-        if (AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration()))
-            templ = t_class->template_type();
-        if (AST::Forward* t_forward = dynamic_cast<AST::Forward*>
-                                      (declared->declaration()))
-            templ = t_forward->template_type();
+      if (AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration()))
+        templ = t_class->template_type();
+      else if (AST::Forward* t_forward = dynamic_cast<AST::Forward*>
+               (declared->declaration()))
+        templ = t_forward->template_type();
     }
+    else if (Types::Dependent* d = dynamic_cast<Types::Dependent*>(type))
+      templ = d;
     return new Types::Parameterized(templ, types);
 }
 
