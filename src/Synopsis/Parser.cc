@@ -1273,6 +1273,8 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 	PTree::FunctionDefinition *def;
   	def = new PTree::FunctionDefinition(head,
 					    PTree::list(integral, decl->car()));
+        PTree::Node *comments = wrap_comments(my_lexer.get_comments());
+        if (comments) set_declarator_comments(def, comments);
 	ScopeGuard guard(*this, def);
 	PTree::Block *body;
 	if(!function_body(body)) return false;
@@ -1369,6 +1371,8 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
     PTree::FunctionDefinition *def;
     def = new PTree::FunctionDefinition(head,
 					PTree::list(type_name, decl->car()));
+    PTree::Node *comments = wrap_comments(my_lexer.get_comments());
+    if (comments) set_declarator_comments(def, comments);
     ScopeGuard guard(*this, def);
     PTree::Block *body;
     if(!function_body(body))
@@ -4515,7 +4519,6 @@ bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
 
   Token ob;
   if(my_lexer.get_token(ob) != '{') return false;
-
   PTree::Node *ob_comments = wrap_comments(my_lexer.get_comments());
   body = new PTree::Block(new PTree::CommentedAtom(ob, ob_comments), 0);
 
