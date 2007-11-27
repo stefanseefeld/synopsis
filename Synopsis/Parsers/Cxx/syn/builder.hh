@@ -190,6 +190,9 @@ public:
     //. Add a variable
     AST::Variable* add_variable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);
 
+    //. Add a const
+    AST::Const* add_constant(int, const std::string& name, Types::Type* ctype, std::string const &type, std::string const &value = "");
+
     //. Add a variable to represent 'this', iff we are in a method
     void add_this_variable();
 
@@ -230,7 +233,7 @@ public:
     Types::Dependent* create_dependent(const std::string& name);
 
     //. Create an Unknown type for the given name in the current scope
-    Types::Unknown* create_unknown(const std::string& name);
+    Types::Unknown* create_unknown(const ScopedName& name);
 
     //. Create a Template type for the given name in the current scope
     Types::Template* create_template(const std::string& name, const std::vector<Types::Type*>&);

@@ -52,14 +52,14 @@ def _compare_sections(a, b):
     return 0
 
 
-class ScopeSorter(Parametrized):
-    """Sort a scope's declarations by type and accessibility."""
+class DeclarationSorter(Parametrized):
+    """Sort declarations by type and accessibility."""
 
     struct_as_class = Parameter(False, '') 
 
     def __init__(self, **args):
 
-        super(ScopeSorter, self).__init__(**args)
+        super(DeclarationSorter, self).__init__(**args)
         self.__sections = {}
 
 
@@ -73,11 +73,10 @@ class ScopeSorter(Parametrized):
     def keys(self): return self.__sections.keys()
     def values(self): return self.__sections.values()
 
-    def sort(self, scope):
+    def sort(self, declarations):
 
         self.__sections.clear()
-        scopename = scope.name
-        for d in scope.declarations:
+        for d in declarations:
             if isinstance(d, (ASG.Forward, ASG.Builtin)):
                 continue
             elif isinstance(d, ASG.Group):

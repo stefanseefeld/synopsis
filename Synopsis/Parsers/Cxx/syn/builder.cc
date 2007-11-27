@@ -612,6 +612,16 @@ AST::Variable* Builder::add_variable(int line, const std::string& name, Types::T
     return var;
 }
 
+AST::Const* Builder::add_constant(int line, const std::string& name, Types::Type* cType, const std::string& type, std::string const &value)
+{
+    // Generate the name
+    ScopedName scope = m_scope->name();
+    scope.push_back(name);
+    AST::Const* c = new AST::Const(m_file, line, type, scope, cType, value);
+    add(c);
+    return c;
+}
+
 void Builder::add_this_variable()
 {
     // First find out if we are in a method
@@ -757,10 +767,12 @@ bool Builder::mapName(const ScopedName& names, std::vector<AST::Scope*>& o_scope
 }
 
 
-Types::Unknown* Builder::create_unknown(const std::string& name)
+Types::Unknown* Builder::create_unknown(const ScopedName& name)
 {
     // Generate the name
-    ScopedName u_name = extend(m_scope->name(), name);
+    ScopedName u_name = m_scope->name();
+    for (ScopedName::const_iterator i = name.begin(); i != name.end(); ++i)
+      u_name.push_back(*i);
     Types::Unknown* unknown = new Types::Unknown(u_name);
     return unknown;
 }
@@ -768,7 +780,11 @@ Types::Unknown* Builder::create_unknown(const std::string& name)
 Types::Unknown* Builder::add_unknown(const std::string& name)
 {
     if (m_scopes.back()->dict->has_key(name) == false)
-        add(create_unknown(name));
+    {
+      ScopedName u_name;
+      u_name.push_back(name);
+      add(create_unknown(u_name));
+    }
     return 0;
 }
 
@@ -934,7 +950,8 @@ void Builder::add_aliased_using_namespace(Types::Named* type, const std::string&
 AST::UsingDeclaration *Builder::add_using_declaration(int line, Types::Named* type)
 {
     // Add it to the current scope
-    AST::UsingDeclaration* u = new AST::UsingDeclaration(m_file, line, type);
+    ScopedName name = extend(m_scope->name(), type->name().back());
+    AST::UsingDeclaration* u = new AST::UsingDeclaration(m_file, line, name, type);
     add(u);
     return u;
 }

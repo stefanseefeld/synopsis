@@ -394,8 +394,8 @@ void UsingDirective::accept(Visitor* visitor)
     visitor->visit_using_directive(this);
 }
 
-UsingDeclaration::UsingDeclaration(SourceFile* file, int line, Types::Named *d)
-  : Declaration(file, line, "using", d->name()), m_target(d) {}
+UsingDeclaration::UsingDeclaration(SourceFile* file, int line, ScopedName const& name, Types::Named *d)
+  : Declaration(file, line, "using", name), m_target(d) {}
 
 
 void UsingDeclaration::accept(Visitor* visitor)

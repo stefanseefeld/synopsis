@@ -912,10 +912,12 @@ PyObject *Translator::UsingDirective(AST::UsingDirective* u)
 PyObject *Translator::UsingDeclaration(AST::UsingDeclaration* u)
 {
   Trace trace("Translator::UsingDeclaration", Trace::TRANSLATION);
-  PyObject *decl, *file, *type, *name;
-  decl = PyObject_CallMethod(m_ast_module, "UsingDeclaration", "OiOO",
+  PyObject *decl, *file, *type, *name, *alias;
+  decl = PyObject_CallMethod(m_ast_module, "UsingDeclaration", "OiOOO",
                              file = m->py(u->file()), u->line(),
-                             type = m->py(u->type()), name = m->Tuple(u->name()));
+                             type = m->py(u->type()), name = m->Tuple(u->name()),
+                             alias = m->Tuple(u->target()->name()));
+  Py_DECREF(alias);
   Py_DECREF(file);
   Py_DECREF(type);
   Py_DECREF(name);

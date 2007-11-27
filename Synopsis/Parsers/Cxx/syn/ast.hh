@@ -1039,7 +1039,7 @@ public:
 class UsingDeclaration : public Declaration
 {
 public:
-  UsingDeclaration(SourceFile* file, int line, Types::Named *d);
+  UsingDeclaration(SourceFile* file, int line, ScopedName const& name, Types::Named *d);
 
   Types::Named* target() { return m_target;}
   virtual void accept(Visitor*);

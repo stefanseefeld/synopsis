@@ -1179,6 +1179,8 @@ bool Parser::declaration(PTree::Declaration *&statement)
   if (!my_in_template_decl)
     my_comments = wrap_comments(my_lexer.get_comments());
 
+  PTree::Node *comments = my_comments;
+
   if(!opt_member_spec(mem_s) || !opt_storage_spec(storage_s))
     return false;
 
@@ -1214,7 +1216,7 @@ bool Parser::declaration(PTree::Declaration *&statement)
   }
   if (res && statement)
   {
-    statement->set_comments(my_comments);
+    statement->set_comments(comments);
     my_comments = 0;
   }
   return res;

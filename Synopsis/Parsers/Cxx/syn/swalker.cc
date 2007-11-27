@@ -134,13 +134,11 @@ void
 SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 {
   if (!node) return;
-  
   std::vector<std::string> comments;
 
   // First, make sure that node is a list of comments
   if (PTree::type_of(node) == Token::ntDeclaration)
     node = static_cast<PTree::Declaration*>(node)->get_comments();
-
   // Loop over all comments in the list
   bool suspect = false;
   for (PTree::Node *next = PTree::rest(node); node && !node->is_atom(); next = PTree::rest(node))
@@ -1119,7 +1117,7 @@ SWalker::translate_function_declarator(PTree::Node *decl, bool is_const)
 }
 
 PTree::Node*
-SWalker::translate_variable_declarator(PTree::Node *decl, bool /* is_const */)
+SWalker::translate_variable_declarator(PTree::Node *decl, bool is_const)
 {
   STrace trace("translate_variable_declarator");
   // Variable declaration. Restart decoding
@@ -1152,14 +1150,15 @@ SWalker::translate_variable_declarator(PTree::Node *decl, bool /* is_const */)
   {
     if (var_type == "function")
       var_type = "local";
-    var_type += " variable";
+    var_type += is_const ? " constant" : " variable";
   }
-  AST::Variable* var = my_builder->add_variable(my_lineno, name, type, false, var_type);
-  //if (my_declaration->get_comments()) add_comments(var, my_declaration->get_comments());
-  //if (decl->get_comments()) add_comments(var, decl->get_comments());
+  AST::Declaration* var;
+  if (is_const)
+    var = my_builder->add_constant(my_lineno, name, type, var_type);
+  else
+    var = my_builder->add_variable(my_lineno, name, type, false, var_type);
   add_comments(var, my_declaration);
   add_comments(var, dynamic_cast<PTree::Declarator*>(decl));
-
   // if storing links, find name
   if (my_links)
   {
@@ -1643,6 +1642,7 @@ void SWalker::visit(PTree::UsingDeclaration *node)
   try
   {
     Types::Named* type = my_lookup->lookupType(name);
+
     if (my_links) my_links->link(p_name, type);
     // Let builder do all the work
     my_builder->add_using_declaration(my_lineno, type);

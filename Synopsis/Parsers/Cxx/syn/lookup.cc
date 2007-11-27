@@ -253,7 +253,9 @@ Types::Named* Lookup::lookupType(const std::string& name, bool func_okay)
         return type;
     // Not found, declare it unknown
     //cout << "Warning: Name "<<name<<" not found in "<<m_filename<<endl;
-    return m_builder->create_unknown(name);
+    ScopedName u_name;
+    u_name.push_back(name);
+    return m_builder->create_unknown(u_name);
 }
 
 // Private method to lookup a type in the current scope
@@ -883,10 +885,7 @@ Types::Named* Lookup::lookupType(const std::vector<std::string>& names, bool fun
     {
         LOG("Not found -> creating Unknown");
         // Not found! Add Type.Unknown of scoped name
-        std::string name = names[0];
-        for (n_iter = names.begin(); ++n_iter != names.end();)
-            name += "::" + *n_iter;
-        return m_builder->create_unknown(name);
+        return m_builder->create_unknown(names);
     }
     return type;
 }

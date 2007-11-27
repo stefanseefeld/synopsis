@@ -9,16 +9,15 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import ASG, Type, Util
 
-import string
-
 class AccessRestrictor(Processor, ASG.Visitor):
    """This class processes declarations, and removes those that need greated
    access than the maximum passed to the constructor"""
 
    access = Parameter(None, 'specify up to which accessibility level the interface should be documented')
 
-   def __init__(self):
+   def __init__(self, **kwds):
 
+      self.set_parameters(kwds)
       self.__scopestack = []
       self.__currscope = []
 

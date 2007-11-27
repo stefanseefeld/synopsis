@@ -65,7 +65,7 @@ class ModuleFilter(Processor, ASG.Visitor):
         after that removes the module"""
 
         if module.name in self.modules:
-           return
+            return
         
         self.push()
         for d in module.declarations:

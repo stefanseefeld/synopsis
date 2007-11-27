@@ -8,7 +8,7 @@
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util, ScopeSorter
+from Synopsis import ASG, Type, Util, DeclarationSorter
 from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
@@ -23,6 +23,32 @@ def escape(text):
     for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
         text = text.replace(*p)
     return text
+
+
+class _BaseClasses(ASG.Visitor, Type.Visitor):
+
+    def __init__(self):
+        self.classes = [] # accumulated set of classes
+        self.classes_once = [] # classes not to be included again
+
+    def visit_declared(self, declared):
+        declared.declaration.accept(self)
+
+    def visit_class(self, class_):
+        self.classes.append(class_)
+        for p in class_.parents:
+            p.accept(self)
+
+    def visit_inheritance(self, inheritance):
+
+        if 'private' in inheritance.attributes:
+            return # Ignore private base classes, they are not visible anyway.
+        elif inheritance.parent in self.classes_once:
+            return # Do not include virtual base classes more than once.
+        if 'virtual' in inheritance.attributes:
+            self.classes_once.append(inheritance.parent)
+        inheritance.parent.accept(self)
+
 
 _summary_syntax = {
     'IDL': Syntax,
@@ -127,7 +153,7 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
 
         if decl.annotations.get('doc', ''):
             summary = self.processor.documentation.summary(decl)
-            self.write(summary)
+            self.write(summary + '\n')
 
     #################### ASG Visitor ###########################################
 
@@ -144,6 +170,8 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
     visit_class = visit_declaration
     def visit_meta_module(self, meta):
         self.visit_module(meta.module_declarations[0])
+
+    visit_function = visit_declaration
 
     def visit_enumerator(self, enumerator):
         print "sorry, <enumerator> not implemented"
@@ -199,7 +227,8 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         if not decl.annotations.get('doc', ''):
             return
         detail = self.processor.documentation.details(decl)
-        self.write(self.element('para', detail or ''))
+        if detail:
+            self.write(detail + '\n')
 
     #################### ASG Visitor ###########################################
 
@@ -219,86 +248,120 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         self.write_element('title', title)
         self.write('\n')
 
-        sorter = ScopeSorter.ScopeSorter()
-        sorter.sort(module)
-
-        self.start_element('section')
-        self.write_element('title', 'Summary')
-        self.write('\n')
-        summary = SummaryFormatter(self.processor, self.output)
-        for s in sorter.keys():
-            if s[-1] == 's': title = s + 'es Summary'
-            else: title = s + 's Summary'
+        sorter = DeclarationSorter.DeclarationSorter()
+        sorter.sort(module.declarations)
+        if self.processor.generate_summary:
             self.start_element('section')
-            self.write_element('title', title)
-            for d in sorter[s]:
-                d.accept(summary)
+            self.write_element('title', 'Summary')
+            self.write('\n')
+            summary = SummaryFormatter(self.processor, self.output)
+            for s in sorter.keys():
+                if s[-1] == 's': title = s + 'es Summary'
+                else: title = s + 's Summary'
+                self.start_element('section')
+                self.write_element('title', escape(title))
+                self.write('\n')
+                for d in sorter[s]:
+                    if not self.processor.hide_undocumented or d.annotations.get('doc'):
+                        d.accept(summary)
+                self.end_element()
             self.end_element()
-        self.end_element()
-        self.write('\n')
-        self.start_element('section')
-        self.write_element('title', 'Details')
-        self.write('\n')
+            self.write('\n')
+            self.start_element('section')
+            self.write_element('title', 'Details')
+            self.write('\n')
         self.process_doc(module)
         self.push_scope(module.name)
+        suffix = self.processor.generate_summary and ' Details' or ''
         for s in sorter.keys():
-            if s[-1] == 's': title = s + 'es Details'
-            else: title = s + 's Details'
+            if s[-1] == 's': title = s + 'es'
+            else: title = s + 's'
+            title += suffix
             self.start_element('section')
-            self.write_element('title', title)
+            self.write_element('title', escape(title))
+            self.write('\n')
             for d in sorter[s]:
                 d.accept(self)
             self.end_element()
         self.pop_scope()
         self.end_element()
         self.write('\n')
-        self.end_element()
-        self.write('\n')
+        if self.processor.generate_summary:
+            self.end_element()
+            self.write('\n')
 
 
     def visit_class(self, class_):
 
         self.start_element('section')
         title = '%s %s'%(class_.type, class_.name[-1])
-        self.write_element('title', title)
+        self.write_element('title', escape(title))
         self.write('\n')
 
-        sorter = ScopeSorter.ScopeSorter()
-        sorter.sort(class_)
+        declarations = class_.declarations
+        # If so desired, flatten inheritance tree
+        if self.processor.inline_inherited_members:
+            declarations = class_.declarations[:]
+            bases = _BaseClasses()
+            for i in class_.parents:
+                bases.visit_inheritance(i)
+            for base in bases.classes:
+                for d in base.declarations:
+                    if type(d) == ASG.Operation:
+                        if d.real_name[-1] == base.name[-1]:
+                            # Constructor
+                            continue
+                        elif d.real_name[-1] == '~' + base.name[-1]:
+                            # Destructor
+                            continue
+                        elif d.real_name[-1] == 'operator=':
+                            # Assignment
+                            continue
+                    declarations.append(d)
 
-        self.start_element('section')
-        self.write_element('title', 'Summary')
-        self.write('\n')
-        summary = SummaryFormatter(self.processor, self.output)
-        summary.process_doc(class_)
-        for s in sorter.keys():
-            if s[-1] == 's': title = s + 'es Summary'
-            else: title = s + 's Summary'
+        sorter = DeclarationSorter.DeclarationSorter()
+        sorter.sort(declarations)
+
+        if self.processor.generate_summary:
             self.start_element('section')
-            self.write_element('title', title)
-            for d in sorter[s]:
-                d.accept(summary)
+            self.write_element('title', 'Summary')
+            self.write('\n')
+            summary = SummaryFormatter(self.processor, self.output)
+            summary.process_doc(class_)
+            for s in sorter.keys():
+                if s[-1] == 's': title = s + 'es Summary'
+                else: title = s + 's Summary'
+                self.start_element('section')
+                self.write_element('title', escape(title))
+                self.write('\n')
+                for d in sorter[s]:
+                    if not self.processor.hide_undocumented or d.annotations.get('doc'):
+                        d.accept(summary)
+                self.end_element()
             self.end_element()
-        self.end_element()
-        self.write('\n')
-        self.start_element('section')
-        self.write_element('title', 'Details')
-        self.write('\n')
+            self.write('\n')
+            self.start_element('section')
+            self.write_element('title', 'Details')
+            self.write('\n')
         self.process_doc(class_)
         self.push_scope(class_.name)
+        suffix = self.processor.generate_summary and ' Details' or ''
         for s in sorter.keys():
-            if s[-1] == 's': title = s + 'es Details'
-            else: title = s + 's Details'
+            if s[-1] == 's': title = s + 'es'
+            else: title = s + 's'
+            title += suffix
             self.start_element('section')
-            self.write_element('title', title)
+            self.write_element('title', escape(title))
+            self.write('\n')
             for d in sorter[s]:
                 d.accept(self)
             self.end_element()
         self.pop_scope()
         self.end_element()
         self.write('\n')
-        self.end_element()
-        self.write('\n')
+        if self.processor.generate_summary:
+            self.end_element()
+            self.write('\n')
 
 
     def visit_inheritance(self, inheritance):
@@ -310,16 +373,7 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
         parameter.type.accept(self)
 
-    def visit_function(self, function):
-        
-        print "sorry, <function> not implemented"
-
-    def visit_operation(self, operation):
-
-        language = operation.file.annotations['language']
-        syntax = _detail_syntax[language](self.output)
-        operation.accept(syntax)
-        syntax.finish()
+    visit_function = visit_declaration
 
     def visit_enumerator(self, enumerator):
         print "sorry, <enumerator> not implemented"
@@ -384,6 +438,9 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
     markup_formatters = Parameter({'rst':RST()},
                                   'Markup-specific formatters.')
     title = Parameter(None, 'title to be used in top-level section')
+    generate_summary = Parameter(False, 'generate scope summaries')
+    hide_undocumented = Parameter(False, 'hide declarations without a doc-string')
+    inline_inherited_members = Parameter(False, 'show inherited members')
    
     def process(self, ir, **kwds):
 

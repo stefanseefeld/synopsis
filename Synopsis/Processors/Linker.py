@@ -277,8 +277,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
    visit_enum = add_declaration
 
    def visit_function(self, func):
-
-      if not isinstance(self.top(), ASG.Class):
+      if not isinstance(self.top(), (ASG.Class, ASG.ClassTemplate)):
          for d in self.top().declarations:
             if not isinstance(d, ASG.Function): continue
             if func.name == d.name:
@@ -316,13 +315,13 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
             # Forward declaration, replace it
             self.top().declarations.remove(prev)
             del self.top_dict()[class_.name]
-         elif isinstance(prev, ASG.Class):
+         elif isinstance(prev, (ASG.Class, ASG.ClassTemplate)):
             # Previous class. Would ignore duplicate but class_ may have
             # class declarations that prev doesn't. (forward declared
             # nested -- see ThreadData.hh for example)
             self.push(prev)
             for d in class_.declarations:
-               if isinstance(d, ASG.Class):
+               if isinstance(d, (ASG.Class, ASG.ClassTemplate)):
                   d.accept(self)
             self.pop()
             return
@@ -341,7 +340,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
    def visit_inheritance(self, parent):
 
       type = parent.parent
-      if isinstance(type, Type.Declared) or isinstance(type, Type.Unknown):
+      if isinstance(type, (Type.Declared, Type.Unknown)):
          ltype = self.link_type(type)
          if ltype is not type:
             parent.parent = ltype
@@ -353,7 +352,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
                # Error
                return
             decl = ltype.declaration
-            if isinstance(decl, ASG.Class):
+            if isinstance(decl, ASG.ClassTemplate):
                type.template = decl.template
       else:
          # Unknown type in class inheritance

@@ -83,9 +83,15 @@ class UsingDirective(Builtin):
 
 
 class UsingDeclaration(Builtin):
-   """Import a declaration into this module."""
+    """Import a declaration into this module."""
 
-   def accept(self, visitor): visitor.visit_using_declaration(self)
+    def __init__(self, file, line, type, name, alias):
+
+        super(UsingDeclaration, self).__init__(file, line, type, name)
+        self.alias = alias
+
+    def accept(self, visitor):
+        visitor.visit_using_declaration(self)
 
 
 class Macro(Declaration):

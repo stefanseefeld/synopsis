@@ -110,7 +110,7 @@ class Template(Declared):
       "Comparison operator"
       return ccmp(self,other) or cmp(self.parameters,other.parameters)
    def __str__(self):
-      return "template<%s>%s"%(','.join(self.parameters),
+      return "template<%s>%s"%(','.join(str(self.parameters)),
                                Util.ccolonName(self.name))
 
 class Modifier(Type):

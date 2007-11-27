@@ -8,7 +8,6 @@
 """The SXR Facade around the HTML Formatter """
 
 from Synopsis import config
-from Synopsis import AST
 from Synopsis.Processor import Processor, Parameter
 from Synopsis.Processors.XRefCompiler import XRefCompiler
 import HTML

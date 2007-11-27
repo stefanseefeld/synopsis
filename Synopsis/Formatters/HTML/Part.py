@@ -203,7 +203,7 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
          type_label = self.reference(type.template.name)
       else:
          type_label = "(unknown)"
-      parameters = [self.format_type(p) for a in type.parameters]
+      parameters = [self.format_type(p) for p in type.parameters]
       self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(parameters))
 
    def visit_template(self, type):
