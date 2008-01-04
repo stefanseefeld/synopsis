@@ -55,12 +55,14 @@ dnl of the list.
     LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 Darwin)
-    LDSHARED="$CXX -dynamiclib"
+    CFLAGS="$CFLAGS -fPIC"
     CXXFLAGS="$CXXFLAGS -fPIC"
+    LDSHARED="$CXX -dynamiclib"
     ;;
 *)
-    LDSHARED="$CXX -shared"
+    CFLAGS="$CFLAGS -fPIC"
     CXXFLAGS="$CXXFLAGS -fPIC"
+    LDSHARED="$CXX -shared"
     ;;
 esac
 
