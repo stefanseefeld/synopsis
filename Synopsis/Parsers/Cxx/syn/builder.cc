@@ -411,30 +411,31 @@ void Builder::update_class_base_search()
 AST::Class* Builder::start_class(int lineno, const std::string& type, const std::string& name, AST::Parameter::vector* templ_params)
 {
     // Generate the name
-    ScopedName class_name;
-    if (templ_params)
-        class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
-    else
-        class_name = extend(m_scope->name(), name);
-    // Create the Class
-    AST::Class* ns = new AST::Class(m_file, lineno, type, class_name);
-    // Create template type
-    if (templ_params)
+    AST::Class* class_ = 0;
+    if (templ_params && templ_params->size())
     {
-        Types::Template* templ = new Types::Template(class_name, ns, *templ_params);
-        ns->set_template_type(templ);
-        add(ns, true);
+      // FIXME: distinguish between partial specialization and full specialization
+      //        (the latter is not a class template !)
+      ScopedName class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
+      class_ = new AST::Class(m_file, lineno, "class template", class_name);
+      Types::Template* templ = new Types::Template(class_name, class_, *templ_params);
+      class_->set_template_type(templ);
+      add(class_, true);
     }
     else
-        add(ns);
+    {
+      ScopedName class_name = extend(m_scope->name(), name);
+      class_ = new AST::Class(m_file, lineno, type, class_name);
+      add(class_);
+    }
     // Push stack. Search is this Class plus base Classes plus enclosing NS's search
-    ScopeInfo* ns_info = find_info(ns);
-    ns_info->access = (type == "struct" ? AST::Public : AST::Private);
+    ScopeInfo* class_info = find_info(class_);
+    class_info->access = (type == "struct" ? AST::Public : AST::Private);
     std::copy(scopeinfo()->search.begin(), scopeinfo()->search.end(),
-              std::back_inserter(ns_info->search));
-    m_scopes.push_back(ns_info);
-    m_scope = ns;
-    return ns;
+              std::back_inserter(class_info->search));
+    m_scopes.push_back(class_info);
+    m_scope = class_;
+    return class_;
 }
 
 // Declaration of a previously forward declared class (ie: must find and
@@ -585,9 +586,15 @@ AST::Function* Builder::add_function(int line, const std::string& name,
     // function
     AST::Function* func;
     if (dynamic_cast<AST::Class*>(parent_scope))
-      func = new AST::Operation(m_file, line, "member function", func_name, premod, ret, postmod, realname);
+    {
+      char const *type = (templ_params && templ_params->size()) ? "member function" : "member function template";
+      func = new AST::Operation(m_file, line, type, func_name, premod, ret, postmod, realname);
+    }
     else
-      func = new AST::Function(m_file, line, "function", func_name, premod, ret, postmod, realname);
+    {
+      char const *type = (templ_params && templ_params->size()) ? "function" : "function template";
+      func = new AST::Function(m_file, line, type, func_name, premod, ret, postmod, realname);
+    }
 
     // Create template type
     if (templ_params)

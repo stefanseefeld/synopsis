@@ -57,9 +57,7 @@ class ModuleIndex(View):
       "Index one module"
 
       sorter = self.processor.sorter
-      sorter.set_scope(module)
-      sorter.sort_section_names()
-      sorter.sort_sections()
+      sorter.sort(module.declarations)
 
       self.__filename = self.directory_layout.module_index(module.name)
       self.__title = Util.ccolonName(module.name) or 'Global Module'
@@ -84,12 +82,12 @@ class ModuleIndex(View):
       self.write(entity('script', load_script, type='text/javascript'))
 
       # Loop throught all the types of children
-      for section in sorter.sections():
+      for section in sorter:
          if section[-1] == 's': heading = section+'es'
          else: heading = section+'s'
          heading = '<br/>\n'+entity('i', escape(heading))+'<br/>\n'
          # Get a list of children of this type
-         for child in sorter.children(section):
+         for child in sorter[section]:
             # Print out summary for the child
             if not isinstance(child, ASG.Scope):
                continue
@@ -113,7 +111,5 @@ class ModuleIndex(View):
             self.write('<br/>\n')
       self.end_file()
 
-      # Queue child modules
-      for child in sorter.children():
-         if isinstance(child, ASG.Module):
-            self.__modules.append(child)
+      children = [c for c in module.declarations if isinstance(c, ASG.Module)]
+      self.__modules.extend(children)

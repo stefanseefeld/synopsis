@@ -188,7 +188,7 @@ class Class(Scope):
    def accept(self, visitor): visitor.visit_class(self)
 
 
-class ClassTemplate(Class):
+class ClassTemplate(Scope):
 
    def __init__(self, file, line, type, name, template = None):
 

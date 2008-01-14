@@ -17,12 +17,14 @@ _access_specs = {ASG.DEFAULT: '',
 # The predefined order for section names
 _section_order = ('Namespace',
                   'Module',
+                  'ClassTemplate',
                   'Class',
                   'Typedef',
                   'Struct',
                   'Enum',
                   'Union',
                   'Group',
+                  'FunctionTemplate',
                   'Member function',
                   'Function')
 
@@ -63,6 +65,7 @@ class DeclarationSorter(Parametrized):
         self.__sections = {}
 
 
+    def __iter__(self): return self.iterkeys()
     def __getitem__(self, i): return self.__sections[i]
     def get(self, *args): return self.__sections.get(*args)
     def has_key(self, k): return self.__sections.haskey(k)

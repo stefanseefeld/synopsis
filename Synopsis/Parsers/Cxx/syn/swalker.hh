@@ -163,9 +163,9 @@ public:
   void visit(PTree::ParenExpr *);
   void visit(PTree::StaticUserStatementExpr *);
   
-  PTree::TemplateDecl *translate_template_class(PTree::TemplateDecl *,
+  PTree::TemplateDecl *translate_class_template(PTree::TemplateDecl *,
 						PTree::ClassSpec *);
-  PTree::TemplateDecl *translate_template_function(PTree::TemplateDecl *,
+  PTree::TemplateDecl *translate_function_template(PTree::TemplateDecl *,
 						   PTree::Node *);
   PTree::Node *translate_storage_specifiers(PTree::Node *);
   PTree::Node *translate_declarators(PTree::Node *);

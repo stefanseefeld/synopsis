@@ -19,7 +19,7 @@ processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Processors.Comments.Filter \
               Synopsis.Processors.Comments.Translator \
               Synopsis.Formatters.Dump.Formatter \
-              Synopsis.Formatters.Docbook.Formatter \
+              Synopsis.Formatters.DocBook.Formatter \
               Synopsis.Formatters.Texinfo.Formatter \
               Synopsis.Formatters.Dot.Formatter \
               Synopsis.Formatters.HTML.Formatter \

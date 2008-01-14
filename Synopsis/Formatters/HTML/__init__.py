@@ -122,9 +122,8 @@ class Formatter(Processor):
         # Create the cross reference table (shared by XRef / Scope views)
         self.xref = CrossReferencer()
 
-        # if not self.sorter:
-        import ScopeSorter
-        self.sorter = ScopeSorter.ScopeSorter()
+        from Synopsis.DeclarationSorter import DeclarationSorter
+        self.sorter = DeclarationSorter()
 
         # Make all views queryable through Formatter.has_view()
         self.views = self.content + self.index + self.detail
@@ -164,7 +163,7 @@ class Formatter(Processor):
                              self.content[0].root()[0] or self.content[0].filename())
 
         for frame in frames: frame.process()
-        # Return original ASG, not the synthetic ASG.Module created above.
+        # Return original IR, not the synthetic ASG.Module created above.
         return ir
 
     def has_view(self, name):

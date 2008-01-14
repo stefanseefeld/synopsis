@@ -13,7 +13,7 @@ from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Parts import *
-import time, pdb
+import time
 
 class Scope(View):
     """A module for creating a view for each Scope with summaries and
@@ -74,11 +74,8 @@ class Scope(View):
         while self.__scopes:
             scope = self.__scopes.pop(0)
             self.process_scope(scope)
-         
-            # Queue child scopes
-            for child in self.processor.sorter.children():
-                if isinstance(child, ASG.Scope):
-                    self.__scopes.append(child)
+            scopes = [c for c in scope.declarations if isinstance(c, ASG.Scope)]
+            self.__scopes.extend(scopes)
 
     def register_filenames(self):
         """Registers a view for every Scope."""
@@ -93,12 +90,10 @@ class Scope(View):
                 filename = self.root()[0]
             self.processor.register_filename(filename, self, scope)
 
-            self.processor.sorter.set_scope(scope)
-         
-            # Queue child scopes
-            for child in self.processor.sorter.children():
-                if isinstance(child, ASG.Scope):
-                    self.__scopes.append(child)
+            #sorter = self.processor.sorter
+            #sorter.sort(scope.declarations)
+            scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
+            self.__scopes.extend(scopes)
      
     def process_scope(self, scope):
         """Creates a view for the given scope"""

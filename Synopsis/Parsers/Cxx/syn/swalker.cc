@@ -573,14 +573,6 @@ void SWalker::visit(PTree::ClassSpec *node)
   my_decoder->init(enc);
   if (enc.at(0) == 'T')
   {
-    // Specialization
-    // TODO: deal with this.
-    // Eg: /usr/include/g++-3/std/straits.h
-    // search: /^struct string_char_traits <char> {/
-    // encname: "T\222string_char_traits\201c"
-    LOG("Specialization?");
-    nodeLOG(node);
-    LOG("encname:"<< enc);
     Types::Parameterized* param = my_decoder->decodeTemplate();
     // If a non-type param was found, its name will be '*'
     for (size_t i = 0; i < param->parameters().size(); i++)
@@ -641,9 +633,9 @@ void SWalker::visit(PTree::ClassSpec *node)
 }
 
 PTree::TemplateDecl *
-SWalker::translate_template_class(PTree::TemplateDecl *def, PTree::ClassSpec *node)
+SWalker::translate_class_template(PTree::TemplateDecl *def, PTree::ClassSpec *node)
 {
-  STrace trace("SWalker::translate_template_class");
+  STrace trace("SWalker::translate_class_template");
   AST::Parameter::vector* old_params = my_template;
   update_line_number(def);
   my_builder->start_template();
@@ -756,9 +748,9 @@ void SWalker::translate_template_params(PTree::Node *params)
 }
 
 PTree::TemplateDecl *
-SWalker::translate_template_function(PTree::TemplateDecl *def, PTree::Node *node)
+SWalker::translate_function_template(PTree::TemplateDecl *def, PTree::Node *node)
 {
-  STrace trace("SWalker::translate_template_function");
+  STrace trace("SWalker::translate_function_template");
   nodeLOG(def);
   nodeLOG(node);
   PTree::Declaration *decl = dynamic_cast<PTree::Declaration *>(node);
@@ -835,8 +827,16 @@ void SWalker::visit(PTree::TemplateDecl *node)
   STrace trace("SWalker::visit(PTree::TemplateDecl*)");
   PTree::Node *body = PTree::nth(node, 4);
   PTree::ClassSpec *class_spec = get_class_template_spec(body);
-  if(class_spec) translate_template_class(node, class_spec);
-  else translate_template_function(node, body);
+  if (PTree::third(node))
+  {
+    if (class_spec) translate_class_template(node, class_spec);
+    else translate_function_template(node, body);
+  }
+  else
+  {
+    if (class_spec) visit(class_spec);
+    else visit(static_cast<PTree::Declaration *>(body));
+  }
 }
 
 //. A typeof(expr) expression evaluates to the type of 'expr'. This is a GNU

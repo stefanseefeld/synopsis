@@ -44,10 +44,6 @@ class ModuleTree(Tree):
         self.end_tree()
         self.end_file()
 
-    def _child_filter(self, child):
-
-        return isinstance(child, ASG.Module)
-
     def _link_href(self, module):
 
         return self.directory_layout.module_index(module.name)
@@ -56,11 +52,7 @@ class ModuleTree(Tree):
 
         try: return self._children_cache[decl]
         except KeyError: pass
-        sorter = self.processor.sorter
-        sorter.set_scope(decl)
-        sorter.sort_sections()
-        children = sorter.children()
-        children = filter(self._child_filter, children)
+        children = [c for c in decl.declarations if isinstance(c, ASG.Module)]
         self._children_cache[decl] = children
         return children
 

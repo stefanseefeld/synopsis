@@ -356,6 +356,10 @@ Types::Parameterized* Decoder::decodeTemplate()
     }
     else if (Types::Dependent* d = dynamic_cast<Types::Dependent*>(type))
       templ = d;
+    if (templ)
+      std::cout << "creating Parameterized for " << name << ' ' << templ->name() << std::endl;
+    else
+      std::cout << "no template found for " << name << ' ' << typeid(type).name() << std::endl;
     return new Types::Parameterized(templ, types);
 }
 

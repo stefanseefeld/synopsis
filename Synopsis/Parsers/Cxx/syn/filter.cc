@@ -237,7 +237,6 @@ bool FileFilter::should_store(AST::Declaration* decl)
     // Sanity check (this can happen)
     if (!decl)
         return false;
-
     // Check the decl itself first, although for namespaces the SourceFile
     // referenced by file() can be any of the files that opened it
     if (decl->file()->is_main())

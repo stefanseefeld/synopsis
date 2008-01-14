@@ -62,17 +62,16 @@ class Summary(Part):
 
         doc = self.processor.documentation
         sorter = self.processor.sorter
-        sorter.set_scope(scope)
-        sorter.sort_section_names()
+        sorter.sort(scope.declarations)
 
         self.write_start()
-        for section in sorter.sections():
+        for section in sorter:
             # Write a header for this section
             if section[-1] == 's': heading = section+'es Summary:'
             else: heading = section+'s Summary:'
             self.write_section_start(heading)
             # Iterate through the children in this section
-            for child in sorter.children(section):
+            for child in sorter[section]:
                 # Check if need to add to detail list
                 if doc.details(child, self.view()):
                     # Setup the linking stuff
