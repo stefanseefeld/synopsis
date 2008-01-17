@@ -53,6 +53,7 @@ SWalker::SWalker(FileFilter* filter, Builder* builder, Buffer* buffer)
     my_buffer(buffer),
     my_decoder(new Decoder(my_builder)),
     my_declaration(0),
+    my_in_typedef(false),
     my_template(0),
     my_lineno(0),
     my_file(0),
@@ -528,27 +529,25 @@ void SWalker::visit(PTree::ClassSpec *node)
 
   AST::Parameter::vector* is_template = my_template;
   my_template = 0;
-
   int size = PTree::length(node);
-  if (size == SizeForwardDecl)
-  {
-    // Forward declaration
-    // [ class|struct <name> ]
-    std::string name = parse_name(PTree::second(node));
-    if (is_template)
-      LOG("Templated class forward declaration " << name);
-    my_builder->add_forward(my_lineno, name, is_template);
-    if (my_links)
-    { // highlight the comments, at least
-      PTree::ClassSpec* cspec = static_cast<PTree::ClassSpec*>(node);
-      add_comments(0, cspec->get_comments());
-    }
-    return;
-  }
   PTree::Node *pClass = PTree::first(node);
   PTree::Node *pName = 0, *pInheritance = 0;
   PTree::ClassBody *pBody = 0;
-  if (size == SizeClass)
+
+  if (size == SizeForwardDecl && !my_in_typedef)
+  {
+    // Forward declaration
+    // [ class|struct <name> ]
+    pName = PTree::nth(node, 1);
+    std::string name = parse_name(pName);
+    if (is_template)
+      LOG("Templated class forward declaration " << name);
+    AST::Forward *class_ = my_builder->add_forward(my_lineno, name, parse_name(pClass),
+                                                   is_template);
+    add_comments(class_, node->get_comments());
+    return;
+  }
+  else if (size == SizeClass)
   {
     // [ class|struct <name> <inheritance> [{ body }] ]
     pName = PTree::nth(node, 1);
@@ -565,7 +564,6 @@ void SWalker::visit(PTree::ClassSpec *node)
 
   if (my_links) my_links->span(pClass, "keyword");
   else update_line_number(node);
-
   // Create AST.Class object
   AST::Class *clas;
   std::string type = parse_name(pClass);
@@ -589,7 +587,10 @@ void SWalker::visit(PTree::ClassSpec *node)
     my_type_formatter->push_scope(my_builder->scope()->name());
     std::string name = my_type_formatter->format(param);
     my_type_formatter->pop_scope();
-    clas = my_builder->start_class(my_lineno, type, name, is_template);
+    std::string primary_name;
+    if (pName)
+      primary_name = parse_name(pName->is_atom() ? pName : PTree::first(pName));
+    clas = my_builder->start_class(my_lineno, type, name, is_template, primary_name);
     // TODO: figure out spec stuff, like what to do with vars, link to
     // original template, etc.
   }
@@ -602,7 +603,11 @@ void SWalker::visit(PTree::ClassSpec *node)
   else
   {
     std::string name = my_decoder->decodeName();
-    clas = my_builder->start_class(my_lineno, type, name, is_template);
+    std::string primary_name;
+    if (pName)
+      primary_name = parse_name(pName->is_atom() ? pName : PTree::first(pName));
+    if (pName && !pName->is_atom()) primary_name = parse_name(PTree::first(pName));
+    clas = my_builder->start_class(my_lineno, type, name, is_template, primary_name);
   }
   if (my_links && pName) my_links->link(pName, clas);
   LOG("Translating class '" << clas->name() << "'");
@@ -614,9 +619,7 @@ void SWalker::visit(PTree::ClassSpec *node)
     my_builder->update_class_base_search();
   }
 
-  // Add comments
-  PTree::ClassSpec* cspec = static_cast<PTree::ClassSpec*>(node);
-  add_comments(clas, cspec->get_comments());
+  add_comments(clas, node->get_comments());
 
   // Push the impl stack for a cache of func impls
   my_func_impl_stack.push_back(FuncImplVec());
@@ -676,33 +679,30 @@ void SWalker::translate_template_params(PTree::Node *params)
     nodeLOG(param);
     if (*PTree::first(param) == "class" || *PTree::first(param) == "typename")
     {
+      Types::Dependent* dep = 0;
       // Ensure that there is an identifier (it is optional!)
       if (param->cdr() && PTree::second(param))
       {
-        // This parameter specifies a type, add as dependent
-        Types::Dependent* dep = my_builder->create_dependent(parse_name(PTree::second(param)));
+        dep = my_builder->create_dependent(parse_name(PTree::second(param)));
         my_builder->add(dep);
-        AST::Parameter::Mods paramtype;
-        paramtype.push_back(parse_name(PTree::first(param)));
-        templ_params.push_back(new AST::Parameter(paramtype, dep, post_mods, name, value));
       }
-      else
-      {
-        // Add a parameter, but with no name
-        AST::Parameter::Mods paramtype;
-        paramtype.push_back(parse_name(PTree::first(param)));
-        templ_params.push_back(new AST::Parameter(paramtype, 0, post_mods, name, value));
-      }
+      AST::Parameter::Mods paramtype;
+      paramtype.push_back(parse_name(PTree::first(param)));
+      templ_params.push_back(new AST::Parameter(paramtype, dep, post_mods, name, value));
     }
     else if (*PTree::first(param) == "template")
     {
       // A template template parameter.
-      PTree::Node *id = PTree::nth(param, 5);
-      if (id) 
+      Types::Dependent* dep = 0;
+      if(PTree::nth(param, 5))
       {
-        Types::Dependent* dep = my_builder->create_dependent(parse_name(id));
+        dep = my_builder->create_dependent(parse_name(PTree::nth(param, 5)));
         my_builder->add(dep);
       }
+      AST::Parameter::Mods paramtype;
+      std::string type = "template <" + parse_name(PTree::nth(param, 2)) + "> " + parse_name(PTree::nth(param, 4));
+      paramtype.push_back(type);
+      templ_params.push_back(new AST::Parameter(paramtype, dep, post_mods, name, value));
       nodeLOG(param);
     }
     else
@@ -832,7 +832,7 @@ void SWalker::visit(PTree::TemplateDecl *node)
     if (class_spec) translate_class_template(node, class_spec);
     else translate_function_template(node, body);
   }
-  else
+  else // explicit specialization
   {
     if (class_spec) visit(class_spec);
     else visit(static_cast<PTree::Declaration *>(body));
@@ -897,7 +897,6 @@ void SWalker::visit(PTree::Declaration *node)
   // Link any comments added because we are inside a function body
   if (my_links) find_comments(node);
   update_line_number(node);
-
   my_declaration = node;
   my_store_decl = true;
   PTree::Node *decls = PTree::third(node);
@@ -1153,8 +1152,14 @@ SWalker::translate_variable_declarator(PTree::Node *decl, bool is_const)
     var_type += is_const ? " constant" : " variable";
   }
   AST::Declaration* var;
+
   if (is_const)
-    var = my_builder->add_constant(my_lineno, name, type, var_type);
+  {
+    std::string value;
+    if (PTree::length(decl) == 3)
+      value = PTree::reify(PTree::nth(decl, 2));
+    var = my_builder->add_constant(my_lineno, name, type, var_type, value);
+  }
   else
     var = my_builder->add_variable(my_lineno, name, type, false, var_type);
   add_comments(var, my_declaration);
@@ -1358,6 +1363,8 @@ SWalker::translate_type_specifier(PTree::Node *tspec)
 void SWalker::visit(PTree::Typedef *node)
 {
   STrace trace("SWalker::visit(Typedef*)");
+  bool in_typedef_back = my_in_typedef;
+  my_in_typedef = true;
   if (my_links) my_links->span(PTree::first(node), "keyword");
   /* PTree::Node *tspec = */
   translate_type_specifier(PTree::second(node));
@@ -1365,6 +1372,7 @@ void SWalker::visit(PTree::Typedef *node)
   my_store_decl = true;
   for (PTree::Node *declarator = PTree::third(node); declarator; declarator = PTree::tail(declarator, 2))
     translate_typedef_declarator(declarator->car());
+  my_in_typedef = in_typedef_back;
 }
 
 void SWalker::translate_typedef_declarator(PTree::Node *node)

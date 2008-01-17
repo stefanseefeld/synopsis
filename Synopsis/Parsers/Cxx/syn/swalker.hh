@@ -200,6 +200,7 @@ private:
   //. A pointer to the currect declaration ptree, if any, used to get the
   //. return type and modifiers, etc.
   PTree::Node * my_declaration;
+  bool my_in_typedef;
   //. A pointer to the current template parameters, if any, used to get the
   //. template parameters and set in the declaration. Should be 0 if not
   //. in a template.

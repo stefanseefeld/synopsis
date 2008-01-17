@@ -241,7 +241,6 @@ bool FileFilter::should_store(AST::Declaration* decl)
     // referenced by file() can be any of the files that opened it
     if (decl->file()->is_main())
         return true;
-
     if (AST::Scope* scope = dynamic_cast<AST::Scope*>(decl))
     {
         // Check all members of the namespace or class

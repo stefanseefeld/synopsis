@@ -159,7 +159,7 @@ public:
     //. accessability. If this is a template class, the templ_params vector must
     //. be non-null pointer
     AST::Class* start_class(int, const std::string& type, const std::string& name,
-                            AST::Parameter::vector* templ_params);
+                            AST::Parameter::vector* templ_params, std::string const &primary_name);
 
     //. Construct and open a new Class with a qualified name
     AST::Class* start_class(int, const std::string& type, const ScopedName& names);
@@ -242,7 +242,8 @@ public:
     Types::Unknown* add_unknown(const std::string& name);
 
     //. Add an Templated Forward decl for given name if it doesnt already exist
-    AST::Forward* add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params);
+    AST::Forward* add_forward(int lineno, const std::string& name, const std::string &type,
+                              AST::Parameter::vector* templ_params);
 
 private:
     //. Current file

@@ -200,11 +200,11 @@ Namespace::accept(Visitor* visitor)
 // AST::Class
 //
 
-Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name)
-        : Scope(file, line, type, name)
-{
-    m_template = 0;
-}
+Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+             Declaration *primary_template)
+  : Scope(file, line, type, name),
+    m_primary_template(primary_template)
+{}
 
 Class::~Class()
 {}
@@ -213,6 +213,26 @@ void
 Class::accept(Visitor* visitor)
 {
     visitor->visit_class(this);
+}
+
+//
+// AST::ClassTemplate
+//
+
+ClassTemplate::ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+                             Declaration *primary_template)
+  : Class(file, line, type, name, primary_template),
+    m_template(0),
+    m_is_primary_template(primary_template == 0)
+{}
+
+ClassTemplate::~ClassTemplate()
+{}
+
+void
+ClassTemplate::accept(Visitor* visitor)
+{
+    visitor->visit_class_template(this);
 }
 
 //
@@ -234,8 +254,11 @@ Inheritance::accept(Visitor* visitor)
 // AST::Forward
 //
 
-Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name)
-        : Declaration(file, line, type, name), m_template(0)
+Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+                 Declaration *primary_template)
+  : Declaration(file, line, type, name), m_template(0),
+    m_primary_template(primary_template)
+
 { }
 
 Forward::Forward(AST::Declaration* decl)
@@ -435,6 +458,10 @@ void Visitor::visit_namespace(Namespace* d)
 void Visitor::visit_class(Class* d)
 {
     visit_scope(d);
+}
+void Visitor::visit_class_template(ClassTemplate* d)
+{
+    visit_class(d);
 }
 void Visitor::visit_inheritance(Inheritance* d)
 {}

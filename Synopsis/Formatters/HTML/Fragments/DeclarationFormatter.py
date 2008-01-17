@@ -49,7 +49,19 @@ class DeclarationFormatter(Fragment):
 
     def format_forward(self, decl):
 
-        return self.format_declaration(decl)
+        # treat template syntax like a premodifier
+        if decl.template:
+            templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
+            templ = div('template', templ)
+            type = '%s %s'%(templ, decl.type)
+        else:
+            type = decl.type
+
+        name = self.label(decl.name)
+        chunk = div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_forward(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_forward(decl))
+        return chunk
 
     def format_group(self, decl):
 
@@ -73,12 +85,25 @@ class DeclarationFormatter(Fragment):
 
     def format_class(self, decl):
 
-        chunk = '%s'%div('synopsis', self.format_scope(decl))
+        chunk = div('synopsis', decl.type + ' ' + self.format_scope(decl))
         if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
         if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
         return chunk
 
-    format_class_template = format_class
+    def format_class_template(self, decl):
+
+        # treat template syntax like a premodifier
+        if decl.template:
+            templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
+            templ = div('template', templ)
+            type = '%s %s'%(templ, decl.type)
+
+        name  = self.format_scope(decl)
+        chunk = div('synopsis', type + ' ' + name)
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        return chunk
+
 
     def format_typedef(self, decl):
         "(typedef type, typedef name)"
@@ -207,16 +232,16 @@ class DeclarationFormatter(Fragment):
         # Param Type
         id_holder = [parameter.name]
         typestr = self.format_type(parameter.type, id_holder)
-        if typestr: text.append(typestr)
+        if typestr: text.append(' %s '%typestr)
         # Postmodifiers
         text.extend([span('keyword', m) for m in parameter.postmodifier])
         # Param name
         if id_holder and len(parameter.name) != 0:
-            text.append(' ' + span('variable', parameter.name))
+            text.append(span('variable', parameter.name))
         # Param value
         if len(parameter.value) != 0:
-            text.append(' = ' + span('value', escape(parameter.value)))
-        return ''.join(text)
+            text.append('= %s'%span('value', escape(parameter.value)))
+        return ' '.join(text)
 
 
 class DeclarationSummaryFormatter(DeclarationFormatter):

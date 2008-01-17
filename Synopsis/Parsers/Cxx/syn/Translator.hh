@@ -57,6 +57,7 @@ public:
   PyObject* Namespace(AST::Namespace*);
   PyObject* Inheritance(AST::Inheritance*);
   PyObject* Class(AST::Class*);
+  PyObject* ClassTemplate(AST::ClassTemplate *);
   PyObject* Typedef(AST::Typedef*);
   PyObject* Enumerator(AST::Enumerator*);
   PyObject* Enum(AST::Enum*);
@@ -77,6 +78,7 @@ public:
   void visit_scope(AST::Scope*);
   void visit_namespace(AST::Namespace*);
   void visit_class(AST::Class*);
+  void visit_class_template(AST::ClassTemplate *);
   void visit_inheritance(AST::Inheritance*);
   void visit_forward(AST::Forward*);
   void visit_typedef(AST::Typedef*);

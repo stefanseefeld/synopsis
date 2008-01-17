@@ -34,18 +34,16 @@ class Inheritance(Part):
    def _process_class(self, clas, names):
       "Prints info for the given class, and calls _process_superclasses after"
 
-      sorter = self.processor.sorter
-      sorter.set_scope(clas)
-      sorter.sort_section_names()
+      sorter = self.processor.sorter.clone(clas.declarations)
       child_names = []
 
       # Iterate through the sections
-      for section in sorter.sections():
+      for section in sorter:
          # Write a heading
          heading = section+'s Inherited from '+ Util.ccolonName(clas.name, self.scope())
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
-         for child in sorter.children(section):
+         for child in sorter[section]:
             child_name = self._short_name(child)
             if child_name in names:
                continue

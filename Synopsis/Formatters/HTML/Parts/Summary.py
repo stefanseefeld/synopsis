@@ -61,8 +61,7 @@ class Summary(Part):
         "Print out the summaries from the given scope"
 
         doc = self.processor.documentation
-        sorter = self.processor.sorter
-        sorter.sort(scope.declarations)
+        sorter = self.processor.sorter.clone(scope.declarations)
 
         self.write_start()
         for section in sorter:

@@ -593,13 +593,42 @@ private:
     Attributes  m_attrs;
 };
 
+//. Forward declaration. Currently this has no extra attributes.
+class Forward : public Declaration
+{
+public:
+    //. Constructor
+    Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+            Declaration *primary_template = 0);
+    //. Constructor that copies an existing declaration
+    Forward(AST::Declaration* decl);
+
+    //. Accepts the given AST::Visitor
+    virtual void accept(Visitor*);
+
+    Types::Template* template_type() { return m_template;}
+    void set_template_type(Types::Template* type) { m_template = type;}
+    bool is_primary_template() const { return m_primary_template == 0;}
+    Declaration *primary_template() { return m_primary_template;}
+    Declaration::vector &specializations() { return m_specializations;}
+
+private:
+    //. The Template Type for this forward if it's a template
+    Types::Template*     m_template;
+    Declaration *m_primary_template;
+    Declaration::vector m_specializations;
+};
+
+
+class ClassTemplate;
 
 //. Class class
 class Class : public Scope
 {
 public:
     //. Constructor
-    Class(SourceFile* file, int line, const std::string& type, const ScopedName& name);
+    Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+          Declaration *primary_template = 0);
 
     //. Destructor. Recursively destroys Inheritance objects
     virtual ~Class();
@@ -625,53 +654,40 @@ public:
         return m_parents;
     }
 
-    //. Returns the Template object if this is a template
-    Types::Template* template_type()
-    {
-        return m_template;
-    }
-
-    //. Sets the Template object for this class. 0 means not a template
-    void set_template_type(Types::Template* type)
-    {
-        m_template = type;
-    }
+    Declaration *primary_template() { return m_primary_template;}
 
 private:
     //. The vector of parent Inheritance objects
     Inheritance::vector m_parents;
-    //. The Template Type for this class if it's a template
-    Types::Template*     m_template;
+    Declaration *m_primary_template;
 };
 
-
-//. Forward declaration. Currently this has no extra attributes.
-class Forward : public Declaration
+//. Class class
+class ClassTemplate : public Class
 {
 public:
     //. Constructor
-    Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name);
-    //. Constructor that copies an existing declaration
-    Forward(AST::Declaration* decl);
+    ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name, Declaration *primary_template);
+
+    //. Destructor. Recursively destroys Inheritance objects
+    virtual ~ClassTemplate();
 
     //. Accepts the given AST::Visitor
     virtual void accept(Visitor*);
 
-    //. Returns the Template object if this is a template
-    Types::Template* template_type()
-    {
-        return m_template;
-    }
+    //
+    // Attribute Methods
+    //
 
-    //. Sets the Template object for this class. 0 means not a template
-    void set_template_type(Types::Template* type)
-    {
-        m_template = type;
-    }
+    Types::Template* template_type() { return m_template;}
+    void set_template_type(Types::Template* type) { m_template = type;}
+    bool is_primary_template() const { return m_is_primary_template;}
+    Declaration::vector &specializations() { return m_specializations;}
 
 private:
-    //. The Template Type for this forward if it's a template
     Types::Template*     m_template;
+    bool m_is_primary_template;
+    Declaration::vector m_specializations;
 };
 
 
@@ -1063,6 +1079,7 @@ public:
     virtual void visit_scope(Scope*);
     virtual void visit_namespace(Namespace*);
     virtual void visit_class(Class*);
+    virtual void visit_class_template(ClassTemplate*);
     virtual void visit_inheritance(Inheritance*);
     virtual void visit_forward(Forward*);
     virtual void visit_typedef(Typedef*);

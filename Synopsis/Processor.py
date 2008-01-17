@@ -73,6 +73,15 @@ class Parametrized(object):
       
       self.set_parameters(kwds)
 
+   def clone(self, *args, **kwds):
+      """Create a copy of this Parametrized.
+      The only copied attributes are the ones corresponding to parameters."""
+
+      new_kwds = dict([(k, getattr(self, k)) for k in self._parameters])
+      new_kwds.update(kwds)
+      return type(self)(*args, **new_kwds)
+
+
    def get_parameters(self):
 
       return self._parameters

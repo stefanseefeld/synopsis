@@ -17,24 +17,25 @@ _access_specs = {ASG.DEFAULT: '',
 # The predefined order for section names
 _section_order = ('Namespace',
                   'Module',
-                  'ClassTemplate',
+                  'Class template',
                   'Class',
                   'Typedef',
                   'Struct',
                   'Enum',
                   'Union',
                   'Group',
-                  'FunctionTemplate',
+                  'Member function template',
                   'Member function',
+                  'Function template',
                   'Function')
 
-def _compare_sections(a, b):
+def _compare(a, b):
     """Compare two section names."""
 
     ai, bi = 0, 0
     an, bn = a, b
     for i in range(1,4):
-        access = _axs_str[i]
+        access = _access_specs[i]
         len_access = len(access)
         is_a = (a[:len_access] == access)
         is_b = (b[:len_access] == access)
@@ -54,59 +55,69 @@ def _compare_sections(a, b):
     return 0
 
 
-class DeclarationSorter(Parametrized):
+class DeclarationSorter(Parametrized, ASG.Visitor):
     """Sort declarations by type and accessibility."""
 
     struct_as_class = Parameter(False, '') 
 
-    def __init__(self, **args):
+    def __init__(self, declarations = None, **args):
 
         super(DeclarationSorter, self).__init__(**args)
+        if not declarations: # This is a prototype
+            return
         self.__sections = {}
+        for d in declarations:
+            d.accept(self)
+        self.__sorted_keys = self.__sections.keys()
+        self.__sorted_keys.sort(_compare)
 
-
-    def __iter__(self): return self.iterkeys()
+    def __iter__(self): return iter(self.__sorted_keys)
     def __getitem__(self, i): return self.__sections[i]
     def get(self, *args): return self.__sections.get(*args)
     def has_key(self, k): return self.__sections.haskey(k)
-    def items(self): return self.__sections.items()
-    def iteritems(self): return self.__sections.iteritems()
-    def iterkeys(self): return self.__sections.iterkeys()
-    def itervalues(self): return self.__sections.itervalues()
-    def keys(self): return self.__sections.keys()
+    def keys(self): return self.__sorted_keys
     def values(self): return self.__sections.values()
 
-    def sort(self, declarations):
-
-        self.__sections.clear()
-        for d in declarations:
-            if isinstance(d, (ASG.Forward, ASG.Builtin)):
-                continue
-            elif isinstance(d, ASG.Group):
-                section = d.name[-1]
-                self._add_declaration(d, section)
-                for c in d.declarations:
-                    self._add_declaration(c, section)
-            else:
-                self._add_declaration(d, self._section_of(d))
-
-
-    def _section_of(self, declaration):
+    def _section_of(self, decl, name = None):
         """Generate a section name for the given declaration."""
 
-        section = declaration.type.capitalize()
+        section = name or decl.type.capitalize()
         if self.struct_as_class and section == 'Struct':
             section = 'Class'
-        if declaration.accessibility != ASG.DEFAULT:
-            section = _access_specs[declaration.accessibility] + section
+        if decl.accessibility != ASG.DEFAULT:
+            section = _access_specs[decl.accessibility] + section
         return section
 
 
-    def _add_declaration(self, declaration, section):
+    def _add_declaration(self, decl, section):
         "Adds the given declaration with given name and section."
 
         if section not in self.__sections:
-            self.__sections[section] = [declaration]
+            self.__sections[section] = [decl]
         else:
-            self.__sections[section].append(declaration)
+            self.__sections[section].append(decl)
 
+
+    def visit_declaration(self, decl):
+        self._add_declaration(decl, self._section_of(decl))
+
+    def visit_builtin(self, decl): pass
+    def visit_macro(self, decl): pass
+    def visit_forward(self, decl):
+        if decl.template:
+            self.visit_class_template(decl)
+        else:
+            self.visit_declaration(decl)
+    def visit_group(self, group):
+        section = group.name[-1]
+        self._add_declaration(group, section)
+        for d in group.declarations:
+            self._add_declaration(d, section)
+    def visit_scope(self, decl):
+        self.visit_declaration(decl)
+    def visit_class_template(self, decl):
+        self._add_declaration(decl, self._section_of(decl, 'Class template'))
+    def visit_function(self, decl):
+        self.visit_declaration(decl)
+    def visit_function_template(self, decl):
+        self._add_declaration(decl, self._section_of(decl, 'Function template'))

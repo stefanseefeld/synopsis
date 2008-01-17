@@ -92,6 +92,8 @@ div.xref-name
 }
 
 div.template { margin-top: 0.5em; font-style: italic; }
+div.primary-template,
+div.specializations { text-align: right;}
 a.name { font-weight: bold; }
 div.module { padding: 1.0em;}
 div.declarations { padding: 1.0em;}

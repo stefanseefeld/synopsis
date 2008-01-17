@@ -369,24 +369,41 @@ void Dumper::visit_forward(AST::Forward* forward)
 void Dumper::visit_class(AST::Class* clas)
 {
     visit(clas->comments());
-    if (clas->template_type())
+    std::cout << m_indent_string << clas->type() << " " << clas->name();
+    if (clas->parents().size())
     {
-        m_scope.push_back(clas->name().back());
-        Types::Template* templ = clas->template_type();
-        std::cout << m_indent_string << "template<";
-        std::vector<std::string> names;
-        AST::Parameter::vector::iterator iter = templ->parameters().begin();
-        while (iter != templ->parameters().end())
-            names.push_back(formatParam(*iter++));
-        std::cout << join(names, ", ") << ">" << std::endl;
-        m_scope.pop_back();
-        if (clas->type().substr(0, 9) == "template ")
-            std::cout << m_indent_string << (clas->type().c_str()+9) << " " << clas->name();
-        else
-            std::cout << m_indent_string << clas->type() << " " << clas->name();
+        std::cout << ": ";
+        std::vector<std::string> inherits;
+        std::vector<AST::Inheritance*>::iterator iter = clas->parents().begin();
+        for (;iter != clas->parents().end(); ++iter)
+            inherits.push_back(append((*iter)->attributes()) + format((*iter)->parent()));
+        std::cout << join(inherits, ", ");
     }
+    std::cout << " {" << std::endl;
+    indent();
+    m_scope.push_back(clas->name().back());
+    visit(clas->declarations());
+    m_scope.pop_back();
+    undent();
+    std::cout << m_indent_string << "};" << std::endl;
+}
+
+void Dumper::visit_class_template(AST::ClassTemplate* clas)
+{
+    visit(clas->comments());
+    m_scope.push_back(clas->name().back());
+    Types::Template* templ = clas->template_type();
+    std::cout << m_indent_string << "template<";
+    std::vector<std::string> names;
+    AST::Parameter::vector::iterator iter = templ->parameters().begin();
+    while (iter != templ->parameters().end())
+      names.push_back(formatParam(*iter++));
+    std::cout << join(names, ", ") << ">" << std::endl;
+    m_scope.pop_back();
+    if (clas->type().substr(0, 9) == "template ")
+      std::cout << m_indent_string << (clas->type().c_str()+9) << " " << clas->name();
     else
-        std::cout << m_indent_string << clas->type() << " " << clas->name();
+      std::cout << m_indent_string << clas->type() << " " << clas->name();
     if (clas->parents().size())
     {
         std::cout << ": ";

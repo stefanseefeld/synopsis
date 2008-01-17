@@ -90,8 +90,6 @@ class Scope(View):
                 filename = self.root()[0]
             self.processor.register_filename(filename, self, scope)
 
-            #sorter = self.processor.sorter
-            #sorter.sort(scope.declarations)
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
             self.__scopes.extend(scopes)
      
@@ -107,7 +105,6 @@ class Scope(View):
         self.__title = escape(' '.join(self.__scope))
         self.start_file()
         self.write_navigation_bar()
-
         # Loop throught all the view Parts
         for part in self.parts:
             part.process(scope)

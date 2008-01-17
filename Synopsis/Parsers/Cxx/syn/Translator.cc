@@ -636,6 +636,28 @@ PyObject *Translator::Forward(AST::Forward* decl)
   forward = PyObject_CallMethod(m_ast_module, "Forward", "OiOO",
                                 file = m->py(decl->file()), decl->line(),
                                 type = m->py(decl->type()), name = m->Tuple(decl->name()));
+  // This is necessary to prevent inf. loops in several places
+  m->add(decl, forward);
+  if (decl->template_type())
+  {
+    PyObject* ttype = m->py(decl->template_type());
+    PyObject_SetAttrString(forward, "template", ttype);
+    Py_DECREF(ttype);
+  }
+  if (decl->is_primary_template()) // look for specializations
+  {
+    PyObject *specs = PyObject_GetAttrString(forward, "specializations");
+    PyObject *tmp = m->List(decl->specializations());
+    PyObject_CallMethod(specs, "extend", "O", tmp);
+    Py_DECREF(tmp);
+    Py_DECREF(specs);
+  }
+  else
+  {
+    PyObject *pt = m->py(decl->primary_template());
+    PyObject_SetAttrString(forward, "primary_template", pt);
+    Py_DECREF(pt);
+  }
   addComments(forward, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -695,8 +717,7 @@ PyObject *Translator::Class(AST::Class* decl)
 {
   Trace trace("Translator::Class", Trace::TRANSLATION);
   PyObject *clas, *file, *type, *name;
-  char const *class_ = decl->template_type() ? "ClassTemplate" : "Class";
-  clas = PyObject_CallMethod(m_ast_module, const_cast<char *>(class_), "OiOO",
+  clas = PyObject_CallMethod(m_ast_module, "Class", "OiOO",
                              file = m->py(decl->file()),
                              decl->line(),
                              type = m->py(decl->type()),
@@ -706,12 +727,58 @@ PyObject *Translator::Class(AST::Class* decl)
   PyObject *new_decls, *new_parents;
   PyObject *decls = PyObject_GetAttrString(clas, "declarations");
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
-  if (decl->template_type())
+  PyObject *parents = PyObject_GetAttrString(clas, "parents");
+  if (decl->primary_template())
   {
-    PyObject* ttype = m->py(decl->template_type());
-    PyObject_SetAttrString(clas, "template", ttype);
-    Py_DECREF(ttype);
+    PyObject *pt = m->py(decl->primary_template());
+    PyObject_SetAttrString(clas, "primary_template", pt);
+    Py_DECREF(pt);
   }
+
+  PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
+  addComments(clas, decl);
+  Py_DECREF(file);
+  Py_DECREF(type);
+  Py_DECREF(name);
+  Py_DECREF(decls);
+  Py_DECREF(parents);
+  Py_DECREF(new_decls);
+  Py_DECREF(new_parents);
+  return clas;
+}
+
+PyObject *Translator::ClassTemplate(AST::ClassTemplate *decl)
+{
+  Trace trace("Translator::ClassTemplate", Trace::TRANSLATION);
+  PyObject *clas, *file, *type, *name;
+  clas = PyObject_CallMethod(m_ast_module, "ClassTemplate", "OiOO",
+                             file = m->py(decl->file()),
+                             decl->line(),
+                             type = m->py(decl->type()),
+                             name = m->Tuple(decl->name()));
+  // This is necessary to prevent inf. loops in several places
+  m->add(decl, clas);
+  if (decl->is_primary_template()) // look for specializations
+  {
+    PyObject *specs = PyObject_GetAttrString(clas, "specializations");
+    PyObject *tmp = m->List(decl->specializations());
+    PyObject_CallMethod(specs, "extend", "O", tmp);
+    Py_DECREF(tmp);
+    Py_DECREF(specs);
+  }
+  else
+  {
+    PyObject *pt = m->py(decl->primary_template());
+    PyObject_SetAttrString(clas, "primary_template", pt);
+    Py_DECREF(pt);
+  }
+  PyObject *new_decls, *new_parents;
+  PyObject *decls = PyObject_GetAttrString(clas, "declarations");
+  PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
+
+  PyObject* ttype = m->py(decl->template_type());
+  PyObject_SetAttrString(clas, "template", ttype);
+  Py_DECREF(ttype);
 
   PyObject *parents = PyObject_GetAttrString(clas, "parents");
   PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
@@ -958,6 +1025,13 @@ void Translator::visit_class(AST::Class* decl)
   if (m_filter->should_store(decl)) m->add(decl, Class(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
+}
+void Translator::visit_class_template(AST::ClassTemplate* decl)
+{
+  // Add if the class is in the main file, *or* if it has any members
+  // declared in the main file (eg: forward declared nested classes which
+  // are fully defined in this main file)
+  if (m_filter->should_store(decl)) m->add(decl, ClassTemplate(decl));
 }
 void Translator::visit_forward(AST::Forward* decl)
 {

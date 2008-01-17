@@ -92,6 +92,7 @@ public:
     virtual void visit_namespace(AST::Namespace*);
     virtual void visit_forward(AST::Forward*);
     virtual void visit_class(AST::Class*);
+    virtual void visit_class_template(AST::ClassTemplate*);
     virtual void visit_function(AST::Function*);
     virtual void visit_variable(AST::Variable*);
     virtual void visit_typedef(AST::Typedef*);

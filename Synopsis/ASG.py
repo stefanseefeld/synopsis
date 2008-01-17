@@ -114,8 +114,13 @@ class Forward(Declaration):
    def __init__(self, file, line, type, name):
 
       Declaration.__init__(self, file, line, type, name)
+      self.template = None
+      self.primary_template = None
+      self.specializations = []
 
-   def accept(self, visitor): visitor.visit_forward(self)
+   def accept(self, visitor):
+
+       visitor.visit_forward(self)
 
 
 class Group(Declaration):
@@ -184,6 +189,7 @@ class Class(Scope):
 
       Scope.__init__(self, file, line, type, name)
       self.parents = []
+      self.primary_template = None
 
    def accept(self, visitor): visitor.visit_class(self)
 
@@ -195,6 +201,8 @@ class ClassTemplate(Scope):
       Scope.__init__(self, file, line, type, name)
       self.parents = []
       self.template = template
+      self.primary_template = None
+      self.specializations = []
 
    def accept(self, visitor): visitor.visit_class_template(self)
 

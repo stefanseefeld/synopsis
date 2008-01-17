@@ -56,8 +56,7 @@ class ModuleIndex(View):
    def process_module_index(self, module):
       "Index one module"
 
-      sorter = self.processor.sorter
-      sorter.sort(module.declarations)
+      sorter = self.processor.sorter.clone(module.declarations)
 
       self.__filename = self.directory_layout.module_index(module.name)
       self.__title = Util.ccolonName(module.name) or 'Global Module'

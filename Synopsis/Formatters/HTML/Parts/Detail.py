@@ -36,8 +36,7 @@ class Detail(Part):
         "Print out the details for the children of the given decl"
 
         doc = self.processor.documentation
-        sorter = self.processor.sorter
-        sorter.sort(decl.declarations)
+        sorter = self.processor.sorter.clone(decl.declarations)
 
         # Iterate through the sections with details
         self.write_start()

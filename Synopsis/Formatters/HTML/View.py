@@ -278,5 +278,5 @@ class View(Parametrized):
 
       if not label: label = escape(Util.ccolonName(name, scope))
       entry = self.processor.toc[name]
-      if entry: return apply(href, (rel(self.filename(), entry.link), label), keys)
+      if entry: return href(rel(self.filename(), entry.link), label, **keys)
       return label or ''

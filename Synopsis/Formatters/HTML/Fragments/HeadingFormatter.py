@@ -148,12 +148,9 @@ class HeadingFormatter(Fragment):
 
         # Calculate template string
         templ = class_.template
-        if templ:
-            params = templ.parameters
-            params = ', '.join([self.format_parameter(p) for p in params])
-            templ = div('class-template', "template &lt;%s&gt;"%params)
-        else:
-            templ = ''
+        params = templ.parameters
+        params = ', '.join([self.format_parameter(p) for p in params])
+        templ = div('class-template', "template &lt;%s&gt;"%params)
 
         # Calculate class name string
         type = class_.type
@@ -181,12 +178,55 @@ class HeadingFormatter(Fragment):
 
         return '%s%s%s%s'%(module, templ, name, info)
 
+    def format_forward(self, forward):
+        """Formats the forward declaration if it is a template declaration."""
+
+        # Calculate the module string
+        decl, module = self.format_module_of_name(forward.name)
+        if decl:
+            module = '%s %s'%(decl.type, module)
+            module = div('class-module', module)
+        else:
+            module = ''
+
+        # Calculate template string
+        if not forward.template:
+            return ''
+
+        params = templ.parameters
+        params = ', '.join([self.format_parameter(p) for p in params])
+        templ = div('class-template', "template &lt;%s&gt;"%params)
+
+        # Calculate class name string
+        type = forward.type
+        name = self.format_name_in_module(forward.name)
+        name = div('class-name', '%s %s'%(type, name))
+
+        # Calculate file-related string
+        file_name = rel(self.processor.output, forward.file.name)
+        # Try the file index view first
+        file_link = self.directory_layout.file_index(forward.file.name)
+        if self.processor.filename_info(file_link):
+            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
+        else:
+            # Try source file next
+            file_link = self.directory_layout.file_source(forward.file.name)
+            if self.processor.filename_info(file_link):
+                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+            else:
+                file_ref = file_name
+
+        links = div('file', 'File: %s'%file_ref)
+        info = div('links', links)
+
+        return '%s%s%s%s'%(module, templ, name, info)
+
     def format_parameter(self, parameter):
         """Returns one string for the given parameter"""
 
         chunks = []
         # Premodifiers
-        chunks.extend([span("keyword", m) for m in parameter.premodifier])
+        chunks.extend([span("keyword", escape(m)) for m in parameter.premodifier])
         # Param Type
         typestr = self.format_type(parameter.type)
         if typestr: chunks.append(typestr)

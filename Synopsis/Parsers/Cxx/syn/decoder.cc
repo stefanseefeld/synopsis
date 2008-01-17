@@ -292,7 +292,7 @@ Types::Type* Decoder::decodeQualType()
     if (types.size())
     {
         Types::Declared* declared = dynamic_cast<Types::Declared*>(baseType);
-        AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : 0;
+        AST::ClassTemplate* tempclas = declared ? dynamic_cast<AST::ClassTemplate*>(declared->declaration()) : 0;
         Types::Template* templType = tempclas ? tempclas->template_type() : 0;
         if (templType && types.size())
         {
@@ -348,7 +348,7 @@ Types::Parameterized* Decoder::decodeTemplate()
     Types::Named* templ = 0;
     if (declared)
     {
-      if (AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration()))
+      if (AST::ClassTemplate* t_class = dynamic_cast<AST::ClassTemplate*>(declared->declaration()))
         templ = t_class->template_type();
       else if (AST::Forward* t_forward = dynamic_cast<AST::Forward*>
                (declared->declaration()))
@@ -356,10 +356,10 @@ Types::Parameterized* Decoder::decodeTemplate()
     }
     else if (Types::Dependent* d = dynamic_cast<Types::Dependent*>(type))
       templ = d;
-    if (templ)
-      std::cout << "creating Parameterized for " << name << ' ' << templ->name() << std::endl;
-    else
-      std::cout << "no template found for " << name << ' ' << typeid(type).name() << std::endl;
+//     if (templ)
+//       std::cout << "creating Parameterized for " << name << ' ' << templ->name() << std::endl;
+//     else
+//       std::cout << "no template found for " << name << ' ' << typeid(type).name() << std::endl;
     return new Types::Parameterized(templ, types);
 }
 
