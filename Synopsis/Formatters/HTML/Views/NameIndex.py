@@ -35,7 +35,7 @@ class NameIndex(View):
 
         self.start_file()
         self.write_navigation_bar()
-        self.write(entity('h1', 'Name Index'))
+        self.write(element('h1', 'Name Index'))
         self.write('<i>Hold the mouse over a link to see the scope of each name</i>\n')
 
         dict = self.make_dictionary()
@@ -45,7 +45,7 @@ class NameIndex(View):
         self.write(div('nameindex-index', ''.join([linker(k) for k in keys])) + '\n')
         for key in keys:
             self.write('<a name="%s">'%ord(key)+'</a>')
-            self.write(entity('h2', key) + '\n')
+            self.write(element('h2', key) + '\n')
             self.write('<table border="0" width="100%" summary="table of names">\n')
             self.write('<col width="*"/>'*self.columns + '\n')
             self.write('<tr>\n')

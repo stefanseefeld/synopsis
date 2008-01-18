@@ -51,7 +51,7 @@ class ModuleIndex(View):
          url = self.directory_layout.module_index(name[:depth+1])
          label = escape(name[depth])
          links.append(href(rel(self.__filename, url), label))
-      return entity('b', '::'.join(links) + ' Index')
+      return element('b', '::'.join(links) + ' Index')
 
    def process_module_index(self, module):
       "Index one module"
@@ -78,13 +78,13 @@ class ModuleIndex(View):
                     'window.parent.frames["index"].location=index;\n'\
                     'window.parent.frames["detail"].location=detail;\n'\
                     'return false;}\n-->'
-      self.write(entity('script', load_script, type='text/javascript'))
+      self.write(element('script', load_script, type='text/javascript'))
 
       # Loop throught all the types of children
       for section in sorter:
          if section[-1] == 's': heading = section+'es'
          else: heading = section+'s'
-         heading = '<br/>\n'+entity('i', escape(heading))+'<br/>\n'
+         heading = '<br/>\n'+element('i', escape(heading))+'<br/>\n'
          # Get a list of children of this type
          for child in sorter[section]:
             # Print out summary for the child

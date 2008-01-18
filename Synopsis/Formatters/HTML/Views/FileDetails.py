@@ -67,7 +67,7 @@ class FileDetails(View):
 
       self.start_file()
       self.write_navigation_bar()
-      self.write(entity('h1', os.sep.join(name))+'<br/>')
+      self.write(element('h1', os.sep.join(name))+'<br/>')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))

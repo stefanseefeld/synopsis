@@ -100,7 +100,7 @@ class Source(View):
 
         self.start_file()
         self.write_navigation_bar()
-        self.write('File: '+entity('b', self.__title))
+        self.write('File: '+element('b', self.__title))
 
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):

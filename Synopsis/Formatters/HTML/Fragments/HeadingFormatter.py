@@ -90,7 +90,7 @@ class HeadingFormatter(Fragment):
         else:
             type = module.type.capitalize()
             name = self.format_name(module.name)
-        name = entity('h1', '%s %s'%(type, name))
+        name = element('h1', '%s %s'%(type, name))
         return name
 
     def format_meta_module(self, module):

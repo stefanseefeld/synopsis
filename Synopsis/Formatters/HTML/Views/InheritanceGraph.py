@@ -120,7 +120,7 @@ class InheritanceGraph(View):
       filename = self.filename()
       self.start_file()
       self.write_navigation_bar()
-      self.write(entity('h1', "Inheritance Graph"))
+      self.write(element('h1', "Inheritance Graph"))
 
       from Synopsis.Formatters import Dot
       # Create a toc file for Dot to use

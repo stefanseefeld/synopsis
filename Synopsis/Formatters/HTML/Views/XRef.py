@@ -57,7 +57,7 @@ class XRef(View):
 
          self.start_file()
          self.write_navigation_bar()
-         self.write(entity('h1', self.title()))
+         self.write(element('h1', self.title()))
          for name in page_info[i]:
             self.write('<div class="xref-name">')
             self.process_name(name)
@@ -115,14 +115,14 @@ class XRef(View):
       if not target_data: return
 
       jname = '::'.join(name)
-      self.write(entity('a', '', name=Util.quote(escape(jname))))
+      self.write(element('a', '', name=Util.quote(escape(jname))))
       desc = ''
       decl = None
       type = self.processor.ir.types.get(name)
       if isinstance(type, Type.Declared):
          decl = type.declaration
          desc = self.describe_decl(decl)
-      self.write(entity('h2', desc + escape(jname)) + '<ul>\n')
+      self.write(element('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
          type = self.processor.ir.types.get(name, None)
@@ -156,8 +156,8 @@ class XRef(View):
             type = self.describe_decl(child)
             if entry:
                link = href(rel(self.filename(), entry.link), escape(Util.ccolonName(cname, name)))
-               self.write(entity('li', file_href + type + link))
+               self.write(element('li', file_href + type + link))
             else:
-               self.write(entity('li', file_href + type + Util.ccolonName(cname, name)))
+               self.write(element('li', file_href + type + Util.ccolonName(cname, name)))
          self.write('</ul></li>\n')
       self.write('</ul>\n')

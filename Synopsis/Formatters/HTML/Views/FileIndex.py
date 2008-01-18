@@ -66,7 +66,7 @@ class FileIndex(View):
       self.__title = os.sep.join(name)
 
       self.start_file()
-      self.write(entity('b', os.sep.join(name))+'<br/>\n')
+      self.write(element('b', os.sep.join(name))+'<br/>\n')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))

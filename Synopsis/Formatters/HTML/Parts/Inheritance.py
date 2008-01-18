@@ -107,7 +107,7 @@ class Inheritance(Part):
          self.write(',\n'+text)
 
    def write_section_end(self, heading):
-      """Closes the table entity and adds a break."""
-      self.write('</td></tr></table>\n<br/>\n')
+
+      self.write('</td></tr></table>\n')
 
 

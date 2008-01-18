@@ -32,7 +32,7 @@ class InheritanceTree(View):
 
         self.start_file()
         self.write_navigation_bar()
-        self.write(entity('h1', "Inheritance Tree"))
+        self.write(element('h1', "Inheritance Tree"))
         self.write('<ul>')
         # FIXME: see HTML.Formatter
         module = self.processor.ir.declarations[0]
