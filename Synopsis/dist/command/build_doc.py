@@ -237,10 +237,11 @@ to query and browse cross-referenced source code."""
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/synopsis'))
 
+      # Copy examples output into installation directory
       if os.path.isdir(os.path.join(builddir, 'html/examples')):
-               rmtree(os.path.join(builddir, 'html/examples'), 1)
-               copy_tree(os.path.join(tempdir, 'html/examples'),
-                         os.path.join(builddir, 'html/examples'))
+         rmtree(os.path.join(builddir, 'html/examples'), 1)
+      copy_tree(os.path.join(tempdir, 'html/examples'),
+                os.path.join(builddir, 'html/examples'))
 
       # Copy examples sources into installation directory.
       spawn([make, '-C', os.path.join(tempdir, 'examples'),

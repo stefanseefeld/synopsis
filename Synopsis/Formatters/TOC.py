@@ -96,7 +96,7 @@ class TOC(ASG.Visitor):
             name = name[:-1] + [name[-1]+scopedname[param_index:]]
          else:
             name = scopedname.split('::')
-         if len(url): link = [url, link].join('/')
+         if len(url): link = '/'.join([url, link])
          entry = TOC.Entry(name, link, lang, "decl")
          self.insert(entry)
          line = fin.readline()
