@@ -63,9 +63,10 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
     def __init__(self, declarations = None, **args):
 
         super(DeclarationSorter, self).__init__(**args)
+        self.__sections = {}
+        self.__sorted_keys = []
         if not declarations: # This is a prototype
             return
-        self.__sections = {}
         for d in declarations:
             d.accept(self)
         self.__sorted_keys = self.__sections.keys()
