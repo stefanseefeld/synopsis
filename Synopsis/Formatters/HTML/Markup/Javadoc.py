@@ -155,9 +155,9 @@ class Javadoc(Formatter):
         content = ''
         params = [b for b in blocks if b.tag == 'param']
         def row(dt, dd):
-            return elements('tr',
-                            element('th', dt, Class='dt') +
-                            element('td', dd, Class='dd'))
+            return element('tr',
+                           element('th', dt, Class='dt') +
+                           element('td', dd, Class='dd'))
         if params:
             content += div('tag-heading',"Parameters:")
             dl = element('table', ''.join([row(p.arg, p.body) for p in params]),

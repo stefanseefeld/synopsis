@@ -50,3 +50,4 @@ class ClassHierarchyGraph(ClassHierarchySimple):
             print 'Warning : %s'%str(e)
             return ''
 
+    format_class_template = format_class

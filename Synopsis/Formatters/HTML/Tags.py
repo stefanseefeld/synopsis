@@ -14,7 +14,7 @@ using_frames = True #overwritten by Formatter...
 def attributes(keys):
     "Convert a name/value dict to a string of attributes"
 
-    return ''.join(['%s="%s"'%(k,v) for k,v in keys.items()])
+    return ' '.join(['%s="%s"'%(k,v) for k,v in keys.items()])
 
 def rel(frm, to):
     "Find link to to relative to frm"
@@ -38,7 +38,7 @@ def href(_ref, _label, **keys):
     # Remove target if not using frames
     if keys.has_key('target') and not using_frames:
         del keys['target']
-    return '<a href="%s"%s>%s</a>'%(_ref,attributes(keys),_label)
+    return '<a href="%s" %s>%s</a>'%(_ref,attributes(keys),_label)
 
 def name(ref, label):
     "Return a name anchor with given reference and label"
@@ -58,12 +58,12 @@ def div(clas, body):
 def element(_type, body, **keys):
     "Wrap the body in a tag of given type and attributes"
 
-    return '<%s%s>%s</%s>'%(_type,attributes(keys),body,_type)
+    return '<%s %s>%s</%s>'%(_type,attributes(keys),body,_type)
 
 def solotag(_type, **keys):
     "Create a solo tag (no close tag) of given type and attributes"
 
-    return '<%s%s />'%(_type,attributes(keys))
+    return '<%s %s/>'%(_type,attributes(keys))
 
 def desc(text):
     "Create a description div for the given text"
