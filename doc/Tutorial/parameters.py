@@ -59,7 +59,7 @@ for name in parameters:
    elif type(value) == dict:
       if (len(value) and (type(value.values()[0]) == types.InstanceType
                           or isinstance(value.values()[0], Parametrized))):
-         value = '{%s}'%', '.join(['%s: %s'%(n, name_of_instance(x))
+         value = '{%s}'%', '.join(['%s: %s'%(n, name_of_instance(v))
                                    for (n,v) in value.items()])
    output.write('      <seg>%s</seg>\n'%value)
    output.write('      <seg>%s</seg>\n'%parameter.doc)
