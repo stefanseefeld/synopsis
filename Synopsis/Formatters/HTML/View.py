@@ -14,7 +14,7 @@ from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import Util
 from Tags import *
 
-import os.path, cStringIO
+import re, os.path, cStringIO
 
 class Format(Parametrized):
    """Default and base class for formatting a view layout. The Format
