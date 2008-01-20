@@ -7,13 +7,13 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import IR, Type, Util
+from Synopsis import IR, ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class DeclarationFinder(Type.Visitor):
+class DeclarationFinder(ASG.Visitor):
    def __init__(self, types, verbose):
 
       self.types = types
@@ -33,9 +33,9 @@ class DeclarationFinder(Type.Visitor):
       return self.__decl
 	    
    def visit_base_type(self, type): return
-   def visit_unknown(self, type): return
-   def visit_declared(self, type): self.__decl = type.declaration
-   def visit_modifier(self, type): type.alias.accept(self)
+   def visit_unknown_type(self, type): return
+   def visit_declared_type(self, type): self.__decl = type.declaration
+   def visit_modifier_type(self, type): type.alias.accept(self)
    def visit_array(self, type): type.alias.accept(self)
    def visit_template(self, type): self.__decl = type.declaration
    def visit_parametrized(self, type): type.template.accept(self)
@@ -142,7 +142,7 @@ class InheritanceGraph(View):
             type_str = ''
             types = self.processor.ir.types
             type = types.get(scoped_name, None)
-            if isinstance(type, Type.Declared):
+            if isinstance(type, ASG.Declared):
                type_str = type.declaration.type + ' '
             self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:

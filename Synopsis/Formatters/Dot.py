@@ -11,7 +11,7 @@ Uses 'dot' from graphviz to generate various graphs.
 """
 
 from Synopsis.Processor import *
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters import TOC
 
 import sys, tempfile, getopt, os, os.path, types, errno, re
@@ -87,7 +87,7 @@ class DotFileGenerator:
       self.write("Node" + str(self.nodes[child]))
       self.write('[ color="black", fontsize=10, dir=back' + ''.join([', %s="%s"'%item for item in attr.items()]) + '];\n')
 
-class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
+class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
    """A Formatter that generates an inheritance graph. If the 'toc' argument is not None,
    it is used to generate URLs. If no reference could be found in the toc, the node will
    be grayed out."""
@@ -146,18 +146,18 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
 
    #################### Type Visitor ##########################################
 
-   def visit_modifier(self, type):
+   def visit_modifier_type(self, type):
 
       self.format_type(type.alias)
       self.__type_label = ''.join(type.premod) + self.__type_label
       self.__type_label = self.__type_label + ''.join(type.postmod)
 
-   def visit_unknown(self, type):
+   def visit_unknown_type(self, type):
 
       self.__type_ref = self.toc and self.toc[type.link] or None
       self.__type_label = Util.ccolonName(type.name, self.scope())
         
-   def visit_base(self, type):
+   def visit_base_type(self, type):
 
       self.__type_ref = None
       self.__type_label = type.name[-1]
@@ -167,7 +167,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
       self.__type_ref = None
       self.__type_label = type.name[-1]
         
-   def visit_declared(self, type):
+   def visit_declared_type(self, type):
 
       self.__type_ref = self.toc and self.toc[type.declaration.name] or None
       if isinstance(type.declaration, ASG.Class):
@@ -241,7 +241,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
          #
          # find attributes of type 'Class' so we can link to it
          for a in filter(lambda a:isinstance(a, ASG.Variable), node.declarations):
-            if isinstance(a.vtype, Type.Declared):
+            if isinstance(a.vtype, ASG.Declared):
                d = a.vtype.declaration
                if isinstance(d, ASG.Class) and self.nodes.has_key(self.get_class_name(d)):
                   self.write_edge(self.get_class_name(node), self.get_class_name(d),
@@ -280,13 +280,13 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
    #################### Type Visitor ##########################################
 
-   def visit_declared(self, type):
+   def visit_declared_type(self, type):
       if self.__current < self.__levels or self.__levels == -1:
          self.__current = self.__current + 1
          type.declaration.accept(self)
          self.__current = self.__current - 1
       # to restore the ref/label...
-      InheritanceGenerator.visit_declared(self, type)
+      InheritanceGenerator.visit_declared_type(self, type)
 
    #################### ASG Visitor ###########################################
         
@@ -331,7 +331,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          # fool the visitDeclared method to stop walking upwards
          self.__levels = 0
          for t in self.__types.values():
-            if isinstance(t, Type.Declared):
+            if isinstance(t, ASG.Declared):
                child = t.declaration
                if isinstance(child, ASG.Class):
                   for i in child.parents:
@@ -350,7 +350,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
                            self.write_edge(name, child_label, arrowtail='empty')
 
-class FileDependencyGenerator(DotFileGenerator, ASG.Visitor, Type.Visitor):
+class FileDependencyGenerator(DotFileGenerator, ASG.Visitor):
    """A Formatter that generates a file dependency graph"""
 
    def visit_file(self, file):

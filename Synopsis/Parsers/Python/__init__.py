@@ -6,7 +6,7 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import ASG, Type
+from Synopsis import ASG
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 from ASGTranslator import ASGTranslator
@@ -28,7 +28,7 @@ class Parser(Processor):
         self.scopes = []
       
         # Create return type for Python functions:
-        self.return_type = Type.Base('Python',('',))
+        self.return_type = ASG.BaseType('Python',('',))
 
         # Validate base_path.
         if self.base_path:

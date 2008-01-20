@@ -7,7 +7,7 @@
 """Markup formatters."""
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import ASG, Type
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Tags import escape
 import re
 
@@ -109,7 +109,7 @@ class Formatter(Parametrized):
             #print "No parent scope:",decl.name[:-1]
             return None
         if not scope: return None
-        if not isinstance(scope, Type.Declared): return None
+        if not isinstance(scope, ASG.Declared): return None
         scope = scope.declaration
         if not isinstance(scope, ASG.Scope): return None
         for d in scope.declarations:

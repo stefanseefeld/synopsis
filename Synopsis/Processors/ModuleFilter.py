@@ -6,7 +6,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type
+from Synopsis import ASG
 
 class ModuleFilter(Processor, ASG.Visitor):
     """A processor that filters modules."""

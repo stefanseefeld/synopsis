@@ -9,7 +9,7 @@
 """a TexInfo formatter """
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.DocString import DocString
 import sys, getopt, os, os.path, re
 
@@ -39,7 +39,7 @@ class MenuMaker(ASG.Visitor):
    visit_group = visit_declaration
    visit_enum = visit_declaration
 
-class Formatter(Processor, Type.Visitor, ASG.Visitor):
+class Formatter(Processor, ASG.Visitor):
    """The type visitors should generate names relative to the current scope.
    The generated references however are fully scoped names."""
 
@@ -84,17 +84,17 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
       self.__type_ref = Util.ccolonName(type.name)
       self.__type_label = Util.ccolonName(type.name)
         
-   def visit_unknown(self, type):
+   def visit_unknown_type(self, type):
 
       self.__type_ref = Util.ccolonName(type.name)
       self.__type_label = Util.ccolonName(type.name, self.scope())
         
-   def visit_declared(self, type):
+   def visit_declared_type(self, type):
 
       self.__type_label = Util.ccolonName(type.name, self.scope())
       self.__type_ref = Util.ccolonName(type.name)
         
-   def visit_modifier(self, type):
+   def visit_modifier_type(self, type):
 
       type.alias.accept(self)
       self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)

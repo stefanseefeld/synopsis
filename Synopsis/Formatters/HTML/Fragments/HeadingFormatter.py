@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import ASG, Type
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Fragment import Fragment
 from Synopsis.Formatters.HTML.Tags import *
 from SourceLinker import SourceLinker
@@ -51,7 +51,7 @@ class HeadingFormatter(Fragment):
             scope.append(name)
             if types.has_key(scope):
                 ns_type = types[scope]
-                if isinstance(ns_type, Type.Declared):
+                if isinstance(ns_type, ASG.Declared):
                     decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Skip modules
@@ -71,7 +71,7 @@ class HeadingFormatter(Fragment):
             scope.append(name)
             if types.has_key(scope):
                 ns_type = types[scope]
-                if isinstance(ns_type, Type.Declared):
+                if isinstance(ns_type, ASG.Declared):
                     decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Only do modules

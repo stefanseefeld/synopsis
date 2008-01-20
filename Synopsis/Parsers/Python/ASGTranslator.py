@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import ASG, Type
+from Synopsis import ASG
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 import pattern
@@ -103,7 +103,7 @@ class ASGTranslator:
         if HAVE_DECORATOR:
             self.handlers[symbol.decorator] = self.handle_decorator
 
-        self._any_type = Type.Base('Python',('',))
+        self._any_type = ASG.BaseType('Python',('',))
         self._sourcefile = scope.file
         self._col = 0
         self._lineno = 1
@@ -348,7 +348,7 @@ class ASGTranslator:
                     if self._types.has_key(base):
                         base = self._types[base]
                     else:
-                        base = Type.Unknown('Python', base)
+                        base = ASG.UnknownType('Python', base)
                     bases.append(ASG.Inheritance('', base, ''))
             self.handle_tokens(base_clause)
             self.handle_token(')')
@@ -364,7 +364,7 @@ class ASGTranslator:
         if docstring:
             class_.annotations['doc'] = docstring
         self._scopes[-1].declarations.append(class_)
-        self._types[class_.name] = Type.Declared('Python', class_.name, class_)
+        self._types[class_.name] = ASG.Declared('Python', class_.name, class_)
 
         self._scopes.append(class_)
         self.handle(body)

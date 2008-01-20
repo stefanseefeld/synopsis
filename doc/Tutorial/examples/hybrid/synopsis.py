@@ -18,7 +18,7 @@ class Cxx2IDL(TypeMapper):
     """this processor maps a C++ external reference to an IDL interface
     if the name either starts with 'POA_' or ends in '_ptr'"""
 
-    def visit_unknown(self, unknown):
+    def visit_unknown_type(self, unknown):
 
         name = unknown.name
         if unknown.language != "C++": return

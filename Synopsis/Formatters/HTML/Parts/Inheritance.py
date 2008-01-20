@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -80,7 +80,7 @@ class Inheritance(Part):
 
       for inheritance in class_.parents:
          parent = inheritance.parent
-         if isinstance(parent, Type.Declared):
+         if isinstance(parent, ASG.Declared):
             parent = parent.declaration
             if isinstance(parent, ASG.Class):
                self._process_class(parent, names)

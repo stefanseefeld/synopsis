@@ -8,7 +8,7 @@
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util, DeclarationSorter
+from Synopsis import ASG, Util, DeclarationSorter
 from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
@@ -25,13 +25,13 @@ def escape(text):
     return text
 
 
-class _BaseClasses(ASG.Visitor, Type.Visitor):
+class _BaseClasses(ASG.Visitor):
 
     def __init__(self):
         self.classes = [] # accumulated set of classes
         self.classes_once = [] # classes not to be included again
 
-    def visit_declared(self, declared):
+    def visit_declared_type(self, declared):
         declared.declaration.accept(self)
 
     def visit_class(self, class_):
@@ -180,7 +180,7 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
         print "sorry, <enum> not implemented"
 
 
-class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
+class DetailFormatter(FormatterBase, ASG.Visitor):
 
 
     #################### Type Visitor ##########################################
@@ -190,17 +190,17 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         self.__type_ref = Util.ccolonName(type.name)
         self.__type_label = Util.ccolonName(type.name)
 
-    def visit_unknown(self, type):
+    def visit_unknown_type(self, type):
 
         self.__type_ref = Util.ccolonName(type.name)
         self.__type_label = Util.ccolonName(type.name, self.scope())
         
-    def visit_declared(self, type):
+    def visit_declared_type(self, type):
 
         self.__type_label = Util.ccolonName(type.name, self.scope())
         self.__type_ref = Util.ccolonName(type.name)
 
-    def visit_modifier(self, type):
+    def visit_modifier_type(self, type):
 
         type.alias.accept(self)
         self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
@@ -435,7 +435,7 @@ class DocCache:
 
 
 
-class Formatter(Processor, Type.Visitor, ASG.Visitor):
+class Formatter(Processor, ASG.Visitor):
     """The type visitors should generate names relative to the current scope.
     The generated references however are fully scoped names
     """

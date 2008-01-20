@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import ASG, Type
+from Synopsis import ASG
 
 def escape(text):
 
@@ -13,7 +13,7 @@ def escape(text):
         text = text.replace(*p)
     return text
 
-class Syntax(ASG.Visitor, Type.Visitor):
+class Syntax(ASG.Visitor):
     """Even though DocBook provides markup for some programming artifacts,
     it is incomplete, and the XSL stylesheets are buggy, resulting in
     incorrect syntax. Thus, we use the 'synopsis' element, and attempt to
@@ -52,9 +52,9 @@ class CxxSyntax(Syntax):
 
     def visit_base_type(self, type):
         self._typename = type.name[-1]
-    def visit_unknown(self, type): self._typename = '&lt;unknown&gt;'
-    def visit_declared(self, type): self._typename = type.name[-1]
-    def visit_modifier(self, type):
+    def visit_unknown_type(self, type): self._typename = '&lt;unknown&gt;'
+    def visit_declared_type(self, type): self._typename = type.name[-1]
+    def visit_modifier_type(self, type):
         type.alias.accept(self)
         self._typename = '%s %s %s'%(escape(' '.join(type.premod)),
                                    self._typename,

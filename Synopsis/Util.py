@@ -1,4 +1,3 @@
-# $Id: Util.py,v 1.25 2003/11/11 06:05:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies

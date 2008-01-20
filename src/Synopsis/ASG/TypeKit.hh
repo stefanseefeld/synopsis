@@ -21,22 +21,22 @@ namespace ASG
 class TypeKit : public Python::Kit
 {
 public:
-  TypeKit(std::string const &lang) : Kit("Synopsis.Type"), lang_(lang) {}
+  TypeKit(std::string const &lang) : Kit("Synopsis.ASG"), lang_(lang) {}
 
   Type create_type()
   { return create<Type>("Type", Python::Tuple(lang_));}
 
   Named create_named(const ScopedName &sn)
-  { return create<Named>("Named", Python::Tuple(lang_, sn));}
+  { return create<Named>("NamedType", Python::Tuple(lang_, sn));}
 
   Base create_base(const ScopedName &sn)
-  { return create<Base>("Base", Python::Tuple(lang_, sn));}
+  { return create<Base>("BaseType", Python::Tuple(lang_, sn));}
 
   Dependent create_dependent(const ScopedName &sn)
   { return create<Dependent>("Dependent", Python::Tuple(lang_, sn));}
 
   Unknown create_unknown(const ScopedName &sn)
-  { return create<Unknown>("Unknown", Python::Tuple(lang_, sn));}
+  { return create<Unknown>("UnknownType", Python::Tuple(lang_, sn));}
 
   Declared create_declared(const ScopedName &sn,
 			   const Declaration &decl)
@@ -48,7 +48,7 @@ public:
 
   Modifier create_modifier(const Type &alias,
 			   const Modifiers &pre, const Modifiers &post)
-  { return create<Modifier>("Modifier", Python::Tuple(lang_, alias, pre, post));}
+  { return create<Modifier>("ModifierType", Python::Tuple(lang_, alias, pre, post));}
 
   Array create_array(const Type &alias,
 		     const Python::TypedList<int> &sizes)

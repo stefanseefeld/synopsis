@@ -7,9 +7,9 @@
 #
 
 from Synopsis.Processor import Composite, Parameter
-from Synopsis import ASG, Type
+from Synopsis import ASG
 
-class Linker(Composite, ASG.Visitor, Type.Visitor):
+class Linker(Composite, ASG.Visitor):
    """Visitor that removes duplicate declarations"""
 
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
@@ -103,12 +103,12 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
 
-   def visit_unknown(self, type):
+   def visit_unknown_type(self, type):
 
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
 
-   def visit_declared(self, type):
+   def visit_declared_type(self, type):
 
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
@@ -121,10 +121,10 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
       if not self.types.has_key(type.name):
          return
       declared = self.types[type.name]
-      if isinstance(declared, Type.Unknown):
+      if isinstance(declared, ASG.UnknownType):
          #the type was declared in a file for which no ASG is retained
          return
-      elif not isinstance(declared, Type.Declared):
+      elif not isinstance(declared, ASG.Declared):
          print "Warning: template declaration was not a declaration:",type.name,declared.__class__.__name__
          return
       decl = declared.declaration
@@ -136,7 +136,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
       else:
          print "Warning: template type disappeared:",type.name
 
-   def visit_modifier(self, type):
+   def visit_modifier_type(self, type):
 
       alias = self.link_type(type.alias)
       if alias is not type.alias:
@@ -182,7 +182,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
          # Try to find a replacement declaration
          if types.has_key(d.name):
             declared = types[d.name]
-            if isinstance(type, Type.Declared):
+            if isinstance(type, ASG.Declared):
                d = declared.declaration
          file.declarations.append(d)
         
@@ -266,7 +266,7 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
 
       self.top().declarations.append(builtin)
 
-   def visit_named(self, decl):
+   def visit_named_type(self, decl):
 
       name = decl.name
       if self.lookup(decl.name): return
@@ -340,15 +340,15 @@ class Linker(Composite, ASG.Visitor, Type.Visitor):
    def visit_inheritance(self, parent):
 
       type = parent.parent
-      if isinstance(type, (Type.Declared, Type.Unknown)):
+      if isinstance(type, (ASG.Declared, ASG.UnknownType)):
          ltype = self.link_type(type)
          if ltype is not type:
             parent.parent = ltype
-      elif isinstance(type, Type.Parametrized):
+      elif isinstance(type, ASG.Parametrized):
          ltype = self.link_type(type.template)
          if ltype is not type.template:
-            # Must find a Type.Template from it
-            if not isinstance(ltype, Type.Declared):
+            # Must find a ASG.Template from it
+            if not isinstance(ltype, ASG.Declared):
                # Error
                return
             decl = ltype.declaration

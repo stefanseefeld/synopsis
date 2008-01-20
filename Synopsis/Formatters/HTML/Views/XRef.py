@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -82,7 +82,7 @@ class XRef(View):
       # Try and make a descriptive
       desc = ''
       type = self.processor.ir.types.get(scope)
-      if isinstance(type, Type.Declared):
+      if isinstance(type, ASG.Declared):
          desc = ' ' + type.declaration.type
       # Try and find a link to the scope
       scope_text = '::'.join(scope)
@@ -119,14 +119,14 @@ class XRef(View):
       desc = ''
       decl = None
       type = self.processor.ir.types.get(name)
-      if isinstance(type, Type.Declared):
+      if isinstance(type, ASG.Declared):
          decl = type.declaration
          desc = self.describe_decl(decl)
       self.write(element('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
          type = self.processor.ir.types.get(name, None)
-         if isinstance(type, Type.Declared):
+         if isinstance(type, ASG.Declared):
             link = self.directory_layout.link(type.declaration)
             self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:

@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 
 class ScopeStripper(Processor, ASG.Visitor):
     """Strip common prefix from the declaration's name.

@@ -283,7 +283,7 @@ Translator::Translator(FileFilter* filter, PyObject *ast)
   assertObject(m_ast_module);
   m_sf_module  = PyImport_ImportModule("Synopsis.SourceFile");
   assertObject(m_sf_module);
-  m_type_module = PyImport_ImportModule("Synopsis.Type");
+  m_type_module = PyImport_ImportModule("Synopsis.ASG");
   assertObject(m_type_module);
   
   m_declarations = PyObject_GetAttrString(m_ast, "declarations");
@@ -399,7 +399,7 @@ PyObject *Translator::Base(Types::Base* type)
 {
   Trace trace("Translator::Base", Trace::TRANSLATION);
   PyObject *name, *base;
-  base = PyObject_CallMethod(m_type_module, "Base", "OO",
+  base = PyObject_CallMethod(m_type_module, "BaseType", "OO",
                              m->cxx(), name = m->Tuple(type->name()));
   PyObject_SetItem(m_dictionary, name, base);
   Py_DECREF(name);
@@ -421,7 +421,7 @@ PyObject *Translator::Unknown(Types::Named* type)
 {
   Trace trace("Translator::Unknown", Trace::TRANSLATION);
   PyObject *name, *unknown;
-  unknown = PyObject_CallMethod(m_type_module, "Unknown", "OO",
+  unknown = PyObject_CallMethod(m_type_module, "UnknownType", "OO",
                                 m->cxx(), name = m->Tuple(type->name()));
   PyObject_SetItem(m_dictionary, name, unknown);
   Py_DECREF(name);
@@ -462,7 +462,7 @@ PyObject *Translator::Modifier(Types::Modifier* type)
 {
   Trace trace("Translator::Modifier", Trace::TRANSLATION);
   PyObject *modifier, *alias, *pre, *post;
-  modifier = PyObject_CallMethod(m_type_module, "Modifier", "OOOO",
+  modifier = PyObject_CallMethod(m_type_module, "ModifierType", "OOOO",
                                  m->cxx(), alias = m->py(type->alias()),
                                  pre = m->List(type->pre()), post = m->List(type->post()));
   Py_DECREF(alias);

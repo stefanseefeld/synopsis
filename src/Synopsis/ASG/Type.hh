@@ -31,7 +31,7 @@ public:
 
   virtual void accept(TypeVisitor *v) { v->visit_type(this);}
 
-  void assert_type(const char *type) { Python::Object::assert_type("Synopsis.Type", type);}
+  void assert_type(const char *type) { Python::Object::assert_type("Synopsis.ASG", type);}
 };
 
 typedef Python::TypedList<Type> TypeList;
@@ -41,7 +41,7 @@ class Named : public Type
 public:
   Named() {}
   Named(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check && o) assert_type("Named");}
+    : Type(o, false) { if (check && o) assert_type("NamedType");}
 
   ScopedName name() const { return attr("name")();}  
 
@@ -53,7 +53,7 @@ class Base : public Named
 public:
   Base() {}
   Base(const Python::Object &o, bool check = true)
-    : Named(o, false) { if (check && o) assert_type("Base");}
+    : Named(o, false) { if (check && o) assert_type("BaseType");}
 
   virtual void accept(TypeVisitor *v) { v->visit_base(this);}
 };
@@ -73,7 +73,7 @@ class Unknown : public Named
 public:
   Unknown() {}
   Unknown(const Python::Object &o, bool check = true)
-    : Named(o, false) { if (check && o) assert_type("Unknown");}
+    : Named(o, false) { if (check && o) assert_type("UnknownType");}
 
   virtual void accept(TypeVisitor *v) { v->visit_unknown(this);}
 };
@@ -83,7 +83,7 @@ class Modifier : public Type
 public:
   Modifier() {}
   Modifier(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check && o) assert_type("Modifier");}
+    : Type(o, false) { if (check && o) assert_type("ModifierType");}
 
   Type alias() const { return narrow<Type>(attr("alias")());}
   Modifiers pre() const { return narrow<Modifiers>(attr("premod")());}  
@@ -113,7 +113,7 @@ public:
   FunctionPtr(const Python::Object &o, bool check = true)
     : Type(o, false) { if (check && o) assert_type("Function");}
 
-  Type return_type() const { return narrow<Type>(attr("returnType")());}  
+  Type return_type() const { return narrow<Type>(attr("return_type")());}  
   Modifiers pre() const { return narrow<Modifiers>(attr("premod")());}  
   TypeList parameters() const { return narrow<TypeList>(attr("parameters")());}
 

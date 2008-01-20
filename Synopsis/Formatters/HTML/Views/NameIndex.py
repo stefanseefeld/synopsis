@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Type
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -80,7 +80,7 @@ class NameIndex(View):
             else: dict[key] = [type]
         # Fill the dict
         [hasher(t) for t in self.processor.ir.types.values()
-         if isinstance(t, Type.Declared) and
+         if isinstance(t, ASG.Declared) and
          not isinstance(t.declaration, ASG.Builtin)]
 
         # Now sort the dict

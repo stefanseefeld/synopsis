@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 
 class NameMapper(Processor, ASG.Visitor):
     """Abstract base class for name mapping."""
@@ -40,9 +40,9 @@ class NamePrefixer(NameMapper):
         for index in range(len(self.prefix), 0, -1):
             module = ASG.MetaModule(self.type, self.prefix[:index])
             module.declarations.extend(self.ir.declarations)
-            self.ir.types[module.name] = Type.Declared('',
-                                                       module.name,
-                                                       module)
+            self.ir.types[module.name] = ASG.Declared('',
+                                                      module.name,
+                                                      module)
             self.ir.declarations[:] = [module]
 
         return self.output_and_return_ir()

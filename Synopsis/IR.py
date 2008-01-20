@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-import Type
+import ASG
 import cPickle
 
 class IR:
@@ -18,7 +18,7 @@ class IR:
 
         self.files = files or {}
         self.declarations = declarations or []
-        self.types = types or Type.Dictionary()
+        self.types = types or ASG.Dictionary()
 
     def save(self, filename):
         """Saves an IR object to the given filename"""

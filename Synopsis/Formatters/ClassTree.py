@@ -8,7 +8,7 @@
 
 """Contains the utility class ClassTree, for creating inheritance trees."""
 
-from Synopsis import ASG, Type
+from Synopsis import ASG
 
 
 def sort(list):
@@ -140,9 +140,9 @@ class ClassTree(ASG.Visitor):
          parent = inheritance.parent
          if hasattr(parent, 'declaration'):	
             self.add_inheritance(parent.declaration.name, class_.name)
-         elif isinstance(parent, Type.Parametrized) and parent.template:
+         elif isinstance(parent, ASG.Parametrized) and parent.template:
             self.add_inheritance(parent.template.name, class_.name)
-         elif isinstance(parent, Type.Unknown):
+         elif isinstance(parent, ASG.UnknownType):
             self.add_inheritance(parent.link, class_.name)
       for d in class_.declarations:
          d.accept(self)

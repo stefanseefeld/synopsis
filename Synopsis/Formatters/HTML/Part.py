@@ -15,12 +15,12 @@ and are defined in the FormatStrategy module.
 """
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import ASG, Type, Util
+from Synopsis import ASG, Util
 from Fragment import Fragment
 import Tags # need both because otherwise 'Tags.name' would be ambiguous
 from Tags import *
 
-class Part(Parametrized, Type.Visitor, ASG.Visitor):
+class Part(Parametrized, ASG.Visitor):
    """Base class for formatting a Part of a Scope View.
     
    This class contains functionality for modularly formatting an ASG node and
@@ -170,12 +170,12 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
 
       self.__type_label = self.reference(type.name)
         
-   def visit_unknown(self, type):
+   def visit_unknown_type(self, type):
       "Sets the label to be a reference to the type's link"
 
       self.__type_label = self.reference(type.link)
         
-   def visit_declared(self, type):
+   def visit_declared_type(self, type):
       "Sets the label to be a reference to the type's name"
 
       self.__type_label = self.reference(type.name)
@@ -185,7 +185,7 @@ class Part(Parametrized, Type.Visitor, ASG.Visitor):
 
       self.__type_label = type.name[-1]
         
-   def visit_modifier(self, type):
+   def visit_modifier_type(self, type):
       "Adds modifiers to the formatted label of the modifier's alias"
 
       alias = self.format_type(type.alias)

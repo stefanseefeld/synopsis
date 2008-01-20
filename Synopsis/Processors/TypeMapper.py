@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import Type, Util
+from Synopsis import ASG
 
-class TypeMapper(Processor, Type.Visitor):
+class TypeMapper(Processor, ASG.Visitor):
    """Base class for type mapping"""
 
    def process(self, ir, **kwds):

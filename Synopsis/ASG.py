@@ -16,6 +16,9 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
+import Util
+
+
 # Accessibility constants
 DEFAULT = 0
 PUBLIC = 1
@@ -25,6 +28,15 @@ PRIVATE = 3
 def ccmp(a,b):
     """Compares classes of two objects"""
     return cmp(type(a),type(b)) or cmp(a.__class__,b.__class__)
+
+
+class Error:
+   """Exception class used by Type internals."""
+
+   def __init__(self, err):
+      self.err = err
+   def __repr__(self):
+      return self.err
 
 
 class Debugger(type):
@@ -44,6 +56,201 @@ class Debugger(type):
             accept(self, visitor)
 
         setattr(cls, 'accept', accept_wrapper)
+
+
+class Type(object):
+    """Type abstract class."""
+
+    def __init__(self, language):
+        self.language = language
+
+    def accept(self, visitor):
+        """visitor pattern accept. @see Visitor"""
+        pass
+
+    def __cmp__(self, other):
+        "Comparison operator"
+        return cmp(id(self),id(other))
+
+class NamedType(Type):
+    """Named type abstract class"""
+
+    def __init__(self, language, name):
+        super(NamedType, self).__init__(language)
+        self._name = name
+
+    def _set_name(self, name): self._name = tuple(name)
+    name = property(lambda self: self._name, _set_name)
+
+
+class BaseType(NamedType):
+    """Class for base types"""
+
+    def __init__(self, language, name):
+        super(BaseType, self).__init__(language, name)
+    def accept(self, visitor): visitor.visit_base_type(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.name,other.name)
+    def __str__(self): return Util.ccolonName(self.name)
+
+class Dependent(NamedType):
+    """Class for template dependent types"""
+
+    def __init__(self, language, name):
+        super(Dependent, self).__init__(language, name)
+    def accept(self, visitor): visitor.visit_dependent(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.name,other.name)
+    def __str__(self): return Util.ccolonName(self.name)
+
+class UnknownType(NamedType):
+    """Class for not (yet) known type"""
+    base = Type
+    def __init__(self, language, name):
+        super(UnknownType, self).__init__(language, name)
+        self.link = name
+    def resolve(self, language, name, link):
+        """associate this type with an external reference, instead of a declaration"""
+        self.base.language = language
+        self.name = name
+        self.link = link
+    def accept(self, visitor): visitor.visit_unknown_type(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.name,other.name)
+    def __str__(self): return Util.ccolonName(self.name)
+
+class Declared(NamedType):
+    """Class for declared types"""
+
+    def __init__(self, language, name, declaration):
+        super(Declared, self).__init__(language, name)
+        self.declaration = declaration
+
+    def accept(self, visitor): visitor.visit_declared_type(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.name,other.name)
+    def __str__(self): return Util.ccolonName(self.name)
+
+class Template(Declared):
+    """Class for declared parametrized types"""
+
+    def __init__(self, language, name, declaration, parameters):
+
+        super(Template, self).__init__(language, name, declaration)
+        self.parameters = parameters
+
+    def accept(self, visitor): visitor.visit_template(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.parameters,other.parameters)
+    def __str__(self):
+        return "template<%s>%s"%(','.join(str(self.parameters)),
+                                 Util.ccolonName(self.name))
+
+class ModifierType(Type):
+    """Class for alias types with modifiers (such as 'const', '&', etc.)"""
+
+    def __init__(self, language, alias, premod, postmod):
+        super(ModifierType, self).__init__(language)
+        self.alias = alias
+        self.premod = premod
+        self.postmod = postmod
+
+    def accept(self, visitor): visitor.visit_modifier_type(self)
+
+    def __cmp__(self, other):
+        "Comparison operator"
+        return (ccmp(self,other)
+                or cmp(self.alias,other.alias)
+                or cmp(self.premod,other.premod)
+                or cmp(self.postmod,other.postmod))
+    def __str__(self): 
+        return "%s%s%s"%(''.join(['%s '%s for s in self.premod]),
+                         str(self.alias),
+                         ''.join(self.postmod))
+
+class Array(Type):
+    """a modifier that adds array dimensions to a type"""
+    
+    def __init__(self, language, alias, sizes):
+        super(Array, self).__init__(language)
+        self.alias = alias
+        self.sizes = sizes
+    def accept(self, visitor): visitor.visit_array(self)
+    def __cmp__(self, other):
+        "Comparison operator"
+        return (ccmp(self,other)
+                or cmp(self.alias,other.alias)
+                or cmp(self.sizes,other.sizes))
+    def __str__(self): 
+        return "%s%s"%(str(self.alias),
+                       ''.join(['[%d]'%s for s in self.sizes]))
+
+class Parametrized(Type):
+    """Class for parametrized type instances"""
+
+    def __init__(self, language, template, parameters):
+
+        super(Parametrized, self).__init__(language)
+        self.template = template
+        self.parameters = parameters
+
+    def accept(self, visitor): visitor.visit_parametrized(self)
+
+    def __cmp__(self, other):
+        "Comparison operator"
+        return ccmp(self,other) or cmp(self.template,other.template)
+    def __str__(self):
+        return "%s<%s>"%('::'.join(self.template.name),
+                         ','.join([str(a) for a in self.parameters]))
+
+class Function(Type):
+    """Class for function pointer types."""
+    def __init__(self, language, return_type, premod, parameters):
+
+        super(Function, self).__init__(language)
+        self.return_type = return_type
+        self.premod = premod
+        self.parameters = parameters
+
+    def accept(self, visitor): visitor.visit_function_type(self)
+   
+
+class Dictionary(dict):
+    """Dictionary extends the builtin 'dict' in two ways:
+    It allows (modifiable) lists as keys (this is for convenience only, as users
+    don't need to convert to tuple themselfs), and it adds a 'lookup' method to
+    find a type in a set of scopes."""
+    def __setitem__(self, name, type): dict.__setitem__(self, tuple(name), type)
+    def __getitem__(self, name): return dict.__getitem__(self, tuple(name))
+    def __delitem__(self, name): dict.__delitem__(self, tuple(name))
+    def has_key(self, name): return dict.has_key(self, tuple(name))
+    def get(self, name, default=None): return dict.get(self, tuple(name), default)
+    def lookup(self, name, scopes):
+        """locate 'name' in one of the scopes"""
+        for s in scopes:
+            scope = list(s)
+            while len(scope) > 0:
+                if self.has_key(scope + name):
+                    return self[scope + name]
+                else: del scope[-1]
+        if self.has_key(name):
+            return self[name]
+        return None
+    def merge(self, dict):
+        """merge in a foreign dictionary, overriding already defined types only
+        if they are of type 'Unknown'."""
+        for i in dict.keys():
+            if self.has_key(i): 
+                if isinstance(self[i], UnknownType):
+                    self[i] = dict[i]
+                else:
+                    pass
+            else: self[i] = dict[i]
 
 
 class Declaration(object):
@@ -340,6 +547,16 @@ class OperationTemplate(Operation):
 
 class Visitor(object):
    """Visitor for ASG nodes"""
+
+   def visit_base_type(self, type): pass
+   def visit_unknown_type(self, type): pass
+   def visit_declared_type(self, type): pass
+   def visit_modifier_type(self, type): pass
+   def visit_array(self, type): pass
+   def visit_template(self, type): pass
+   def visit_parametrized(self, type): pass
+   def visit_function_type(self, type): pass
+   def visit_dependent(self, type): pass
 
    def visit_declaration(self, node): pass
    def visit_builtin(self, node):
