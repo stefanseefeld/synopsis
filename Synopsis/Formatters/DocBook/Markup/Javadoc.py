@@ -8,6 +8,21 @@
 from Synopsis.Formatters.DocBook.Markup import *
 import re
 
+def attributes(keys):
+    "Convert a name/value dict to a string of attributes"
+
+    return ''.join(['%s="%s"'%(k,v) for k,v in keys.items()])
+
+def element(_type, body, **keys):
+    "Wrap the body in a tag of given type and attributes"
+
+    return '<%s %s>%s</%s>'%(_type,attributes(keys),body,_type)
+
+def title(name) : return element('title', name)
+def para(body) : return element('para', body)
+def listitem(body) : return element('listitem', body)
+def term(body) : return element('term', body)
+
 class Javadoc(Formatter):
     """A formatter that formats comments similar to Javadoc.
     @see <a href="http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javadoc.html">Javadoc Spec</a>"""
@@ -152,21 +167,17 @@ class Javadoc(Formatter):
 
         content = ''
         params = [b for b in blocks if b.tag == 'param']
-        def row(dt, dd):
-            return entity('tr',
-                          entity('th', dt, Class='dt') +
-                          entity('td', dd, Class='dd'))
         if params:
-            content += div('tag-heading',"Parameters:")
-            dl = entity('table', ''.join([row(p.arg, p.body) for p in params]),
-                        Class='dl')
-            content += div('tag-section', dl)
+            params = [element('varlistentry', term(p.arg) + listitem(para(p.body)))
+                      for p in params]
+            content += element('variablelist',
+                               title('Parameters') + '\n' + '\n'.join(params))
         kwds = [b for b in blocks if b.tag == 'keyword']
         if kwds:
-            content += div('tag-heading',"Keywords:")
-            dl = entity('dl', ''.join([row( k.arg, k.body) for k in kwds]),
-                        Class='dl')
-            content += div('tag-section', dl)
+            kwds = [element('varlistentry', term(k.arg) + listitem(para(k.body)))
+                    for k in kwds]
+            content += element('variablelist',
+                               title('Keywords') + '\n' + '\n'.join(kwds))
         return content
 
 
@@ -175,10 +186,10 @@ class Javadoc(Formatter):
         content = ''
         throws = [b for b in blocks if b.tag in ['throws', 'exception']]
         if throws:
-            content += div('tag-heading',"Throws:")
-            dl = entity('dl', ''.join([entity('dt', t.arg) + entity('dd', t.body)
-                                       for t in throws]))
-            content += div('tag-section', dl)
+            throws = [element('varlistentry', term(t.arg) + listitem(para(t.body)))
+                      for t in throws]
+            content += element('variablelist',
+                               title('Throws') + '\n' + '\n'.join(throws))
         return content
 
 
@@ -187,8 +198,9 @@ class Javadoc(Formatter):
         content = ''
         items = [b for b in blocks if b.tag == tag]
         if items:
-            content += div('tag-heading', self.tag_name[tag][1])
-            content += div('tag-section',
-                           '<br/>'.join([i.body for i in items]))
+            items = [element('varlistentry', term(i.arg) + listitem(para(i.body)))
+                     for i in items]
+            content += element('variablelist',
+                               title(self.tag_name[tag][1]) + '\n' + '\n'.join(items))
         return content
 

@@ -16,5 +16,6 @@
 <xsl:param name="footer.rule" select="0"/>
 <xsl:param name="table.borders.with.css" select="1"/>
 <xsl:param name="segmentedlist.as.table" select="1"/>
+<xsl:param name="index.on.type" select="1"/>
 
 </xsl:stylesheet>

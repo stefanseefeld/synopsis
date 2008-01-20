@@ -109,24 +109,24 @@ class FormatterBase:
         self.__indent = self.__indent - 2
         self.write('\n</' + type + '>')
 
-    def write_element(self, type, body, **params):
+    def write_element(self, element, body, **params):
         """Write a single element on one line (though body may contain
         newlines)"""
 
         param_text = ''
         if params: param_text = ' ' + ' '.join(['%s="%s"'%(p[0].lower(), p[1]) for p in params.items()])
-        self.write('<' + type + param_text + '>')
+        self.write('<' + element + param_text + '>')
         self.__indent = self.__indent + 2
         self.write(body)
         self.__indent = self.__indent - 2
-        self.write('</' + type + '>')
+        self.write('</' + element + '>')
 
-    def element(self, type, body, **params):
+    def element(self, element, body, **params):
         """Return but do not write the text for an element on one line"""
 
         param_text = ''
         if params: param_text = ' ' + ' '.join(['%s="%s"'%(p[0].lower(), p[1]) for p in params.items()])
-        return '<%s%s>%s</%s>'%(type, param_text, body, type)
+        return '<%s%s>%s</%s>'%(element, param_text, body, element)
 
     def reference(self, ref, label):
         """reference takes two strings, a reference (used to look up the symbol and generated the reference),
@@ -234,6 +234,10 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
 
     def visit_declaration(self, declaration):
 
+        if str(declaration.type) in ('function', 'function template', 'member function', 'member function template'):
+            indexterm = self.element('primary', escape(declaration.name[-1]))
+            self.write_element('indexterm', indexterm, type='functions')
+
         language = declaration.file.annotations['language']
         syntax = _detail_syntax[language](self.output)
         declaration.accept(syntax)
@@ -248,14 +252,13 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         self.write_element('title', title)
         self.write('\n')
 
-        sorter = DeclarationSorter.DeclarationSorter()
-        sorter.sort(module.declarations)
+        sorter = DeclarationSorter.DeclarationSorter(module.declarations)
         if self.processor.generate_summary:
             self.start_element('section')
             self.write_element('title', 'Summary')
             self.write('\n')
             summary = SummaryFormatter(self.processor, self.output)
-            for s in sorter.keys():
+            for s in sorter:
                 if s[-1] == 's': title = s + 'es Summary'
                 else: title = s + 's Summary'
                 self.start_element('section')
@@ -273,7 +276,7 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         self.process_doc(module)
         self.push_scope(module.name)
         suffix = self.processor.generate_summary and ' Details' or ''
-        for s in sorter.keys():
+        for s in sorter:
             if s[-1] == 's': title = s + 'es'
             else: title = s + 's'
             title += suffix
@@ -297,6 +300,9 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         title = '%s %s'%(class_.type, class_.name[-1])
         self.write_element('title', escape(title))
         self.write('\n')
+        indexterm = self.element('primary', escape(class_.name[-1]))
+        self.write_element('indexterm', indexterm, type='types')
+        self.write('\n')
 
         declarations = class_.declarations
         # If so desired, flatten inheritance tree
@@ -319,8 +325,7 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
                             continue
                     declarations.append(d)
 
-        sorter = DeclarationSorter.DeclarationSorter()
-        sorter.sort(declarations)
+        sorter = DeclarationSorter.DeclarationSorter(declarations)
 
         if self.processor.generate_summary:
             self.start_element('section')
@@ -328,7 +333,7 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
             self.write('\n')
             summary = SummaryFormatter(self.processor, self.output)
             summary.process_doc(class_)
-            for s in sorter.keys():
+            for s in sorter:
                 if s[-1] == 's': title = s + 'es Summary'
                 else: title = s + 's Summary'
                 self.start_element('section')
@@ -346,7 +351,7 @@ class DetailFormatter(FormatterBase, Type.Visitor, ASG.Visitor):
         self.process_doc(class_)
         self.push_scope(class_.name)
         suffix = self.processor.generate_summary and ' Details' or ''
-        for s in sorter.keys():
+        for s in sorter:
             if s[-1] == 's': title = s + 'es'
             else: title = s + 's'
             title += suffix
@@ -435,7 +440,7 @@ class Formatter(Processor, Type.Visitor, ASG.Visitor):
     The generated references however are fully scoped names
     """
 
-    markup_formatters = Parameter({'rst':RST()},
+    markup_formatters = Parameter({'rst':RST(), 'javadoc':Javadoc()},
                                   'Markup-specific formatters.')
     title = Parameter(None, 'title to be used in top-level section')
     generate_summary = Parameter(False, 'generate scope summaries')

@@ -46,5 +46,11 @@
     <xi:include href="Paths.xml">
       <xi:fallback>The generated reference...</xi:fallback>
     </xi:include>
+  <index type="types">
+    <title>Types</title>
+  </index>
+  <index type="functions">
+    <title>Functions</title>
+  </index>
   </chapter>
 </book>

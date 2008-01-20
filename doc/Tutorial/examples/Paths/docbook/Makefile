@@ -6,7 +6,7 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 
 all: Paths
 
-Paths: Paths.xml
+Paths: Paths.xml Reference.xml
 	mkdir -p $@
 	cp synopsis.css $@
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ html.xsl Reference.xml
