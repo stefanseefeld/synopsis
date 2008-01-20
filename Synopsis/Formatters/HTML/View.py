@@ -130,8 +130,8 @@ class Template(Format):
       """Writes the text to the output stream, replaceing @PREFIX@ with the
       prefix for this file"""
 
-      sections = string.split(text, '@PREFIX@')
-      os.write(string.join(sections, self.prefix))
+      sections = text.split('@PREFIX@')
+      os.write(self.prefix.join(sections))
 
    def view_header(self, os, title, body, headextra, view):
       """Formats the header using the template file"""
