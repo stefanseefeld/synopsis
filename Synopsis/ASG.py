@@ -208,11 +208,11 @@ class Parametrized(Type):
         return "%s<%s>"%('::'.join(self.template.name),
                          ','.join([str(a) for a in self.parameters]))
 
-class Function(Type):
+class FunctionType(Type):
     """Class for function pointer types."""
     def __init__(self, language, return_type, premod, parameters):
 
-        super(Function, self).__init__(language)
+        super(FunctionType, self).__init__(language)
         self.return_type = return_type
         self.premod = premod
         self.parameters = parameters

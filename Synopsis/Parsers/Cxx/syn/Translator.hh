@@ -25,7 +25,7 @@ class Translator : public AST::Visitor, public Types::Visitor
 {
 public:
 
-  Translator(FileFilter*, PyObject *ast);
+  Translator(FileFilter*, PyObject *ir);
   ~Translator();
 
   void translate(AST::Scope* global);
@@ -136,10 +136,9 @@ private:
     void addDeclaration(PyObject *);
   */
 private:
-  PyObject* m_ast_module;
+  PyObject* m_asg_module;
   PyObject* m_sf_module;
-  PyObject* m_type_module;
-  PyObject *m_ast;
+  PyObject *m_ir;
   PyObject* m_declarations;
   PyObject* m_dictionary;
   
