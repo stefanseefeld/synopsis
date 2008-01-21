@@ -60,8 +60,10 @@ public:
     //. expected. The list of declarations is stored in the exception.
     struct MultipleError
     {
+        MultipleError(const std::string& n) : name(n) {}
         // The vector of types that *were* found. This is returned so that whoever
         // catches the error can proceed straight away
+        std::string name;
         Type_vector types;
     };
 

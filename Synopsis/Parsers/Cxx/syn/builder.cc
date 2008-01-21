@@ -282,16 +282,16 @@ AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
     switch (nstype)
     {
     case NamespaceNamed:
-        type_str = "namespace";
-        { // Check if namespace already exists
-            Dictionary* dict = scopeinfo()->dict;
-            if (dict->has_key(name))
-                try
-                {
-                    ns = Types::declared_cast<AST::Namespace>(dict->lookup(name));
-                }
-                catch (const Types::wrong_type_cast&)
-                { }
+      type_str = "namespace";
+      { // Check if namespace already exists
+        Dictionary* dict = scopeinfo()->dict;
+        if (dict->has_key(name))
+          try
+          {
+            Types::Named::vector types = dict->lookupMultiple(name);
+            ns = Types::declared_cast<AST::Namespace>(*types.begin());
+          }
+          catch (const Types::wrong_type_cast&) {}
         }
         break;
     case NamespaceAnon:

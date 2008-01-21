@@ -28,6 +28,7 @@
 #include "linkstore.hh"
 #include "lookup.hh"
 #include "filter.hh"
+#include "dict.hh"
 
 using namespace Synopsis;
 using namespace AST;
@@ -286,6 +287,21 @@ SWalker::translate(PTree::Node *node)
   {
     Walker::translate(node);
   }
+  catch (Dictionary::KeyError const &e)
+  {
+    std::cerr << "Unknown type '" << e.name << "'\n";
+    std::string filename;
+    unsigned long line = my_buffer->origin(node->begin(), filename);
+    std::cerr << " (" << filename << ":" << line << ")" << std::endl;
+    throw;    
+  }
+  catch (Dictionary::MultipleError const &e)
+  {
+    std::cerr << "Multiple definitions found for type '" << e.name << "'\n";
+    for (Dictionary::Type_vector::const_iterator i = e.types.begin(); i != e.types.end(); ++i)
+      std::cerr << (*i)->name() << std::endl;
+    throw;    
+  }
   // Debug and non-debug modes handle these very differently
 #ifdef DEBUG
   catch (const TranslateError& e)
@@ -320,6 +336,7 @@ SWalker::translate(PTree::Node *node)
     std::string filename;
     unsigned long line = my_buffer->origin(node->begin(), filename);
     std::cerr << " (" << filename << ":" << line << ")" << std::endl;
+    throw;
   }
   catch (...)
   {
@@ -328,6 +345,7 @@ SWalker::translate(PTree::Node *node)
     std::string filename;
     unsigned long line = my_buffer->origin(node->begin(), filename);
     std::cerr << " (" << filename << ":" << line << ")" << std::endl;
+    throw;
   }
 #endif
 }

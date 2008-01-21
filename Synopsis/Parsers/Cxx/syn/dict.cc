@@ -40,6 +40,7 @@
 #include <list>
 #include <string>
 #include <iostream>
+#include <cassert>
 
 typedef std::multimap<std::string, Types::Named*> name_map;
 
@@ -103,7 +104,7 @@ Dictionary::lookup(const std::string& name)
             return type;
     }
     // Create exception object
-    MultipleError exc;
+    MultipleError exc(name);
     exc.types.push_back(type);
     do
         exc.types.push_back(iter->second);
