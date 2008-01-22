@@ -47,17 +47,17 @@ class clean(base):
                 os.remove(pc)
 
             # Remove the generated documentation.
-            prefix = 'share/doc/Synopsis/html/Manual'
+            prefix = 'share/doc/synopsis/html/Manual'
             for d in ['cxx', 'python', 'sxr']:
                 if os.path.exists(os.path.join(prefix, d)):
                     remove_tree(os.path.join(prefix, d), dry_run=self.dry_run)
 
-            prefix = 'share/doc/Synopsis/html'
+            prefix = 'share/doc/synopsis/html'
             for d in ['Tutorial', 'DevGuide']:
                 if os.path.exists(os.path.join(prefix, d)):
                     remove_tree(os.path.join(prefix, d), dry_run=self.dry_run)
 
-            prefix = 'share/doc/Synopsis'
+            prefix = 'share/doc/synopsis'
             if os.path.exists(os.path.join(prefix, 'examples')):
                 remove_tree(os.path.join(prefix, 'examples'), dry_run=self.dry_run)
 
