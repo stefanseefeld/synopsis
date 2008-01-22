@@ -35,6 +35,8 @@ ifdef prefix
 	cp -r Paths/* $(prefix)
 endif
 
+install-print:
+
 clean:
 	rm -rf *.syn
 

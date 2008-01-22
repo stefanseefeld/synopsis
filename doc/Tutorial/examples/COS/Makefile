@@ -22,6 +22,8 @@ ifdef prefix
 	cp -r html/* $(prefix)
 endif
 
+install-print:
+
 clean:
 	rm -fr *.syn *~
 

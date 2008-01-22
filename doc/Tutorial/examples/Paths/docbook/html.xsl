@@ -4,7 +4,7 @@
                 xmlns="http://www.w3.org/TR/xhtml1/transitional"
                 exclude-result-prefixes="#default">
 
-<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl"/>
+<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/chunk.xsl"/>
 
 <xsl:param name="html.stylesheet" select="'synopsis.css'"/>
 <xsl:param name="use.extensions" select="'1'"/>
@@ -16,6 +16,7 @@
 <xsl:param name="footer.rule" select="0"/>
 <xsl:param name="table.borders.with.css" select="1"/>
 <xsl:param name="segmentedlist.as.table" select="1"/>
+<xsl:param name="variablelist.as.table" select="1"/>
 <xsl:param name="index.on.type" select="1"/>
 
 </xsl:stylesheet>

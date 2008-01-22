@@ -7,6 +7,9 @@
 
 SHELL	:= /bin/sh
 
+xsltproc:= xsltproc --novalid --path $(shell pwd) --xinclude
+fop	:= xmlroff --backend=cairo
+
 srcdir	:= @srcdir@
 
 processors := Synopsis.Parsers.Python.Parser \
@@ -34,12 +37,12 @@ vpath %.xml $(srcdir)
 
 all: html pdf
 html: html/Tutorial html/DevGuide html/examples
-pdf: Tutorial.pdf DevGuide.pdf
+pdf: Tutorial.pdf DevGuide.pdf print/examples
 
 html/Tutorial: Tutorial.xml $(appendix) examples 
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
-	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
+	$(xsltproc) -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
 	cp examples/Paths/diagrams/*.png $@/images/
@@ -47,7 +50,7 @@ html/Tutorial: Tutorial.xml $(appendix) examples
 html/DevGuide: DevGuide.xml
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
-	xsltproc --novalid -o $@/ $(srcdir)/html.xsl $<
+	$(xsltproc) -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
 
@@ -55,16 +58,20 @@ html/examples: examples
 	mkdir -p $@
 	make -C examples install-html prefix=$(abspath $@)
 
+print/examples: examples
+	mkdir -p $@
+	make -C examples install-print prefix=$(abspath $@)
+
 examples:
 	make -C examples
 
-Tutorial.pdf: $(appendix)
+print/Tutorial.pdf: $(appendix)
 
 %.pdf: %.fo
-	fop $< $@
+	$(fop) $< $@
 
 %.fo: %.xml
-	xsltproc --novalid --path $(shell pwd) --xinclude -o $@ $(srcdir)/fo.xsl $^
+	$(xsltproc) -o $@ $(srcdir)/fo.xsl $^
 	mkdir -p images
 	cp -u $(srcdir)/images/*.svg images/
 
@@ -76,5 +83,5 @@ clean:
 	rm -f Tutorial.fo DevGuide.fo
 
 distclean: clean
-	rm -rf html Tutorial.pdf DevGuide.pdf
+	rm -rf html print Tutorial.pdf DevGuide.pdf
 

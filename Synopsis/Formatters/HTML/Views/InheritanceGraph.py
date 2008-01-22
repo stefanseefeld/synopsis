@@ -150,7 +150,7 @@ class InheritanceGraph(View):
             # Find declarations
             declarations = map(self.decl_finder, graph)
             declarations = filter(lambda x: x is not None, declarations)
-            # Call Dot formatter
+            #output = os.path.join(self.processor.output, 'InheritanceGraph', str(count))
             output = os.path.join(self.processor.output,
                                   os.path.splitext(self.filename())[0]) + '-%s'%count
             dot = Dot.Formatter()
@@ -162,13 +162,7 @@ class InheritanceGraph(View):
                            toc_in=[toc_file],
                            base_url=self.filename(),
                            title='Synopsis %s'%count,
-                           #-n, FIXME : what does the 'no_descend' option do ?
-                           # do we need to expose that through a parameter ?
                            layout=self.direction)
-               #args = ('-i', '-f', 'html', '-o', output, '-r', toc_file,
-               #        '-R', self.filename(), '-t', 'Synopsis %s'%count, '-n', 
-               #        '-p', name, '-d', self.direction)
-               #Dot.format(args, temp_ast, None)
                dot_file = open(output + '.html', 'r')
                self.write(dot_file.read())
                dot_file.close()

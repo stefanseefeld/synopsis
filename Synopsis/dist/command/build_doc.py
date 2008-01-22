@@ -29,7 +29,7 @@ class build_doc(build.build):
                    ('html', 'h', "build for html output only"),
                    ('printable', 'p', "build for pdf output only"),
                    ('sxr=', 'x', "build the sxr database for synopsis for the given URL (requires -m)")]
-   boolean_options = ['man-page', 'ref-manual', 'tutorial', 'examples', 'html', 'print']
+   boolean_options = ['man-page', 'ref-manual', 'tutorial', 'examples', 'html', 'printable']
 
    def initialize_options(self):
 
@@ -232,16 +232,29 @@ to query and browse cross-referenced source code."""
       
       make = os.environ.get('MAKE', 'make')
 
-      spawn([make, '-C', tempdir, 'html/examples'])
+      if self.html:
+         spawn([make, '-C', tempdir, 'html/examples'])
 
-      builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/synopsis'))
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/synopsis'))
 
-      # Copy examples output into installation directory
-      if os.path.isdir(os.path.join(builddir, 'html/examples')):
-         rmtree(os.path.join(builddir, 'html/examples'), 1)
-      copy_tree(os.path.join(tempdir, 'html/examples'),
-                os.path.join(builddir, 'html/examples'))
+         # Copy examples output into installation directory
+         if os.path.isdir(os.path.join(builddir, 'html/examples')):
+            rmtree(os.path.join(builddir, 'html/examples'), 1)
+         copy_tree(os.path.join(tempdir, 'html/examples'),
+                   os.path.join(builddir, 'html/examples'))
+
+      if self.printable:
+         spawn([make, '-C', tempdir, 'print/examples'])
+
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/synopsis'))
+
+         # Copy examples output into installation directory
+         if os.path.isdir(os.path.join(builddir, 'print/examples')):
+            rmtree(os.path.join(builddir, 'print/examples'), 1)
+         copy_tree(os.path.join(tempdir, 'print/examples'),
+                   os.path.join(builddir, 'print/examples'))
 
       # Copy examples sources into installation directory.
       spawn([make, '-C', os.path.join(tempdir, 'examples'),

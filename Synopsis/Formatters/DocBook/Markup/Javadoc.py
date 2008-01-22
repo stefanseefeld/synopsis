@@ -97,9 +97,9 @@ class Javadoc(Formatter):
 
         m = self.summary.match(description)
         if m:
-            return m.group(1)
+            return '<para>%s</para>\n'%m.group(1)
         else:
-            return description.split('\n', 1)[0]+'...'
+            return '<para>%s</para>\n'%(description.split('\n', 1)[0]+'...')
 
 
     def format(self, decl):
@@ -129,7 +129,7 @@ class Javadoc(Formatter):
 
     def format_description(self, text, decl):
 
-        return self.format_link(decl, text)
+        return '<para>%s</para>\n'%self.format_link(decl, text)
 
 
     def format_link(self, decl, text):

@@ -112,8 +112,8 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
     def visit_group(self, group):
         section = group.name[-1]
         self._add_declaration(group, section)
-        for d in group.declarations:
-            self._add_declaration(d, section)
+        #for d in group.declarations:
+        #    self._add_declaration(d, section)
     def visit_scope(self, decl):
         self.visit_declaration(decl)
     def visit_class_template(self, decl):

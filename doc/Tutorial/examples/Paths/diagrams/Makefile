@@ -27,6 +27,12 @@ ifdef prefix
 	cp index.html *.png $(prefix)
 endif
 
+install-print: all
+ifdef prefix
+	mkdir -p $(prefix)
+	cp *.png $(prefix)
+endif
+
 clean:
 	rm -f $(syn)
 

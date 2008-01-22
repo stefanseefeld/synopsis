@@ -153,7 +153,12 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
 
         if decl.annotations.get('doc', ''):
             summary = self.processor.documentation.summary(decl)
-            self.write(summary + '\n')
+            if summary:
+                # FIXME: Unfortunately, as of xsl-docbook 1.73, a section role
+                #        doesn't translate into a div class attribute, so there
+                #        is no way to style summaries and descriptions per se.
+                #self.write('<section role="summary">\n%s<section>\n'%summary)
+                self.write('%s\n'%summary)
 
     #################### ASG Visitor ###########################################
 
@@ -224,18 +229,29 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     def process_doc(self, decl):
 
-        if not decl.annotations.get('doc', ''):
-            return
-        detail = self.processor.documentation.details(decl)
-        if detail:
-            self.write(detail + '\n')
+        if decl.annotations.get('doc', ''):
+            detail = self.processor.documentation.details(decl)
+            if detail:
+                # FIXME: Unfortunately, as of xsl-docbook 1.73, a section role
+                #        doesn't translate into a div class attribute, so there
+                #        is no way to style summaries and descriptions per se.
+                #self.write('<section role="description">\n%s<section>\n'%detail)
+                self.write('%s\n'%detail)
 
     #################### ASG Visitor ###########################################
 
     def visit_declaration(self, declaration):
 
+        if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
+            return
+        self.start_element('section')
+        self.write_element('title', escape(declaration.name[-1]))
         if str(declaration.type) in ('function', 'function template', 'member function', 'member function template'):
-            indexterm = self.element('primary', escape(declaration.name[-1]))
+            # The primary index term is the unqualified name, the secondary the qualified name.
+            # This will result in index terms being grouped by name, with each
+            # qualified name being listed within that group.
+            indexterm = self.element('primary', escape(declaration.real_name[-1]))
+            indexterm += self.element('secondary', escape('::'.join(declaration.real_name)))
             self.write_element('indexterm', indexterm, type='functions')
 
         language = declaration.file.annotations['language']
@@ -243,7 +259,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         declaration.accept(syntax)
         syntax.finish()
         self.process_doc(declaration)
-        
+        self.end_element()
 
     def visit_module(self, module):
 
@@ -296,11 +312,14 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     def visit_class(self, class_):
 
+        if self.processor.hide_undocumented and not class_.annotations.get('doc'):
+            return
         self.start_element('section')
         title = '%s %s'%(class_.type, class_.name[-1])
         self.write_element('title', escape(title))
         self.write('\n')
         indexterm = self.element('primary', escape(class_.name[-1]))
+        indexterm += self.element('secondary', escape('::'.join(class_.name)))
         self.write_element('indexterm', indexterm, type='types')
         self.write('\n')
 
@@ -435,10 +454,8 @@ class DocCache:
 
 
 
-class Formatter(Processor, ASG.Visitor):
-    """The type visitors should generate names relative to the current scope.
-    The generated references however are fully scoped names
-    """
+class Formatter(Processor):
+    """Generate a DocBook reference."""
 
     markup_formatters = Parameter({'rst':RST(), 'javadoc':Javadoc()},
                                   'Markup-specific formatters.')

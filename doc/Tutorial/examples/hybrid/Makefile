@@ -26,6 +26,8 @@ ifdef prefix
 	cp -r interface implementation $(prefix)
 endif
 
+install-print:
+
 clean:
 	rm -rf *.syn interface.toc
 

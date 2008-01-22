@@ -30,6 +30,12 @@ ifdef prefix
 endif
 	$(MAKE) action="install-html" prefix=$(prefix)
 
+install-print:
+ifdef prefix
+	mkdir -p $(prefix)
+endif
+	$(MAKE) action="install-print" prefix=$(prefix)
+
 clean:
 	$(MAKE) action="clean"
 

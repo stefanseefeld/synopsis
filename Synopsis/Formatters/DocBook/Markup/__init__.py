@@ -43,6 +43,7 @@ class Formatter(Parametrized):
         text = doc and escape(doc.text) or ''
         m = re.match(r'(\s*[\w\W]*?\.)(\s|$)', text)
         summary = m and '<para>%s</para>\n'%m.group(1) or ''
+        if text: text = '<para>%s</para>\n'%text
         return Struct(summary, text)
 
     def lookup_symbol(self, symbol, scope):
