@@ -40,7 +40,7 @@ class Inheritance(Part):
       # Iterate through the sections
       for section in sorter:
          # Write a heading
-         heading = section+'s Inherited from '+ Util.ccolonName(clas.name, self.scope())
+         heading = section+' Inherited from '+ Util.ccolonName(clas.name, self.scope())
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
          for child in sorter[section]:

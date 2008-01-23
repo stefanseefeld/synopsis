@@ -292,14 +292,12 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.process_doc(module)
         self.push_scope(module.name)
         suffix = self.processor.generate_summary and ' Details' or ''
-        for s in sorter:
-            if s[-1] == 's': title = s + 'es'
-            else: title = s + 's'
-            title += suffix
+        for section in sorter:
+            title = section + suffix
             self.start_element('section')
             self.write_element('title', escape(title))
             self.write('\n')
-            for d in sorter[s]:
+            for d in sorter[section]:
                 d.accept(self)
             self.end_element()
         self.pop_scope()
@@ -352,13 +350,12 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             self.write('\n')
             summary = SummaryFormatter(self.processor, self.output)
             summary.process_doc(class_)
-            for s in sorter:
-                if s[-1] == 's': title = s + 'es Summary'
-                else: title = s + 's Summary'
+            for section in sorter:
+                title = section + ' Summary'
                 self.start_element('section')
                 self.write_element('title', escape(title))
                 self.write('\n')
-                for d in sorter[s]:
+                for d in sorter[section]:
                     if not self.processor.hide_undocumented or d.annotations.get('doc'):
                         d.accept(summary)
                 self.end_element()
@@ -370,14 +367,12 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.process_doc(class_)
         self.push_scope(class_.name)
         suffix = self.processor.generate_summary and ' Details' or ''
-        for s in sorter:
-            if s[-1] == 's': title = s + 'es'
-            else: title = s + 's'
-            title += suffix
+        for section in sorter:
+            title = section + suffix
             self.start_element('section')
             self.write_element('title', escape(title))
             self.write('\n')
-            for d in sorter[s]:
+            for d in sorter[section]:
                 d.accept(self)
             self.end_element()
         self.pop_scope()

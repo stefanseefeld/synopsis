@@ -82,9 +82,7 @@ class ModuleIndex(View):
 
       # Loop throught all the types of children
       for section in sorter:
-         if section[-1] == 's': heading = section+'es'
-         else: heading = section+'s'
-         heading = '<br/>\n'+element('i', escape(heading))+'<br/>\n'
+         heading = '<br/>\n'+element('i', escape(section))+'<br/>\n'
          # Get a list of children of this type
          for child in sorter[section]:
             # Print out summary for the child

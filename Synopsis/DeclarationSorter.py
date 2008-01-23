@@ -15,19 +15,18 @@ _access_specs = {ASG.DEFAULT: '',
                  ASG.PRIVATE: 'Private '}
 
 # The predefined order for section names
-_section_order = ('Namespace',
-                  'Module',
-                  'Class template',
-                  'Class',
-                  'Typedef',
-                  'Struct',
-                  'Enum',
-                  'Union',
-                  'Group',
-                  'Member function template',
-                  'Member function',
-                  'Function template',
-                  'Function')
+_section_order = ('Namespaces',
+                  'Modules',
+                  'Class templates',
+                  'Classes',
+                  'Typedefs',
+                  'Structs',
+                  'Enums',
+                  'Unions',
+                  'Member function templates',
+                  'Member functions',
+                  'Function templates',
+                  'Functions')
 
 def _compare(a, b):
     """Compare two section names."""
@@ -85,6 +84,8 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
         section = name or decl.type.capitalize()
         if self.struct_as_class and section == 'Struct':
             section = 'Class'
+        if section[-1] == 's': section += 'es'
+        else: section += 's'
         if decl.accessibility != ASG.DEFAULT:
             section = _access_specs[decl.accessibility] + section
         return section
@@ -110,10 +111,10 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
         else:
             self.visit_declaration(decl)
     def visit_group(self, group):
+        # Just map a group to its own section.
         section = group.name[-1]
-        self._add_declaration(group, section)
-        #for d in group.declarations:
-        #    self._add_declaration(d, section)
+        for d in group.declarations:
+            self._add_declaration(d, section)
     def visit_scope(self, decl):
         self.visit_declaration(decl)
     def visit_class_template(self, decl):

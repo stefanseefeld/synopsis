@@ -98,6 +98,7 @@ class Grouper(Transformer):
 
                 # Open the group. <name> is remainder of line.
                 label = tag.group('name') or 'unnamed'
+                label = label.strip()
                 # The comment before the open marker becomes the group comment.
                 if tag.start('open') > 0:
                     c = c[:tag.start('open')]

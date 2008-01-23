@@ -66,8 +66,7 @@ class Summary(Part):
         self.write_start()
         for section in sorter:
             # Write a header for this section
-            if section[-1] == 's': heading = section+'es Summary:'
-            else: heading = section+'s Summary:'
+            heading = section+' Summary:'
             self.write_section_start(heading)
             # Iterate through the children in this section
             for child in sorter[section]:
