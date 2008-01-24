@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
 from Synopsis.FileTree import FileTree
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -48,7 +47,7 @@ class FileListing(View):
       self.write_navigation_bar()
       self.write('<ul class="tree">')
       # recursively visit all nodes
-      self.process_file_tree_node(self.directory_tree.root())
+      self.process_file_tree_node(self.processor.file_tree.root())
       self.write('</ul>')
       self.end_file()
 

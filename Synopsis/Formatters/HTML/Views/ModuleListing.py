@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -42,46 +42,35 @@ class ModuleListing(View):
       self.write_navigation_bar()
       self.write('<ul class="tree">')
       # FIXME: see HTML.Formatter
-      module = self.processor.ast.declarations()[0]
-      self.index_module(module, module.name())
+      module = self.processor.ir.declarations[0]
+      self.index_module(module, module.name)
       self.write('</ul>')
       self.end_file()
-
-   def _child_filter(self, child):
-      """Returns true if the given child declaration is to be included"""
-
-      if not isinstance(child, AST.Module): return 0
-      if self.child_types and child.type() not in self.child_types:
-         return 0
-      return 1
 
    def _link_href(self, module):
       """Returns the link to the given declaration"""
 
       return rel(self.filename(),
-                 self.directory_layout.module_index(module.name()))
+                 self.directory_layout.module_index(module.name))
 
-   def _get_children(self, decl):
+   def get_children(self, decl):
       """Returns the children of the given declaration"""
 
       try: return self._children_cache[decl]
       except KeyError: pass
-
-      sorter = self.processor.sorter
-      sorter.set_scope(decl)
-      sorter.sort_sections()
-      children = sorter.children()
-      children = filter(self._child_filter, children)
+      children = [c for c in decl.declarations
+                  if isinstance(c, ASG.Module) and
+                  (not self.child_types or child.type in self.child_types)]
       self._children_cache[decl] = children
       return children
 
    def index_module(self, module, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
-      my_scope = module.name()
+      my_scope = module.name
       # Find children, and sort so that compound children (packages) go first
-      children = self._get_children(module)
-      children.sort(lambda a,b,g=self._get_children:
+      children = self.get_children(module)
+      children.sort(lambda a,b,g=self.get_children:
                     cmp(len(g(b)),len(g(a))))
       # Print link to this module
       name = Util.ccolonName(my_scope, rel_scope) or 'Global Module'

@@ -6,9 +6,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
-class Formatter(Processor, AST.Visitor):
+class Formatter(Processor, ASG.Visitor):
     """Generate a high-level list of the content of a syn file.
     This formatter can lists source files (by name), as well as
     declarations (by name, type) contained in a given scope."""
@@ -21,13 +21,13 @@ class Formatter(Processor, AST.Visitor):
                        'IDL' : '::',
                        'Python' : '.'}
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         if self.show_files:
-            for name, sf in self.ast.files().iteritems():
+            for name, sf in self.ir.files.iteritems():
                 print '%s (language=%s, primary=%d)'\
                       %(sf.name, sf.annotations['language'], sf.annotations['primary'])
 
@@ -39,8 +39,8 @@ class Formatter(Processor, AST.Visitor):
                 
             # Now guess the current language by looking at the
             # first declaration.
-            d = len(self.ast.declarations()) and self.ast.declarations()[0]
-            sf = d and d.file() or None
+            d = len(self.ir.declarations) and self.ir.declarations[0]
+            sf = d and d.file or None
             if not sf: # d was a MetaModule, so let's assume C++ or IDL.
                 self.sep = '::'
             else:
@@ -48,31 +48,31 @@ class Formatter(Processor, AST.Visitor):
                 self.sep = self.scope_separator[lang]
 
 
-            for d in self.ast.declarations():
+            for d in self.ir.declarations:
                 d.accept(self)
                 
-        return self.ast
+        return self.ir
 
 
-    def visitScope(self, node):
+    def visit_scope(self, node):
 
-        if self.scope == node.name():
+        if self.scope == node.name:
 
             # We found the right scope.
             # List all declarations directly contained in it.
-            declarations = node.declarations()[:]
-            declarations.sort(lambda x, y : cmp(x.name(), y.name()))
+            declarations = node.declarations[:]
+            declarations.sort(lambda x, y : cmp(x.name, y.name))
             for d in declarations:
-                if isinstance(d, AST.Builtin): continue
-                name = d.name()[-1]
-                _type = d.type()
+                if isinstance(d, ASG.Builtin): continue
+                name = d.name[-1]
+                _type = d.type
                 print '%s : %s'%(name, _type)
-        elif (len(node.name()) < self.scope and
-              self.scope[0:len(node.name())] == node.name()):
+        elif (len(node.name) < self.scope and
+              self.scope[0:len(node.name)] == node.name):
 
             # We found a parent scope.
             # Visit child scopes.
-            for d in node.declarations():
+            for d in node.declarations:
                 d.accept(self)
 
 

@@ -8,9 +8,9 @@
 
 """Table of Contents classes"""
 
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 
-import string, re
+import re
 
 class Linker:
    """Abstract class for linking declarations. This class has only one
@@ -20,7 +20,7 @@ class Linker:
 
    def link(decl): pass
 
-class TOC(AST.Visitor):
+class TOC(ASG.Visitor):
    """Maintains a dictionary of all declarations which can be looked up
    to create cross references. Names are fully scoped."""
 
@@ -63,7 +63,8 @@ class TOC(AST.Visitor):
     
    __getitem__ = lookup
     
-   def insert(self, entry): self.__toc[tuple(entry.name)] = entry
+   def insert(self, entry):
+      self.__toc[tuple(entry.name)] = entry
     
    def store(self, file):
       """store the table of contents into a file, such that it can be used later when cross referencing"""
@@ -71,48 +72,39 @@ class TOC(AST.Visitor):
       fout = open(file, 'w')
       nocomma = lambda str: str.replace("&","&amp;").replace(",","&2c;")
       for name in self.__toc.keys():
-         scopedname = nocomma(string.join(name, "::"))
+         scopedname = nocomma('::'.join(name))
          lang = self.__toc[tuple(name)].lang
          link = nocomma(self.__toc[tuple(name)].link)
          fout.write(scopedname + "," + lang + "," + link + "\n")
 
    def load(self, resource):
 
-      args = string.split(resource, "|")
+      args = resource.split('|')
       file = args[0]
       if len(args) > 1: url = args[1]
       else: url = ""
       fin = open(file, 'r')
       line = fin.readline()
-      recomma = lambda str: re.sub("&2c;",",",str)
+      recomma = lambda str: re.sub('&2c;', ',', str)
       while line:
          if line[-1] == '\n': line = line[:-1]
-         scopedname, lang, link = string.split(line, ",")
+         scopedname, lang, link = line.split(',')
          scopedname, link = recomma(scopedname), recomma(link)
-         param_index = string.find(scopedname, '(')
+         param_index = scopedname.find('(')
          if param_index >= 0:
-            name = string.split(scopedname[:param_index], "::")
+            name = scopedname[:param_index].split('::')
             name = name[:-1] + [name[-1]+scopedname[param_index:]]
          else:
-            name = string.split(scopedname, "::")
-         if len(url): link = string.join([url, link], "/")
+            name = scopedname.split('::')
+         if len(url): link = '/'.join([url, link])
          entry = TOC.Entry(name, link, lang, "decl")
          self.insert(entry)
          line = fin.readline()
     
-   def visitAST(self, ast):
+   def visit_declaration(self, decl):
 
-      for decl in ast.declarations():
-         decl.accept(self)
-
-   def visitDeclaration(self, decl):
-
-      file = decl.file()
-      entry = TOC.Entry(decl.name(), self.linker.link(decl),
-                        file and file.annotations['language'] or '', "decl")
+      file = decl.file
+      entry = TOC.Entry(decl.name, self.linker.link(decl),
+                        file and file.annotations['language'] or '', 'decl')
       self.insert(entry)
-
-   def visitForward(self, decl):
-      pass
-
 

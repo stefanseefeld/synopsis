@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -42,7 +42,7 @@ class FileIndex(View):
    def register_filenames(self):
       """Registers a view for each file indexed."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             filename = self.directory_layout.file_index(filename)
             self.processor.register_filename(filename, self, file)
@@ -50,7 +50,7 @@ class FileIndex(View):
    def process(self):
       """Creates a view for each known file."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             self.process_scope(filename, file)
 
@@ -66,7 +66,7 @@ class FileIndex(View):
       self.__title = os.sep.join(name)
 
       self.start_file()
-      self.write(entity('b', os.sep.join(name))+'<br/>\n')
+      self.write(element('b', os.sep.join(name))+'<br/>\n')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))
@@ -78,7 +78,7 @@ class FileIndex(View):
 
       self.write('<b>Declarations:</b><br/>\n')
       # Sort items (by name)
-      items = [(d.name(), d) for d in file.declarations]
+      items = [(d.name, d) for d in file.declarations]
       items.sort()
       scope, last = [], []
       for name, decl in items:
@@ -87,7 +87,7 @@ class FileIndex(View):
          if not entry: continue
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
-         if isinstance(decl, AST.Function): print_name = decl.realname()
+         if isinstance(decl, ASG.Function): print_name = decl.real_name
          else: print_name = name
          # Increase scope
          i = 0
@@ -110,7 +110,7 @@ class FileIndex(View):
          # Now print the actual item
          label = escape(Util.ccolonName(print_name, scope))
          label = replace_spaces(label)
-         title = '(%s)'%decl.type()
+         title = '(%s)'%decl.type
          self.write(div('href',href(link, label, target='content', title=title)))
          # Store this name incase, f.ex, its a class and the next item is
          # in that class scope

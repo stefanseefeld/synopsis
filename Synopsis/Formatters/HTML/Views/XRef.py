@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -57,7 +57,7 @@ class XRef(View):
 
          self.start_file()
          self.write_navigation_bar()
-         self.write(entity('h1', self.title()))
+         self.write(element('h1', self.title()))
          for name in page_info[i]:
             self.write('<div class="xref-name">')
             self.process_name(name)
@@ -81,9 +81,9 @@ class XRef(View):
       file_link = rel(self.filename(), file_link) + "#%d"%line
       # Try and make a descriptive
       desc = ''
-      type = self.processor.ast.types().get(scope)
-      if isinstance(type, Type.Declared):
-         desc = ' ' + type.declaration().type()
+      type = self.processor.ir.types.get(scope)
+      if isinstance(type, ASG.Declared):
+         desc = ' ' + type.declaration.type
       # Try and find a link to the scope
       scope_text = '::'.join(scope)
       entry = self.processor.toc[scope]
@@ -99,14 +99,14 @@ class XRef(View):
       """Returns a description of the declaration. Detects constructors and
       destructors"""
 
-      name = decl.name()
-      if isinstance(decl, AST.Function) and len(name) > 1:
-         real = decl.realname()[-1]
+      name = decl.name
+      if isinstance(decl, ASG.Function) and len(name) > 1:
+         real = decl.real_name[-1]
          if name[-2] == real:
             return 'Constructor '
          elif real[0] == '~' and name[-2] == real[1:]:
             return 'Destructor '
-      return decl.type().capitalize() + ' '
+      return decl.type.capitalize() + ' '
 
    def process_name(self, name):
       """Outputs the info for a given name"""
@@ -115,19 +115,19 @@ class XRef(View):
       if not target_data: return
 
       jname = '::'.join(name)
-      self.write(entity('a', '', name=Util.quote(escape(jname))))
+      self.write(element('a', '', name=Util.quote(escape(jname))))
       desc = ''
       decl = None
-      type = self.processor.ast.types().get(name)
-      if isinstance(type, Type.Declared):
-         decl = type.declaration()
+      type = self.processor.ir.types.get(name)
+      if isinstance(type, ASG.Declared):
+         decl = type.declaration
          desc = self.describe_decl(decl)
-      self.write(entity('h2', desc + escape(jname)) + '<ul>\n')
+      self.write(element('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
-         type = self.processor.ast.types().get(name, None)
-         if isinstance(type, Type.Declared):
-            link = self.directory_layout.link(type.declaration())
+         type = self.processor.ir.types.get(name, None)
+         if isinstance(type, ASG.Declared):
+            link = self.directory_layout.link(type.declaration)
             self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:
          self.write('<li>Defined at:<ul>\n')
@@ -144,20 +144,20 @@ class XRef(View):
          for file, line, scope in target_data[2]:
             self.process_link(file, line, scope)
          self.write('</ul></li>\n')
-      if isinstance(decl, AST.Scope):
+      if isinstance(decl, ASG.Scope):
          self.write('<li>Declarations:<ul>\n')
-         for child in decl.declarations():
-            file, line = child.file().name, child.line()
+         for child in decl.declarations:
+            file, line = child.file.name, child.line
             file_link = self.directory_layout.file_source(file)
             file_link = rel(self.filename(),file_link) + '#%d'%line
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
-            cname = child.name()
+            cname = child.name
             entry = self.processor.toc[cname]
             type = self.describe_decl(child)
             if entry:
                link = href(rel(self.filename(), entry.link), escape(Util.ccolonName(cname, name)))
-               self.write(entity('li', file_href + type + link))
+               self.write(element('li', file_href + type + link))
             else:
-               self.write(entity('li', file_href + type + Util.ccolonName(cname, name)))
+               self.write(element('li', file_href + type + Util.ccolonName(cname, name)))
          self.write('</ul></li>\n')
       self.write('</ul>\n')

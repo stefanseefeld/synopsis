@@ -7,9 +7,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Util
 
-class ScopeStripper(Processor, AST.Visitor):
+class ScopeStripper(Processor, ASG.Visitor):
     """Strip common prefix from the declaration's name.
     Keep a list of root nodes, such that children whos parent
     scopes are not accepted but which themselfs are correct can
@@ -24,20 +24,20 @@ class ScopeStripper(Processor, AST.Visitor):
         self.__in = 0
 
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
         if self.scope:
 
             self.__scope = tuple(self.scope.split('::'))
             # strip prefixes and remove non-matching declarations
-            self.strip_declarations(self.ast.declarations())
+            self.strip_declarations(self.ir.declarations)
 
             # Remove types not in strip
-            self.strip_types(self.ast.types())
+            self.strip_types(self.ir.types)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
       
     def strip_name(self, name):
@@ -64,7 +64,7 @@ class ScopeStripper(Processor, AST.Visitor):
                 del types[name]
                 name = self.strip_name(name)
                 if name:
-                    type.set_name(name)
+                    type.name = name
                     types[name] = type
             except:
                 print "ERROR Processing:", name, types[name]
@@ -77,79 +77,93 @@ class ScopeStripper(Processor, AST.Visitor):
     def strip(self, declaration):
         """test whether the declaration matches one of the prefixes, strip
         it off, and return success. Success means that the declaration matches
-        the prefix set and thus should not be removed from the AST."""
+        the prefix set and thus should not be removed from the ASG."""
 
         passed = 0
         if not self.__scope: return 1
         depth = len(self.__scope)
-        name = declaration.name()
+        name = declaration.name
         if name[0:depth] == self.__scope and len(name) > depth:
             if self.verbose: print "symbol", '::'.join(name),
-            declaration.set_name(name[depth:])
-            if self.verbose: print "stripped to", '::'.join(declaration.name())
+            declaration.name = name[depth:]
+            if self.verbose: print "stripped to", '::'.join(declaration.name)
             passed = 1
         if self.verbose and not passed:
-            print "symbol", '::'.join(declaration.name()), "removed"
+            print "symbol", '::'.join(declaration.name), "removed"
         return passed
 
 
-    def visitScope(self, scope):
+    def visit_scope(self, scope):
 
         root = self.strip(scope) and not self.__in
         if root:
             self.__in = 1
             self.__root.append(scope)
-        for declaration in scope.declarations():
+        for declaration in scope.declarations:
             declaration.accept(self)
         if root: self.__in = 0
 
 
-    def visitClass(self, clas):
+    def visit_class(self, class_):
 
-        self.visitScope(clas)
-        templ = clas.template()
+        self.visit_scope(class_)
+
+
+    def visit_class_template(self, class_):
+
+        self.visit_class(class_)
+        templ = class_.template
         if templ:
-            name = self.strip_name(templ.name())
-            if name: templ.set_name(name)
+            name = self.strip_name(templ.name)
+            if name: templ.name = name
 
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
 
         if self.strip(decl) and not self.__in:
             self.__root.append(decl)
 
 
-    def visitEnumerator(self, enumerator):
+    def visit_enumerator(self, enumerator):
 
         self.strip(enumerator)
 
 
-    def visitEnum(self, enum):
+    def visit_enum(self, enum):
 
-        self.visitDeclaration(enum)
-        for e in enum.enumerators():
+        self.visit_declaration(enum)
+        for e in enum.enumerators:
             e.accept(self)
 
 
-    def visitFunction(self, function):
+    def visit_function(self, function):
 
-        self.visitDeclaration(function)
-        for parameter in function.parameters():
+        self.visit_declaration(function)
+        for parameter in function.parameters:
             parameter.accept(self)
-        templ = function.template()
-        if templ:
-            name = self.strip_name(templ.name())
-            if name: templ.set_name(name)
 
 
-    def visitOperation(self, operation):
+    def visit_function_template(self, function):
 
-        self.visitFunction(operation)
+        self.visit_function(function)
+        if function.template:
+            name = self.strip_name(function.template.name)
+            if name: function.template.name = name
 
 
-    def visitMetaModule(self, module):
+    def visit_operation(self, operation):
 
-        self.visitScope(module)
-        for decl in module.module_declarations():
-            name = self.strip_name(decl.name())
-            if name: decl.set_name(name)
+        self.visit_function(operation)
+
+
+    def visit_operation_template(self, operation):
+
+        self.visit_function_template(operation)
+
+
+    def visit_meta_module(self, module):
+
+        self.visit_scope(module)
+        for d in module.module_declarations:
+            name = self.strip_name(d.name)
+            if name: d.name = name

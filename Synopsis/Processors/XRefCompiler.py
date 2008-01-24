@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import AST, Type, Util
 
 import os.path, cPickle, urllib
 
@@ -32,11 +31,11 @@ class XRefCompiler(Processor):
     prefix = Parameter('', 'where to look for xref files')
     no_locals = Parameter(True, '')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
         if not self.prefix: raise MissingArgument('prefix')
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         def prefix(filename):
             "Map filename to xref filename."
@@ -47,11 +46,11 @@ class XRefCompiler(Processor):
                 filename = os.path.splitdrive(filename)[1][1:]
             return os.path.join(self.prefix, filename)
 
-        filenames = [prefix(x[0]) for x in ast.files().items()
+        filenames = [prefix(x[0]) for x in ir.files.items()
                      if x[1].annotations['primary']]
         self.do_compile(filenames, self.output, self.no_locals)
 
-        return self.ast
+        return self.ir
 
     def do_compile(self, input_files, output, no_locals):
 

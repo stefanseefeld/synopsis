@@ -25,22 +25,24 @@ class build_doc(build.build):
    user_options = [('man-page', 'm', "build the man-pages only"),
                    ('ref-manual', 'r', "build the API reference manual only"),
                    ('tutorial', 't', "build the tutorial, development guide, and examples only"),
+                   ('examples', 'e', "build examples only"),
                    ('html', 'h', "build for html output only"),
                    ('printable', 'p', "build for pdf output only"),
                    ('sxr=', 'x', "build the sxr database for synopsis for the given URL (requires -m)")]
-   boolean_options = ['man-page', 'ref-manual', 'tutorial', 'html', 'print']
+   boolean_options = ['man-page', 'ref-manual', 'tutorial', 'examples', 'html', 'printable']
 
-   def initialize_options (self):
+   def initialize_options(self):
 
       build.build.initialize_options(self)
       self.man_page = False
       self.ref_manual = False
       self.tutorial = False
+      self.examples = False
       self.html = False
       self.printable = False
       self.sxr = ''
 
-   def finalize_options (self):
+   def finalize_options(self):
 
       # If no option was given, do all media.
       if not (self.html or self.printable or self.sxr):
@@ -58,6 +60,7 @@ class build_doc(build.build):
       if self.man_page: self.build_man_page()
       if self.ref_manual or self.sxr: self.build_ref_manual()
       if self.tutorial: self.build_tutorial()
+      elif self.examples: self.build_examples()
     
    def build_man_page(self):
       """Build man pages for all installable programs."""
@@ -177,6 +180,43 @@ to query and browse cross-referenced source code."""
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
 
+      self.build_examples()
+
+      make = os.environ.get('MAKE', 'make')
+
+      if self.html:
+         spawn([make, '-C', tempdir, 'html'])
+      if self.printable:
+         spawn([make, '-C', tempdir, 'pdf'])
+
+      builddir = os.path.abspath(os.path.join(self.build_lib,
+                                              'share/doc/synopsis'))
+
+      if self.html:
+         for component in ('Tutorial', 'DevGuide'):
+            if os.path.isdir(os.path.join(builddir, 'html', component)):
+               rmtree(os.path.join(builddir, 'html', component), 1)
+            copy_tree(os.path.join(tempdir, 'html', component),
+                      os.path.join(builddir, 'html', component))
+
+      if self.printable:
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/synopsis/print'))
+         mkpath(builddir, 0777, self.verbose, self.dry_run)
+         copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
+                   os.path.join(builddir, 'Tutorial.pdf'))
+         copy_file(os.path.join(tempdir, 'DevGuide.pdf'),
+                   os.path.join(builddir, 'DevGuide.pdf'))
+      
+
+   def build_examples(self):
+
+      self.announce("building examples")
+      srcdir = os.path.abspath('doc/Tutorial/')
+      tempdir = os.path.abspath(os.path.join(self.build_temp, 'doc/Tutorial'))
+      cwd = os.getcwd()
+      mkpath(tempdir, 0777, self.verbose, self.dry_run)
+
       # Copy examples sources into build tree.
       examples = []
       def visit(arg, base, files):
@@ -193,30 +233,31 @@ to query and browse cross-referenced source code."""
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
-         spawn([make, '-C', tempdir, 'html'])
+         spawn([make, '-C', tempdir, 'html/examples'])
+
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/synopsis'))
+
+         # Copy examples output into installation directory
+         if os.path.isdir(os.path.join(builddir, 'html/examples')):
+            rmtree(os.path.join(builddir, 'html/examples'), 1)
+         copy_tree(os.path.join(tempdir, 'html/examples'),
+                   os.path.join(builddir, 'html/examples'))
+
       if self.printable:
-         spawn([make, '-C', tempdir, 'pdf'])
+         spawn([make, '-C', tempdir, 'print/examples'])
 
-      builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/synopsis'))
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/synopsis'))
 
-      if self.html:
-         for component in ('Tutorial', 'examples', 'DevGuide'):
-            if os.path.isdir(os.path.join(builddir, 'html', component)):
-               rmtree(os.path.join(builddir, 'html', component), 1)
-            copy_tree(os.path.join(tempdir, 'html', component),
-                      os.path.join(builddir, 'html', component))
+         # Copy examples output into installation directory
+         if os.path.isdir(os.path.join(builddir, 'print/examples')):
+            rmtree(os.path.join(builddir, 'print/examples'), 1)
+         copy_tree(os.path.join(tempdir, 'print/examples'),
+                   os.path.join(builddir, 'print/examples'))
 
       # Copy examples sources into installation directory.
       spawn([make, '-C', os.path.join(tempdir, 'examples'),
              'install-src', 'prefix=%s/examples'%builddir])
 
-      if self.printable:
-         builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/synopsis/print'))
-         mkpath(builddir, 0777, self.verbose, self.dry_run)
-         copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
-                   os.path.join(builddir, 'Tutorial.pdf'))
-         copy_file(os.path.join(tempdir, 'DevGuide.pdf'),
-                   os.path.join(builddir, 'DevGuide.pdf'))
-
+      

@@ -6,7 +6,6 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
 from ParserImpl import parse
 
 import os, os.path, tempfile
@@ -21,10 +20,10 @@ class Parser(Processor):
     syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
     xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = ast
+        self.ir = ir
 
         if self.preprocess:
 
@@ -46,24 +45,25 @@ class Parser(Processor):
                 else:
                     ii_file = os.path.join(tempfile.gettempdir(),
                                            'synopsis-%s.ii'%os.getpid())
-                self.ast = cpp.process(self.ast,
-                                       cpp_output = ii_file,
-                                       input = [file],
-                                       primary_file_only = self.primary_file_only,
-                                       verbose = self.verbose,
-                                       debug = self.debug,
-                                       profile = self.profile)
+                self.ir = cpp.process(self.ir,
+                                      cpp_output = ii_file,
+                                      input = [file],
+                                      primary_file_only = self.primary_file_only,
+                                      base_path = base_path,
+                                      verbose = self.verbose,
+                                      debug = self.debug,
+                                      profile = self.profile)
 
-            self.ast = parse(self.ast, ii_file,
-                             os.path.abspath(file),
-                             self.primary_file_only,
-                             base_path,
-                             self.syntax_prefix,
-                             self.xref_prefix,
-                             self.verbose,
-                             self.debug,
-                             self.profile)
+            self.ir = parse(self.ir, ii_file,
+                            os.path.abspath(file),
+                            base_path,
+                            self.primary_file_only,
+                            self.syntax_prefix,
+                            self.xref_prefix,
+                            self.verbose,
+                            self.debug,
+                            self.profile)
 
             if self.preprocess: os.remove(ii_file)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()

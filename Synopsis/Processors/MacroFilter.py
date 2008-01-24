@@ -6,27 +6,27 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import AST
+from Synopsis import ASG
 import re
 
-class MacroFilter(Processor, AST.Visitor):
+class MacroFilter(Processor, ASG.Visitor):
     """A MacroFilter allows macros to be filtered, based on pattern matching"""
 
     pattern = Parameter('', 'Regular expression to match macro names with.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
         self._pattern = re.compile(self.pattern)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
-        for decl in self.ast.declarations()[:]:
+        for decl in self.ir.declarations[:]:
             decl.accept(self)
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
-    def visitMacro(self, node):
+    def visit_macro(self, node):
 
-        if self._pattern.match(node.name()[-1]):
+        if self._pattern.match(node.name[-1]):
             # Macros always live in the top-most scope.
-            self.ast.declarations().remove(node)
+            self.ir.declarations.remove(node)

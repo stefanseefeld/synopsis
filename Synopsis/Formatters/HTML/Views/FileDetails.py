@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Source import *
@@ -42,7 +42,7 @@ class FileDetails(View):
    def register_filenames(self):
       """Registers a view for each file indexed."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             filename = self.directory_layout.file_details(filename)
             self.processor.register_filename(filename, self, file)
@@ -50,7 +50,7 @@ class FileDetails(View):
    def process(self):
       """Creates a view for each known source file."""
 
-      for filename, file in self.processor.ast.files().items():
+      for filename, file in self.processor.ir.files.items():
          if file.annotations['primary']:
             self.process_file(filename, file)
             
@@ -67,7 +67,7 @@ class FileDetails(View):
 
       self.start_file()
       self.write_navigation_bar()
-      self.write(entity('h1', os.sep.join(name))+'<br/>')
+      self.write(element('h1', os.sep.join(name))+'<br/>')
       if self.__link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))
@@ -75,7 +75,7 @@ class FileDetails(View):
 
       # Print list of includes
       try:
-         sourcefile = self.processor.ast.files()[filename]
+         sourcefile = self.processor.ir.files[filename]
          # Only show files from the project
          includes = [i for i in sourcefile.includes
                      if i.target.annotations['primary']]
@@ -94,9 +94,9 @@ class FileDetails(View):
 
       self.write('<h2 class="heading">Declarations in this file:</h2>')
       # Sort items (by name)
-      items = [(d.type(), d.name(), d) for d in file.declarations]
-      # ignore AST.Builtin
-      items = [i for i in items if not isinstance(i[2], AST.Builtin)]
+      items = [(d.type, d.name, d) for d in file.declarations]
+      # ignore ASG.Builtin
+      items = [i for i in items if not isinstance(i[2], ASG.Builtin)]
       items.sort()
       curr_scope = None
       curr_type = None

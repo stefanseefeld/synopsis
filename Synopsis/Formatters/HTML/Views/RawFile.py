@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Directory import compile_glob
@@ -85,7 +84,7 @@ class RawFile(View):
         self.__title = original[len(self.base_path):]
         self.start_file()
         self.write_navigation_bar()
-        self.write('File: '+entity('b', self.__title))
+        self.write('File: '+element('b', self.__title))
         try:
             lines = open(original, 'rt').readlines()
             lineno_template = '%%%ds' % len(`len(lines)`)

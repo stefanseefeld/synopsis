@@ -7,13 +7,13 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import AST, Type, Util
+from Synopsis import IR, ASG, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class DeclarationFinder(Type.Visitor):
+class DeclarationFinder(ASG.Visitor):
    def __init__(self, types, verbose):
 
       self.types = types
@@ -32,14 +32,14 @@ class DeclarationFinder(Type.Visitor):
       #    return None
       return self.__decl
 	    
-   def visitBaseType(self, type): return
-   def visitUnknown(self, type): return
-   def visitDeclared(self, type): self.__decl = type.declaration()
-   def visitModifier(self, type): type.alias().accept(self)
-   def visitArray(self, type): type.alias().accept(self)
-   def visitTemplate(self, type): self.__decl = type.declaration()
-   def visitParametrized(self, type): type.template().accept(self)
-   def visitFunctionType(self, type): return
+   def visit_base_type(self, type): return
+   def visit_unknown_type(self, type): return
+   def visit_declared_type(self, type): self.__decl = type.declaration
+   def visit_modifier_type(self, type): type.alias.accept(self)
+   def visit_array(self, type): type.alias.accept(self)
+   def visit_template(self, type): self.__decl = type.declaration
+   def visit_parametrized(self, type): type.template.accept(self)
+   def visit_function_type(self, type): return
 	
 def find_common_name(graph):
    common_name = list(graph[0])
@@ -61,7 +61,7 @@ class InheritanceGraph(View):
    def register(self, frame):
 
       super(InheritanceGraph, self).register(frame)
-      self.decl_finder = DeclarationFinder(self.processor.ast.types(),
+      self.decl_finder = DeclarationFinder(self.processor.ir.types,
                                            self.processor.verbose)
 
    def filename(self):
@@ -120,7 +120,7 @@ class InheritanceGraph(View):
       filename = self.filename()
       self.start_file()
       self.write_navigation_bar()
-      self.write(entity('h1', "Inheritance Graph"))
+      self.write(element('h1', "Inheritance Graph"))
 
       from Synopsis.Formatters import Dot
       # Create a toc file for Dot to use
@@ -140,35 +140,29 @@ class InheritanceGraph(View):
             self.write('<div class="inheritance-group">')
             scoped_name = name.split('::')
             type_str = ''
-            types = self.processor.ast.types()
+            types = self.processor.ir.types
             type = types.get(scoped_name, None)
-            if isinstance(type, Type.Declared):
-               type_str = type.declaration().type() + ' '
+            if isinstance(type, ASG.Declared):
+               type_str = type.declaration.type + ' '
             self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:
             if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
             # Find declarations
             declarations = map(self.decl_finder, graph)
             declarations = filter(lambda x: x is not None, declarations)
-            # Call Dot formatter
+            #output = os.path.join(self.processor.output, 'InheritanceGraph', str(count))
             output = os.path.join(self.processor.output,
                                   os.path.splitext(self.filename())[0]) + '-%s'%count
             dot = Dot.Formatter()
-            ast = AST.AST({}, declarations, self.processor.ast.types())
+            ir = IR.IR({}, declarations, self.processor.ir.types)
             try:
-               dot.process(ast,
+               dot.process(ir,
                            output=output,
                            format='html',
                            toc_in=[toc_file],
                            base_url=self.filename(),
                            title='Synopsis %s'%count,
-                           #-n, FIXME : what does the 'no_descend' option do ?
-                           # do we need to expose that through a parameter ?
                            layout=self.direction)
-               #args = ('-i', '-f', 'html', '-o', output, '-r', toc_file,
-               #        '-R', self.filename(), '-t', 'Synopsis %s'%count, '-n', 
-               #        '-p', name, '-d', self.direction)
-               #Dot.format(args, temp_ast, None)
                dot_file = open(output + '.html', 'r')
                self.write(dot_file.read())
                dot_file.close()

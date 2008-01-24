@@ -19,7 +19,7 @@ module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return [pref + x for x in list]
 
-version = '0.9.1'
+version = '0.10'
 revision = open('revision').read()[:-1]
 
 py_packages = ["Synopsis",
@@ -29,6 +29,8 @@ py_packages = ["Synopsis",
                "Synopsis.Parsers.C", "Synopsis.Parsers.Cxx",
                "Synopsis.Processors", "Synopsis.Processors.Comments",
                "Synopsis.Formatters",
+               "Synopsis.Formatters.DocBook",
+               "Synopsis.Formatters.DocBook.Markup",
                "Synopsis.Formatters.HTML",
                "Synopsis.Formatters.HTML.Views",
                "Synopsis.Formatters.HTML.Parts",
@@ -57,7 +59,7 @@ def add_documentation(all, directory, files):
 
     if '.svn' in files: files.remove('.svn')
     dest = directory.replace('share/doc/synopsis',
-                            'share/doc/synopsis-%s'%version)
+                             'share/doc/synopsis-%s'%version)
     all.append((dest,
                 [os.path.join(directory, file)
                  for file in files

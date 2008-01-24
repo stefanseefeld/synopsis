@@ -1,3 +1,4 @@
+from TemplateSpecializations import TemplateSpecializations
 from ClassHierarchySimple import ClassHierarchySimple
 from ClassHierarchyGraph import ClassHierarchyGraph
 from InheritanceFormatter import InheritanceFormatter

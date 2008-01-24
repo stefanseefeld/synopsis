@@ -5,10 +5,9 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
-import string, re
+import re
 
 class Javadoc(Formatter):
     """A formatter that formats comments similar to Javadoc.
@@ -141,7 +140,7 @@ class Javadoc(Formatter):
                     name = target
                 else:
                     name = name.strip()
-                target = self.lookup_symbol(name, decl.name())
+                target = self.lookup_symbol(name, decl.name)
                 if target:
                     url = rel(view.filename(), target)
                     text += href(url, name)
@@ -155,16 +154,19 @@ class Javadoc(Formatter):
 
         content = ''
         params = [b for b in blocks if b.tag == 'param']
+        def row(dt, dd):
+            return element('tr',
+                           element('th', dt, Class='dt') +
+                           element('td', dd, Class='dd'))
         if params:
             content += div('tag-heading',"Parameters:")
-            dl = entity('dl', ''.join([entity('dt', p.arg) + entity('dd', p.body)
-                                       for p in params]))
+            dl = element('table', ''.join([row(p.arg, p.body) for p in params]),
+                         Class='dl')
             content += div('tag-section', dl)
         kwds = [b for b in blocks if b.tag == 'keyword']
         if kwds:
             content += div('tag-heading',"Keywords:")
-            dl = entity('dl', ''.join([entity('dt', k.arg) + entity('dd', k.body)
-                                       for k in kwds]))
+            dl = element('dl', ''.join([row( k.arg, k.body) for k in kwds]), Class='dl')
             content += div('tag-section', dl)
         return content
 
@@ -175,8 +177,8 @@ class Javadoc(Formatter):
         throws = [b for b in blocks if b.tag in ['throws', 'exception']]
         if throws:
             content += div('tag-heading',"Throws:")
-            dl = entity('dl', ''.join([entity('dt', t.arg) + entity('dd', t.body)
-                                       for t in throws]))
+            dl = element('dl', ''.join([element('dt', t.arg) + element('dd', t.body)
+                                        for t in throws]))
             content += div('tag-section', dl)
         return content
 

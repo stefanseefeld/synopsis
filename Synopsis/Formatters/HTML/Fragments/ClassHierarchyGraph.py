@@ -6,32 +6,32 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
+from Synopsis import IR
 from Synopsis.Processor import InvalidCommand
 from ClassHierarchySimple import ClassHierarchySimple
-import os, string
+import os
 
 class ClassHierarchyGraph(ClassHierarchySimple):
     """Prints a graphical hierarchy for classes, using the Dot formatter.
    
     @see Formatters.Dot
     """
-    def format_class(self, clas):
+    def format_class(self, class_):
 
         from Synopsis.Formatters import Dot
-        super = self.processor.class_tree.superclasses(clas.name())
-        sub = self.processor.class_tree.subclasses(clas.name())
+        super = self.processor.class_tree.superclasses(class_.name)
+        sub = self.processor.class_tree.subclasses(class_.name)
         if len(super) == 0 and len(sub) == 0:
             # Skip classes with a boring graph
             return ''
-        #label = self.processor.files.scoped_special('inheritance', clas.name())
+        #label = self.processor.files.scoped_special('inheritance', clas.name)
         label = self.formatter.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
-        ast = AST.AST({}, [clas], self.processor.ast.types())
+        ir = IR.IR({}, [class_], self.processor.ir.types)
         dot = Dot.Formatter()
         dot.toc = self.processor.toc
         try:
-            dot.process(ast,
+            dot.process(ir,
                         output=tmp,
                         format='html',
                         base_url=self.formatter.filename(),
@@ -50,3 +50,4 @@ class ClassHierarchyGraph(ClassHierarchySimple):
             print 'Warning : %s'%str(e)
             return ''
 
+    format_class_template = format_class

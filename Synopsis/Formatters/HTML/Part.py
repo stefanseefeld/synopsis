@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-"""AST Formatting classes.
+"""ASG Formatting classes.
 
 This module contains classes for formatting parts of a scope view (class,
 module, etc with methods, variables etc. The actual formatting of the
@@ -15,19 +15,19 @@ and are defined in the FormatStrategy module.
 """
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Util
 from Fragment import Fragment
 import Tags # need both because otherwise 'Tags.name' would be ambiguous
 from Tags import *
 
-class Part(Parametrized, Type.Visitor, AST.Visitor):
+class Part(Parametrized, ASG.Visitor):
    """Base class for formatting a Part of a Scope View.
     
-   This class contains functionality for modularly formatting an AST node and
+   This class contains functionality for modularly formatting an ASG node and
    its children for display. It is typically used to construct Heading,
    Summary and Detail formatters. Strategy objects are added according to
    configuration, and this base class  then checks which format methods each
-   strategy implements. For each AST declaration visited, the Part asks all
+   strategy implements. For each ASG declaration visited, the Part asks all
    Strategies which implement the appropriate format method to generate
    output for that declaration. The final writing of the formatted html is
    delegated to the write_section_start, write_section_end, and write_section_item
@@ -42,7 +42,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
       self.__view = view
       self.__fragments = []
       self.__id_holder = None
-      # Lists of format methods for each AST type
+      # Lists of format methods for each ASG type
       self.__formatdict = {'format_declaration':[],
                            'format_forward':[],
                            'format_group':[],
@@ -50,12 +50,15 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
                            'format_module':[],
                            'format_meta_module':[],
                            'format_class':[],
+                           'format_class_template':[],
                            'format_typedef':[],
                            'format_enum':[],
                            'format_variable':[],
                            'format_const':[],
                            'format_function':[],
-                           'format_operation':[]}
+                           'format_function_template':[],
+                           'format_operation':[],
+                           'format_operation_template':[]}
 
       for fragment in self.fragments:
          fragment.register(self)
@@ -87,7 +90,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
       if not label: label = escape(Util.ccolonName(name, self.scope()))
       entry = self.processor.toc[name]
-      if entry: return href(rel(self.filename(), entry.link), escape(label), **keys)
+      if entry: return href(rel(self.filename(), entry.link), label, **keys)
       else: return label or ''
 
    def label(self, name, label=None):
@@ -130,20 +133,23 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
       pass
 	
-   #################### AST Visitor ############################################
-   def visitDeclaration(self, decl): self.format_declaration(decl, 'format_declaration')
-   def visitForward(self, decl): self.format_declaration(decl, 'format_forward')
-   def visitGroup(self, decl): self.format_declaration(decl, 'format_group')
-   def visitScope(self, decl): self.format_declaration(decl, 'format_scope')
-   def visitModule(self, decl):	self.format_declaration(decl, 'format_module')
-   def visitMetaModule(self, decl): self.format_declaration(decl, 'format_meta_module')
-   def visitClass(self, decl): self.format_declaration(decl, 'format_class')
-   def visitTypedef(self, decl): self.format_declaration(decl, 'format_typedef')
-   def visitEnum(self, decl): self.format_declaration(decl, 'format_enum')
-   def visitVariable(self, decl): self.format_declaration(decl, 'format_variable')
-   def visitConst(self, decl): self.format_declaration(decl, 'format_const')
-   def visitFunction(self, decl): self.format_declaration(decl, 'format_function')
-   def visitOperation(self, decl): self.format_declaration(decl, 'format_operation')
+   #################### ASG Visitor ############################################
+   def visit_declaration(self, decl): self.format_declaration(decl, 'format_declaration')
+   def visit_forward(self, decl): self.format_declaration(decl, 'format_forward')
+   def visit_group(self, decl): self.format_declaration(decl, 'format_group')
+   def visit_scope(self, decl): self.format_declaration(decl, 'format_scope')
+   def visit_module(self, decl):	self.format_declaration(decl, 'format_module')
+   def visit_meta_module(self, decl): self.format_declaration(decl, 'format_meta_module')
+   def visit_class(self, decl): self.format_declaration(decl, 'format_class')
+   def visit_class_template(self, decl): self.format_declaration(decl, 'format_class_template')
+   def visit_typedef(self, decl): self.format_declaration(decl, 'format_typedef')
+   def visit_enum(self, decl): self.format_declaration(decl, 'format_enum')
+   def visit_variable(self, decl): self.format_declaration(decl, 'format_variable')
+   def visit_const(self, decl): self.format_declaration(decl, 'format_const')
+   def visit_function(self, decl): self.format_declaration(decl, 'format_function')
+   def visit_function_template(self, decl): self.format_declaration(decl, 'format_function_template')
+   def visit_operation(self, decl): self.format_declaration(decl, 'format_operation')
+   def visit_operation_template(self, decl): self.format_declaration(decl, 'format_operation_template')
 
 
    #################### Type Formatter/Visitor #################################
@@ -159,60 +165,60 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
          self.__id_holder = save_id
       return self.__type_label
 
-   def visitBaseType(self, type):
+   def visit_base_type(self, type):
       "Sets the label to be a reference to the type's name"
 
-      self.__type_label = self.reference(type.name())
+      self.__type_label = self.reference(type.name)
         
-   def visitUnknown(self, type):
+   def visit_unknown_type(self, type):
       "Sets the label to be a reference to the type's link"
 
-      self.__type_label = self.reference(type.link())
+      self.__type_label = self.reference(type.link)
         
-   def visitDeclared(self, type):
+   def visit_declared_type(self, type):
       "Sets the label to be a reference to the type's name"
 
-      self.__type_label = self.reference(type.name())
+      self.__type_label = self.reference(type.name)
 
-   def visitDependent(self, type):
+   def visit_dependent(self, type):
       "Sets the label to be the type's name (which has no proper scope)"
 
-      self.__type_label = type.name()[-1]
+      self.__type_label = type.name[-1]
         
-   def visitModifier(self, type):
+   def visit_modifier_type(self, type):
       "Adds modifiers to the formatted label of the modifier's alias"
 
-      alias = self.format_type(type.alias())
+      alias = self.format_type(type.alias)
       def amp(x):
          if x == '&': return '&amp;'
          return x
-      pre = ''.join(['%s&#160;'%amp(x) for x in type.premod()])
-      post = ''.join([amp(x) for x in type.postmod()])
+      pre = ''.join(['%s&#160;'%amp(x) for x in type.premod])
+      post = ''.join([amp(x) for x in type.postmod])
       self.__type_label = "%s%s%s"%(pre,alias,post)
             
-   def visitParametrized(self, type):
+   def visit_parametrized(self, type):
       "Adds the parameters to the template name in angle brackets"
 
-      if type.template():
-         type_label = self.reference(type.template().name())
+      if type.template:
+         type_label = self.reference(type.template.name)
       else:
          type_label = "(unknown)"
-      params = map(self.format_type, type.parameters())
-      self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(params))
+      parameters = [self.format_type(p) for p in type.parameters]
+      self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(parameters))
 
-   def visitTemplate(self, type):
+   def visit_template(self, type):
       "Labs the template with the parameters"
 
       self.__type_label = "template&lt;%s&gt;"%(
-         ','.join(['typename %s'%self.format_type(p) for p in type.parameters()])
+         ','.join(['typename %s'%self.format_type(p) for p in type.parameters])
          )
 
-   def visitFunctionType(self, type):
+   def visit_function_type(self, type):
       "Labels the function type with return type, name and parameters"
       
-      ret = self.format_type(type.returnType())
-      params = map(self.format_type, type.parameters())
-      pre = ''.join(type.premod())
+      ret = self.format_type(type.return_type)
+      params = map(self.format_type, type.parameters)
+      pre = ''.join(type.premod)
       if self.__id_holder:
          ident = self.__id_holder[0]
          del self.__id_holder[0]
