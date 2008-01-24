@@ -5,15 +5,17 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/Python/Module.hh>
+#include <boost/python.hpp>
 #include <Synopsis/Trace.hh>
+#include <Synopsis/Timer.hh>
 #include <Support/ErrorHandler.hh>
-#include "ASTTranslator.hh"
+#include "IRGenerator.hh"
 #include <memory>
+#include <sstream>
 
 using namespace Synopsis;
 namespace wave = boost::wave;
+namespace bpl = boost::python;
 
 namespace
 {
@@ -23,7 +25,7 @@ namespace
   std::string const trash = "/dev/null";
 #endif
 
-PyObject *error;
+bpl::object error_type;
 
 //. Override unexpected() to print a message before we abort
 void unexpected()
@@ -32,173 +34,173 @@ void unexpected()
   throw std::bad_exception();
 }
 
-bool extract(PyObject *py_flags, std::vector<char const *> &out)
+bpl::object parse(bpl::object ir,
+                  char const *input_file, char const *base_path, char const *output_file,
+                  char const *language, bpl::list py_system_flags, bpl::list py_user_flags,
+                  bool primary_file_only, bool verbose, bool debug, bool profile)
 {
-  Py_INCREF(py_flags);
-  Python::List list = Python::Object(py_flags);
-  for (size_t i = 0; i != list.size(); ++i)
-  {
-    char const *value = Python::Object::narrow<char const *>(list.get(i));
-    if (!value) return false;
-    out.push_back(value);
-  }
-  return true;
-}
-
-PyObject *parse(PyObject *self, PyObject *args)
-{
-  char const *input_file;
-  char const *base_path;
-  char const *output_file;
-  char const *language;
-  PyObject *py_flags;
-  std::vector<char const *> flags;
-  PyObject *py_ast;
-  int main_file_only = 0;
-  int verbose = 0;
-  int debug = 0;
-  if (!PyArg_ParseTuple(args, "OszzsO!iii",
-			&py_ast,
-			&input_file,
-			&base_path,
-			&output_file,
-			&language,
-			&PyList_Type, &py_flags,
-			&main_file_only,
-			&verbose,
-			&debug)
-      || !extract(py_flags, flags))
-    return 0;
-
-  Py_INCREF(error);
-  std::auto_ptr<Python::Object> error_type(new Python::Object(error));
-
-  Py_INCREF(py_ast);
-  AST::AST ast(py_ast);
-  Py_INCREF(py_ast);
+  std::vector<char const *> system_flags(bpl::len(py_system_flags));
+  for (unsigned int i = 0; i != bpl::len(py_system_flags); ++i)
+    system_flags[i] = bpl::extract<char const *>(py_system_flags[i]);
+  std::vector<char const *> user_flags;
+  for (unsigned int i = 0; i != bpl::len(py_user_flags); ++i)
+    user_flags[i] = bpl::extract<char const *>(py_user_flags[i]);
 
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
   if (debug) Synopsis::Trace::enable(Trace::ALL);
 
-  if (!input_file || *input_file == '\0')
+  if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
+  std::ifstream ifs(input_file);
+  if (!ifs)
   {
-    PyErr_SetString(PyExc_RuntimeError, "no input file");
-    return 0;
+    std::string msg = "unable to read '";
+    msg += input_file;
+    msg += '\'';
+    throw std::runtime_error(msg);
   }
-  try
+  std::ofstream ofs(output_file ? output_file : trash.c_str());
+
+  std::string input(std::istreambuf_iterator<char>(ifs.rdbuf()),
+                    std::istreambuf_iterator<char>());
+
+  Timer timer;
+  typedef wave::cpplexer::lex_iterator<Token> lex_iterator_type;
+  typedef wave::context<std::string::iterator,
+                        lex_iterator_type,
+                        wave::iteration_context_policies::load_file_to_string,
+                        IRGenerator> context_type;
+
+  context_type ctx(input.begin(), input.end(), input_file,
+                   IRGenerator(language, input_file, base_path, primary_file_only,
+                               ir, verbose, debug));
+
+  if (std::string(language) == "C")
   {
-    std::ifstream ifs(input_file);
-    std::ofstream ofs(output_file ? output_file : trash.c_str());
+    ctx.set_language(wave::support_c99);
+    // Remove the '__STDC_HOSTED__' macro as wave predefines it.
+    system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                   std::string("-D__STDC_HOSTED__=1")),
+                       system_flags.end());
+    // Remove the '__STDC__' macro as wave predefines it.
+    system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                   std::string("-D__STDC__=1")),
+                       system_flags.end());
+  }
+  else
+  {
+    ctx.set_language(wave::enable_variadics(ctx.get_language()));
+    // FIXME: should only enable in GCC compat mode.
+    ctx.set_language(wave::enable_long_long(ctx.get_language()));
+    // Remove the '__cplusplus' macro as wave predefines it.
+    system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
+                                   std::string("-D__cplusplus=1")),
+                       system_flags.end());
+  }
+  ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
 
-    std::string input(std::istreambuf_iterator<char>(ifs.rdbuf()),
-		      std::istreambuf_iterator<char>());
-
-    typedef wave::cpplexer::lex_iterator<Token> lex_iterator_type;
-    typedef wave::context<std::string::iterator,
-                          lex_iterator_type,
-                          wave::iteration_context_policies::load_file_to_string,
-                          ASTTranslator> context_type;
-
-    context_type ctx(input.begin(), input.end(), input_file,
-		     ASTTranslator(language, input_file, base_path, main_file_only,
-				   ast, verbose, debug));
-
-    if (std::string(language) == "C")
+  std::vector<std::string> includes;
+  // Insert the system_flags from the Emulator.
+  for (std::vector<char const *>::iterator i = system_flags.begin();
+       i != system_flags.end();
+       ++i)
+  {
+    if (**i == '-')
     {
-      ctx.set_language(wave::support_c99);
-      // Remove the '__STDC_HOSTED__' macro as wave predefines it.
-      flags.erase(std::remove(flags.begin(), flags.end(),
-			      std::string("-D__STDC_HOSTED__=1")),
-		  flags.end());
-    }
-    else
-    {
-      ctx.set_language(wave::enable_variadics(ctx.get_language()));
-      // FIXME: should only enable in GCC compat mode.
-      ctx.set_language(wave::enable_long_long(ctx.get_language()));
-      // Remove the '__cplusplus' macro as wave predefines it.
-      flags.erase(std::remove(flags.begin(), flags.end(),
-			      std::string("-D__cplusplus=1")),
-		  flags.end());
-    }
-    ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
-
-    for (std::vector<char const *>::iterator i = flags.begin();
-	 i != flags.end();
-	 ++i)
-    {
-      if (**i == '-')
+      if (*(*i + 1) == 'I')
       {
-	if (*(*i + 1) == 'I')
-	{
-	  ctx.add_include_path(*i + 2);
-	  ctx.add_sysinclude_path(*i + 2);
-	}
-	else if (*(*i + 1) == 'D')
-	  ctx.add_macro_definition(*i + 2, true);
-	else if (*(*i + 1) == 'U')
-	  ctx.remove_macro_definition(*i + 2);
+        ctx.add_include_path(*i + 2);
+        ctx.add_sysinclude_path(*i + 2);
       }
+      else if (*(*i + 1) == 'D')
+        ctx.add_macro_definition(*i + 2, /*is_predefined=*/true);
+      else if (*(*i + 1) == 'U')
+        ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
+      else if (*(*i + 1) == 'i')
+        includes.push_back(*i + 2);
     }
+  }
 
-    context_type::iterator_type first = ctx.begin();
-    context_type::iterator_type last = ctx.end();
-
-    while (first != last)
+  // Insert the user_flags
+  for (std::vector<char const *>::iterator i = user_flags.begin();
+       i != user_flags.end();
+       ++i)
+  {
+    if (**i == '-')
     {
-      ofs << (*first).get_value();
-      ++first;
+      if (*(*i + 1) == 'I')
+      {
+        ctx.add_include_path(*i + 2);
+        ctx.add_sysinclude_path(*i + 2);
+      }
+      else if (*(*i + 1) == 'D')
+        ctx.add_macro_definition(*i + 2, /*is_predefined=*/false);
+      else if (*(*i + 1) == 'U')
+        ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
+      else if (*(*i + 1) == 'i')
+        includes.push_back(*i + 2);
     }
   }
-  catch (wave::cpp_exception &e) 
+
+  context_type::iterator_type first = ctx.begin();
+  context_type::iterator_type end = ctx.end();
+
+  for (std::vector<std::string>::const_reverse_iterator i = includes.rbegin(),
+         e = includes.rend();
+       i != e; /**/)
   {
-    // some preprocessing error
-    std::cerr << e.file_name() << "(" << e.line_no() << "): "
-	      << e.description() << std::endl;
-    Python::Object py_e((*error_type)());
-    py_e.set_attr("file_name", e.file_name());
-    py_e.set_attr("line_no", e.line_no());
-    py_e.set_attr("description", e.description());
-    PyErr_SetObject(error, py_e.ref());
-    return 0;
+    std::string filename(*i);
+    first.force_include(filename.c_str(), ++i == e);
   }
-  catch (wave::cpplexer::lexing_exception &e) 
+
+  while (first != end)
   {
-    // some lexing error
-    std::cerr << e.file_name() << "(" << e.line_no() << "): "
-	      << e.description() << std::endl;
-    Python::Object py_e((*error_type)());
-    py_e.set_attr("file_name", e.file_name());
-    py_e.set_attr("line_no", e.line_no());
-    py_e.set_attr("description", e.description());
-    PyErr_SetObject(error, py_e.ref());
-    return 0;
+    ofs << (*first).get_value();
+    ++first;
   }
-  catch (std::exception const &e)
-  {
-    std::cerr << "Caught exception : " << e.what() << std::endl;
-    Python::Object py_e((*error_type)());
-    py_e.set_attr("file_name", "");
-    py_e.set_attr("line_no", -1);
-    py_e.set_attr("description", e.what());
-    PyErr_SetObject(error, py_e.ref());
-    return 0;
-  }
-  return py_ast;
+  if (profile)
+    std::cout << "preprocessor took " << timer.elapsed() << " seconds" << std::endl;
+  return ir;
 }
 
-PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},
-			 {0, 0}};
-}
-
-extern "C" void initwave()
+void cpp_error(wave::cpp_exception const &e)
 {
-  Python::Module module = Python::Module::define("wave", methods);
-  module.set_attr("version", "0.1");
-  Python::Object processor = Python::Object::import("Synopsis.Processor");
-  Python::Object error_base = processor.attr("Error");
-  error = PyErr_NewException("wave.PreprocessError", error_base.ref(), 0);
-  module.set_attr("PreprocessError", error);
+  std::ostringstream oss;
+  oss << e.file_name() << ':' << e.line_no() << " : " << e.description();
+  std::string what = oss.str();
+  bpl::object error(error_type(what.c_str()));
+//   error.attr("file_name") = e.file_name();
+//   error.attr("line_no") = e.line_no();
+//   error.attr("description") = e.description();
+  PyErr_SetObject(error_type.ptr(), error.ptr());
+}
+
+void lexer_error(wave::cpplexer::lexing_exception const &e)
+{
+  std::ostringstream oss;
+  oss << e.file_name() << ':' << e.line_no() << " : " << e.description();
+  std::string what = oss.str();
+  bpl::object error(error_type(what.c_str()));
+//   error.attr("file_name") = e.file_name();
+//   error.attr("line_no") = e.line_no();
+//   error.attr("description") = e.description();
+  PyErr_SetObject(error_type.ptr(), error.ptr());
+}
+
+}
+
+BOOST_PYTHON_MODULE(ParserImpl)
+{
+  bpl::register_exception_translator<wave::cpp_exception>(cpp_error);
+  bpl::register_exception_translator<wave::cpplexer::lexing_exception>(lexer_error);
+
+  bpl::scope scope;
+  scope.attr("version") = "0.2";
+  bpl::def("parse", parse);
+  bpl::object processor = bpl::import("Synopsis.Processor");
+  bpl::object error_base = processor.attr("Error");
+  error_type = bpl::object(bpl::handle<>(PyErr_NewException("ParserImpl.CppError",
+                                                            error_base.ptr(), 0)));
+  scope.attr("CppError") = error_type;
 }
