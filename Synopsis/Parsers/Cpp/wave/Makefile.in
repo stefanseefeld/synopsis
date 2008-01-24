@@ -13,30 +13,27 @@ PYTHON	:= @PYTHON@
 
 CC	:= @CC@
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I . 
+CPPFLAGS:= @CPPFLAGS@ @BOOST_CPPFLAGS@ -I .
 CPPFLAGS+= -I $(srcdir)
-CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
+CPPFLAGS+= @SYN_CPP@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
-LDFLAGS	:= @LDFLAGS@
-LIBS	:= -L/usr/local/lib -lboost_wave -lboost_filesystem 
-LIBS	+= @SYN_LIBS@ @LIBS@
+LDFLAGS	:= @LDFLAGS@ @BOOST_LDFLAGS@
+LIBS	:= @BOOST_LIBS@ @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.hh))
-SRC	:= ASTTranslator.cc ParserImpl.cc
+SRC	:= IRGenerator.cc ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
-TARGET	:= wave$(LIBRARY_EXT)
+TARGET	:= ParserImpl$(LIBRARY_EXT)
 
 vpath %.hh $(srcdir)
 vpath %.cc $(srcdir)
 
 all: $(TARGET)
-
-doc: wave.syn wave-impl.syn
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)
@@ -47,13 +44,14 @@ doc: wave.syn wave-impl.syn
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 Makefile: $(srcdir)/Makefile.in
-	$(SHELL) -ec 'cd .. && ./config.status --file wave/Makefile'
+	$(SHELL) -ec './config.status --file Makefile'
 
-wave$(LIBRARY_EXT): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+$(TARGET): $(OBJ)
+	@echo linking $(@F)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
-	rm -f *~ *.o wave$(LIBRARY_EXT) *.d *.pyc *.pyo base_lib
+	rm -rf *~ $(OBJ) $(DEP) $(TARGET) *.pyc *.pyo
 
 ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
 -include $(DEP)

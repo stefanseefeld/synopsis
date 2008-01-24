@@ -14,8 +14,8 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
-FLEX = flex -t
-BISON = bison -d -o y.tab.c
+FLEX 	:= flex -t
+BISON 	:= bison -d -o y.tab.c
 MAKEDEP	:= $(CXX) -M
 IDLMODULE_VERSION := 0x2630# => CORBA 2.6, front-end 3.0
 CPPFLAGS:= @CPPFLAGS@ -I . 
@@ -38,6 +38,8 @@ DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
 TARGET	:= _omniidl$(LIBRARY_EXT)
 
+vpath %.yy  $(srcdir)
+vpath %.ll  $(srcdir)
 vpath %.hh  $(srcdir)
 vpath %.cc  $(srcdir)
 
@@ -49,6 +51,19 @@ $(TARGET): $(OBJ)
 clean:
 	rm -f $(CTOOL_SO)
 	rm -rf $(OBJ) $(DEP)
+
+y.tab.h y.tab.cc: $(YYSRC)
+	@-rm $@
+	$(BISON) $<
+	mv -f y.tab.c y.tab.cc
+
+lex.yy.cc: $(LLSRC) y.tab.h
+	$(FLEX) $< > $@
+	echo '#ifdef __VMS' >> $@
+	echo '// Some versions of DEC C++ for OpenVMS set the module name used by the' >> $@
+	echo '// librarian based on the last #line encountered.' >> $@
+	echo '#line' `cat $@ | wc -l` '"lex_yy.cc"' >> $@
+	echo '#endif' >> $@
 
 %.o:	%.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<

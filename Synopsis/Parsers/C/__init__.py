@@ -51,16 +51,16 @@ class Parser(Processor):
                                       primary_file_only = self.primary_file_only,
                                       verbose = self.verbose,
                                       debug = self.debug)
-
-            self.ir = ParserImpl.parse(self.ir, i_file,
-                                       os.path.abspath(file),
-                                       self.primary_file_only,
-                                       base_path,
-                                       self.syntax_prefix,
-                                       self.xref_prefix,
-                                       self.verbose,
-                                       self.debug)
-
-            if self.preprocess: os.remove(i_file)
+            try:
+                self.ir = ParserImpl.parse(self.ir, i_file,
+                                           os.path.abspath(file),
+                                           self.primary_file_only,
+                                           base_path,
+                                           self.syntax_prefix,
+                                           self.xref_prefix,
+                                           self.verbose,
+                                           self.debug)
+            finally:
+                if self.preprocess: os.remove(i_file)
 
         return self.output_and_return_ir()

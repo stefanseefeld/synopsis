@@ -34,7 +34,7 @@ HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 DEP	:= $(patsubst %.o, %.d, $(OBJ))
 
-TARGET	:= ucpp$(LIBRARY_EXT)
+TARGET	:= ParserImpl$(LIBRARY_EXT)
 
 vpath %.c $(srcdir)
 vpath %.h $(srcdir)
@@ -84,11 +84,11 @@ $(CC_SYN): %.syn: %
 	mkdir -p $(dir $@)
 	$(SYNOPSIS) cxx --output=$@ $?
 
-ucpp$(LIBRARY_EXT): $(OBJ)
+$(TARGET): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
-	rm -f *~ *.o ucpp$(LIBRARY_EXT) *.syn *.d *.pyc *.pyo base_lib
+	rm -f *~ *.o $(TARGET) *.syn *.d *.pyc *.pyo base_lib
 
 ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
 -include $(DEP)

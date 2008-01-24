@@ -42,7 +42,7 @@ bpl::object parse(bpl::object ir,
   std::vector<char const *> system_flags(bpl::len(py_system_flags));
   for (unsigned int i = 0; i != bpl::len(py_system_flags); ++i)
     system_flags[i] = bpl::extract<char const *>(py_system_flags[i]);
-  std::vector<char const *> user_flags;
+  std::vector<char const *> user_flags(bpl::len(py_user_flags));
   for (unsigned int i = 0; i != bpl::len(py_user_flags); ++i)
     user_flags[i] = bpl::extract<char const *>(py_user_flags[i]);
 
@@ -88,7 +88,7 @@ bpl::object parse(bpl::object ir,
                                    std::string("-D__STDC__=1")),
                        system_flags.end());
   }
-  else
+  else if (std::string(language) == "C++")
   {
     ctx.set_language(wave::enable_variadics(ctx.get_language()));
     // FIXME: should only enable in GCC compat mode.
@@ -97,6 +97,9 @@ bpl::object parse(bpl::object ir,
     system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
                                    std::string("-D__cplusplus=1")),
                        system_flags.end());
+  }
+  else if (std::string(language) == "IDL")
+  {
   }
   ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
 

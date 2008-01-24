@@ -57,16 +57,17 @@ class Parser(Processor):
                                       verbose = self.verbose,
                                       debug = self.debug)
 
-            self.ir = occ.parse(self.ir, ii_file,
-                                os.path.abspath(file),
-                                self.primary_file_only,
-                                os.path.abspath(self.base_path) + os.sep,
-                                self.syntax_prefix,
-                                self.xref_prefix,
-                                self.verbose,
-                                self.debug)
-
-            if self.preprocess: os.remove(ii_file)
+            try:
+                self.ir = occ.parse(self.ir, ii_file,
+                                    os.path.abspath(file),
+                                    self.primary_file_only,
+                                    os.path.abspath(self.base_path) + os.sep,
+                                    self.syntax_prefix,
+                                    self.xref_prefix,
+                                    self.verbose,
+                                    self.debug)
+            finally:
+                if self.preprocess: os.remove(ii_file)
 
             return self.output_and_return_ir()
 

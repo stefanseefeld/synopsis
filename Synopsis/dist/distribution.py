@@ -7,6 +7,7 @@
 
 from distutils import dist
 from Synopsis.dist.command.config import config
+from Synopsis.dist.command.build import build
 from Synopsis.dist.command.build_doc import build_doc
 from Synopsis.dist.command.build_clib import build_clib
 from Synopsis.dist.command.build_ext import build_ext
@@ -33,6 +34,7 @@ class Distribution(dist.Distribution):
         dist.Distribution.__init__(self, attrs)
 
         self.cmdclass['config'] = config
+        self.cmdclass['build'] = build
         self.cmdclass['build_doc'] = build_doc
         self.cmdclass['build_clib'] = build_clib
         self.cmdclass['build_ext'] = build_ext

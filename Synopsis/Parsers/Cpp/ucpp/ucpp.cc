@@ -27,6 +27,7 @@ namespace
 
 int verbose = 0;
 int debug = 0;
+int profile = 0;
 int primary_file_only = 0;
 bool active = true;
 const char *language;
@@ -116,20 +117,22 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
   {
     const char *py_base_path;
     char *output;
-    PyObject *py_flags;
+    PyObject *py_system_flags, *py_flags;
     std::vector<const char *> flags;
     PyObject *py_ir;
-    if (!PyArg_ParseTuple(args, "OszzsO!iii",
+    if (!PyArg_ParseTuple(args, "OszzsO!O!iiii",
                           &py_ir,
                           &input,
                           &py_base_path,
                           &output,
                           &language,
+                          &PyList_Type, &py_system_flags,
                           &PyList_Type, &py_flags,
                           &primary_file_only,
                           &verbose,
-                          &debug)
-        || !extract(py_flags, flags))
+                          &debug,
+                          &profile)
+        || !extract(py_system_flags, flags) || !extract(py_flags, flags))
       return 0;
     
     Py_INCREF(py_error);
@@ -310,12 +313,12 @@ PyMethodDef methods[] = {{(char*)"parse", ucpp_parse, METH_VARARGS},
 			 {0}};
 };
 
-extern "C" void initucpp()
+extern "C" void initParserImpl()
 {
-  Python::Module module = Python::Module::define("ucpp", methods);
+  Python::Module module = Python::Module::define("ParserImpl", methods);
   module.set_attr("version", "0.1");
   Python::Object processor = Python::Object::import("Synopsis.Processor");
   Python::Object error_base = processor.attr("Error");
-  py_error = PyErr_NewException("ucpp.ParseError", error_base.ref(), 0);
+  py_error = PyErr_NewException("ParserImpl.ParseError", error_base.ref(), 0);
   module.set_attr("ParseError", py_error);
 }

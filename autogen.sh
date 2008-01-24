@@ -24,6 +24,7 @@ svn info | awk '/Revision:/ {print $2}' > revision
 conf src
 conf src/Synopsis/gc
 conf Synopsis/Parsers/Cpp/ucpp
+conf Synopsis/Parsers/Cpp/wave
 conf_with_header Synopsis/Parsers/IDL
 conf Synopsis/Parsers/C
 conf Synopsis/Parsers/Cxx

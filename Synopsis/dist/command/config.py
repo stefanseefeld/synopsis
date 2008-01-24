@@ -26,9 +26,11 @@ class config(build_ext):
          "whether or not to build the C++ parser with the garbage collector"),
         ('with-gc-prefix=', None,
          "the prefix to the garbage collector."),
+        ('with-boost', None,
+         'whether to use boost libraries in backends.'),
         ('with-boost-prefix=', None,
          "the prefix to the boost libraries.")]
-    boolean_options = build_ext.boolean_options[:] + ['disable-gc']
+    boolean_options = build_ext.boolean_options[:] + ['disable-gc', 'with-boost']
 
     def initialize_options(self):
 
@@ -36,6 +38,7 @@ class config(build_ext):
         build_ext.initialize_options(self)
         self.disable_gc = 0
         self.with_gc_prefix = ''
+        self.with_boost = False
         self.with_boost_prefix = ''
 
     def finalize_options(self):
@@ -63,7 +66,8 @@ class config(build_ext):
         for e in self.distribution.ext_modules:
             if e[0] not in self.extensions:
                 self.extensions.append(e[0])
-
+        if self.with_boost:
+            self.extensions[0] = 'Synopsis/Parsers/Cpp/wave'
 
     def run(self):
 
@@ -94,8 +98,8 @@ class config(build_ext):
         self.config('tests', self.build_temp, self.build_lib,
                     '--with-syn-cxx="%s"'%syn_cxx)
         self.config('doc', self.build_temp, self.build_lib)
-        self.config('sandbox', self.build_temp, self.build_lib,
-                    '--with-syn-cxx="%s"'%syn_cxx)
+        #self.config('sandbox', self.build_temp, self.build_lib,
+        #            '--with-syn-cxx="%s"'%syn_cxx)
 
             
     def config(self, component, build_temp, build_lib, args=''):

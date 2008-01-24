@@ -6,7 +6,7 @@ syn	:= Shapes.syn
 
 all: Files.png Classes1.png Classes2.png Classes3.png
 
-Files.png:
+Files.png: $(syn)
 	$(synopsis) files --output=$@ $(src)
 
 Classes1.png:

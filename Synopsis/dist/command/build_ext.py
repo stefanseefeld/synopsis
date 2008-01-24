@@ -19,9 +19,22 @@ class build_ext(base):
     user_options = [('build-lib=', 'b', "directory for compiled extension modules"),
                     ('build-temp=', 't', "directory for temporary files (build by-products)"),
                     ('inplace', 'i', "ignore build-lib and put compiled extensions into the source " +
-                     "directory alongside your pure Python modules")]
+                     "directory alongside your pure Python modules"),
+                    ('with-boost', None, 'whether to use boost libraries in backends.')]
 
-    boolean_options = ['inplace']
+    boolean_options = ['inplace', 'with-boost']
+
+    def initialize_options(self):
+
+        base.initialize_options(self)
+        self.with_boost = None        
+
+    def finalize_options(self):
+
+        base.finalize_options(self)
+        self.set_undefined_options('build', ('with_boost', 'with_boost'))
+        if self.with_boost:
+            self.extensions[0] = ('Synopsis/Parsers/Cpp/wave', 'ParserImpl.so')
 
     def run(self):
 
@@ -49,7 +62,7 @@ class build_ext(base):
         for ext in self.extensions:
             # FIXME: this ugly hack is needed since the ucpp module
             # should be installed in the Cpp package, not Cpp.ucpp
-            if ext[1][:4] in ['ucpp', 'wave']:
+            if ext[0][4:] in ['ucpp', 'wave']:
                 path = os.path.join(self.build_lib, os.path.dirname(ext[0]), ext[1])
             else:
                 path = os.path.join(self.build_lib, ext[0], ext[1])
@@ -60,14 +73,11 @@ class build_ext(base):
 
     def build_extension(self, ext, copy=True):
 
-        if ext[0] == 'Synopsis/Parsers/Cpp/wave':
-            return # exclude that from the automatic build for now
-
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
         # FIXME: this ugly hack is needed since the ucpp module
         # should be installed in the Cpp package, not Cpp.ucpp
-        if ext[1][:4] in ['ucpp', 'wave']:
+        if ext[0][-4:] in ['ucpp', 'wave']:
             target = os.path.dirname(ext[0])
         else:
             target = ext[0]
