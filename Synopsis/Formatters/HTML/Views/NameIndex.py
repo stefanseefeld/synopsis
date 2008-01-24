@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -35,7 +35,7 @@ class NameIndex(View):
 
         self.start_file()
         self.write_navigation_bar()
-        self.write(entity('h1', 'Name Index'))
+        self.write(element('h1', 'Name Index'))
         self.write('<i>Hold the mouse over a link to see the scope of each name</i>\n')
 
         dict = self.make_dictionary()
@@ -45,7 +45,7 @@ class NameIndex(View):
         self.write(div('nameindex-index', ''.join([linker(k) for k in keys])) + '\n')
         for key in keys:
             self.write('<a name="%s">'%ord(key)+'</a>')
-            self.write(entity('h2', key) + '\n')
+            self.write(element('h2', key) + '\n')
             self.write('<table border="0" width="100%" summary="table of names">\n')
             self.write('<col width="*"/>'*self.columns + '\n')
             self.write('<tr>\n')
@@ -70,22 +70,22 @@ class NameIndex(View):
 
         dict = {}
         def hasher(type):
-            name = type.name()
+            name = type.name
             try: key = name[-1][0]
             except:
-                print 'name:',name, 'type:',repr(type)
+                print 'name:',name, 'type:',repr(type), id(type)
                 raise
             if key >= 'a' and key <= 'z': key = chr(ord(key) - 32)
             if dict.has_key(key): dict[key].append(type)
             else: dict[key] = [type]
         # Fill the dict
-        [hasher(t) for t in self.processor.ast.types().values()
-         if isinstance(t, Type.Declared) and
-         not isinstance(t.declaration(), AST.Builtin)]
+        [hasher(t) for t in self.processor.ir.types.values()
+         if isinstance(t, ASG.Declared) and
+         not isinstance(t.declaration, ASG.Builtin)]
 
         # Now sort the dict
         def name_cmp(a,b):
-            a, b = a.name(), b.name()
+            a, b = a.name, b.name
             res = cmp(a[-1],b[-1])
             if res == 0: res = cmp(a,b)
             return res
@@ -97,14 +97,14 @@ class NameIndex(View):
     def _process_item(self, type):
         """Process the given name for output"""
 
-        name = type.name()
-        decl = type.declaration() # non-declared types are filtered out
-        if isinstance(decl, AST.Function):
-            realname = escape(decl.realname()[-1]) + '()'
+        name = type.name
+        decl = type.declaration # non-declared types are filtered out
+        if isinstance(decl, ASG.Function):
+            realname = escape(decl.real_name[-1]) + '()'
         else:
             realname = escape(name[-1])
         self.write('\n')
         title = escape('::'.join(name))
-        type = decl.type()
+        type = decl.type
         name = self.reference(name, (), realname, title=title)+' '+type
         self.write(div('nameindex-item', name))

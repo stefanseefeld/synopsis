@@ -5,17 +5,17 @@ with a listing of all parameters for inclusion into the tutorial."""
 
 from Synopsis.import_processor import import_processor
 from Synopsis.Processor import Parametrized
-import sys, string, types
+import sys, types
 
 def name_of_instance(instance):
-   name = string.split(instance.__module__, '.')
+   name = instance.__module__.split('.')
    if name[-1] != instance.__class__.__name__:
       name.append(instance.__class__.__name__)
    
    return '%s'%'.'.join(name)
 
 def id_of_instance(instance):
-   name = string.split(instance.__module__, '.')[-2:]
+   name = instance.__module__.split('.')[-2:]
    if name[-1] != instance.__class__.__name__:
       name = [name[-1], instance.__class__.__name__]
    return '%s'%'-'.join(name)
@@ -59,7 +59,7 @@ for name in parameters:
    elif type(value) == dict:
       if (len(value) and (type(value.values()[0]) == types.InstanceType
                           or isinstance(value.values()[0], Parametrized))):
-         value = '{%s}'%', '.join(['%s: %s'%(n, name_of_instance(x))
+         value = '{%s}'%', '.join(['%s: %s'%(n, name_of_instance(v))
                                    for (n,v) in value.items()])
    output.write('      <seg>%s</seg>\n'%value)
    output.write('      <seg>%s</seg>\n'%parameter.doc)

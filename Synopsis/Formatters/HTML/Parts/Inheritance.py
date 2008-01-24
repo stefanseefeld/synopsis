@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG, Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -25,41 +25,38 @@ class Inheritance(Part):
    def process(self, decl):
       "Walk the hierarchy to find inherited members to print."
 
-      if not isinstance(decl, AST.Class): return
+      if not isinstance(decl, ASG.Class): return
       self.write_start()
-      names = decl.declarations()
-      names = map(self._short_name, names)
+      names = [self._short_name(n) for n in decl.declarations]
       self._process_superclasses(decl, names)
       self.write_end()
 
    def _process_class(self, clas, names):
       "Prints info for the given class, and calls _process_superclasses after"
 
-      sorter = self.processor.sorter
-      sorter.set_scope(clas)
-      sorter.sort_section_names()
+      sorter = self.processor.sorter.clone(clas.declarations)
       child_names = []
 
       # Iterate through the sections
-      for section in sorter.sections():
+      for section in sorter:
          # Write a heading
-         heading = section+'s Inherited from '+ Util.ccolonName(clas.name(), self.scope())
+         heading = section+' Inherited from '+ Util.ccolonName(clas.name, self.scope())
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
-         for child in sorter.children(section):
+         for child in sorter[section]:
             child_name = self._short_name(child)
             if child_name in names:
                continue
             # FIXME: This doesn't account for the inheritance type
             # (private etc)
-            if child.accessibility() == AST.PRIVATE:
+            if child.accessibility == ASG.PRIVATE:
                continue
             # Don't include constructors and destructors!
-            if (isinstance(child, AST.Function) and
-                child.file().annotations['language'] == 'C++' and
-                len(child.realname()) > 1):
-               if child.realname()[-1] == child.realname()[-2]: continue
-               elif child.realname()[-1] == "~"+child.realname()[-2]: continue
+            if (isinstance(child, ASG.Function) and
+                child.file.annotations['language'] == 'C++' and
+                len(child.real_name) > 1):
+               if child.real_name[-1] == child.real_name[-2]: continue
+               elif child.real_name[-1] == "~"+child.real_name[-2]: continue
             # FIXME: skip overriden declarations
             child_names.append(child_name)
             # Check section heading
@@ -73,22 +70,22 @@ class Inheritance(Part):
       self._process_superclasses(clas, names + child_names)
     
    def _short_name(self, decl):
-      if isinstance(decl, AST.Function):
-         return decl.realname()[-1]
-      return decl.name()[-1]
+      if isinstance(decl, ASG.Function):
+         return decl.real_name[-1]
+      return decl.name[-1]
     
-   def _process_superclasses(self, clas, names):
+   def _process_superclasses(self, class_, names):
       """Iterates through the superclasses of clas and calls _process_clas for
       each"""
 
-      for inheritance in clas.parents():
-         parent = inheritance.parent()
-         if isinstance(parent, Type.Declared):
-            parent = parent.declaration()
-            if isinstance(parent, AST.Class):
+      for inheritance in class_.parents:
+         parent = inheritance.parent
+         if isinstance(parent, ASG.Declared):
+            parent = parent.declaration
+            if isinstance(parent, ASG.Class):
                self._process_class(parent, names)
                continue
-         #print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
+         #print "Ignoring", parent.__class__.__name__, "parent of", clas.name
          pass #ignore
      
    def write_section_start(self, heading):
@@ -110,7 +107,7 @@ class Inheritance(Part):
          self.write(',\n'+text)
 
    def write_section_end(self, heading):
-      """Closes the table entity and adds a break."""
-      self.write('</td></tr></table>\n<br/>\n')
+
+      self.write('</td></tr></table>\n')
 
 

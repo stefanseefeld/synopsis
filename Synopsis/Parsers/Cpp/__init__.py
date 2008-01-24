@@ -6,7 +6,6 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
 from Emulator import get_compiler_info
 from ParserImpl import parse
 import os.path
@@ -21,10 +20,10 @@ class Parser(Processor):
     base_path = Parameter(None, 'path prefix to strip off of the filenames')
     language = Parameter('C++', 'source code programming language of the given input file')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = ast
+        self.ir = ir
 
         # Accept either a string or a list.
         flags = type(self.flags) is str and self.flags.split() or self.flags
@@ -34,11 +33,11 @@ class Parser(Processor):
             system_flags = ['-I%s'%x for x in info.include_paths]
             system_flags += ['-D%s'%k + (v and '=%s'%v or '') for (k,v) in info.macros]
         for file in self.input:
-            self.ast = parse(self.ast,
-                             os.path.abspath(file),
-                             base_path,
-                             self.cpp_output,
-                             self.language, system_flags, flags,
-                             self.primary_file_only,
-                             self.verbose, self.debug, self.profile)
-        return self.output_and_return_ast()
+            self.ir = parse(self.ir,
+                            os.path.abspath(file),
+                            base_path,
+                            self.cpp_output,
+                            self.language, system_flags, flags,
+                            self.primary_file_only,
+                            self.verbose, self.debug, self.profile)
+        return self.output_and_return_ir()

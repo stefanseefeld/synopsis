@@ -8,19 +8,19 @@
 
 from Synopsis import config
 from Synopsis.Processor import Parameter
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Parts import *
-import time, pdb
+import time
 
 class Scope(View):
     """A module for creating a view for each Scope with summaries and
     details. This module is highly modular, using the classes from
-    ASTFormatter to do the actual formatting. The classes to use may be
+    ASGFormatter to do the actual formatting. The classes to use may be
     controlled via the config script, resulting in a very configurable output.
-    @see ASTFormatter The ASTFormatter module
+    @see ASGFormatter The ASGFormatter module
     @see Config.Formatters.HTML.ScopeViews Config for ScopeViews
     """
 
@@ -37,7 +37,7 @@ class Scope(View):
 
         self.__scopes = []
         self.__toc = TOC(self.directory_layout)
-        for d in self.processor.ast.declarations():
+        for d in self.processor.ir.declarations:
             d.accept(self.__toc)
       
     def toc(self):
@@ -69,42 +69,35 @@ class Scope(View):
         """Creates a view for every Scope."""
 
         # FIXME: see HTML.Formatter
-        module = self.processor.ast.declarations()[0]
+        module = self.processor.ir.declarations[0]
         self.__scopes = [module]
         while self.__scopes:
             scope = self.__scopes.pop(0)
             self.process_scope(scope)
-         
-            # Queue child scopes
-            for child in self.processor.sorter.children():
-                if isinstance(child, AST.Scope):
-                    self.__scopes.append(child)
+            scopes = [c for c in scope.declarations if isinstance(c, ASG.Scope)]
+            self.__scopes.extend(scopes)
 
     def register_filenames(self):
         """Registers a view for every Scope."""
 
         # FIXME: see HTML.Formatter
-        self.__scopes = [self.processor.ast.declarations()[0]]
+        self.__scopes = [self.processor.ir.declarations[0]]
         while self.__scopes:
             scope = self.__scopes.pop(0)
-            if scope.name():
-                filename = self.directory_layout.scope(scope.name())
+            if scope.name:
+                filename = self.directory_layout.scope(scope.name)
             else:
                 filename = self.root()[0]
             self.processor.register_filename(filename, self, scope)
 
-            self.processor.sorter.set_scope(scope)
-         
-            # Queue child scopes
-            for child in self.processor.sorter.children():
-                if isinstance(child, AST.Scope):
-                    self.__scopes.append(child)
+            scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
+            self.__scopes.extend(scopes)
      
     def process_scope(self, scope):
         """Creates a view for the given scope"""
 
         # Open file and setup scopes
-        self.__scope = scope.name()
+        self.__scope = scope.name
         if self.__scope:
             self.__filename = self.directory_layout.scope(self.__scope)
         else:
@@ -112,7 +105,6 @@ class Scope(View):
         self.__title = escape(' '.join(self.__scope))
         self.start_file()
         self.write_navigation_bar()
-
         # Loop throught all the view Parts
         for part in self.parts:
             part.process(scope)
@@ -123,6 +115,6 @@ class Scope(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = href('http://synopsis.fresco.org', 'synopsis')
+        logo = href('http://synopsis.fresco.org', 'synopsis') + ' (version %s)'%config.version
         self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
         View.end_file(self)

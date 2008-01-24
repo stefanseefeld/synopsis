@@ -1,5 +1,6 @@
 import token
 import symbol
+import sys
 
 def match(pattern, data, vars=None):
     """Match `data' to `pattern', with variable extraction.
@@ -48,13 +49,85 @@ COMPOUND_STMT_PATTERN = (
 differentiated from simple statements."""
 
 
-DOCSTRING_STMT_PATTERN = (
-    symbol.stmt,
-    (symbol.simple_stmt,
-     (symbol.small_stmt,
-      (symbol.expr_stmt,
-       (symbol.testlist,
-        (symbol.test,
+if sys.version_info[:2] < (2, 5):
+
+    DOCSTRING_STMT_PATTERN = (
+        symbol.stmt,
+        (symbol.simple_stmt,
+         (symbol.small_stmt,
+          (symbol.expr_stmt,
+           (symbol.testlist,
+            (symbol.test,
+             (symbol.and_test,
+              (symbol.not_test,
+               (symbol.comparison,
+                (symbol.expr,
+                 (symbol.xor_expr,
+                  (symbol.and_expr,
+                   (symbol.shift_expr,
+                    (symbol.arith_expr,
+                     (symbol.term,
+                      (symbol.factor,
+                       (symbol.power,
+                        (symbol.atom,
+                         (token.STRING, ['docstring'])
+                         )))))))))))))))),
+         (token.NEWLINE, '')
+         ))
+    """This pattern will match a 'stmt' node which *might* represent a docstring;
+    docstrings require that the statement which provides the docstring be the
+    first statement in the class or function, which this pattern does not check."""
+
+    TEST_NAME_PATTERN = (
+        symbol.test,
+        (symbol.and_test,
+         (symbol.not_test,
+          (symbol.comparison,
+           (symbol.expr,
+            (symbol.xor_expr,
+             (symbol.and_expr,
+              (symbol.shift_expr,
+               (symbol.arith_expr,
+                (symbol.term,
+                 (symbol.factor,
+                  ['power']
+                  ))))))))))
+        )
+    """This pattern will match a 'test' node which is a base class."""
+
+else:
+
+    DOCSTRING_STMT_PATTERN = (
+        symbol.stmt,
+        (symbol.simple_stmt,
+         (symbol.small_stmt,
+          (symbol.expr_stmt,
+           (symbol.testlist,
+            (symbol.test,
+             (symbol.or_test,
+              (symbol.and_test,
+               (symbol.not_test,
+                (symbol.comparison,
+                 (symbol.expr,
+                  (symbol.xor_expr,
+                   (symbol.and_expr,
+                    (symbol.shift_expr,
+                     (symbol.arith_expr,
+                      (symbol.term,
+                       (symbol.factor,
+                        (symbol.power,
+                         (symbol.atom,
+                          (token.STRING, ['docstring'])
+                          ))))))))))))))))),
+         (token.NEWLINE, '')
+         ))
+    """This pattern will match a 'stmt' node which *might* represent a docstring;
+    docstrings require that the statement which provides the docstring be the
+    first statement in the class or function, which this pattern does not check."""
+
+    TEST_NAME_PATTERN = (
+        symbol.test,
+        (symbol.or_test,
          (symbol.and_test,
           (symbol.not_test,
            (symbol.comparison,
@@ -65,32 +138,10 @@ DOCSTRING_STMT_PATTERN = (
                 (symbol.arith_expr,
                  (symbol.term,
                   (symbol.factor,
-                   (symbol.power,
-                    (symbol.atom,
-                     (token.STRING, ['docstring'])
-                     )))))))))))))))),
-     (token.NEWLINE, '')
-     ))
-"""This pattern will match a 'stmt' node which *might* represent a docstring;
-docstrings require that the statement which provides the docstring be the
-first statement in the class or function, which this pattern does not check."""
-
-TEST_NAME_PATTERN = (
-    symbol.test,
-    (symbol.and_test,
-     (symbol.not_test,
-      (symbol.comparison,
-       (symbol.expr,
-        (symbol.xor_expr,
-         (symbol.and_expr,
-          (symbol.shift_expr,
-           (symbol.arith_expr,
-            (symbol.term,
-             (symbol.factor,
-              ['power']
-              ))))))))))
-     )
-"""This pattern will match a 'test' node which is a base class."""
+                   ['power']
+                   )))))))))))
+        )
+    """This pattern will match a 'test' node which is a base class."""
 
 ATOM_PATTERN = (
     symbol.testlist,

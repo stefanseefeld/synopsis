@@ -55,15 +55,24 @@ dnl of the list.
     LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 Darwin)
-    LDSHARED="$CXX -dynamiclib"
+    PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
+    PYTHON_LIBS="-L $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
+
+    CFLAGS="$CFLAGS -fPIC"
     CXXFLAGS="$CXXFLAGS -fPIC"
+    LDSHARED="$CXX -dynamiclib"
     ;;
 *)
-    LDSHARED="$CXX -shared"
+    PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
+    PYTHON_LIBS="-L $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
+
+    CFLAGS="$CFLAGS -fPIC"
     CXXFLAGS="$CXXFLAGS -fPIC"
+    LDSHARED="$CXX -shared"
     ;;
 esac
 
+dnl do not substitute PYTHON_LIBS, as it is only defined for further configuration
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
 

@@ -16,6 +16,7 @@ class Heading(Part):
     only passed the object that the view is for; ie a Class or Module"""
 
     fragments = Parameter([HeadingFormatter(),
+                           TemplateSpecializations(),
                            ClassHierarchyGraph(),
                            DetailCommenter()],
                           '')

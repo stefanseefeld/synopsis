@@ -305,3 +305,18 @@ AC_DEFUN([SYN_BOOST_LIB_WAVE],
     ]],[[
       return 0;
     ]])])])
+
+AC_DEFUN([SYN_BOOST_LIB_PYTHON],
+[
+save_LIBS=$LIBS
+LIBS="$LIBS $PYTHON_LIBS"
+SYN_NEED_BOOST_LIB([python],
+  [AC_LANG_PROGRAM([[
+      #include <boost/python.hpp>
+      using namespace boost::python;
+    ]],[[
+      object("dummy");
+    ]])])
+LIBS=$save_LIBS
+])
+

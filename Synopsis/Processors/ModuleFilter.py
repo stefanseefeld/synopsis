@@ -6,27 +6,27 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type
+from Synopsis import ASG
 
-class ModuleFilter(Processor, AST.Visitor):
+class ModuleFilter(Processor, ASG.Visitor):
     """A processor that filters modules."""
 
     modules = Parameter([], 'List of modules to be filtered out.')
     remove_empty = Parameter(True, 'Whether or not to remove empty modules.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
         self.__scopestack = []
         self.__currscope = []
 
-        for decl in self.ast.declarations():
+        for decl in self.ir.declarations:
            decl.accept(self)
-        self.ast.declarations()[:] = self.__currscope
+        self.ir.declarations[:] = self.__currscope
 
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
     def push(self):
         """Pushes the current scope onto the stack and starts a new one"""
@@ -51,29 +51,29 @@ class ModuleFilter(Processor, AST.Visitor):
 
         self.__currscope.append(decl)
 
-    def visitDeclaration(self, decl):
+    def visit_declaration(self, decl):
         """Adds declaration to scope"""
 
         self.add(decl)
 
-    visitBuiltin = visitDeclaration
-    visitGroup = visitDeclaration
-    visitEnum = visitDeclaration
+    visit_builtin = visit_declaration
+    visit_group = visit_declaration
+    visit_enum = visit_declaration
 
-    def visitModule(self, module):
+    def visit_module(self, module):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 
-        if module.name() in self.modules:
-           return
+        if module.name in self.modules:
+            return
         
         self.push()
-        for decl in module.declarations():
-            decl.accept(self)
-        module.declarations()[:] = self.__currscope
+        for d in module.declarations:
+            d.accept(self)
+        module.declarations = self.__currscope
         # count the number of non-forward declarations in the current scope
         count = reduce(lambda x, y: x + y,
-                       [not isinstance(x, (AST.Forward, AST.Builtin))
+                       [not isinstance(x, (ASG.Forward, ASG.Builtin))
                                        for x in self.__currscope],
                        0)
         if not self.remove_empty or count: self.pop(module)

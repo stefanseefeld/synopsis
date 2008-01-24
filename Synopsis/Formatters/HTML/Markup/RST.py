@@ -5,14 +5,13 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
 from docutils.nodes import *
 from docutils.core import *
 from docutils.readers import standalone
 from docutils.transforms import Transform
-import string, re
+import re
 
 class SummaryExtractor(NodeVisitor):
     """A SummaryExtractor creates a document containing the first sentence of
@@ -75,7 +74,7 @@ class RST(Formatter):
                     if ref.resolved or not ref.hasattr("refname"):
                         return
                     name = ref['name']
-                    uri = formatter.lookup_symbol(name, decl.name())
+                    uri = formatter.lookup_symbol(name, decl.name)
                     if uri:
                         ref.resolved = 1
                         ref['refuri'] = rel(view.filename(), uri)

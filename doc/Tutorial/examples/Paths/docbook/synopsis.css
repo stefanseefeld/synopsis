@@ -1,0 +1,73 @@
+body 
+{
+  margin: 0;
+  color: #003030;
+  background-color: #ffffff;
+  font-family:arial,sans-serif;
+}
+:link { color: #bb0000; text-decoration: none;}
+:visited { color: #770000; text-decoration: none;}
+
+div.navheader 
+{
+  border-bottom: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+  padding: 10px;
+}
+
+div.navfooter
+{
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+  padding: 10px;
+}
+
+div.page-heading 
+{
+    position:float;
+    border-width:0 0 2px;
+    border-color:grey;
+    border-style:solid;
+    text-align:center;
+    padding:10px 40px;
+    background-color:#ffffff;
+    font-family: "arial";
+    font-style: italic;
+    font-size:xx-large;
+    color:darkred;
+}
+p, .variablelist, dl, ul, ol { margin-left: 30px; }
+pre { margin-left: 50px; background-color:#f2f5f7; padding:5px;}
+h2, h3, h4, h5, h6 { margin-left: 10px; padding:3px;}
+dt { font-weight:bold; }
+span.type 
+{
+  font-family: monospace;
+  font-size: smaller;
+}
+pre.programlisting, pre.screen
+{
+  font-size : smaller;
+  background: #f2f5f7;
+  border: 1px solid #aaaaaa;
+}
+
+div.segmentedlist table
+{
+    background: #f2f5f7;
+    border-spacing: 1px;
+}
+
+div.segmentedlist table th
+{
+  background: #f2f5f7;
+  padding: 4px;
+}
+
+div.segmentedlist table td
+{
+  background-color: #ffffff;
+  padding: 4px;
+}

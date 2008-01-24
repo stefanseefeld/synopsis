@@ -6,25 +6,25 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import ASG
 
-class Previous(Processor, AST.Visitor):
+class Previous(Processor, ASG.Visitor):
      """A class that maps comments that begin with '<' to the previous
      declaration"""
 
-     def process(self, ast, **kwds):
+     def process(self, ir, **kwds):
           """decorates process() to initialise last and laststack"""
 
           self.set_parameters(kwds)
-          self.ast = self.merge_input(ast)
+          self.ir = self.merge_input(ir)
 
           self.last = None
           self.__laststack = []
-          for decl in ast.declarations():
-               decl.accept(self)
-               self.last = decl
+          for d in ir.declarations:
+               d.accept(self)
+               self.last = d
 
-          return self.output_and_return_ast()
+          return self.output_and_return_ir()
 
      def push(self):
           """decorates push() to also push 'last' onto 'laststack'"""
@@ -37,33 +37,33 @@ class Previous(Processor, AST.Visitor):
 
           self.last = self.__laststack.pop()
 
-     def visitScope(self, scope):
-          """overrides visitScope() to set 'last' after each declaration"""
+     def visit_scope(self, scope):
+          """overrides visit_scope() to set 'last' after each declaration"""
 
           self.push()
-          for decl in scope.declarations():
-               decl.accept(self)
-               self.last = decl
+          for d in scope.declarations:
+               d.accept(self)
+               self.last = d
           self.pop()
 
-     def visitDeclaration(self, decl):
+     def visit_declaration(self, decl):
           self.process_comments(decl)
 
-     def visitBuiltin(self, decl):
-          if decl.type() == 'EOS': # treat it if it is an 'end of scope' marker
+     def visit_builtin(self, decl):
+          if decl.type == 'EOS': # treat it if it is an 'end of scope' marker
                self.process_comments(decl)
 
-     def visitEnum(self, enum):
-          """Does the same as visitScope but for enum and enumerators"""
+     def visit_enum(self, enum):
+          """Does the same as visit_scope but for enum and enumerators"""
 
           self.push()
-          for enumor in enum.enumerators():
+          for enumor in enum.enumerators:
                enumor.accept(self)
                self.last = enumor
           if enum.eos: enum.eos.accept(self)
           self.pop()
 
-     def visitEnumerator(self, enumor):
+     def visit_enumerator(self, enumor):
           """Checks previous comment and removes dummies"""
 
           self.process_comments(enumor)
@@ -78,7 +78,7 @@ class Previous(Processor, AST.Visitor):
                first = comments[0]
                if first and first[0] == "<" and self.last:
                     if self.debug:
-                         print 'found comment for previous in', decl.name()
+                         print 'found comment for previous in', decl.name
                     comments = self.last.annotations.get('comments', [])
                     comments.append(first[1:]) # Remove '<'
                     self.last.annotations['comments'] = comments

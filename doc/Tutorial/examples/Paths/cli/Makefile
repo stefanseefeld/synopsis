@@ -36,6 +36,7 @@ Paths.ps: Paths.syn
           -o $@ $<
 
 install-html: # nothing to install
+install-print:
 
 clean:
 	rm -rf *.syn

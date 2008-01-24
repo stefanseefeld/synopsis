@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/Python/Module.hh>
+#include "ASGTranslator.hh"
+#include "SXRGenerator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/Timer.hh>
 #include <Synopsis/PTree.hh>
@@ -19,8 +19,6 @@
 #include <Support/ErrorHandler.hh>
 #include <Support/path.hh>
 #include <boost/filesystem/convenience.hpp>
-#include "ASTTranslator.hh"
-#include "SXRGenerator.hh"
 #include <fstream>
 
 using namespace Synopsis;
@@ -28,7 +26,7 @@ namespace fs = boost::filesystem;
 
 namespace
 {
-PyObject *error;
+bpl::object error_type;
 
 //. Override unexpected() to print a message before we abort
 void unexpected()
@@ -37,115 +35,75 @@ void unexpected()
   throw std::bad_exception();
 }
 
-PyObject *parse(PyObject * /* self */, PyObject *args)
+bpl::object parse(bpl::object ir,
+                  char const *cpp_file, char const *input_file, char const *base_path,
+                  bool primary_file_only, char const *syntax_prefix, char const *xref_prefix,
+                  bool verbose, bool debug, bool profile)
 {
-  PyObject *py_ast;
-  const char *src, *cppfile;
-  char const * base_path = "";
-  char const * syntax_prefix = 0;
-  char const * xref_prefix = 0;
-  int primary_file_only, verbose, debug, profile;
-  if (!PyArg_ParseTuple(args, "Ossizzziii",
-                        &py_ast, &cppfile, &src,
-                        &primary_file_only,
-                        &base_path,
-                        &syntax_prefix,
-                        &xref_prefix,
-                        &verbose,
-                        &debug,
-			&profile))
-    return 0;
-
-  Py_INCREF(py_ast);
-  AST::AST ast(py_ast);
-  Py_INCREF(py_ast);
-
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
   if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
-  if (!src || *src == '\0')
+  if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
+
+  std::ifstream ifs(cpp_file);
+  Buffer buffer(ifs.rdbuf(), input_file);
+  Lexer lexer(&buffer, Lexer::CXX|Lexer::GCC);
+  SymbolFactory symbols(SymbolFactory::CXX);
+  Parser parser(lexer, symbols, Parser::CXX|Parser::GCC);
+  Timer timer;
+  PTree::Node *ptree = parser.parse();
+  if (profile)
+    std::cout << "C++ parser took " << timer.elapsed() 
+              << " seconds" << std::endl;
+  const Parser::ErrorList &errors = parser.errors();
+  if (!errors.empty())
   {
-    PyErr_SetString(PyExc_RuntimeError, "no input file");
-    return 0;
+    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+      (*i)->write(std::cerr);
+    throw std::runtime_error("The input contains errors.");
   }
-  try
+  else if (ptree)
   {
-    std::ifstream ifs(cppfile);
-    Buffer buffer(ifs.rdbuf(), src);
-    Lexer lexer(&buffer, Lexer::CXX|Lexer::GCC);
-    SymbolFactory symbols(SymbolFactory::CXX);
-    Parser parser(lexer, symbols, Parser::CXX|Parser::GCC);
-    Timer timer;
-    PTree::Node *ptree = parser.parse();
+    timer.reset();
+    ASGTranslator translator(symbols.current_scope(),
+                             input_file, base_path, primary_file_only, ir, verbose, debug);
+    translator.translate(ptree, buffer);
     if (profile)
-      std::cout << "C++ parser took " << timer.elapsed() 
+      std::cout << "ASG translation took " << timer.elapsed() 
                 << " seconds" << std::endl;
-    const Parser::ErrorList &errors = parser.errors();
-    if (!errors.empty())
-    {
-      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-	(*i)->write(std::cerr);
-      throw std::runtime_error("The input contains errors.");
-    }
-    else if (ptree)
+    if (syntax_prefix)
     {
       timer.reset();
-      ASTTranslator translator(symbols.current_scope(),
-			       src, base_path, primary_file_only, ast, verbose, debug);
-      translator.translate(ptree, buffer);
+      std::string long_filename = make_full_path(input_file);
+      std::string short_filename = make_short_path(input_file, base_path);
+      bpl::object file = ir.attr("files")[short_filename];
+      // Undo the preprocesser's macro expansions.
+      bpl::dict macro_calls = bpl::dict(file.attr("macro_calls"));
+      std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
+      create_directories(fs::path(sxr).branch_path());
+      std::ofstream ofs(sxr.c_str());
+      SXRGenerator generator(buffer, symbols.current_scope(), ofs);
+      generator.process(ptree);
       if (profile)
-	std::cout << "AST translation took " << timer.elapsed() 
-		  << " seconds" << std::endl;
-      if (syntax_prefix)
-      {
-	timer.reset();
-	std::string long_filename = make_full_path(src);
-	std::string short_filename = make_short_path(src, base_path);
-	AST::SourceFile file = ast.files().get(short_filename);
-	// Undo the preprocesser's macro expansions.
-	Python::Dict macro_calls = file.macro_calls();
-	for (Python::Dict::iterator l = macro_calls.begin(); l != macro_calls.end(); ++l)
-	{
-	  Python::List line = l->get(1);
-	  for (Python::List::iterator m = line.begin(); m != line.end(); ++m)
-	  {
-	    AST::MacroCall call = *m;
-	    std::cout << "macro call " << call.name() << ' ' 
-		      << call.start() << ' ' << call.end() << ' '
-		      << call.diff() << std::endl;
-	  }
-	}
-	std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
-        create_directories(fs::path(sxr).branch_path());
- 	std::ofstream ofs(sxr.c_str());
- 	SXRGenerator generator(buffer, symbols.current_scope(), ofs);
- 	generator.process(ptree);
-	if (profile)
-	  std::cout << "SXR generation took " << timer.elapsed() 
-		    << " seconds" << std::endl;
-      }
+        std::cout << "SXR generation took " << timer.elapsed() 
+                  << " seconds" << std::endl;
     }
   }
-  catch (std::exception const &e)
-  {
-    PyErr_SetString(error, e.what());
-    return 0;
-  }
-  return py_ast;
+  return ir;
 }
 
-PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},
-			 {0}};
 }
 
-extern "C" void initParserImpl()
+BOOST_PYTHON_MODULE(ParserImpl)
 {
-  Python::Module module = Python::Module::define("ParserImpl", methods);
-  module.set_attr("version", "0.1");
-  Python::Object processor = Python::Object::import("Synopsis.Processor");
-  Python::Object error_base = processor.attr("Error");
-  error = PyErr_NewException("ParserImpl.ParseError", error_base.ref(), 0);
-  module.set_attr("ParseError", error);
+  bpl::scope scope;
+  scope.attr("version") = "0.2";
+  bpl::def("parse", parse);
+  bpl::object module = bpl::import("Synopsis.Processor");
+  bpl::object error_base = module.attr("Error");
+  error_type = bpl::object(bpl::handle<>(PyErr_NewException("ParserImpl.ParseError",
+                                                            error_base.ptr(), 0)));
+  scope.attr("ParseError") = error_type;
 }

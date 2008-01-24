@@ -6,7 +6,7 @@
 #
 
 class DocString:
-   """A doc-string for AST nodes."""
+   """A doc-string for ASG nodes."""
    
    def __init__(self, text, markup):
 

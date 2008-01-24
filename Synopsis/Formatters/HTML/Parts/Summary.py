@@ -15,7 +15,7 @@ from Synopsis.Formatters.HTML.Tags import *
 class Summary(Part):
     """Formatting summary visitor. This formatter displays a summary for each
     declaration, with links to the details if there is one. All of this is
-    controlled by the ASTFormatters."""
+    controlled by the ASGFormatters."""
 
     fragments = Parameter([DeclarationSummaryFormatter(), SummaryCommenter()],
                          '')
@@ -61,18 +61,15 @@ class Summary(Part):
         "Print out the summaries from the given scope"
 
         doc = self.processor.documentation
-        sorter = self.processor.sorter
-        sorter.set_scope(scope)
-        sorter.sort_section_names()
+        sorter = self.processor.sorter.clone(scope.declarations)
 
         self.write_start()
-        for section in sorter.sections():
+        for section in sorter:
             # Write a header for this section
-            if section[-1] == 's': heading = section+'es Summary:'
-            else: heading = section+'s Summary:'
+            heading = section+' Summary:'
             self.write_section_start(heading)
             # Iterate through the children in this section
-            for child in sorter.children(section):
+            for child in sorter[section]:
                 # Check if need to add to detail list
                 if doc.details(child, self.view()):
                     # Setup the linking stuff

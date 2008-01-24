@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import AST, Util
 from Tree import Tree
 from Synopsis.Formatters.HTML.Tags import *
 

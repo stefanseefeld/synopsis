@@ -20,11 +20,11 @@ class XRefLinker(Default):
 
     def format_declaration(self, decl):
 
-        info = self.xref.get_info(decl.name())
+        info = self.xref.get_info(decl.name)
         if not info:
             return ''
-        page = self.xref.get_page_for(decl.name())
+        page = self.xref.get_page_for(decl.name)
         filename = self.directory_layout.xref(page)
-        filename = filename + '#' + Util.quote('::'.join(decl.name()))
+        filename = filename + '#' + Util.quote('::'.join(decl.name))
         return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
 

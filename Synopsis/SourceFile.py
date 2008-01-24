@@ -33,7 +33,7 @@ class MacroCall:
 
 
 class SourceFile:
-    """The information about a file that the AST was generated from.
+    """The information about a file that the ASG was generated from.
     Contains filename, all declarations from this file (even nested ones) and
     includes (aka imports) from this file."""
 
@@ -46,3 +46,4 @@ class SourceFile:
         self.includes = []
         self.declarations = []
         self.macro_calls = {}
+

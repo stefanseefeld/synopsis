@@ -1,4 +1,3 @@
-# $Id: TypeMapper.py,v 1.1 2003/11/19 16:21:39 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -7,20 +6,18 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import ASG
 
-import string
-
-class TypeMapper(Processor, Type.Visitor):
+class TypeMapper(Processor, ASG.Visitor):
    """Base class for type mapping"""
 
-   def process(self, ast, **kwds):
+   def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
+      self.ir = self.merge_input(ir)
 
-      for type in self.ast.types().values():
+      for type in self.ir.types.values():
          type.accept(self)
 
-      return self.output_and_return_ast()
+      return self.output_and_return_ir()
 

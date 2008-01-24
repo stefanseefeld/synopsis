@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import Util, AST
+from Synopsis import Util, ASG
 from Synopsis.Formatters import TOC
 from Tags import *
 
@@ -127,12 +127,12 @@ class DirectoryLayout (TOC.Linker):
         """Create a link to the named declaration. This method may have to
         deal with the directory layout."""
         
-        if isinstance(decl, AST.Scope):
+        if isinstance(decl, ASG.Scope):
             # This is a class or module, so it has its own file
-            return self.scope(decl.name())
+            return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it
-        filename = self.scope(decl.name()[:-1])
-        anchor = escape(decl.name()[-1].replace(' ','.'))
+        filename = self.scope(decl.name[:-1])
+        anchor = escape(decl.name[-1].replace(' ','.'))
         return filename + '#' + anchor
 
 class NestedDirectoryLayout(DirectoryLayout):

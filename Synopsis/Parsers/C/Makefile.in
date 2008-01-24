@@ -16,15 +16,15 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I . 
+CPPFLAGS:= @CPPFLAGS@ @BOOST_CPPFLAGS@ -I .
 CPPFLAGS+= -I $(srcdir)
-CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
+CPPFLAGS+= @SYN_CPP@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= @SYN_LIBS@ @LIBS@
+LIBS	:= @BOOST_LIBS@ @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-SRC	:= TypeTranslator.cc ASTTranslator.cc ParserImpl.cc
+SRC	:= ASGTranslator.cc ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 

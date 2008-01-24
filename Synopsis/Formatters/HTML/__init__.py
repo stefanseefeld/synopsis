@@ -7,7 +7,7 @@
 
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST
+from Synopsis import IR, ASG
 from Synopsis.DocString import DocString
 from Synopsis.FileTree import FileTree as SourceFileTree
 from Synopsis.Formatters.TOC import TOC
@@ -96,35 +96,34 @@ class Formatter(Processor):
     markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
                                   'Markup-specific formatters.')
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
 
-        # FIXME: wrap the declarations into a single AST.Module
-        #        during processing, but put the original ast back at the end.
-        ast = self.merge_input(ast)
-        root = AST.Module(None, -1, 'Global', ())
-        root.declarations()[:] = ast.declarations()
-        self.ast = AST.AST(ast.files(), [root], ast.types())
+        # FIXME: wrap the declarations into a single ASG.Module
+        #        during processing, but put the original ir back at the end.
+        ir = self.merge_input(ir)
+        root = ASG.Module(None, -1, 'Global', ())
+        root.declarations = ir.declarations
+        self.ir = IR.IR(ir.files, [root], ir.types)
 
         self.directory_layout.init(self)
         self.documentation = DocCache(self, self.markup_formatters)
 
         # Create the class tree (shared by inheritance graph / tree views).
         self.class_tree = ClassTree()
-        for d in root.declarations():
+        for d in root.declarations:
             d.accept(self.class_tree)
 
         # Create the file tree (shared by file listing / tree views).
         self.file_tree = SourceFileTree()
-        self.file_tree.set_ast(self.ast)
+        self.file_tree.set_ir(self.ir)
 
         # Create the cross reference table (shared by XRef / Scope views)
         self.xref = CrossReferencer()
 
-        # if not self.sorter:
-        import ScopeSorter
-        self.sorter = ScopeSorter.ScopeSorter()
+        from Synopsis.DeclarationSorter import DeclarationSorter
+        self.sorter = DeclarationSorter()
 
         # Make all views queryable through Formatter.has_view()
         self.views = self.content + self.index + self.detail
@@ -164,8 +163,8 @@ class Formatter(Processor):
                              self.content[0].root()[0] or self.content[0].filename())
 
         for frame in frames: frame.process()
-        # Return original AST, not the synthetic AST.Module created above.
-        return ast
+        # Return original IR, not the synthetic ASG.Module created above.
+        return ir
 
     def has_view(self, name):
         """test whether the given view is part of the views list."""

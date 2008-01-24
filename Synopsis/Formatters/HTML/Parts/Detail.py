@@ -36,18 +36,16 @@ class Detail(Part):
         "Print out the details for the children of the given decl"
 
         doc = self.processor.documentation
-        sorter = self.processor.sorter
-        sorter.set_scope(decl)
-        sorter.sort_section_names()
+        sorter = self.processor.sorter.clone(decl.declarations)
 
         # Iterate through the sections with details
         self.write_start()
-        for section in sorter.sections():
+        for section in sorter:
             # Write a heading
             heading = section+' Details:'
             started = 0 # Lazy section start incase no details for this section
             # Iterate through the children in this section
-            for child in sorter.children(section):
+            for child in sorter[section]:
                 # Check if need to add to detail list
                 if not doc.details(child, self.view()):
                     continue

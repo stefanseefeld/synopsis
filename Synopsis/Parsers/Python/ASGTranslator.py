@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
+from Synopsis import ASG
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 import pattern
@@ -65,15 +65,15 @@ def escape(text):
     return text
 
 
-class ASTTranslator:
-    """Translate a Python parse tree into the Synopsis AST.
+class ASGTranslator:
+    """Translate a Python parse tree into the Synopsis ASG.
     Unfortunately using the Python parser module alone is not enough
     as it doesn't preserve all the necessary information, such as token
     positions. Therefor we travers the parse tree and the token stream
     in parallel."""
 
     def __init__(self, scope, types):
-        """Create an ASTTranslator.
+        """Create an ASGTranslator.
         :Parameters:
           :'scope': scope to place all toplevel declarations into.
           :'types': type dictionary into which to inject newly declared types."""
@@ -103,8 +103,8 @@ class ASTTranslator:
         if HAVE_DECORATOR:
             self.handlers[symbol.decorator] = self.handle_decorator
 
-        self._any_type = Type.Base('Python',('',))
-        self._sourcefile = scope.file()
+        self._any_type = ASG.BaseType('Python',('',))
+        self._sourcefile = scope.file
         self._col = 0
         self._lineno = 1
         self._parameters = []
@@ -242,18 +242,18 @@ class ASTTranslator:
         def_token = nodes[0 + offset]
         self.handle_token(def_token[1])
         name_token = nodes[1 + offset]
-        name = tuple(self._scopes[-1].name() + (name_token[1],))
+        name = tuple(self._scopes[-1].name + (name_token[1],))
         self.handle_name_as_xref(name, name_token[1])
         # Handle the parameters.
         self.handle(nodes[2 + offset])
 
-        if type(self._scopes[-1]) == AST.Class:
-            function = AST.Operation(self._sourcefile, self._lineno, 'operation', '',
+        if type(self._scopes[-1]) == ASG.Class:
+            function = ASG.Operation(self._sourcefile, self._lineno, 'operation', '',
                                      self._any_type, '', name, name[-1])
         else:
-            function = AST.Function(self._sourcefile, self._lineno, 'function', '',
+            function = ASG.Function(self._sourcefile, self._lineno, 'function', '',
                                     self._any_type, '', name, name[-1])
-        function.parameters().extend(self._parameters)
+        function.parameters.extend(self._parameters)
 
         colon_token = nodes[3 + offset]
         self.handle_token(colon_token[1])
@@ -263,9 +263,9 @@ class ASTTranslator:
         if docstring:
             function.annotations['doc'] = docstring
 
-        self._scopes[-1].declarations().append(function)
+        self._scopes[-1].declarations.append(function)
 
-        # Don't traverse the function body, since the AST doesn't handle
+        # Don't traverse the function body, since the ASG doesn't handle
         # local declarations anyways.
 
 
@@ -281,7 +281,7 @@ class ASTTranslator:
                     pass
                 elif args[0][0] == symbol.fpdef:
                     self.handle_tokens(args[0])
-                    parameter = AST.Parameter('', self._any_type, '',
+                    parameter = ASG.Parameter('', self._any_type, '',
                                               stringify(args[0]),
                                               '')
                     self._parameters.append(parameter)
@@ -292,15 +292,15 @@ class ASTTranslator:
                     # HACK: replace the parameter as the current API doesn't allow
                     #       to set its value.
                     old = self._parameters[-1]
-                    parameter = AST.Parameter('', self._any_type, '',
-                                              old.identifier(),
+                    parameter = ASG.Parameter('', self._any_type, '',
+                                              old.name,
                                               stringify(args[0]))
                     self._parameters[-1] = parameter
                 elif args[0][0] == token.DOUBLESTAR:
                     self.handle_token(args[0][1])
                     del args[0]
                     self.handle_token(args[0][1])
-                    parameter = AST.Parameter('', self._any_type, '',
+                    parameter = ASG.Parameter('', self._any_type, '',
                                               '**'+stringify(args[0]),
                                               stringify(args[0]))
                     self._parameters.append(parameter)
@@ -308,7 +308,7 @@ class ASTTranslator:
                     self.handle_token(args[0][1])
                     del args[0]
                     self.handle_token(args[0][1])
-                    parameter = AST.Parameter('', self._any_type, '',
+                    parameter = ASG.Parameter('', self._any_type, '',
                                               '*'+stringify(args[0]),
                                               stringify(args[0]))
                     self._parameters.append(parameter)
@@ -323,7 +323,7 @@ class ASTTranslator:
         class_token = nodes[0]
         self.handle_token(class_token[1])
         name_token = nodes[1]
-        name = tuple(self._scopes[-1].name() + (name_token[1],))        
+        name = tuple(self._scopes[-1].name + (name_token[1],))        
         self.handle_name_as_xref(name, name_token[1])
         base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
         self.handle_tokens(nodes[2])
@@ -344,12 +344,12 @@ class ASTTranslator:
                     #        It assumes that names are either local or fully qualified.
                     if len(base) == 1:
                         # Name is unqualified. Qualify it.
-                        base = self._scopes[-1].name() + tuple(base)
+                        base = self._scopes[-1].name + tuple(base)
                     if self._types.has_key(base):
                         base = self._types[base]
                     else:
-                        base = Type.Unknown('Python', base)
-                    bases.append(AST.Inheritance('', base, ''))
+                        base = ASG.UnknownType('Python', base)
+                    bases.append(ASG.Inheritance('', base, ''))
             self.handle_tokens(base_clause)
             self.handle_token(')')
             self.handle_token(':')
@@ -358,13 +358,13 @@ class ASTTranslator:
         else:
             body = nodes[3]
 
-        class_ = AST.Class(self._sourcefile, self._lineno, 'class', name)
-        class_.parents().extend(bases)
+        class_ = ASG.Class(self._sourcefile, self._lineno, 'class', name)
+        class_.parents.extend(bases)
         docstring = self.extract_docstring(nodes[-1])
         if docstring:
             class_.annotations['doc'] = docstring
-        self._scopes[-1].declarations().append(class_)
-        self._types[class_.name()] = Type.Declared('Python', class_.name(), class_)
+        self._scopes[-1].declarations.append(class_)
+        self._types[class_.name] = ASG.Declared('Python', class_.name, class_)
 
         self._scopes.append(class_)
         self.handle(body)
@@ -382,7 +382,7 @@ class ASTTranslator:
 
             # TODO: This needs a lot more work.
             #       For now only handle some special global variables.
-            if type(self._scopes[-1]) == AST.Module:
+            if type(self._scopes[-1]) == ASG.Module:
                 self.process_special_variable(nodes)
 
         for n in nodes: self.handle_tokens(n)

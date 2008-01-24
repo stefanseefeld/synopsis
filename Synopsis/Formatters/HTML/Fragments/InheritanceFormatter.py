@@ -15,13 +15,13 @@ class InheritanceFormatter(Default):
 
    def format_declaration(self, decl, label=None):
 
-      if not label: label = decl.name()[-1]
-      fullname = Util.ccolonName(decl.name(), self.formatter.scope())
-      title = decl.type() + " " + escape(fullname)
-      return self.reference(decl.name(), label=label, title=title) + ' '
+      if not label: label = decl.name[-1]
+      fullname = Util.ccolonName(decl.name, self.formatter.scope())
+      title = decl.type + " " + escape(fullname)
+      return self.reference(decl.name, label=label, title=title) + ' '
 
    def format_function(self, decl):
 
-      return self.format_declaration(decl, label=decl.realname()[-1])
+      return self.format_declaration(decl, label=decl.real_name[-1])
 
    def format_operation(self, decl): return self.format_function(decl)

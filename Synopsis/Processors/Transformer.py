@@ -5,12 +5,12 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST
+from Synopsis import ASG
 from Synopsis.Processor import Processor
 
-class Transformer(Processor, AST.Visitor):
-    """A class that creates a new AST from an old one. This is a helper base for
-    more specialized classes that manipulate the AST based on
+class Transformer(Processor, ASG.Visitor):
+    """A class that creates a new ASG from an old one. This is a helper base for
+    more specialized classes that manipulate the ASG based on
     the comments in the nodes"""
 
     def __init__(self, **kwds):
@@ -20,21 +20,21 @@ class Transformer(Processor, AST.Visitor):
         self.__scopes = []
         self.__current = []
 
-    def process(self, ast, **kwds):
+    def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
-        self.ast = self.merge_input(ast)
+        self.ir = self.merge_input(ir)
 
-        for decl in ast.declarations():
+        for decl in ir.declarations:
             decl.accept(self)
 
         self.finalize()
-        return self.output_and_return_ast()
+        return self.output_and_return_ir()
 
     def finalize(self):
-        """replace the AST with the newly created one"""
+        """replace the ASG with the newly created one"""
 
-        self.ast.declarations()[:] = self.__current
+        self.ir.declarations[:] = self.__current
 
     def push(self):
         """Pushes the current scope onto the stack and starts a new one"""
@@ -59,6 +59,6 @@ class Transformer(Processor, AST.Visitor):
 
         return self.__current
 
-    def visitBuiltin(self, decl):
+    def visit_builtin(self, decl):
 
-        self.visitDeclaration(decl)
+        self.visit_declaration(decl)

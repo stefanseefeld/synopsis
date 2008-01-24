@@ -1,4 +1,3 @@
-# $Id: XRef.py,v 1.6 2003/12/09 21:03:44 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -7,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-import string, cPickle
+import cPickle
 
 class CrossReferencer:
    """Handle cross-reference files"""
@@ -55,23 +54,20 @@ class CrossReferencer:
       Returns None if there is no xref info for the given name.
       """
 
-      if not self.__data.has_key(name): return None
-      return self.__data[name]
+      return self.__data.get(tuple(name))
 
    def get_possible_names(self, name):
       """Returns a list of possible scoped names that end with the given
       name. These scoped names can be passed to get_info(). Returns None if
       there is no scoped name ending with the given name."""
 
-      if not self.__index.has_key(name): return None
-      return self.__index[name]
+      return self.__index.get(tuple(name))
 
    def get_page_for(self, name):
       """Returns the number of the page that the xref info for the given
       name is on, or None if not found."""
 
-      if not self.__file_map.has_key(name): return None
-      return self.__file_map[name]
+      return self.__file_map.get(tuple(name))
 
    def get_page_info(self):
       """Returns a list of pages, each consisting of a list of names on that

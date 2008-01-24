@@ -6,9 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import AST, Type
 from Tags import *
-import string
 
 class Fragment(object):
    """Generates HTML fragment for a declaration. Multiple strategies are
@@ -19,8 +17,8 @@ class Fragment(object):
    The key concept of this class is the format* methods. Any
    class derived from Strategy that overrides one of the format methods
    will have that method called by the Summary and Detail formatters when
-   they visit that AST type. Summary and Detail maintain a list of
-   Strategies, and a list for each AST type.
+   they visit that ASG type. Summary and Detail maintain a list of
+   Strategies, and a list for each ASG type.
     
    For example, when Strategy.Summary visits a Function object, it calls
    the formatFunction method on all Strategys registed with
@@ -58,11 +56,11 @@ class Fragment(object):
       def keyword(m):
          if m == '&': return span('keyword', '&amp;')
          return span('keyword', m)
-      return string.join(map(keyword, modifiers))
+      return ''.join([keyword(m) for m in modifiers])
 
 
    #
-   # AST Formatters
+   # ASG Formatters
    #
    def format_declaration(self, decl): pass
    def format_forward(self, decl): pass
@@ -71,9 +69,12 @@ class Fragment(object):
    def format_module(self, decl): pass
    def format_meta_module(self, decl): pass
    def format_class(self, decl): pass
+   def format_class_template(self, decl): pass
    def format_typedef(self, decl): pass
    def format_enum(self, decl): pass
    def format_variable(self, decl): pass
    def format_const(self, decl): pass
    def format_function(self, decl): pass
+   def format_function_template(self, decl): pass
    def format_operation(self, decl): pass
+   def format_operation_template(self, decl): pass

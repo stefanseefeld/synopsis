@@ -5,31 +5,30 @@
 // see the file COPYING for details.
 //
 
-#ifndef ASTTranslator_hh_
-#define ASTTranslator_hh_
+#ifndef ASGTranslator_hh_
+#define ASGTranslator_hh_
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/AST/TypeKit.hh>
+#include <boost/python.hpp>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/SymbolTable.hh>
 #include <Synopsis/Buffer.hh>
-#include "TypeTranslator.hh"
 #include <stack>
 
 using namespace Synopsis;
+namespace bpl = boost::python;
 
-class ASTTranslator : private SymbolTable::Walker
+class ASGTranslator : private SymbolTable::Walker
 {
 public:
-  ASTTranslator(SymbolTable::Scope *scope,
+  ASGTranslator(SymbolTable::Scope *scope,
 		std::string const &filename,
-		std::string const &base_path, bool main_file_only,
-		AST::AST a, bool v, bool d);
+		std::string const &base_path, bool primary_file_only,
+		bpl::object ir, bool v, bool d);
 
   void translate(PTree::Node *, Buffer &);
 
 private:
-  typedef std::stack<AST::Scope> ScopeStack;
+  typedef std::stack<bpl::object> ScopeStack;
 
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::Declarator *);
@@ -51,7 +50,7 @@ private:
   //. they are annotated as 'suspect', and thus can easily be filtered
   //. out in later processing steps.
   template <typename T>
-  Python::List translate_comments(T *);
+  bpl::list translate_comments(T *);
   //. Update positional information for the given
   //. node. This will reset 'my_lineno' and may change
   //. 'my_file'.
@@ -59,26 +58,48 @@ private:
   //. according to the current file and the 'main_file_only' flag.
   bool update_position(PTree::Node *);
 
-  void declare(AST::Declaration);
+  //. look up and return the named type. If this is a derived type,
+  //. it may create a modifier and return that.
+  bpl::object lookup(PTree::Encoding const &name);
+  bpl::object lookup_function_types(PTree::Encoding const &name, bpl::list);
+  bpl::object declare(bpl::list qname,
+                      bpl::object declaration);
+  bpl::object declare(bpl::list qname,
+                      bpl::object declaration,
+                      bpl::list parameters);
+  bpl::object create_dependent(bpl::list qname);
 
-  AST::AST            ast_;
-  AST::ASTKit         ast_kit_;
-  AST::SourceFileKit  sf_kit_;
-  AST::SourceFile     file_;
+  void declare(bpl::object);
+
+  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, bpl::object);
+  PTree::Encoding::iterator decode_qtype(PTree::Encoding::iterator, bpl::object);
+  PTree::Encoding::iterator decode_template(PTree::Encoding::iterator, bpl::object);
+
+  PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
+					    bpl::object type,
+					    bpl::list postmod);
+  PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
+					std::string &name);
+
+
+  bpl::object         ir_;
+  bpl::object         asg_module_;
+  bpl::object         sf_module_;
+  bpl::object         file_;
   std::string         raw_filename_;
   std::string         base_path_;
   bool                primary_file_only_;
   unsigned long       lineno_;
-  TypeTranslator      types_;
-  Python::List        template_parameters_;
+  bpl::dict           types_;
+  bpl::list           template_parameters_;
   ScopeStack          scope_;
   bool                in_class_;
   bool                verbose_;
   bool                debug_;
   Buffer             *buffer_;
   PTree::Declaration *declaration_;
-  AST::Parameter      parameter_;
+  bpl::object         parameter_;
+  PTree::Encoding     name_;
 };
 
 #endif
-
