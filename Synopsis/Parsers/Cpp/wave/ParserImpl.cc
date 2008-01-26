@@ -75,7 +75,6 @@ bpl::object parse(bpl::object ir,
   context_type ctx(input.begin(), input.end(), input_file,
                    IRGenerator(language, input_file, base_path, primary_file_only,
                                ir, verbose, debug));
-
   if (std::string(language) == "C")
   {
     ctx.set_language(wave::support_c99);
@@ -102,6 +101,22 @@ bpl::object parse(bpl::object ir,
   {
   }
   ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
+
+  if (verbose)
+  {
+    std::cout << "system flags :" << std::endl;
+    for (std::vector<char const *>::iterator i = system_flags.begin();
+         i != system_flags.end();
+         ++i)
+      std::cout << *i << ' ';
+    std::cout << "\nuser flags :" << std::endl;
+    for (std::vector<char const *>::iterator i = user_flags.begin();
+         i != user_flags.end();
+         ++i)
+      std::cout << *i << ' ';
+    std::cout << std::endl;
+  }
+
 
   std::vector<std::string> includes;
   // Insert the system_flags from the Emulator.

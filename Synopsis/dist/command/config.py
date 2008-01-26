@@ -28,8 +28,10 @@ class config(build_ext):
          "the prefix to the garbage collector."),
         ('with-boost', None,
          'whether to use boost libraries in backends.'),
-        ('with-boost-prefix=', None,
-         "the prefix to the boost libraries.")]
+        ('with-boost-version=', None, 'the boost version.'),
+        ('with-boost-prefix=', None, 'the prefix to the boost libraries.'),
+        ('with-boost-lib-suffix=', None,
+         'the library suffix to the used for boost libraries.')]
     boolean_options = build_ext.boolean_options[:] + ['disable-gc', 'with-boost']
 
     def initialize_options(self):
@@ -40,6 +42,8 @@ class config(build_ext):
         self.with_gc_prefix = ''
         self.with_boost = False
         self.with_boost_prefix = ''
+        self.with_boost_version = ''
+        self.with_boost_lib_suffix = ''
 
     def finalize_options(self):
 
@@ -138,8 +142,12 @@ class config(build_ext):
             command += ' --disable-gc'
         elif self.with_gc_prefix:
             command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
+        if self.with_boost_version:
+            command += ' --with-boost-version="%s"'%self.with_boost_version
         if self.with_boost_prefix:
             command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
+        if self.with_boost_lib_suffix:
+            command += ' --with-boost-lib-suffix="%s"'%self.with_boost_lib_suffix
         command += ' %s'%args
         self.announce(command)
         # Work around a hack in distutils.spawn by an even more evil hack:

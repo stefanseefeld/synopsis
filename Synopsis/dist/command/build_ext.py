@@ -41,6 +41,13 @@ class build_ext(base):
         if not os.path.exists(self.build_temp):
             self.run_command('config')
         self.run_command('build_clib')
+
+        # If 'Synopsis/Parsers/Cpp/ucpp' doesn't exist in the build tree, assume
+        # --with-boost was used during configure.
+        if not os.path.exists(os.path.join(self.build_temp,
+                                           'Synopsis/Parsers/Cpp/ucpp')):
+            self.extensions[0] = ('Synopsis/Parsers/Cpp/wave', 'ParserImpl.so')
+        
         for ext in self.extensions:
             self.build_extension(ext)
 
