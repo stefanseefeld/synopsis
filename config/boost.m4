@@ -241,7 +241,7 @@ dnl AC_REQUIRE([BOOST_STATIC_LINK_OPTION])
        lib="-lboost_$1$s"
      fi
 
-     LIBS="$lib $LIBS_SAVED"
+     LIBS="$lib $BOOST_LIBS $LIBS_SAVED"
      cv=AS_TR_SH([ac_cv_boost_lib_$1${s}_${BOOST_LIBDIR}])
      AC_CACHE_CHECK([for the boost_$1$s library],
      		    $cv,
@@ -272,8 +272,21 @@ AC_DEFUN([SYN_NEED_BOOST_LIB],
  AC_SUBST(BOOST_LIBS)
 ])
 
+AC_DEFUN([SYN_MAY_NEED_BOOST_LIB],
+[BOOST_LIB_IFELSE([$1], [$2],
+    [BOOST_LIBS="$lib $BOOST_LIBS"])
+ AC_SUBST(BOOST_LIBS)
+])
+
 AC_DEFUN([SYN_BOOST_LIB_FILESYSTEM],
-[SYN_NEED_BOOST_LIB([filesystem],
+[SYN_MAY_NEED_BOOST_LIB([system],
+  [AC_LANG_PROGRAM([[
+      #include <boost/system/error_code.hpp>
+      using namespace boost::system;
+    ]],[[
+      error_code c;
+    ]])])
+ SYN_NEED_BOOST_LIB([filesystem],
   [AC_LANG_PROGRAM([[
       #include <boost/filesystem/path.hpp>
       #include <boost/filesystem/operations.hpp>
@@ -292,7 +305,14 @@ AC_DEFUN([SYN_BOOST_LIB_REGEX],
     ]])])])
 
 AC_DEFUN([SYN_BOOST_LIB_WAVE],
-[SYN_NEED_BOOST_LIB([wave],
+[SYN_MAY_NEED_BOOST_LIB([thread],
+  [AC_LANG_PROGRAM([[
+      #include <boost/thread.hpp>
+      using namespace boost;
+    ]],[[
+      thread t;
+    ]])])
+ SYN_NEED_BOOST_LIB([wave],
   [AC_LANG_PROGRAM([[
      #include <boost/wave.hpp>
      #include <boost/wave/cpplexer/cpp_lex_token.hpp>

@@ -14,17 +14,26 @@ using Synopsis::Token;
 using Synopsis::Trace;
 namespace PT = Synopsis::PTree;
 
+namespace
+{
+inline bpl::tuple qname(std::string const &name) { return bpl::tuple(name);}
+inline bpl::dict annotations(bpl::object o) { return bpl::extract<bpl::dict>(o.attr("annotations"));}
+inline bpl::list comments(bpl::object o) { return bpl::extract<bpl::list>(annotations(o).get("comments"));}
+}
+
+
 ASGTranslator::ASGTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
 			     bpl::object ir, bool v, bool d)
-  : ir_(ir),
-    asg_module_(bpl::import("Synopsis.ASG")),
+  : asg_module_(bpl::import("Synopsis.ASG")),
     sf_module_(bpl::import("Synopsis.SourceFile")),
+    files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
+    types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
+    declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
     raw_filename_(filename),
     base_path_(base_path),
     primary_file_only_(primary_file_only),
     lineno_(0),
-    types_(ir_.attr("types")),
     verbose_(v),
     debug_(d) 
 {
@@ -33,13 +42,13 @@ ASGTranslator::ASGTranslator(std::string const &filename,
   std::string long_filename = make_full_path(raw_filename_);
   std::string short_filename = make_short_path(raw_filename_, base_path_);
 
-  bpl::object file = bpl::dict(ir_.attr("files")).get(short_filename);
+  bpl::object file = files_.get(short_filename);
   if (file)
     file_ = file;
   else
   {
     file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C");
-    ir_.attr("files")[short_filename] = file_;
+    files_[short_filename] = file_;
   }
 }
 
@@ -142,7 +151,7 @@ void ASGTranslator::visit(PT::SimpleDeclaration *declaration)
 	    << raw_filename_ << ':' << lineno_;
       assert(name.is_simple_name());
       size_t length = (name.front() - 0x80);
-      bpl::object qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+      bpl::tuple qname = ::qname(std::string(name.begin() + 1, name.begin() + 1 + length));
       bpl::object alias = types_.attr("lookup")(type);
       bpl::object declaration = asg_module_.attr("Typedef")(file_, lineno_,
                                                             "typedef",
@@ -170,13 +179,13 @@ void ASGTranslator::visit(PT::ClassSpec *spec)
   bool visible = update_position(spec);
 
   std::string key = PT::string(spec->key());
-  bpl::object qname;
-  if (spec->name()) qname = bpl::object(PT::string(static_cast<PT::Atom *>(spec->name())));
+  bpl::tuple qname;
+  if (spec->name()) qname = ::qname(PT::string(static_cast<PT::Atom *>(spec->name())));
   else // anonymous
   {
     PT::Encoding ename = spec->encoded_name();
     size_t length = (ename.front() - 0x80);
-    qname = bpl::object(std::string(ename.begin() + 1, ename.begin() + 1 + length));
+    qname = ::qname(std::string(ename.begin() + 1, ename.begin() + 1 + length));
   }
   bpl::object class_ = asg_module_.attr("Class")(file_, lineno_, key, qname);
   add_comments(class_, spec->get_comments());
@@ -236,7 +245,7 @@ void ASGTranslator::visit(PT::EnumSpec *spec)
   add_comments(enum_, spec);
 
   if (visible) declare(enum_);
-  declare(bpl::object(name), enum_);
+  declare(qname(name), enum_);
 }
 
 void ASGTranslator::visit(PT::ParameterDeclaration *param)
@@ -280,13 +289,13 @@ bool ASGTranslator::update_position(PT::Node *node)
     std::string long_filename = make_full_path(filename);
     std::string short_filename = make_short_path(filename, base_path_);
 
-    bpl::object file = bpl::dict(ir_.attr("files")).get(short_filename);
+    bpl::object file = files_.get(short_filename);
     if (file)
       file_ = file;
     else
     {
       file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C");
-      ir_.attr("files")[short_filename] = file_;
+      files_[short_filename] = file_;
     }
   }
   return true;
@@ -327,7 +336,7 @@ bpl::object ASGTranslator::lookup_function_types(PT::Encoding const &name,
   return return_type;
 }
 
-bpl::object ASGTranslator::declare(bpl::object qname,
+bpl::object ASGTranslator::declare(bpl::tuple qname,
                                    bpl::object declaration)
 {
   Trace trace("ASGTranslator::declare", Trace::TRANSLATION);
@@ -355,9 +364,9 @@ PT::Encoding::iterator ASGTranslator::decode_name(PT::Encoding::iterator i,
 void ASGTranslator::declare(bpl::object declaration)
 {
   if (scope_.size())
-    bpl::list(scope_.top().attr("declarations")).append(declaration);
+    bpl::extract<bpl::list>(scope_.top().attr("declarations"))().append(declaration);
   else
-    bpl::list(ir_.attr("declarations")).append(declaration);    
+    declarations_.append(declaration);    
 }
 
 PT::Encoding::iterator ASGTranslator::decode_type(PT::Encoding::iterator i,

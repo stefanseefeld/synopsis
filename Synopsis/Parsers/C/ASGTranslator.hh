@@ -47,7 +47,7 @@ private:
   //. it may create a modifier and return that.
   bpl::object lookup(PTree::Encoding const &name);
   bpl::object lookup_function_types(PTree::Encoding const &name, bpl::list types);
-  bpl::object declare(bpl::object qname, bpl::object declaration);
+  bpl::object declare(bpl::tuple qname, bpl::object declaration);
 
   void declare(bpl::object declaration);
 
@@ -58,15 +58,16 @@ private:
   PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
 					std::string &name);
 
-  bpl::object         ir_;
   bpl::object         asg_module_;
   bpl::object         sf_module_;
+  bpl::dict           files_;
+  bpl::dict           types_;
+  bpl::list           declarations_;
   bpl::object         file_;
   std::string         raw_filename_;
   std::string         base_path_;
   bool                primary_file_only_;
   unsigned long       lineno_;
-  bpl::dict           types_;
   ScopeStack          scope_;
   bool                verbose_;
   bool                debug_;
