@@ -42,7 +42,7 @@ bpl::object parse(bpl::object ir,
   std::vector<char const *> system_flags(bpl::len(py_system_flags));
   for (unsigned int i = 0; i != bpl::len(py_system_flags); ++i)
     system_flags[i] = bpl::extract<char const *>(py_system_flags[i]);
-  std::vector<char const *> user_flags;
+  std::vector<char const *> user_flags(bpl::len(py_user_flags));
   for (unsigned int i = 0; i != bpl::len(py_user_flags); ++i)
     user_flags[i] = bpl::extract<char const *>(py_user_flags[i]);
 
@@ -75,7 +75,6 @@ bpl::object parse(bpl::object ir,
   context_type ctx(input.begin(), input.end(), input_file,
                    IRGenerator(language, input_file, base_path, primary_file_only,
                                ir, verbose, debug));
-
   if (std::string(language) == "C")
   {
     ctx.set_language(wave::support_c99);
@@ -88,7 +87,7 @@ bpl::object parse(bpl::object ir,
                                    std::string("-D__STDC__=1")),
                        system_flags.end());
   }
-  else
+  else if (std::string(language) == "C++")
   {
     ctx.set_language(wave::enable_variadics(ctx.get_language()));
     // FIXME: should only enable in GCC compat mode.
@@ -98,7 +97,26 @@ bpl::object parse(bpl::object ir,
                                    std::string("-D__cplusplus=1")),
                        system_flags.end());
   }
+  else if (std::string(language) == "IDL")
+  {
+  }
   ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
+
+  if (verbose)
+  {
+    std::cout << "system flags :" << std::endl;
+    for (std::vector<char const *>::iterator i = system_flags.begin();
+         i != system_flags.end();
+         ++i)
+      std::cout << *i << ' ';
+    std::cout << "\nuser flags :" << std::endl;
+    for (std::vector<char const *>::iterator i = user_flags.begin();
+         i != user_flags.end();
+         ++i)
+      std::cout << *i << ' ';
+    std::cout << std::endl;
+  }
+
 
   std::vector<std::string> includes;
   // Insert the system_flags from the Emulator.

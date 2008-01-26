@@ -9,14 +9,29 @@
 #include <Synopsis/Trace.hh>
 #include <Support/path.hh>
 
+namespace boost { namespace python {
+
+    inline long hash(object const& obj)
+    {
+        long result = PyObject_Hash(obj.ptr());
+        if (PyErr_Occurred()) throw_error_already_set();
+        return result;
+    }
+
+}} // namespace boost::python
+
+
+
 IRGenerator::IRGenerator(std::string const &language,
                          std::string const &filename,
                          std::string const &base_path, bool primary_file_only,
                          bpl::object ir, bool v, bool d)
   : language_(language),
-    ir_(ir),
     asg_module_(bpl::import("Synopsis.ASG")),
     sf_module_(bpl::import("Synopsis.SourceFile")),
+    declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
+    types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
+    files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
     raw_filename_(filename),
     base_path_(base_path),
     primary_file_only_(primary_file_only),
@@ -90,12 +105,11 @@ void IRGenerator::rescanned_macro(Container const &result)
     // Wave starts to count columns at index 1, synopsis at 0.
     begin = position_.get_column() - 1;
     end = begin + length;
-    bpl::dict mmap(file_stack_.top().attr("macro_calls"));
-    bpl::list line(mmap.get(position_.get_line() - 1, bpl::list()));
+    bpl::dict mmap = bpl::extract<bpl::dict>(file_stack_.top().attr("macro_calls"));
+    bpl::list line = bpl::extract<bpl::list>(mmap.get(position_.get_line() - 1, bpl::list()));
     line.append(sf_module_.attr("MacroCall")(current_macro_name_,
                                              begin, end,
                                              current_macro_call_length_ - length));
-    mmap[position_.get_line() - 1] = line;
   }
 }
 
@@ -126,7 +140,7 @@ void IRGenerator::opened_include_file(std::string const &relname,
                                                    include_dir_,
                                                    false,
                                                    include_next_dir_);
-  bpl::list includes(file_stack_.top().attr("includes"));
+  bpl::list includes = bpl::extract<bpl::list>(file_stack_.top().attr("includes"));
   includes.append(include);
   file_stack_.push(source_file);
 
@@ -134,6 +148,8 @@ void IRGenerator::opened_include_file(std::string const &relname,
   // Only keep the first level of includes starting from the last unmasked file.
   if (primary_file_only_ || !matches_path(abs_filename, base_path_))
     ++mask_counter_;
+  else
+    source_file.attr("annotations")["primary"] = true;
 }
 
 void IRGenerator::returning_from_include_file()
@@ -169,7 +185,7 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
     params.append(std::string(tmp.begin(), tmp.end()));
   }
 
-  bpl::tuple qname(macro_name);
+  bpl::tuple qname = bpl::make_tuple(macro_name);
   bpl::object macro = asg_module_.attr("Macro")(file_stack_.top(),
                                                 position.get_line(),
                                                 "macro",
@@ -177,11 +193,8 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
                                                 params,
                                                 text);
   bpl::object declared = asg_module_.attr("Declared")(language_, qname, macro);
-  bpl::list declarations(ir_.attr("declarations"));
-  declarations.append(macro);
-
-  bpl::dict types(ir_.attr("types"));
-  types[qname] = declared;
+  declarations_.append(macro);
+  types_[qname] = declared;
 }
 
 void IRGenerator::undefined_macro(Token const &name)
@@ -198,17 +211,15 @@ bpl::object IRGenerator::lookup_source_file(std::string const &filename,
 
   std::string long_name = make_full_path(filename);
   std::string short_name = make_short_path(filename, base_path_);
-
-  bpl::dict files(ir_.attr("files"));
-  bpl::object source_file = files.get(short_name);
+  bpl::object source_file = files_.get(short_name);
   if (!source_file)
   {
     source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_);
-    files[short_name] = source_file;
+    files_[short_name] = source_file;
   }
   if (source_file && primary)
   {
-    bpl::dict annotations(source_file.attr("annotations"));
+    bpl::dict annotations = bpl::extract<bpl::dict>(source_file.attr("annotations"));
     annotations["primary"] = true;
   }
   return source_file;

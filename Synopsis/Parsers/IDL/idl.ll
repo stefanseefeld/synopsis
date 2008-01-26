@@ -444,6 +444,18 @@ L{STR} {
   parseLineDirective(yytext);
 }
 
+^{SPACE}*#line{SPACE}*{DECDIGIT}+{SPACE}+{STR}{SPACE}+{DECDIGIT}*{SPACE}*\n {
+  parseLineDirective(yytext);
+}
+
+^{SPACE}*#line{SPACE}*{DECDIGIT}+{SPACE}+{STR}{SPACE}*\n {
+  parseLineDirective(yytext);
+}
+
+^{SPACE}*#line{SPACE}*{DECDIGIT}{SPACE}*\n {
+  parseLineDirective(yytext);
+}
+
 <INITIAL>{WS} { /* Eat white space */ }
 
 . {
@@ -642,7 +654,9 @@ void parseLineDirective(char* s) {
   char* file    = new char[strlen(s) + 1];
   long int line = 0, mode = 0;
   int cnt       = sscanf(s, "# %ld \"%[^\"]\" %ld", &line, file, &mode);
-
+  if (cnt == 0)
+    // Retry with a real "#line" directive.
+    cnt = sscanf(s, "#line %ld \"%[^\"]\" %ld", &line, file, &mode);
   assert(cnt >= 1);
 
   if (cnt > 1) {

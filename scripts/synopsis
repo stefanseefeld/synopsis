@@ -191,7 +191,7 @@ def make_processor(argv):
 
     # quick hack: if the parser is Cpp, rename the 'cppflags'
     # options to just 'flags'
-    if parser and parser.__module__ == 'Synopsis.Parsers.Cpp.Parser':
+    if parser and parser.__module__ == 'Synopsis.Parsers.Cpp':
         if parser_opts.has_key('cppflags'):
             parser_opts['flags'] = parser_opts['cppflags']
             del parser_opts['cppflags']

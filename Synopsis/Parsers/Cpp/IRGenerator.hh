@@ -27,6 +27,7 @@ typedef wave::cpplexer::lex_token<> Token;
 
 class IRGenerator : public wave::context_policies::default_preprocessing_hooks
 {
+  typedef wave::context_policies::default_preprocessing_hooks base;
 public:
   typedef std::list<Token, boost::fast_pool_allocator<Token> > Container;
 
@@ -76,7 +77,18 @@ public:
 		     bool is_predefined);
 
   void undefined_macro(Token const &name);
-
+#if BOOST_VERSION >= 103500
+  template <typename ContextT, typename ExceptionT>
+  void throw_exception(ContextT const &c, ExceptionT const &e)
+  { base::throw_exception(c, e);}
+  template <typename ContextT>
+  void throw_exception(ContextT const &c, wave::macro_handling_exception const &e)
+  {
+    // Only throw in case of error.
+    if (e.get_severity() != wave::util::severity_warning)
+      base::throw_exception(c, e);
+  }
+#endif
 private:
   typedef std::stack<bpl::object> FileStack;
 
@@ -85,9 +97,11 @@ private:
   bpl::object lookup_source_file(std::string const &filename, bool primary);
 
   std::string          language_;
-  bpl::object          ir_;
   bpl::object          asg_module_;
   bpl::object          sf_module_;
+  bpl::list            declarations_;
+  bpl::dict            types_;
+  bpl::dict            files_;
   bpl::object          file_;
   std::string          raw_filename_;
   Token::position_type position_;

@@ -60,9 +60,9 @@ private:
   bpl::list name_;
 };
 
-inline bpl::list qname(std::string const &name) { return bpl::list(name);}
-inline bpl::dict annotations(bpl::object o) { return bpl::dict(o.attr("annotations"));}
-inline bpl::list comments(bpl::object o) { return bpl::list(annotations(o)["comments"]);}
+inline bpl::tuple qname(std::string const &name) { return bpl::tuple(name);}
+inline bpl::dict annotations(bpl::object o) { return bpl::extract<bpl::dict>(o.attr("annotations"));}
+inline bpl::list comments(bpl::object o) { return bpl::extract<bpl::list>(annotations(o).get("comments"));}
 }
 
 ASGTranslator::ASGTranslator(ST::Scope *scope,
@@ -70,13 +70,15 @@ ASGTranslator::ASGTranslator(ST::Scope *scope,
 			     std::string const &base_path, bool primary_file_only,
 			     bpl::object ir, bool v, bool d)
   : Walker(scope),
-    ir_(ir),
-    sf_module_(),
+    asg_module_(bpl::import("Synopsis.ASG")),
+    sf_module_(bpl::import("Synopsis.SourceFile")),
+    files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
+    types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
+    declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
     raw_filename_(filename),
     base_path_(base_path),
     primary_file_only_(primary_file_only),
     lineno_(0),
-    types_(ir_.attr("types")),
     in_class_(false),
     verbose_(v),
     debug_(d) 
@@ -85,36 +87,36 @@ ASGTranslator::ASGTranslator(ST::Scope *scope,
 
   // define all the builtin types
   bpl::object define = types_.attr("__setitem__");
-  types_[qname("bool")] =  asg_module_.attr("BaseType")(qname("bool"));
-  types_[qname("char")] =  asg_module_.attr("BaseType")(qname("char"));
-  types_[qname("short")] =  asg_module_.attr("BaseType")(qname("short"));
-  types_[qname("int")] =  asg_module_.attr("BaseType")(qname("int"));
-  types_[qname("long")] =  asg_module_.attr("BaseType")(qname("long"));
-  types_[qname("unsigned")] =  asg_module_.attr("BaseType")(qname("unsigned"));
-  types_[qname("unsigned long")] =  asg_module_.attr("BaseType")(qname("unsigned long"));
-  types_[qname("float")] =  asg_module_.attr("BaseType")(qname("float"));
-  types_[qname("double")] =  asg_module_.attr("BaseType")(qname("double"));
-  types_[qname("void")] =  asg_module_.attr("BaseType")(qname("void"));
-  types_[qname("...")] =  asg_module_.attr("BaseType")(qname("..."));
-  types_[qname("long long")] =  asg_module_.attr("BaseType")(qname("long long"));
-  types_[qname("long double")] =  asg_module_.attr("BaseType")(qname("long double"));
-  types_[qname("wchar_t")] =  asg_module_.attr("BaseType")(qname("wchar_t"));
+  types_[qname("bool")] =  asg_module_.attr("BaseType")("C++", qname("bool"));
+  types_[qname("char")] =  asg_module_.attr("BaseType")("C++", qname("char"));
+  types_[qname("short")] =  asg_module_.attr("BaseType")("C++", qname("short"));
+  types_[qname("int")] =  asg_module_.attr("BaseType")("C++", qname("int"));
+  types_[qname("long")] =  asg_module_.attr("BaseType")("C++", qname("long"));
+  types_[qname("unsigned")] =  asg_module_.attr("BaseType")("C++", qname("unsigned"));
+  types_[qname("unsigned long")] =  asg_module_.attr("BaseType")("C++", qname("unsigned long"));
+  types_[qname("float")] =  asg_module_.attr("BaseType")("C++", qname("float"));
+  types_[qname("double")] =  asg_module_.attr("BaseType")("C++", qname("double"));
+  types_[qname("void")] =  asg_module_.attr("BaseType")("C++", qname("void"));
+  types_[qname("...")] =  asg_module_.attr("BaseType")("C++", qname("..."));
+  types_[qname("long long")] =  asg_module_.attr("BaseType")("C++", qname("long long"));
+  types_[qname("long double")] =  asg_module_.attr("BaseType")("C++", qname("long double"));
+  types_[qname("wchar_t")] =  asg_module_.attr("BaseType")("C++", qname("wchar_t"));
 
   // some GCC extensions...
-  types_[qname("__builtin_va_list")] =  asg_module_.attr("BaseType")(qname("__builtin_va_list"));
+  types_[qname("__builtin_va_list")] =  asg_module_.attr("BaseType")("C++", qname("__builtin_va_list"));
 
 
   // determine canonical filenames
   std::string long_filename = make_full_path(raw_filename_);
   std::string short_filename = make_short_path(raw_filename_, base_path_);
 
-  bpl::object file = ir_.attr("files")[short_filename];
+  bpl::object file = files_.get(short_filename);
   if (file)
     file_ = file;
   else
   {
-    file_ = sf_module_.attr("SourceFile")(short_filename, long_filename);
-    ir_.attr("files")[short_filename] = file_;
+    file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C++");
+    files_[short_filename] = file_;
   }
 }
 
@@ -143,9 +145,9 @@ void ASGTranslator::visit(PT::NamespaceSpec *spec)
     name = "{" + name + "}";
   }
   bpl::object module = asg_module_.attr("Module")(file_, lineno_, "namespace", qname(name));
-  comments(module).extend(translate_comments(spec));
+  annotations(module)["comments"] = bpl::list(translate_comments(spec));
   declare(module);
-  declare(qname(name), module);
+  declare(bpl::tuple(name), module);
   scope_.push(module);
   traverse_body(spec);
   scope_.pop();
@@ -199,14 +201,14 @@ void ASGTranslator::visit(PT::Declarator *declarator)
                                               post,
                                               qname,
                                               name.unmangled());
-    bpl::list(function.attr("parameters")).extend(parameters);
+    bpl::extract<bpl::list>(function.attr("parameters"))().extend(parameters);
     if (visible) 
     {
       bpl::list comments;
       if (declaration_)
 	comments.extend(translate_comments(declaration_));
       comments.extend(translate_comments(declarator));
-      if (comments) ::comments(function).extend(comments);
+      if (comments) annotations(function)["comments"] = bpl::list(comments);
       declare(function);
     }
   }
@@ -230,7 +232,7 @@ void ASGTranslator::visit(PT::Declarator *declarator)
       if (declaration_)
 	comments.extend(translate_comments(declaration_));
       comments.extend(translate_comments(declarator));
-      if (comments) ::comments(variable).extend(comments);
+      if (comments) annotations(variable)["comments"] = bpl::list(comments);
       declare(variable);
     }
   }
@@ -254,7 +256,7 @@ void ASGTranslator::visit(PT::SimpleDeclaration *declaration)
       PT::Encoding type = declarator->encoded_type();
       assert(name.is_simple_name());
       size_t length = (name.front() - 0x80);
-      bpl::list qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+      bpl::tuple qname(std::string(name.begin() + 1, name.begin() + 1 + length));
       bpl::object alias = lookup(type);
       bpl::object typedef_ = asg_module_.attr("Typedef")(file_, lineno_,
                                                          "typedef",
@@ -265,7 +267,7 @@ void ASGTranslator::visit(PT::SimpleDeclaration *declaration)
         bpl::list comments;
 	comments.extend(translate_comments(declaration));
 	comments.extend(translate_comments(declarator));
-        if (comments) ::comments(typedef_).extend(comments);
+        if (comments) annotations(typedef_)["comments"] = bpl::list(comments);
 	declare(typedef_);
       }
       declare(qname, typedef_);
@@ -298,11 +300,11 @@ void ASGTranslator::visit(PT::ClassSpec *spec)
 
   std::string key = PT::string(spec->key());
   ClassNameFinder finder;
-  bpl::list qname = finder.name(spec);
+  bpl::tuple qname = bpl::tuple(finder.name(spec));
   bpl::object class_ = asg_module_.attr("Class")(file_, lineno_, key, qname);
   if (visible)
   {
-    comments(class_).extend(translate_comments(spec));
+    annotations(class_)["comments"] = bpl::list(translate_comments(spec));
     declare(class_);
   }
   if (template_parameters_)
@@ -345,14 +347,14 @@ void ASGTranslator::visit(PT::EnumSpec *spec)
     if (penumor->is_atom())
     {
       // identifier
-      bpl::list qname(PT::string(static_cast<PT::Atom *>(penumor)));
+      bpl::tuple qname(PT::string(static_cast<PT::Atom *>(penumor)));
       enumerator = asg_module_.attr("Enumerator")(file_, lineno_, qname, "");
-      comments(enumerator).extend(translate_comments(static_cast<PT::Identifier *>(penumor)));
+      annotations(enumerator)["comments"] = bpl::list(translate_comments(static_cast<PT::Identifier *>(penumor)));
     }
     else
     {
       // identifier = constant-expression
-      bpl::list qname(PT::string(static_cast<PT::Atom *>(PT::nth<0>(static_cast<PT::List *>(penumor)))));
+      bpl::tuple qname(PT::string(static_cast<PT::Atom *>(PT::nth<0>(static_cast<PT::List *>(penumor)))));
       // TBD: For now stringify the initializer expression.
       std::string value = PT::reify(PT::nth<2>(static_cast<PT::List *>(penumor)));
       enumerator = asg_module_.attr("Enumerator")(file_, lineno_, qname, value);
@@ -371,7 +373,7 @@ void ASGTranslator::visit(PT::EnumSpec *spec)
 //   add_comments(enum_, spec->get_comments());
 
   if (visible) declare(enum_);
-  declare(qname(name), enum_);
+  declare(bpl::tuple(name), enum_);
 }
 
 void ASGTranslator::visit(PT::ElaboratedTypeSpec *type)
@@ -431,7 +433,7 @@ void ASGTranslator::visit(PT::TypeParameter *param)
 
   PT::Node *typename_ = PT::nth<0>(param);
   PT::Node *name = PT::nth<1>(param);
-  bpl::list qname(std::string(name->position(), name->length()));
+  bpl::tuple qname(std::string(name->position(), name->length()));
   bpl::object type = create_dependent(qname);
   bpl::list pre(std::string(typename_->position(), typename_->length()));
   bpl::list post;
@@ -529,13 +531,13 @@ bool ASGTranslator::update_position(PT::Node *node)
     std::string long_filename = make_full_path(raw_filename_);
     std::string short_filename = make_short_path(raw_filename_, base_path_);
 
-    bpl::object file = ir_.attr("files")[short_filename];
+    bpl::object file = files_.get(short_filename);
     if (file)
       file_ = file;
     else
     {
-      file_ = sf_module_.attr("SourceFile")(short_filename, long_filename);
-      ir_.attr("files")[short_filename] = file_;
+      file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C++");
+      files_[short_filename] = file_;
     }
   }
   return true;
@@ -575,40 +577,38 @@ bpl::object ASGTranslator::lookup_function_types(PT::Encoding const &name,
   return return_type;
 }
 
-bpl::object ASGTranslator::declare(bpl::list qname, bpl::object declaration)
+bpl::object ASGTranslator::declare(bpl::tuple qname, bpl::object declaration)
 {
   Trace trace("ASGTranslator::declare", Trace::TRANSLATION);
-  bpl::object type = asg_module_.attr("Declared")(qname, declaration);
+  bpl::object type = asg_module_.attr("Declared")("C++", qname, declaration);
   types_[qname] = type;
   return type;
 }
 
-bpl::object ASGTranslator::declare(bpl::list qname,
+bpl::object ASGTranslator::declare(bpl::tuple qname,
                                    bpl::object declaration,
                                    bpl::list parameters)
 {
   Trace trace("ASGTranslator::declare", Trace::TRANSLATION);
-  bpl::object type = asg_module_.attr("Template")(qname, declaration, parameters);
+  bpl::object type = asg_module_.attr("Template")("C++", qname, declaration, parameters);
   types_[qname] = type;
   return type;
 }
 
-bpl::object ASGTranslator::create_dependent(bpl::list qname)
+bpl::object ASGTranslator::create_dependent(bpl::tuple qname)
 {
   Trace trace("ASGTranslator::create_dependent", Trace::TRANSLATION);
-  bpl::object type = asg_module_.attr("Dependent")(qname);
+  bpl::object type = asg_module_.attr("Dependent")("C++", qname);
   return type;
 }
 
 
 void ASGTranslator::declare(bpl::object declaration)
 {
-  bpl::list declarations;
   if (scope_.size())
-    declarations = bpl::list(scope_.top().attr("declarations"));
+    bpl::extract<bpl::list>(scope_.top().attr("declarations"))().append(declaration);
   else
-    declarations = bpl::list(ir_.attr("declarations"));
-  declarations.append(declaration);
+    declarations_.append(declaration);
 }
 
 // FIXME: this ought to be part of SymbolLookup::Type.
@@ -742,7 +742,7 @@ PT::Encoding::iterator ASGTranslator::decode_type(PT::Encoding::iterator i,
     type = bpl::object();
     return i;
   }
-  if (!base) base = types_[name];
+  if (!base) base = types_[bpl::tuple(name)];
   if (!bpl::len(premod) && !bpl::len(postmod)) type = base;
   else type = asg_module_.attr("Modifier")(base, premod, postmod);
   return i;
@@ -787,7 +787,7 @@ ASGTranslator::decode_qtype(PT::Encoding::iterator i, bpl::object type)
   }
   try
   {
-    type = asg_module_[qname];
+    type = asg_module_[bpl::tuple(qname)];
   }
   catch (...)
   {
