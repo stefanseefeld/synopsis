@@ -20,6 +20,7 @@ if test -n "$PYTHON" -a "$PYTHON" != yes; then
 else
   AC_PATH_PROG(PYTHON, python2 python, python)
 fi
+PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix" | tr -d "\r"`
 PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_inc()" | tr -d "\r"`
 
 AC_SUBST(PYTHON)
@@ -28,8 +29,6 @@ AC_SUBST(PYTHON_INCLUDE)
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')" | tr -d "\r"`
 case `uname -s` in
 CYGWIN*)
-    PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix" | tr -d "\r"`
-
     if test `$PYTHON -c "import os; print os.name" | tr -d "\r"` = posix; then
       PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
       PYTHON_LIBS="-L $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
