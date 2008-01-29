@@ -6,6 +6,9 @@
 //
 //
 
+#ifndef Support_path_hh_
+#define Support_path_hh_
+
 #include <boost/filesystem/operations.hpp>
 
 namespace Synopsis
@@ -18,11 +21,10 @@ inline boost::filesystem::path get_path(std::string const &filename)
   return system_complete(path(filename, native)).normalize();
 }
 
-//. Return true if base_path is set and path p does not contain
-//. base_path.
+//. Return true if base_path is set and path p contains base_path.
 inline bool matches_path(std::string const &p, std::string const &base_path)
 {
-  return !base_path.empty() && p.substr(0,base_path.size()) != base_path;
+  return !base_path.empty() && p.substr(0,base_path.size()) == base_path;
 }
   
 //. Return the string representation of file in native path
@@ -42,3 +44,5 @@ inline std::string make_short_path(std::string const &p, std::string const &base
 }
 
 }
+
+#endif

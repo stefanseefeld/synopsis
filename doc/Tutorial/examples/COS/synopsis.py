@@ -12,7 +12,7 @@ from Synopsis.Processors import Linker
 from Synopsis.Processors import Comments
 from Synopsis.Formatters import HTML
 
-parser = Composite(IDL.Parser(cppflags=['-I.']),
+parser = Composite(IDL.Parser(cppflags=['-I.'], base_path='.'),
                    Comments.Translator(filter = Comments.SSDFilter(),
                                        processor = Comments.Grouper()))
 linker = Linker()
