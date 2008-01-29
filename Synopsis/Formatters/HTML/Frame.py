@@ -6,7 +6,7 @@
 #
 
 from Synopsis.Formatters.HTML.html import *
-import time
+import sys, time
 
 class Frame:
     """A Frame is a mediator for views that get displayed in it (as well

@@ -24,7 +24,7 @@ LDFLAGS	:= @LDFLAGS@ @BOOST_LDFLAGS@
 LIBS	:= @BOOST_LIBS@ @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-SRC	:= IRGenerator.cc ParserImpl.cc
+SRC	:= ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 

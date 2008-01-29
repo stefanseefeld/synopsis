@@ -5,11 +5,17 @@
 // see the file COPYING for details.
 //
 
+#include <boost/version.hpp>
 #include <boost/python.hpp>
 #include <Synopsis/Trace.hh>
 #include <Synopsis/Timer.hh>
 #include <Support/ErrorHandler.hh>
-#include "IRGenerator.hh"
+
+#if BOOST_VERSION < 103500 || BOOST_WAVE_USE_DEPRECIATED_PREPROCESSING_HOOKS != 0
+# include "IRGenerator-depreciated.hh"
+#else
+# include "IRGenerator.hh"
+#endif
 #include <memory>
 #include <sstream>
 
@@ -66,15 +72,11 @@ bpl::object parse(bpl::object ir,
                     std::istreambuf_iterator<char>());
 
   Timer timer;
-  typedef wave::cpplexer::lex_iterator<Token> lex_iterator_type;
-  typedef wave::context<std::string::iterator,
-                        lex_iterator_type,
-                        wave::iteration_context_policies::load_file_to_string,
-                        IRGenerator> context_type;
 
-  context_type ctx(input.begin(), input.end(), input_file,
-                   IRGenerator(language, input_file, base_path, primary_file_only,
-                               ir, verbose, debug));
+  IRGenerator generator(language, input_file, base_path, primary_file_only,
+                        ir, verbose, debug);
+
+  IRGenerator::Context ctx(input.begin(), input.end(), input_file, generator);
   if (std::string(language) == "C")
   {
     ctx.set_language(wave::support_c99);
@@ -119,27 +121,6 @@ bpl::object parse(bpl::object ir,
 
 
   std::vector<std::string> includes;
-  // Insert the system_flags from the Emulator.
-  for (std::vector<char const *>::iterator i = system_flags.begin();
-       i != system_flags.end();
-       ++i)
-  {
-    if (**i == '-')
-    {
-      if (*(*i + 1) == 'I')
-      {
-        ctx.add_include_path(*i + 2);
-        ctx.add_sysinclude_path(*i + 2);
-      }
-      else if (*(*i + 1) == 'D')
-        ctx.add_macro_definition(*i + 2, /*is_predefined=*/true);
-      else if (*(*i + 1) == 'U')
-        ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
-      else if (*(*i + 1) == 'i')
-        includes.push_back(*i + 2);
-    }
-  }
-
   // Insert the user_flags
   for (std::vector<char const *>::iterator i = user_flags.begin();
        i != user_flags.end();
@@ -148,10 +129,7 @@ bpl::object parse(bpl::object ir,
     if (**i == '-')
     {
       if (*(*i + 1) == 'I')
-      {
-        ctx.add_include_path(*i + 2);
         ctx.add_sysinclude_path(*i + 2);
-      }
       else if (*(*i + 1) == 'D')
         ctx.add_macro_definition(*i + 2, /*is_predefined=*/false);
       else if (*(*i + 1) == 'U')
@@ -161,8 +139,26 @@ bpl::object parse(bpl::object ir,
     }
   }
 
-  context_type::iterator_type first = ctx.begin();
-  context_type::iterator_type end = ctx.end();
+  // Insert the system_flags from the Emulator.
+  for (std::vector<char const *>::iterator i = system_flags.begin();
+       i != system_flags.end();
+       ++i)
+  {
+    if (**i == '-')
+    {
+      if (*(*i + 1) == 'I')
+        ctx.add_sysinclude_path(*i + 2);
+      else if (*(*i + 1) == 'D')
+        ctx.add_macro_definition(*i + 2, /*is_predefined=*/true);
+      else if (*(*i + 1) == 'U')
+        ctx.remove_macro_definition(*i + 2, /*even_predefined=*/false);
+      else if (*(*i + 1) == 'i')
+        includes.push_back(*i + 2);
+    }
+  }
+
+  IRGenerator::Context::iterator_type first = ctx.begin();
+  IRGenerator::Context::iterator_type end = ctx.end();
 
   for (std::vector<std::string>::const_reverse_iterator i = includes.rbegin(),
          e = includes.rend();
