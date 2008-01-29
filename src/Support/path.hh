@@ -6,6 +6,9 @@
 //
 //
 
+#ifndef Support_path_hh_
+#define Support_path_hh_
+
 #include <boost/filesystem/operations.hpp>
 
 namespace Synopsis
@@ -41,3 +44,5 @@ inline std::string make_short_path(std::string const &p, std::string const &base
 }
 
 }
+
+#endif

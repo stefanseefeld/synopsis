@@ -131,6 +131,7 @@ int LinkStore::find_col(AST::SourceFile *file, int line, const char* ptr)
 
 void LinkStore::link(PTree::Node *node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
 {
+    m->walker->update_line_number(node);
     AST::SourceFile* file = m->walker->current_file();
 
     // Dont store records for included files

@@ -465,13 +465,13 @@ void SWalker::visit(PTree::CommentedAtom *node)
 void SWalker::visit(PTree::NamespaceSpec *node)
 {
   STrace trace("SWalker::visit(PTree::NamespaceSpec *)");
-  
+  update_line_number(node);
+
   PTree::Node *pNamespace = PTree::first(node);
   PTree::Node *pIdentifier = PTree::second(node);
   PTree::Node *pBody = PTree::third(node);
 
   if (my_links) my_links->span(pNamespace, "keyword");
-  else update_line_number(node);
 
   // Start the namespace
   AST::Namespace* ns;
@@ -912,9 +912,9 @@ PTree::Node *SWalker::translate_typeof(PTree::Node *spec, PTree::Node *declarati
 void SWalker::visit(PTree::Declaration *node)
 {
   STrace trace("SWalker::visit(PTree::Declaration*)");
+  update_line_number(node);
   // Link any comments added because we are inside a function body
   if (my_links) find_comments(node);
-  update_line_number(node);
   my_declaration = node;
   my_store_decl = true;
   PTree::Node *decls = PTree::third(node);

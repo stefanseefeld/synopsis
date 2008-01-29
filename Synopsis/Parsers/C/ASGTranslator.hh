@@ -12,7 +12,6 @@
 #include <Synopsis/ASG/TypeKit.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/Buffer.hh>
-#include "TypeTranslator.hh"
 #include <stack>
 
 using namespace Synopsis;
@@ -48,22 +47,40 @@ private:
   //. according to the current file and the 'primary_file_only' flag.
   bool update_position(PTree::Node *);
 
-  void declare(ASG::Declaration);
+  //. look up and return the named type. If this is a derived type,
+  //. it may create a modifier and return that.
+  ASG::Type lookup(PTree::Encoding const &name);
+  ASG::Type lookup_function_types(PTree::Encoding const &name, ASG::TypeList &);
 
-  IR                  my_ir;
-  ASG::ASGKit         my_ast_kit;
-  SourceFileKit       my_sf_kit;
-  SourceFile          my_file;
-  std::string         my_raw_filename;
-  std::string         my_base_path;
-  bool                my_primary_file_only;
-  unsigned long       my_lineno;
-  TypeTranslator      my_types;
-  ScopeStack          my_scope;
-  bool                my_verbose;
-  bool                my_debug;
-  Buffer             *my_buffer;
-  PTree::Declaration *my_declaration;
+
+  void declare(ASG::Declaration);
+  ASG::Type declare(ASG::ScopedName name, ASG::Declaration declaration);
+
+  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, ASG::Type &);
+  PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
+					    ASG::Type &type,
+					    ASG::Modifiers &postmod);
+  PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
+					std::string &name);
+
+
+  ASG::ASGKit         asg_kit_;
+  ASG::TypeKit        type_kit_;
+  SourceFileKit       sf_kit_;
+  Python::List        declarations_;
+  Python::Dict        types_;
+  Python::Dict        files_;
+  SourceFile          file_;
+  std::string         raw_filename_;
+  std::string         base_path_;
+  bool                primary_file_only_;
+  unsigned long       lineno_;
+  ScopeStack          scope_;
+  bool                verbose_;
+  bool                debug_;
+  Buffer             *buffer_;
+  PTree::Declaration *declaration_;
+  PTree::Encoding     name_;
 };
 
 #endif

@@ -6,7 +6,6 @@
 //
 
 #include "ASGTranslator.hh"
-#include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
 #include <Support/Path.hh>
@@ -16,40 +15,42 @@ using namespace Synopsis;
 ASGTranslator::ASGTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
 			     Synopsis::IR ir, bool v, bool d)
-  : my_ir(ir),
-    my_ast_kit(),
-    my_sf_kit("C"),
-    my_raw_filename(filename),
-    my_base_path(base_path),
-    my_primary_file_only(primary_file_only),
-    my_lineno(0),
-    my_types(my_ir.types(), v, d),
-    my_verbose(v),
-    my_debug(d),
-    my_buffer(0),
-    my_declaration(0)
+  : asg_kit_(),
+    type_kit_("C"),
+    sf_kit_("C"),
+    declarations_(ir.declarations()),
+    types_(ir.types()),
+    files_(ir.files()),
+    raw_filename_(filename),
+    base_path_(base_path),
+    primary_file_only_(primary_file_only),
+    lineno_(0),
+    verbose_(v),
+    debug_(d),
+    buffer_(0),
+    declaration_(0)
 {
   Trace trace("ASGTranslator::ASGTranslator", Trace::TRANSLATION);
   // determine canonical filenames
-  Path path = Path(my_raw_filename).abs();
+  Path path = Path(raw_filename_).abs();
   std::string long_filename = path.str();
-  path.strip(my_base_path);
+  path.strip(base_path_);
   std::string short_filename = path.str();
 
-  SourceFile file = my_ir.files().get(short_filename);
+  SourceFile file = files_.get(short_filename);
   if (file)
-    my_file = file;
+    file_ = file;
   else
   {
-    my_file = my_sf_kit.create_source_file(short_filename, long_filename);
-    my_ir.files().set(short_filename, my_file);
+    file_ = sf_kit_.create_source_file(short_filename, long_filename);
+    files_.set(short_filename, file_);
   }
 }
 
 void ASGTranslator::translate(PTree::Node *ptree, Buffer &buffer)
 {
   Trace trace("ASGTranslator::translate", Trace::TRANSLATION);
-  my_buffer = &buffer;
+  buffer_ = &buffer;
   ptree->accept(this);
 }
 
@@ -63,7 +64,7 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
 {
   Trace trace("ASGTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
-  if (!my_declaration || !PTree::first(declarator)) return; // empty
+  if (!declaration_ || !PTree::first(declarator)) return; // empty
 
   bool visible = update_position(declarator);
   PTree::Encoding name = declarator->encoded_name();
@@ -71,10 +72,10 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
   if (type.is_function())
   {
     trace << "declare function " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
+	  << raw_filename_ << ':' << lineno_;
 
     ASG::TypeList parameter_types;
-    ASG::Type return_type = my_types.lookup_function_types(type, parameter_types);
+    ASG::Type return_type = lookup_function_types(type, parameter_types);
     ASG::Function::Parameters parameters;
     PTree::Node *p = PTree::rest(declarator);
     while (p && p->car() && *p->car() != '(') p = PTree::rest(p);
@@ -84,25 +85,25 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
     ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     ASG::Modifiers pre;
     ASG::Modifiers post;
-    ASG::Function function = my_ast_kit.create_function(my_file, my_lineno,
-							"function",
-							pre,
-							return_type,
-							post,
-							qname,
-							qname.get(0));
+    ASG::Function function = asg_kit_.create_function(file_, lineno_,
+                                                      "function",
+                                                      pre,
+                                                      return_type,
+                                                      post,
+                                                      qname,
+                                                      qname.get(0));
     function.parameters().extend(parameters);
-    if (my_declaration) add_comments(function, my_declaration->get_comments());
+    if (declaration_) add_comments(function, declaration_->get_comments());
     add_comments(function, declarator->get_comments());
     if (visible) declare(function);
   }
   else
   {
-    ASG::Type t = my_types.lookup(type);
+    ASG::Type t = lookup(type);
     size_t length = (name.front() - 0x80);
     ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
 
-    std::string vtype;// = my_builder->scope()->type();
+    std::string vtype;// = builder_->scope()->type();
     if (vtype == "class" || vtype == "struct" || vtype == "union")
       vtype = "data member";
     else
@@ -111,9 +112,9 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
 	vtype = "local ";
       vtype += "variable";
     }
-    ASG::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
-							vtype, qname, t, false);
-    if (my_declaration) add_comments(variable, my_declaration->get_comments());
+    ASG::Variable variable = asg_kit_.create_variable(file_, lineno_,
+                                                      vtype, qname, t, false);
+    if (declaration_) add_comments(variable, declaration_->get_comments());
     add_comments(variable, declarator->get_comments());
     if (visible) declare(variable);
   }
@@ -124,9 +125,9 @@ void ASGTranslator::visit(PTree::Declaration *declaration)
   Trace trace("ASGTranslator::visit(PTree::Declaration *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
-  my_declaration = declaration;
+  declaration_ = declaration;
   visit(static_cast<PTree::List *>(declaration));
-  my_declaration = 0;
+  declaration_ = 0;
 }
 
 void ASGTranslator::visit(PTree::FunctionDefinition *def)
@@ -134,11 +135,11 @@ void ASGTranslator::visit(PTree::FunctionDefinition *def)
   Trace trace("ASGTranslator::visit(PTree::FunctionDefinition *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
-  my_declaration = def;
+  declaration_ = def;
   // Only traverse declaration-specifier-seq and declarator, but not body
   if (PTree::first(def)) PTree::first(def)->accept(this);
   PTree::second(def)->accept(this);
-  my_declaration = 0;
+  declaration_ = 0;
 }
 
 void ASGTranslator::visit(PTree::ClassSpec *class_spec)
@@ -155,11 +156,11 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
     std::string type = PTree::reify(PTree::first(class_spec));
     std::string name = PTree::reify(PTree::second(class_spec));
     ASG::ScopedName qname(name);
-    ASG::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
-						     type, qname);
+    ASG::Forward forward = asg_kit_.create_forward(file_, lineno_,
+                                                   type, qname);
     add_comments(forward, class_spec->get_comments());
     if (visible) declare(forward);
-    my_types.declare(qname, forward);
+    declare(qname, forward);
     return;
   }
 
@@ -185,13 +186,13 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
   }
 
   ASG::ScopedName qname(name);
-  ASG::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
+  ASG::Class class_ = asg_kit_.create_class(file_, lineno_, type, qname);
   add_comments(class_, class_spec->get_comments());
   if (visible) declare(class_);
-  my_types.declare(qname, class_);
-  my_scope.push(class_);
+  declare(qname, class_);
+  scope_.push(class_);
   body->accept(this);
-  my_scope.pop();
+  scope_.pop();
 }
 
 void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
@@ -222,7 +223,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
     {
       // Just a name
       ASG::ScopedName qname(PTree::reify(penumor));
-      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
+      enumerator = asg_kit_.create_enumerator(file_, lineno_, qname, "");
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     else
@@ -232,7 +233,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
       std::string value;
       if (PTree::length(penumor) == 3)
         value = PTree::reify(PTree::third(penumor));
-      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, value);
+      enumerator = asg_kit_.create_enumerator(file_, lineno_, qname, value);
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
@@ -242,17 +243,17 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   }
   // Add a dummy enumerator at the end to absorb trailing comments.
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
-  enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
-					    ASG::ScopedName(std::string("dummy")), "");
+  enumerator = asg_kit_.create_enumerator(file_, lineno_,
+                                          ASG::ScopedName(std::string("dummy")), "");
   add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
   // Create ASG.Enum object
-  ASG::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
+  ASG::Enum enum_ = asg_kit_.create_enum(file_, lineno_, name, enumerators);
   add_comments(enum_, enum_spec);
 
   if (visible) declare(enum_);
-  my_types.declare(ASG::ScopedName(name), enum_);
+  declare(ASG::ScopedName(name), enum_);
 }
 
 void ASGTranslator::visit(PTree::Typedef *typed)
@@ -274,19 +275,19 @@ void ASGTranslator::visit(PTree::Typedef *typed)
     PTree::Encoding name = declarator->encoded_name();
     PTree::Encoding type = declarator->encoded_type();
     trace << "declare type " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
+	  << raw_filename_ << ':' << lineno_;
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
     ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    ASG::Type alias = my_types.lookup(type);
+    ASG::Type alias = lookup(type);
     // FIXME: need to honour constr parameter
-    ASG::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
-							     "typedef",
-							     qname,
-							     alias, false);
+    ASG::Declaration declaration = asg_kit_.create_typedef(file_, lineno_,
+                                                           "typedef",
+                                                           qname,
+                                                           alias, false);
     add_comments(declaration, declarator->get_comments());
     if (visible) declare(declaration);
-    my_types.declare(qname, declaration);
+    declare(qname, declaration);
   }
 }
 
@@ -369,7 +370,7 @@ void ASGTranslator::translate_parameters(PTree::Node *node,
       // Find value
       if (value_ix >= 0) value = PTree::reify(PTree::nth(parameter, value_ix));
     }
-    ASG::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
+    ASG::Parameter p = asg_kit_.create_parameter(premods, type, postmods,
 						   name, value);
     parameters.append(p);
     node = PTree::rest(node);
@@ -434,7 +435,7 @@ void ASGTranslator::add_comments(ASG::Declaration declarator, PTree::Node *c)
     Python::Object comment = PTree::reify(first);
     comments.append(comment);
 
-//     if (my_links) my_links->long_span(first, "file-comment");
+//     if (links_) links_->long_span(first, "file-comment");
     // Set first to 0 so we dont accidentally do them twice (eg:
     // when parsing expressions)
     c->set_car(0);
@@ -449,40 +450,267 @@ bool ASGTranslator::update_position(PTree::Node *node)
   Trace trace("ASGTranslator::update_position", Trace::TRANSLATION);
 
   std::string filename;
-  my_lineno = my_buffer->origin(node->begin(), filename);
+  lineno_ = buffer_->origin(node->begin(), filename);
 
-  if (filename != my_raw_filename)
+  if (filename != raw_filename_)
   {
-    if (my_primary_file_only)
-      // my_raw_filename remains the primary file's name
+    if (primary_file_only_)
+      // raw_filename_ remains the primary file's name
       // and all declarations from elsewhere are ignored
       return false;
-    my_raw_filename = filename;
+    raw_filename_ = filename;
 
     // determine canonical filenames
     Path path = Path(filename).abs();
     std::string long_filename = path.str();
-    path.strip(my_base_path);
+    path.strip(base_path_);
     std::string short_filename = path.str();
 
-    SourceFile file = my_ir.files().get(short_filename);
+    SourceFile file = files_.get(short_filename);
     if (file)
-      my_file = file;
+      file_ = file;
     else
     {
-      my_file = my_sf_kit.create_source_file(short_filename, long_filename);
-      my_ir.files().set(short_filename, my_file);
+      file_ = sf_kit_.create_source_file(short_filename, long_filename);
+      files_.set(short_filename, file_);
     }
   }
   return true;
+}
+
+ASG::Type ASGTranslator::lookup(PTree::Encoding const &name)
+{
+  Trace trace("ASGTranslator::lookup", Trace::SYMBOLLOOKUP);
+  trace << name;
+  name_ = name;
+  ASG::Type type;
+  decode_type(name.begin(), type);
+  return type;
+}
+
+ASG::Type ASGTranslator::lookup_function_types(PTree::Encoding const &name,
+                                               ASG::TypeList &parameters)
+{
+  Trace trace("ASGTranslator::lookup_function_types", Trace::SYMBOLLOOKUP);
+  trace << name;
+  name_ = name;
+
+  PTree::Encoding::iterator i = name.begin();
+  assert(*i == 'F');
+  ++i;
+  while (true)
+  {
+    ASG::Type parameter;
+    i = decode_type(i, parameter);
+    if (parameter)
+      parameters.append(parameter);
+    else
+      break;
+  }
+  ++i; // skip over '_'
+  ASG::Type return_type;
+  i = decode_type(i, return_type);
+  return return_type;
 }
 
 // FIXME: ASG should derive from Scope (a global scope IsA scope...)
 //        This method exists because currently it is not.
 void ASGTranslator::declare(ASG::Declaration declaration)
 {
-  if (my_scope.size())
-    my_scope.top().declarations().append(declaration);
+  if (scope_.size())
+    scope_.top().declarations().append(declaration);
   else
-    my_ir.declarations().append(declaration);    
+    declarations_.append(declaration);    
+}
+
+ASG::Type ASGTranslator::declare(ASG::ScopedName name,
+                                 ASG::Declaration declaration)
+{
+  Trace trace("ASGTranslator::declare", Trace::SYMBOLLOOKUP);
+  trace << name;
+  ASG::Type type = type_kit_.create_declared(name, declaration);
+  types_.attr("__setitem__")(Python::Tuple(name, type));
+  return type;
+}
+
+// This is almost a verbatim copy of the Decoder::decode
+// methods from Synopsis/Parsers/Cxx/syn/decoder.cc
+// with some minor modifications to disable the C++ specific things.
+// FIXME: this ought to be part of SymbolLookup::Type.
+PTree::Encoding::iterator ASGTranslator::decode_name(PTree::Encoding::iterator i,
+                                                     std::string &name)
+{
+  Trace trace("ASGTranslator::decode_name", Trace::PARSING);
+  size_t length = *i++ - 0x80;
+  name = std::string(length, '\0');
+  std::copy(i, i + length, name.begin());
+  i += length;
+  return i;
+}
+
+PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i,
+						      ASG::Type &type)
+{
+  Trace trace("ASGTranslator::decode_type", Trace::PARSING);
+  ASG::Modifiers premod, postmod;
+  std::string name;
+  ASG::Type base;
+
+  // Loop forever until broken
+  while (i != name_.end() && !name.length() && !base)
+  {
+    int c = *i++;
+    switch (c)
+    {
+      case 'P':
+	postmod.insert(0, "*");
+	break;
+//       case 'R':
+// 	postmod.insert(0, "&");
+// 	break;
+      case 'S':
+	premod.append("signed");
+	break;
+      case 'U':
+	premod.append("unsigned");
+	break;
+      case 'C':
+	premod.append("const");
+	break;
+      case 'V':
+	premod.append("volatile");
+	break;
+      case 'A':
+      {
+	std::string array("[");
+	while (*i != '_') array.push_back(*i++);
+	array.push_back(']');
+	++i;
+	postmod.append(array);
+	  break;
+      }
+//       case '*':
+//       {
+// 	ScopedName n;
+// 	n.push_back("*");
+// 	base = new Types::Dependent(n);
+// 	break;
+//       }
+      case 'i':
+	name = "int";
+	break;
+      case 'v':
+	name = "void";
+	break;
+//       case 'b':
+// 	name = "bool";
+// 	break;
+      case 's':
+	name = "short";
+	break;
+      case 'c':
+	name = "char";
+	break;
+//       case 'w':
+// 	name = "wchar_t";
+// 	break;
+      case 'l':
+	name = "long";
+	break;
+      case 'j':
+	name = "long long";
+	break;
+      case 'f':
+	name = "float";
+	break;
+      case 'd':
+	name = "double";
+	break;
+      case 'r':
+	name = "long double";
+	break;
+      case 'e':
+	name = "...";
+	break;
+      case '?':
+	name = "int"; // in C, no return type spec defaults to int
+	break;
+//       case 'Q':
+// 	base = decodeQualType();
+// 	break;
+      case '_':
+	--i;
+	type = ASG::Type();
+	return i; // end of func params
+      case 'F':
+	i = decode_func_ptr(i, base, postmod);
+	break;
+//       case 'T':
+// 	base = decodeTemplate();
+// 	break;
+//       case 'M':
+// 	// Pointer to member. Format is same as for named types
+// 	name = decodeName() + "::*";
+// 	break;
+      default:
+	if (c > 0x80)
+	{
+	  --i;
+	  i = decode_name(i, name);
+	  break;
+	}
+	// FIXME
+	// 	    std::cerr << "\nUnknown char decoding '"<<m_string<<"': "
+	// 		 << char(c) << " " << c << " at "
+	// 		 << (m_iter - m_string.begin()) << std::endl;
+    } // switch
+  } // while
+  if (!base && !name.length())
+  {
+    // FIXME
+    // 	std::cerr << "no type or name found decoding " << m_string << std::endl;
+    type = ASG::Type();
+    return i;
+  }
+  if (!base)
+  {
+    base = types_.attr("get")(Python::Tuple(ASG::ScopedName(name)));
+    if (!base) throw std::runtime_error("Unknown symbol: " + name);
+  }
+  if (premod.empty() && postmod.empty())
+    type = base;
+  else
+    type = type_kit_.create_modifier(base, premod, postmod);
+
+  return i;
+}
+
+PTree::Encoding::iterator ASGTranslator::decode_func_ptr(PTree::Encoding::iterator i,
+                                                         ASG::Type &type,
+                                                         ASG::Modifiers &postmod)
+{
+  Trace trace("ASGTranslator::decode_func_ptr", Trace::PARSING);
+  // Function ptr. Encoded same as function
+  ASG::Modifiers premod;
+  // Move * from postmod to funcptr's premod. This makes the output be
+  // "void (*convert)()" instead of "void (convert)()*"
+  if (postmod.size() > 0 && postmod.get(0) == "*")
+  {
+    premod.append(postmod.get(0));
+    postmod.erase(postmod.begin());
+  }
+  ASG::TypeList parameters;
+  while (true)
+  {
+    ASG::Type parameter;
+    i = decode_type(i, parameter);
+    if (parameter)
+      parameters.append(parameter);
+    else
+      break;
+  }
+  ++i; // skip over '_'
+  i = decode_type(i, type);
+  type = type_kit_.create_function_ptr(type, premod, parameters);
+  return i;
 }
