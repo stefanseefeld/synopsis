@@ -30,7 +30,7 @@ public:
   typedef wave::cpplexer::lex_token<> Token;
 
   typedef wave::context<std::string::iterator,
-                        lex_iterator,
+                        wave::cpplexer::lex_iterator<Token>,
                         wave::iteration_context_policies::load_file_to_string,
                         IRGenerator> Context;
   typedef std::list<Token, boost::fast_pool_allocator<Token> > Container;
@@ -210,8 +210,8 @@ void IRGenerator::found_include_directive(std::string const &filename, bool next
 }
 
 inline
-void IRGenerator::opened_include_file(std::string const &dir, 
-                                      std::string const &filename, 
+void IRGenerator::opened_include_file(std::string const &relname, 
+                                      std::string const &absname, 
                                       std::size_t include_depth,
                                       bool is_system_include)
 {
