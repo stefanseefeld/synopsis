@@ -23,6 +23,17 @@ Configuring
   to the 'install' command, if you plan to install synopsis. See
   the section about installing for details.
 
+* Synopsis provides an alternative Cpp parser based on boost.wave.
+  It overcomes certain limitations with the old ucpp-based parser, but
+  incures a dependency on various boost libraries. Thus it's disabled by default.
+
+  To build with this new Cpp parser, configure with --with-boost, and
+  these optional boost-related flags:
+
+  --with-boost-prefix=<boost installation prefix>
+  --with-boost-version=<version> (e.g. 1.35)
+  --with-boost-lib-suffix=<suffix> (e.g. -gcc41-mt)
+
 Building
 --------
 
