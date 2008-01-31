@@ -95,6 +95,25 @@ if sys.version_info[:2] < (2, 5):
         )
     """This pattern will match a 'test' node which is a base class."""
 
+    ATOM_PATTERN = (
+        symbol.testlist,
+        (symbol.test,
+         (symbol.and_test,
+          (symbol.not_test,
+           (symbol.comparison,
+            (symbol.expr,
+             (symbol.xor_expr,
+              (symbol.and_expr,
+               (symbol.shift_expr,
+                (symbol.arith_expr,
+                 (symbol.term,
+                  (symbol.factor,
+                   (symbol.power,
+                    (symbol.atom,
+                     ['atom']
+                     )))))))))))))
+        )
+
 else:
 
     DOCSTRING_STMT_PATTERN = (
@@ -143,21 +162,22 @@ else:
         )
     """This pattern will match a 'test' node which is a base class."""
 
-ATOM_PATTERN = (
-    symbol.testlist,
-    (symbol.test,
-     (symbol.and_test,
-      (symbol.not_test,
-       (symbol.comparison,
-        (symbol.expr,
-         (symbol.xor_expr,
-          (symbol.and_expr,
-           (symbol.shift_expr,
-            (symbol.arith_expr,
-             (symbol.term,
-              (symbol.factor,
-               (symbol.power,
-                (symbol.atom,
-                 ['atom']
-                 )))))))))))))
-    )
+    ATOM_PATTERN = (
+        symbol.testlist,
+        (symbol.test,
+         (symbol.or_test,
+          (symbol.and_test,
+           (symbol.not_test,
+            (symbol.comparison,
+             (symbol.expr,
+              (symbol.xor_expr,
+               (symbol.and_expr,
+                (symbol.shift_expr,
+                 (symbol.arith_expr,
+                  (symbol.term,
+                   (symbol.factor,
+                    (symbol.power,
+                     (symbol.atom,
+                      ['atom']
+                      ))))))))))))))
+        )
