@@ -7,9 +7,11 @@
 
 from Synopsis.Processor import *
 from Synopsis import ASG
+from Synopsis.QualifiedName import QualifiedPythonName as QName
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 from ASGTranslator import ASGTranslator
+from SXRGenerator import SXRGenerator
 import os
 
 __all__ = ['Parser']
@@ -18,6 +20,7 @@ class Parser(Processor):
     """Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
     info."""
 
+    primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'Path prefix to strip off of input file names.')
     syntax_prefix = Parameter(None, 'Path prefix (directory) to contain syntax info.')
     
@@ -38,7 +41,9 @@ class Parser(Processor):
             if self.base_path[-1] != os.sep:
                 self.base_path += os.sep
             
-        for file in self.input:
+        self.all_files = self.input[:]
+        while len(self.all_files):
+            file = self.all_files.pop()
             self.process_file(file)
 
         return self.output_and_return_ir()
@@ -47,14 +52,14 @@ class Parser(Processor):
     def process_file(self, filename):
         """Parse an individual python file."""
 
-        short_filename = filename
+        long_filename = filename
         if filename[:len(self.base_path)] != self.base_path:
             raise InvalidArguent('invalid input filename:\n'
                                  '"%" does not match base_path "%s"'
                                  %(filename, self.base_path))
 
         short_filename = filename[len(self.base_path):]
-        sourcefile = SourceFile(short_filename, filename, 'Python')
+        sourcefile = SourceFile(short_filename, long_filename, 'Python')
         sourcefile.annotations['primary'] = True
         self.ir.files[short_filename] = sourcefile
 
@@ -71,9 +76,8 @@ class Parser(Processor):
                 package_name.append(c)
                 package_path = os.path.join(package_path, c)
                 if not os.path.isfile(os.path.join(package_path, '__init__.py')):
-                    raise InvalidArgument('"%s" is not a package'
-                                          %''.join(package_name))
-                module = ASG.Module(sourcefile, -1, 'package', package_name)
+                    raise InvalidArgument('"%s" is not a package'%QName(package_name))
+                module = ASG.Module(sourcefile, -1, 'package', QName(package_name))
                 if package:
                     package.declarations.append(module)
                 else:
@@ -81,32 +85,20 @@ class Parser(Processor):
 
                 package = module
 
-        basename = os.path.basename(filename)
-        if basename == '__init__.py':
-            if package:
-                module = package
-            else:
-                dirname = os.path.dirname(filename)
-                module_name = os.path.splitext(os.path.basename(dirname))[0]
-                module = ASG.Module(sourcefile, -1, 'package', [module_name])
-                self.ir.declarations.append(module)
-        else:
-            module_name = os.path.splitext(basename)[0]
-            if package:
-                module = ASG.Module(sourcefile, -1, 'module',
-                                    package_name + [module_name])
-                package.declarations.append(module)
-            else:
-                module = ASG.Module(sourcefile, -1, 'module', [module_name])
-                self.ir.declarations.append(module)
+        translator = ASGTranslator(package, self.ir.types)
+        translator.process_file(sourcefile)
+        self.ir.declarations.extend(sourcefile.declarations)
+        if not self.primary_file_only:
+            for i in translator.imports:
+                # Lookup import targets based on current file's location.
+                print 'looking up', i
 
-        translator = ASGTranslator(module, self.ir.types)
-        if self.syntax_prefix is None:
-            xref = None
-        else:
+        if self.syntax_prefix:
             xref = os.path.join(self.syntax_prefix, short_filename + '.sxr')
             dirname = os.path.dirname(xref)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, 0755)
-        translator.process_file(filename, xref)
-        sourcefile.declarations.extend(module.declarations)
+
+            sxr_generator = SXRGenerator()
+            module = sourcefile.declarations[0]
+            sxr_generator.process_file(module.name, sourcefile, xref)
