@@ -156,11 +156,9 @@ bool IRGenerator::expanding_function_like_macro(Context const &ctx,
     position_ = macrocall.get_position();
     Token::string_type tmp = macrocall.get_value();
     current_macro_name_.assign(tmp.begin(), tmp.end());
-    unsigned int end = position_.get_column();
     // We are looking for the column after the closing right paren,
     // which is the last token in the sequence.
-    for (IteratorT i = seqstart; i != seqend; ++i)
-      end = i->get_position().get_column() + 1;
+    unsigned int end = seqend->get_position().get_column() + 1;
     current_macro_call_length_ = end - position_.get_column();
   }
   return false;
