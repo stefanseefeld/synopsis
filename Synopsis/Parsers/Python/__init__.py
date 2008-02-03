@@ -16,6 +16,37 @@ import os
 
 __all__ = ['Parser']
 
+def find_imported(target, root, current, verbose = False):
+    """Lookup imported files, based on current file's location.
+
+      target: Pair of names.
+      root: root directory to which to confine the lookup.
+      current: file name of the module issuing the import."""
+
+    current = os.path.dirname(current)
+    if root:
+        locations = [current.rsplit(i, 1)[0] for i in current.count('.')]
+    else:
+        locations = [current]
+    modname, name = target
+    if name:
+        # name may be a module or a module's attribute.
+        # Only find the module.
+        files = ['%s/%s.py'%(modname, name), '%s.py'%modname]
+    else:
+        files = ['%s.py'%modname]
+    files.append(os.path.join(modname, '__init__.py'))
+
+    for l in locations:
+        for f in files:
+            target = os.path.join(l, f)
+            if verbose: print 'trying %s'%target
+            if os.path.exists(target):
+                return target, target[len(root):]
+    return None, None
+    
+
+
 class Parser(Processor):
     """Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
     info."""
@@ -59,8 +90,7 @@ class Parser(Processor):
                                  %(filename, self.base_path))
 
         short_filename = filename[len(self.base_path):]
-        sourcefile = SourceFile(short_filename, long_filename, 'Python')
-        sourcefile.annotations['primary'] = True
+        sourcefile = SourceFile(short_filename, long_filename, 'Python', True)
         self.ir.files[short_filename] = sourcefile
 
         package = None
@@ -90,8 +120,10 @@ class Parser(Processor):
         self.ir.declarations.extend(sourcefile.declarations)
         if not self.primary_file_only:
             for i in translator.imports:
-                # Lookup import targets based on current file's location.
-                print 'looking up', i
+                target = find_imported(i, self.base_path, sourcefile.name, self.verbose)
+                if target[0] and target[1] not in self.ir.files:
+                    # Only process if we have not visited it yet.
+                    self.all_files.append(target[0])
 
         if self.syntax_prefix:
             xref = os.path.join(self.syntax_prefix, short_filename + '.sxr')
@@ -102,3 +134,4 @@ class Parser(Processor):
             sxr_generator = SXRGenerator()
             module = sourcefile.declarations[0]
             sxr_generator.process_file(module.name, sourcefile, xref)
+

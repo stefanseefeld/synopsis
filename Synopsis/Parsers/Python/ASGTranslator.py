@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2008 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
 from Synopsis import ASG
 from Synopsis.QualifiedName import QualifiedPythonName as QName
 from Synopsis.SourceFile import *
@@ -234,7 +241,7 @@ class ASGTranslator(ASTVisitor):
         else:
             qname = QName(self.scope_name() + (name,))
             module = ASG.Module(self.file, node.lineno, 'module', qname)            
-        print 'created', module.type, module.name
+
         self.scope.append(module)
         self.documentable = module
         self.visit(node.node)
@@ -243,12 +250,12 @@ class ASGTranslator(ASTVisitor):
 
     def visitImport(self, node):
 
-        self.imports.extend([n[0] for n in node.names])
+        self.imports.extend([(n[0], None) for n in node.names])
         self.documentable = None
 
     def visitFrom(self, node):
 
-        self.imports.extend(['%s.%s'%(node.modname, n[0]) for n in node.names])
+        self.imports.extend([(node.modname, n[0]) for n in node.names])
         self.documentable = None
 
     def visitAssName(self, node):
@@ -293,7 +300,10 @@ class ASGTranslator(ASTVisitor):
 
     def visitName(self, node, suffix=None):
 
-        self.name = QName((node.name,) + (suffix,))
+        if suffix:
+            self.name = QName((node.name,) + (suffix,))
+        else:
+            self.name = QName((node.name,))
 
     def visitFunction(self, node):
 
@@ -370,7 +380,18 @@ class ASGTranslator(ASTVisitor):
         bases = []
         for base in node.bases:
             self.visit(base)
-            bases.append(self.name)
+            # FIXME: This logic is broken !
+            #        It assumes that names are either local or fully qualified.
+            if len(self.name) == 1 and self.scope:
+                # Name is unqualified. Qualify it.
+                base = QName(list(self.scope[-1].name) + list(self.name))
+            else:
+                base = self.name
+            if self.types.has_key(base):
+                base = self.types[base]
+            else:
+                base = ASG.UnknownType('Python', base)
+            bases.append(base)
         qname = QName(self.scope_name() + (node.name,))
         class_ = ASG.Class(self.file, node.lineno, 'class', qname)
         class_.parents = [ASG.Inheritance('', b, '') for b in bases]
