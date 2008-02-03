@@ -37,12 +37,12 @@ class SourceFile:
     Contains filename, all declarations from this file (even nested ones) and
     includes (aka imports) from this file."""
 
-    def __init__(self, name, abs_name, language):
+    def __init__(self, name, abs_name, language, primary = True):
         """Constructor"""
 
         self.name = name
         self.abs_name = abs_name
-        self.annotations = {'language':language, 'primary':False}
+        self.annotations = {'language':language, 'primary':primary}
         self.includes = []
         self.declarations = []
         self.macro_calls = {}
