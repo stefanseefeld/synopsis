@@ -43,7 +43,9 @@ class Formatter(Processor):
                        types.TupleType : self.visit_tuple,
                        types.ListType : self.visit_list,
                        types.DictType : self.visit_dict,
-                       types.InstanceType : self.visit_instance}
+                       types.InstanceType : self.visit_instance,
+                       SourceFile : self.visit_sourcefile,
+                       DocString : self.visit_docstring}
       self.visited = {}
 
       self.os = open(self.output, "w")
@@ -135,11 +137,17 @@ class Formatter(Processor):
       self.node.setAttribute('language', obj.annotations.get('language', ''))
       self.node.setAttribute('primary', str(obj.annotations.get('primary', False)))
 
-      for name in ['declarations', 'includes', 'macro_calls']:
-         self.push(name)
-         self.visit(getattr(obj, name))
+      includes = getattr(obj, 'includes')
+      if includes:
+         self.push('includes')
+         self.visit(includes)
          self.pop()
 
+      if self.show_declarations:
+         for name in ['declarations', 'macro_calls']:
+            self.push(name)
+            self.visit(getattr(obj, name))
+            self.pop()
 
    def visit_docstring(self, obj):
       
@@ -157,7 +165,6 @@ class Formatter(Processor):
       if self.show_ids:
          self.node.setAttribute('id', str(id(obj)))
       if self.handlers.has_key(obj.__class__):
-         print 'yes', obj.__class__
          self.handlers[obj.__class__](obj)
       else:
          attrs = obj.__dict__.items()
@@ -169,23 +176,6 @@ class Formatter(Processor):
             # ignore private attributes
             if name[0] == '_':
                continue
-            # special case for some known attributes...
-            #if name == '_Named__name':
-            #   self.node.setAttribute('name', '.'.join(value))
-            #   continue
-            #if name == '_Declaration__name':
-            #   self.node.setAttribute('name', '.'.join(value))
-            #   continue
-            #if name == '_Declaration__file':
-            #   if value:
-            #      self.node.setAttribute('file', value.name)
-            #      continue
-
-            #if name[0] == '_':
-            #   index = name.find('__')
-            #   if index >= 0:
-            #      #name = "%s.%s"%(name[1:index],name[index+2:])
-            #      name = name[index+2:]
 
             # String attributes map to xml attributes.
             if self.handlers.get(type(value)) == self.visit_string:

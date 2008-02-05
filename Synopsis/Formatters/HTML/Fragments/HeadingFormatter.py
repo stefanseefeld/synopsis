@@ -88,7 +88,7 @@ class HeadingFormatter(Fragment):
         if not module.name:
             title = 'Global %s'%module.type.capitalize()
         else:
-            title = '%s %s'%(module.type, self.format_name(module.name))
+            title = '%s %s'%(module.type.capitalize(), self.format_name(module.name))
         return element('h1', title)
 
     def format_meta_module(self, module):

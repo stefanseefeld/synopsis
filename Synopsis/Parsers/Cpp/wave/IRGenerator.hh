@@ -351,10 +351,11 @@ bpl::object IRGenerator::lookup_source_file(std::string const &filename,
   bpl::object source_file = files_.get(short_name);
   if (!source_file)
   {
-    source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_);
+    source_file = sf_module_.attr("SourceFile")(short_name, long_name,
+                                                language_, primary);
     files_[short_name] = source_file;
   }
-  if (source_file && primary)
+  else if (primary)
   {
     bpl::dict annotations = bpl::extract<bpl::dict>(source_file.attr("annotations"));
     annotations["primary"] = true;

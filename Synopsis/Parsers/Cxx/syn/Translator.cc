@@ -329,7 +329,6 @@ Translator::~Translator()
   Py_DECREF(m_dictionary);
   
   Py_DECREF(m_asg_module);
-  Py_DECREF(m_qname_module);
   Py_DECREF(m_sf_module);
   
   // Deref the objects we created

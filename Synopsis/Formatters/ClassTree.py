@@ -35,7 +35,6 @@ class ClassTree(ASG.Visitor):
       names of the two classes involved in the edge, and are copied before
       being stored."""
 
-      supername, subname = tuple(supername), tuple(subname)
       self.add_class(supername)
       if not self.__subclasses.has_key(supername):
          subs = self.__subclasses[supername] = []
@@ -54,7 +53,6 @@ class ClassTree(ASG.Visitor):
       """Returns a sorted list of all classes derived from the given
       class"""
 
-      classname = tuple(classname)
       if self.__subclasses.has_key(classname):
          return sort(self.__subclasses[classname])
       return []
@@ -65,7 +63,6 @@ class ClassTree(ASG.Visitor):
       lookup the class declarations in the 'types' dictionary if you need
       to."""
 
-      classname = tuple(classname)
       if self.__superclasses.has_key(classname):
          return sort(self.__superclasses[classname])
       return []
@@ -78,9 +75,8 @@ class ClassTree(ASG.Visitor):
    def add_class(self, name):
       """Adds a class to the list of classes by name"""
 
-      name = tuple(name)
       if name not in self.__classes:
-         self.__classes.append(tuple(name))
+         self.__classes.append(name)
     
    def _is_root(self, name): return not self.__superclasses.has_key(name)
    def _is_leaf(self, name): return not self.__subclasses.has_key(name)

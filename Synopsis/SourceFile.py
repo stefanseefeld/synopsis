@@ -37,7 +37,7 @@ class SourceFile:
     Contains filename, all declarations from this file (even nested ones) and
     includes (aka imports) from this file."""
 
-    def __init__(self, name, abs_name, language, primary = True):
+    def __init__(self, name, abs_name, language, primary = False):
         """Constructor"""
 
         self.name = name

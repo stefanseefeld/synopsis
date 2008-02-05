@@ -156,7 +156,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
     perror(file);
     exit(1);
   }
-  Buffer buffer(ifs.rdbuf(), file);
+  Buffer buffer(ifs.rdbuf(), sourcefile->filename());
   Lexer lexer(&buffer, tokenset);
   SymbolFactory symbols(SymbolFactory::NONE);
   Parser parser(lexer, symbols, ruleset);

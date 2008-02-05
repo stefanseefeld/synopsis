@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -32,10 +31,9 @@ class InheritanceTree(View):
 
         self.start_file()
         self.write_navigation_bar()
-        self.write(element('h1', "Inheritance Tree"))
+        self.write(element('h1', 'Inheritance Tree'))
         self.write('<ul>')
-        # FIXME: see HTML.Formatter
-        module = self.processor.ir.declarations[0]
+        module = self.processor.root
         for r in self.processor.class_tree.roots():
             self.process_inheritance(r, module.name)
         self.write('</ul>')
@@ -46,8 +44,7 @@ class InheritanceTree(View):
         self.write(self.reference(name, rel_name))
         parents = self.processor.class_tree.superclasses(name)
         if parents:
-            self.write(' <i>(%s)</i>'%', '.join([Util.ccolonName(p)
-                                                 for p in parents]))
+            self.write(' <i>(%s)</i>'%', '.join([str(p) for p in parents]))
         subs = self.processor.class_tree.subclasses(name)
         if subs:
             self.write('<ul>')
