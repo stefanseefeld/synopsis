@@ -104,7 +104,7 @@ class NameIndex(View):
         else:
             realname = escape(name[-1])
         self.write('\n')
-        title = escape('::'.join(name))
+        title = escape(str(name))
         type = decl.type
         name = self.reference(name, (), realname, title=title)+' '+type
         self.write(div('nameindex-item', name))

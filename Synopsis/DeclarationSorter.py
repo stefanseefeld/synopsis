@@ -15,10 +15,12 @@ _access_specs = {ASG.DEFAULT: '',
                  ASG.PRIVATE: 'Private '}
 
 # The predefined order for section names
-_section_order = ('Namespaces',
+_section_order = ('Packages',
                   'Modules',
+                  'Namespaces',
                   'Class templates',
                   'Classes',
+                  'Interfaces',
                   'Typedefs',
                   'Structs',
                   'Enums',

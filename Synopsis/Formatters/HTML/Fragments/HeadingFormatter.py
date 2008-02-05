@@ -30,24 +30,24 @@ class HeadingFormatter(Fragment):
         else:
             self.source = None
             
-    def format_name(self, scoped_name):
+    def format_name(self, qname):
         """Formats a reference to each parent scope"""
 
         scope, text = [], []
-        for name in scoped_name[:-1]:
+        for name in qname[:-1]:
             scope.append(name)
             text.append(self.reference(scope))
-        text.append(escape(scoped_name[-1]))
-        return '::\n'.join(text) + '\n'
+        text.append(escape(qname[-1]))
+        return '%s\n'%(qname.sep).join(text) + '\n'
 
-    def format_name_in_module(self, scoped_name):
+    def format_name_in_module(self, qname):
         """Formats a reference to each parent scope, starting at the first
         non-module scope."""
 
         types = self.processor.ir.types
 
         scope, text = [], []
-        for name in scoped_name[:-1]:
+        for name in qname[:-1]:
             scope.append(name)
             if types.has_key(scope):
                 ns_type = types[scope]
@@ -57,17 +57,17 @@ class HeadingFormatter(Fragment):
                         # Skip modules
                         continue
             text.append(self.reference(scope))
-        text.append(escape(scoped_name[-1]))
-        return '::\n'.join(text) + '\n'
+        text.append(escape(qname[-1]))
+        return '%s\n'%qname.sep.join(text) + '\n'
 
-    def format_module_of_name(self, scoped_name):
+    def format_module_of_name(self, qname):
         """Formats a reference to each parent scope and this one."""
 
         types = self.processor.ir.types
 
         scope, text = [], []
         last_decl = None
-        for name in scoped_name:
+        for name in qname:
             scope.append(name)
             if types.has_key(scope):
                 ns_type = types[scope]
@@ -79,19 +79,17 @@ class HeadingFormatter(Fragment):
                         last_decl = decl
                         continue
             break
-        return last_decl, '::'.join(text) + '\n'
+        return last_decl, qname.sep.join(text) + '\n'
 
     def format_module(self, module):
         """Formats the module by linking to each parent scope in the name."""
 
         # Module details are only printed at the top of their view
         if not module.name:
-            type, name = 'Global', 'Module'
+            title = 'Global %s'%module.type.capitalize()
         else:
-            type = module.type.capitalize()
-            name = self.format_name(module.name)
-        name = element('h1', '%s %s'%(type, name))
-        return name
+            title = '%s %s'%(module.type, self.format_name(module.name))
+        return element('h1', title)
 
     def format_meta_module(self, module):
         """Calls format_module."""

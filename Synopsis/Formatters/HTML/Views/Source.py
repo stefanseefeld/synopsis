@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
@@ -15,7 +14,7 @@ import os, urllib
 
 link = None
 try:
-    link = Util._import("Synopsis.Parsers.Cxx.link")
+    from Synopsis.Parsers.Cxx import link
 except ImportError:
     print "Warning: unable to import link module. Continuing..."
 
@@ -31,7 +30,7 @@ class SXRTranslator:
     def link(self, linker):
 
         for a in self.sxr.getElementsByTagName('a'):
-            ref = a.getAttribute('href').split('.')
+            ref = str(a.getAttribute('href')).split('.')
             target = linker(ref)
             a.setAttribute('href', target)
 
@@ -107,6 +106,7 @@ class Source(View):
             translator = SXRTranslator(sxr)
             linker = self.external_url and self.external_ref or self.lookup_symbol
             translator.link(linker)
+
             translator.translate(self)
         elif not link:
             # No link module..
@@ -140,9 +140,11 @@ class Source(View):
     def lookup_symbol(self, name):
 
         e = self.__toc.lookup(tuple(name))
+        #if not e:
+        #    print 'failed to look up', name
         return e and self.rel_url + e.link or ''
 
 
     def external_ref(self, name):
 
-        return self.external_url + urllib.quote('::'.join(name))
+        return self.external_url + urllib.quote(str(name))

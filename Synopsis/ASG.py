@@ -16,9 +16,6 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
-import Util
-
-
 # Accessibility constants
 DEFAULT = 0
 PUBLIC = 1
@@ -92,7 +89,7 @@ class BaseType(NamedType):
     def __cmp__(self, other):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.name,other.name)
-    def __str__(self): return Util.ccolonName(self.name)
+    def __str__(self): return str(self.name)
 
 class Dependent(NamedType):
     """Class for template dependent types"""
@@ -103,7 +100,7 @@ class Dependent(NamedType):
     def __cmp__(self, other):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.name,other.name)
-    def __str__(self): return Util.ccolonName(self.name)
+    def __str__(self): return str(self.name)
 
 class UnknownType(NamedType):
     """Class for not (yet) known type"""
@@ -120,7 +117,7 @@ class UnknownType(NamedType):
     def __cmp__(self, other):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.name,other.name)
-    def __str__(self): return Util.ccolonName(self.name)
+    def __str__(self): return str(self.name)
 
 class Declared(NamedType):
     """Class for declared types"""
@@ -133,7 +130,7 @@ class Declared(NamedType):
     def __cmp__(self, other):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.name,other.name)
-    def __str__(self): return Util.ccolonName(self.name)
+    def __str__(self): return str(self.name)
 
 class Template(Declared):
     """Class for declared parametrized types"""
@@ -148,8 +145,7 @@ class Template(Declared):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.parameters,other.parameters)
     def __str__(self):
-        return "template<%s>%s"%(','.join(str(self.parameters)),
-                                 Util.ccolonName(self.name))
+        return "template<%s>%s"%(','.join(str(self.parameters)), str(self.name))
 
 class ModifierType(Type):
     """Class for alias types with modifiers (such as 'const', '&', etc.)"""
@@ -268,9 +264,6 @@ class Declaration(object):
         self.type = type
         self.accessibility = DEFAULT
         self.annotations = {}
-
-    def _set_name(self, name): self._name = tuple(name)
-    name = property(lambda self: self._name, _set_name)
 
     def accept(self, visitor):
         """Visit the given visitor"""

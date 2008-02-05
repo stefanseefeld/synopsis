@@ -136,6 +136,7 @@ private:
     void addDeclaration(PyObject *);
   */
 private:
+  PyObject* m_qname_module;
   PyObject* m_asg_module;
   PyObject* m_sf_module;
   PyObject *m_ir;

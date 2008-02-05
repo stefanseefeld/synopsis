@@ -43,9 +43,7 @@ class Formatter(Processor):
                        types.TupleType : self.visit_tuple,
                        types.ListType : self.visit_list,
                        types.DictType : self.visit_dict,
-                       types.InstanceType : self.visit_instance,
-                       SourceFile : self.visit_sourcefile,
-                       DocString : self.visit_docstring}
+                       types.InstanceType : self.visit_instance}
       self.visited = {}
 
       self.os = open(self.output, "w")
@@ -159,33 +157,35 @@ class Formatter(Processor):
       if self.show_ids:
          self.node.setAttribute('id', str(id(obj)))
       if self.handlers.has_key(obj.__class__):
+         print 'yes', obj.__class__
          self.handlers[obj.__class__](obj)
       else:
          attrs = obj.__dict__.items()
          attrs.sort()
          for name, value in attrs:
             # ignore None values
-            if (value == None
-                or value == []
-                or value == ()):
+            if value in (None, [], ()):
+               continue
+            # ignore private attributes
+            if name[0] == '_':
                continue
             # special case for some known attributes...
-            if name == '_Named__name':
-               self.node.setAttribute('name', '.'.join(value))
-               continue
-            if name == '_Declaration__name':
-               self.node.setAttribute('name', '.'.join(value))
-               continue
-            if name == '_Declaration__file':
-               if value:
-                  self.node.setAttribute('file', value.name)
-                  continue
+            #if name == '_Named__name':
+            #   self.node.setAttribute('name', '.'.join(value))
+            #   continue
+            #if name == '_Declaration__name':
+            #   self.node.setAttribute('name', '.'.join(value))
+            #   continue
+            #if name == '_Declaration__file':
+            #   if value:
+            #      self.node.setAttribute('file', value.name)
+            #      continue
 
-            if name[0] == '_':
-               index = name.find('__')
-               if index >= 0:
-                  #name = "%s.%s"%(name[1:index],name[index+2:])
-                  name = name[index+2:]
+            #if name[0] == '_':
+            #   index = name.find('__')
+            #   if index >= 0:
+            #      #name = "%s.%s"%(name[1:index],name[index+2:])
+            #      name = name[index+2:]
 
             # String attributes map to xml attributes.
             if self.handlers.get(type(value)) == self.visit_string:

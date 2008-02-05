@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis.FileTree import FileTree
+from Synopsis import FileTree
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -56,7 +56,7 @@ class FileListing(View):
       or not"""
 
       a_leaf = isinstance(a, FileTree.File)
-      b_leaf = isinstance(a, FileTree.File)
+      b_leaf = isinstance(b, FileTree.File)
       if a_leaf != b_leaf:
          return cmp(b_leaf, a_leaf)
       return cmp(a.path.upper(), b.path.upper())

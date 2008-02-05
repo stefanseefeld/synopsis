@@ -10,6 +10,7 @@
 
 #include <Synopsis/Python/Kit.hh>
 #include <Synopsis/ASG/IR.hh>
+#include <Synopsis/ASG/Type.hh>
 #include <Synopsis/ASG/SourceFile.hh>
 #include <Synopsis/ASG/Declaration.hh>
 
@@ -22,6 +23,15 @@ public:
 
   IR create_ir() { return create<IR>("IR");}
 };
+
+class QNameKit : public Python::Kit
+{
+public:
+  QNameKit() : Python::Kit("Synopsis.QualifiedName") {}
+  Object create_qname(ScopedName const &name)
+  { return create<Object>("QualifiedCxxName", Python::Tuple(name));}
+};
+
 namespace ASG
 {
 // basically a factory for all ASG types
@@ -32,30 +42,48 @@ public:
 
   Declaration create_declaration(const SourceFile &sf, long line,
 				 const char *type, const ScopedName &name)
-  { return create<Declaration>("Declaration", Python::Tuple(sf, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Declaration>("Declaration", Python::Tuple(sf, line, type, qname));
+  }
 
   Builtin create_builtin(const SourceFile &file, int line,
 			 const std::string &type, const ScopedName &name)
-  { return create<Builtin>("Builtin", Python::Tuple(file, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Builtin>("Builtin", Python::Tuple(file, line, type, qname));
+  }
 
   Macro create_macro(SourceFile &sf, long line,
 		     const ScopedName &name, const Python::List &parameters,
 		     const std::string &text)
-  { return create<Macro>("Macro", Python::Tuple(sf, line, "macro",
-					name, parameters, text));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Macro>("Macro", Python::Tuple(sf, line, "macro",
+					qname, parameters, text));
+  }
 
   Forward create_forward(const SourceFile &file, int line,
 			 const std::string &type, const ScopedName &name)
-  { return create<Forward>("Forward", Python::Tuple(file, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Forward>("Forward", Python::Tuple(file, line, type, qname));
+  }
 
   Scope create_scope(const SourceFile &file, int line,
 		     const std::string &type, const ScopedName &name)
-  { return create<Scope>("Scope", Python::Tuple(file, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Scope>("Scope", Python::Tuple(file, line, type, qname));
+  }
 
   Synopsis::ASG::Module
   create_module(const SourceFile &file, int line,
 		const std::string &type, const ScopedName &name)
-  { return create<Synopsis::ASG::Module>("Module", Python::Tuple(file, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Synopsis::ASG::Module>("Module", Python::Tuple(file, line, type, qname));
+  }
 
   Inheritance create_inheritance(const Type &parent,
 				 const Python::List &attributes)
@@ -63,30 +91,48 @@ public:
 
   Class create_class(const SourceFile &file, int line,
 		     const std::string &type, const ScopedName &name)
-  { return create<Class>("Class", Python::Tuple(file, line, type, name));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Class>("Class", Python::Tuple(file, line, type, qname));
+  }
 
   Typedef create_typedef(const SourceFile &file, int line,
 			 const std::string &type, const ScopedName &name,
 			 const Type &alias, bool constr)
-  { return create<Typedef>("Typedef", Python::Tuple(file, line, type, name, alias, constr));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Typedef>("Typedef", Python::Tuple(file, line, type, qname, alias, constr));
+  }
 
   Enumerator create_enumerator(const SourceFile &file, int line,
 			       const ScopedName &name, const std::string &value)
-  { return create<Enumerator>("Enumerator", Python::Tuple(file, line, name, value));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Enumerator>("Enumerator", Python::Tuple(file, line, qname, value));
+  }
 
   Enum create_enum(const SourceFile &file, int line,
 		   const ScopedName &name, const Enumerators &values)
-  { return create<Enum>("Enum", Python::Tuple(file, line, name, values));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Enum>("Enum", Python::Tuple(file, line, qname, values));
+  }
 
   Variable create_variable(const SourceFile &file, int line,
 			   const std::string &type, const ScopedName &name,
 			   const Type &vtype, bool constr)
-  { return create<Variable>("Variable", Python::Tuple(file, line, type, name, vtype, constr));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Variable>("Variable", Python::Tuple(file, line, type, qname, vtype, constr));
+  }
 
   Const create_const(const SourceFile &file, int line,
 		     const std::string &type, const ScopedName &name,
 		     const Type &ctype, const std::string &value)
-  { return create<Const>("Const", Python::Tuple(file, line, type, name, ctype, value));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Const>("Const", Python::Tuple(file, line, type, qname, ctype, value));
+  }
 
   Parameter create_parameter(const Modifiers &pre, const Type &type, const Modifiers &post,
 			     const std::string &name, const std::string &value)
@@ -96,15 +142,24 @@ public:
  			   const std::string &type, const Modifiers &pre,
  			   const Type &ret, const Modifiers &post,
 			   const ScopedName &name, const std::string &realname)
-  { return create<Function>("Function", Python::Tuple(file, line, type, pre, ret, post,
-						      name, realname));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Function>("Function", Python::Tuple(file, line, type, pre, ret, post,
+						      qname, realname));
+  }
 
   Operation create_operation(const SourceFile &file, int line,
 			     const std::string &type, const Modifiers &pre,
 			     const Type &ret, const Modifiers &post,
 			     const ScopedName &name, const std::string &realname)
-  { return create<Operation>("Operation", Python::Tuple(file, line, type, pre, ret, post,
-							name, realname));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Operation>("Operation", Python::Tuple(file, line, type, pre, ret, post,
+							qname, realname));
+  }
+private:
+  QNameKit qname_kit_;
+
 };
 }
 

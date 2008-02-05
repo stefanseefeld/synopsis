@@ -117,7 +117,11 @@ class Parser(Processor):
 
         translator = ASGTranslator(package, self.ir.types)
         translator.process_file(sourcefile)
-        self.ir.declarations.extend(sourcefile.declarations)
+        # At this point, sourcefile contains a single declaration: the module.
+        if package:
+            package.declarations.extend(sourcefile.declarations)
+        else:
+            self.ir.declarations.extend(sourcefile.declarations)
         if not self.primary_file_only:
             for i in translator.imports:
                 target = find_imported(i, self.base_path, sourcefile.name, self.verbose)

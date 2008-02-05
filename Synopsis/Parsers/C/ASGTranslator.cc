@@ -82,7 +82,7 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
     translate_parameters(PTree::second(p), parameter_types, parameters);
 
     size_t length = (name.front() - 0x80);
-    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     ASG::Modifiers pre;
     ASG::Modifiers post;
     ASG::Function function = asg_kit_.create_function(file_, lineno_,
@@ -101,7 +101,7 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
   {
     ASG::Type t = lookup(type);
     size_t length = (name.front() - 0x80);
-    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
 
     std::string vtype;// = builder_->scope()->type();
     if (vtype == "class" || vtype == "struct" || vtype == "union")
@@ -155,7 +155,7 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
 
     std::string type = PTree::reify(PTree::first(class_spec));
     std::string name = PTree::reify(PTree::second(class_spec));
-    ASG::ScopedName qname(name);
+    ScopedName qname(name);
     ASG::Forward forward = asg_kit_.create_forward(file_, lineno_,
                                                    type, qname);
     add_comments(forward, class_spec->get_comments());
@@ -185,7 +185,7 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
     body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 2));
   }
 
-  ASG::ScopedName qname(name);
+  ScopedName qname(name);
   ASG::Class class_ = asg_kit_.create_class(file_, lineno_, type, qname);
   add_comments(class_, class_spec->get_comments());
   if (visible) declare(class_);
@@ -222,14 +222,14 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
     if (penumor->is_atom())
     {
       // Just a name
-      ASG::ScopedName qname(PTree::reify(penumor));
+      ScopedName qname(PTree::reify(penumor));
       enumerator = asg_kit_.create_enumerator(file_, lineno_, qname, "");
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     else
     {
       // Name = Value
-      ASG::ScopedName qname(PTree::reify(PTree::first(penumor)));
+      ScopedName qname(PTree::reify(PTree::first(penumor)));
       std::string value;
       if (PTree::length(penumor) == 3)
         value = PTree::reify(PTree::third(penumor));
@@ -244,7 +244,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   // Add a dummy enumerator at the end to absorb trailing comments.
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
   enumerator = asg_kit_.create_enumerator(file_, lineno_,
-                                          ASG::ScopedName(std::string("dummy")), "");
+                                          ScopedName(std::string("dummy")), "");
   add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
@@ -253,7 +253,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   add_comments(enum_, enum_spec);
 
   if (visible) declare(enum_);
-  declare(ASG::ScopedName(name), enum_);
+  declare(ScopedName(name), enum_);
 }
 
 void ASGTranslator::visit(PTree::Typedef *typed)
@@ -278,7 +278,7 @@ void ASGTranslator::visit(PTree::Typedef *typed)
 	  << raw_filename_ << ':' << lineno_;
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
-    ASG::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+    ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     ASG::Type alias = lookup(type);
     // FIXME: need to honour constr parameter
     ASG::Declaration declaration = asg_kit_.create_typedef(file_, lineno_,
@@ -523,7 +523,7 @@ void ASGTranslator::declare(ASG::Declaration declaration)
     declarations_.append(declaration);    
 }
 
-ASG::Type ASGTranslator::declare(ASG::ScopedName name,
+ASG::Type ASGTranslator::declare(ScopedName name,
                                  ASG::Declaration declaration)
 {
   Trace trace("ASGTranslator::declare", Trace::SYMBOLLOOKUP);
@@ -674,7 +674,7 @@ PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i
   }
   if (!base)
   {
-    base = types_.attr("get")(Python::Tuple(ASG::ScopedName(name)));
+    base = types_.attr("get")(Python::Tuple(ScopedName(name)));
     if (!base) throw std::runtime_error("Unknown symbol: " + name);
   }
   if (premod.empty() && postmod.empty())

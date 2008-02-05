@@ -47,6 +47,7 @@ public:
               std::string const &base_path, bool primary_file_only,
               bpl::object ir, bool v, bool d)
     : language_(language),
+      qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
       declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
@@ -115,6 +116,7 @@ private:
   bpl::object lookup_source_file(std::string const &filename, bool primary);
 
   std::string          language_;
+  bpl::object          qname_module_;
   bpl::object          asg_module_;
   bpl::object          sf_module_;
   bpl::list            declarations_;
@@ -318,7 +320,7 @@ void IRGenerator::defined_macro(Context const &ctx,
     params.append(std::string(tmp.begin(), tmp.end()));
   }
   
-  bpl::tuple qname = bpl::make_tuple(macro_name);
+  bpl::object qname = qname_module_.attr("QualifiedCxxName")(bpl::make_tuple(macro_name));
   bpl::object macro = asg_module_.attr("Macro")(file_stack_.top(),
                                                 position.get_line(),
                                                 "macro",

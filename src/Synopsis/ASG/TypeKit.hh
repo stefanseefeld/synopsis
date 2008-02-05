@@ -11,6 +11,7 @@
 #include <Synopsis/Python/Kit.hh>
 #include <Synopsis/ASG/Type.hh>
 #include <Synopsis/ASG/Declared.hh>
+#include <Synopsis/ASG/ASGKit.hh>
 
 namespace Synopsis
 {
@@ -26,25 +27,43 @@ public:
   Type create_type()
   { return create<Type>("Type", Python::Tuple(lang_));}
 
-  Named create_named(const ScopedName &sn)
-  { return create<Named>("NamedType", Python::Tuple(lang_, sn));}
+  Named create_named(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Named>("NamedType", Python::Tuple(lang_, qname));
+  }
 
-  Base create_base(const ScopedName &sn)
-  { return create<Base>("BaseType", Python::Tuple(lang_, sn));}
+  Base create_base(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Base>("BaseType", Python::Tuple(lang_, qname));
+  }
 
-  Dependent create_dependent(const ScopedName &sn)
-  { return create<Dependent>("Dependent", Python::Tuple(lang_, sn));}
+  Dependent create_dependent(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Dependent>("Dependent", Python::Tuple(lang_, qname));
+  }
 
-  Unknown create_unknown(const ScopedName &sn)
-  { return create<Unknown>("UnknownType", Python::Tuple(lang_, sn));}
+  Unknown create_unknown(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Unknown>("UnknownType", Python::Tuple(lang_, qname));
+  }
 
-  Declared create_declared(const ScopedName &sn,
+  Declared create_declared(const ScopedName &name,
 			   const Declaration &decl)
-  { return create<Declared>("Declared", Python::Tuple(lang_, sn, decl));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Declared>("Declared", Python::Tuple(lang_, qname, decl));
+  }
 
-  Template create_template(const ScopedName &sn,
+  Template create_template(const ScopedName &name,
 			   const Declaration &decl, const Python::List &params)
-  { return create<Template>("Template", Python::Tuple(lang_, sn, decl, params));}
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<Template>("Template", Python::Tuple(lang_, qname, decl, params));
+  }
 
   Modifier create_modifier(const Type &alias,
 			   const Modifiers &pre, const Modifiers &post)
@@ -64,6 +83,8 @@ public:
 
 private:
   std::string lang_;
+  QNameKit qname_kit_;
+
 };
 
 }

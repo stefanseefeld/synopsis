@@ -16,7 +16,6 @@ class Struct:
     def __init__(self, summary = '', details = ''):
         self.summary = summary
         self.details = details
-        
 
 class Formatter(Parametrized):
     """Interface class that takes a 'doc' annotation and formats its

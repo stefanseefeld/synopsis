@@ -8,6 +8,7 @@
 
 from Synopsis.Processor import Composite, Parameter
 from Synopsis import ASG
+from Synopsis.QualifiedName import *
 
 class Linker(Composite, ASG.Visitor):
    """Visitor that removes duplicate declarations"""
@@ -20,7 +21,7 @@ class Linker(Composite, ASG.Visitor):
       self.set_parameters(kwds)
       self.ir = self.merge_input(ir)
 
-      root = ASG.MetaModule("", [])
+      root = ASG.MetaModule("", QualifiedName())
       self.__scopes = [root]
       global_dict = {}
       self.__dict_map = {id(root) : global_dict}
@@ -196,7 +197,7 @@ class Linker(Composite, ASG.Visitor):
          metamodule = ASG.MetaModule(module.type,module.name)
          self.append(metamodule)
       elif not isinstance(metamodule, ASG.MetaModule):
-         raise TypeError, 'symbol type mismatch: Synopsis.ASG.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name))
+         raise TypeError, 'symbol type mismatch: Synopsis.ASG.Module and %s both match "%s"'%(metamodule.__class__, str(module.name))
 
       metamodule.module_declarations.append(module)
 

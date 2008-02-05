@@ -8,7 +8,6 @@
 
 from Synopsis.Formatters.HTML.Tags import *
 from Default import Default
-from Synopsis import Util
 
 class XRefLinker(Default):
     """Adds an xref link to all declarations"""
@@ -25,6 +24,6 @@ class XRefLinker(Default):
             return ''
         page = self.xref.get_page_for(decl.name)
         filename = self.directory_layout.xref(page)
-        filename = filename + '#' + Util.quote('::'.join(decl.name))
+        filename = filename + '#' + str(decl.name)
         return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
 

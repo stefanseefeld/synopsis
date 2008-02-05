@@ -44,6 +44,8 @@ class TOC(ASG.Visitor):
       self.linker = linker
       self.verbose = verbose
     
+   def keys(self): return self.__toc.keys()
+
    def lookup(self, name):
 
       name = tuple(name)

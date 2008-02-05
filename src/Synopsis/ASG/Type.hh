@@ -14,10 +14,10 @@
 
 namespace Synopsis
 {
+typedef Python::TypedList<std::string> ScopedName;
 namespace ASG
 {
 
-typedef Python::TypedList<std::string> ScopedName;
 typedef Python::TypedList<std::string> Modifiers;
 
 class Type : public Python::Object

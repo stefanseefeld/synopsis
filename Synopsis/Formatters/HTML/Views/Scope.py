@@ -35,7 +35,7 @@ class Scope(View):
         super(Scope, self).register(frame)
         for part in self.parts: part.register(self)
 
-        self.__scopes = []
+        self.scope_queue = []
         self.__toc = TOC(self.directory_layout)
         for d in self.processor.ir.declarations:
             d.accept(self.__toc)
@@ -57,8 +57,9 @@ class Scope(View):
         if self.main:
             url = self.directory_layout.index()
         else:
-            url = self.directory_layout.scope()
-        return url, 'Global Module'
+            url = self.directory_layout.scope(self.processor.root.name)
+        title = 'Global %s'%(self.processor.root.type.capitalize())
+        return url, title
 
     def scope(self):
         """return the current scope processed by this object"""
@@ -68,22 +69,20 @@ class Scope(View):
     def process(self):
         """Creates a view for every Scope."""
 
-        # FIXME: see HTML.Formatter
-        module = self.processor.ir.declarations[0]
-        self.__scopes = [module]
-        while self.__scopes:
-            scope = self.__scopes.pop(0)
+        module = self.processor.root
+        self.scopes_queue = [module]
+        while self.scopes_queue:
+            scope = self.scopes_queue.pop(0)
             self.process_scope(scope)
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Scope)]
-            self.__scopes.extend(scopes)
+            self.scopes_queue.extend(scopes)
 
     def register_filenames(self):
         """Registers a view for every Scope."""
 
-        # FIXME: see HTML.Formatter
-        self.__scopes = [self.processor.ir.declarations[0]]
-        while self.__scopes:
-            scope = self.__scopes.pop(0)
+        self.scopes_queue = [self.processor.root]
+        while self.scopes_queue:
+            scope = self.scopes_queue.pop(0)
             if scope.name:
                 filename = self.directory_layout.scope(scope.name)
             else:
@@ -91,7 +90,7 @@ class Scope(View):
             self.processor.register_filename(filename, self, scope)
 
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
-            self.__scopes.extend(scopes)
+            self.scopes_queue.extend(scopes)
      
     def process_scope(self, scope):
         """Creates a view for the given scope"""

@@ -7,6 +7,8 @@
 
 class QualifiedName(tuple):
 
+    sep = ''
+
     def prune(self, other):
         """Return a copy of other with any prefix it shares with self removed.
    
