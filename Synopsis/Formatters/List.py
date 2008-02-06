@@ -16,20 +16,15 @@ class Formatter(Processor, ASG.Visitor):
     show_files = Parameter(False, 'list files')
     show_scope = Parameter(None, 'list declarations in the given scope')
 
-    scope_separator = {'C' : '::',
-                       'C++' : '::',
-                       'IDL' : '::',
-                       'Python' : '.'}
-
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
         self.ir = self.merge_input(ir)
 
         if self.show_files:
-            for name, sf in self.ir.files.iteritems():
-                print '%s (language=%s, primary=%d)'\
-                      %(sf.name, sf.annotations['language'], sf.annotations['primary'])
+            for f in self.ir.files.values():
+                print '%s (language=%s, primary=%d)'%(f.name, f.annotations['language'],
+                                                      f.annotations['primary'])
 
         if self.show_scope is not None:
             if '.' in self.show_scope:
@@ -37,17 +32,6 @@ class Formatter(Processor, ASG.Visitor):
             else:
                 self.scope = tuple(self.show_scope.split('::'))
                 
-            # Now guess the current language by looking at the
-            # first declaration.
-            d = len(self.ir.declarations) and self.ir.declarations[0]
-            sf = d and d.file or None
-            if not sf: # d was a MetaModule, so let's assume C++ or IDL.
-                self.sep = '::'
-            else:
-                lang = sf.annotations.get('language', 'Python')
-                self.sep = self.scope_separator[lang]
-
-
             for d in self.ir.declarations:
                 d.accept(self)
                 
@@ -64,9 +48,7 @@ class Formatter(Processor, ASG.Visitor):
             declarations.sort(lambda x, y : cmp(x.name, y.name))
             for d in declarations:
                 if isinstance(d, ASG.Builtin): continue
-                name = d.name[-1]
-                _type = d.type
-                print '%s : %s'%(name, _type)
+                print '%s : %s'%(d.name[-1], d.type)
         elif (len(node.name) < self.scope and
               self.scope[0:len(node.name)] == node.name):
 
@@ -74,6 +56,3 @@ class Formatter(Processor, ASG.Visitor):
             # Visit child scopes.
             for d in node.declarations:
                 d.accept(self)
-
-
-__all__ = ['Formatter']

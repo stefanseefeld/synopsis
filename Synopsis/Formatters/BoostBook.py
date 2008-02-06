@@ -99,7 +99,7 @@ class Formatter(Processor, ASG.Visitor):
 
    def label(self, ref):
 
-      location = self.__toc.lookup(Util.ccolonName(ref))
+      location = self.__toc.lookup(str(ref))
       ref = Util.ccolonName(ref, self.scope())
       if location != "": return name("\"" + location + "\"", ref)
       else: return ref

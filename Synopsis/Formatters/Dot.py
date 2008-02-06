@@ -11,6 +11,7 @@ Uses 'dot' from graphviz to generate various graphs.
 """
 
 from Synopsis.Processor import *
+from Synopsis.QualifiedName import *
 from Synopsis import ASG, Util
 from Synopsis.Formatters import TOC
 
@@ -101,14 +102,19 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       else: self.__attributes = None
       self.aggregation = aggregation
       self.toc = toc
-      self.__scope = []
-      if prefix: self.__scope = prefix.split('::')
+      self.scope = QualifiedName()
+      if prefix:
+         if prefix.contains('::'):
+            self.scope = QualifiedCxxName(prefix.split('::'))
+         elif prefix.contains('.'):
+            self.scope = QualifiedPythonName(prefix.split('.'))
+         else:
+            self.scope = QualifiedName((prefix,))
       self.__type_ref = None
       self.__type_label = ''
       self.__no_descend = no_descend
       self.nodes = {}
 
-   def scope(self): return self.__scope
    def type_ref(self): return self.__type_ref
    def type_label(self): return self.__type_label
    def parameter(self): return self.__parameter
@@ -141,8 +147,8 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
                   break
          except: pass # typedefs etc may cause errors here.. ignore
       if not node.parents:
-         base = self.scope()
-      return Util.ccolonName(node.name, base)
+         base = self.scope
+      return str(self.scope.prune(node.name))
 
    #################### Type Visitor ##########################################
 
@@ -155,7 +161,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
    def visit_unknown_type(self, type):
 
       self.__type_ref = self.toc and self.toc[type.link] or None
-      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_label = str(self.scope.prune(type.name))
         
    def visit_base_type(self, type):
 
@@ -173,13 +179,13 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if isinstance(type.declaration, ASG.Class):
          self.__type_label = self.get_class_name(type.declaration)
       else:
-         self.__type_label = Util.ccolonName(type.declaration.name, self.scope())
+         self.__type_label = str(self.scope.prune(type.declaration.name))
 
    def visit_parametrized(self, type):
 
       if type.template:
          type_ref = self.toc and self.toc[type.template.name] or None
-         type_label = Util.ccolonName(type.template.name, self.scope())
+         type_label = str(self.scope.prune(type.template.name))
       else:
          type_ref = None
          type_label = "(unknown)"

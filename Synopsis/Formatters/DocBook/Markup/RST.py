@@ -10,7 +10,8 @@ from Synopsis.Formatters.DocBook.Markup import *
 from docutils import writers, nodes, languages
 from docutils.nodes import *
 from docutils.core import *
-import string, re
+import string, re, StringIO
+
 from types import ListType
 
 class Writer(writers.Writer):
@@ -32,7 +33,7 @@ class Writer(writers.Writer):
     )
 
 
-    """DocBook does it's own section numbering"""
+    """DocBook does its own section numbering"""
     settings_default_overrides = {'enable_section_numbering': 0}
 
     output = None
@@ -1114,40 +1115,48 @@ class RST(Formatter):
 
         formatter = self
 
+        errstream = StringIO.StringIO()
+        settings = {}
+        settings['halt_level'] = 2
+        settings['warning_stream'] = errstream
+        settings['traceback'] = True
+
         doc = decl.annotations.get('doc')
         if doc:
-            doctree = publish_doctree(doc.text,
-                                      settings_overrides={'report_level':10000,
-                                                          'halt_level':10000,
-                                                          'warning_stream':None})
+            try:
+                doctree = publish_doctree(doc.text,
+                                          settings_overrides=settings)
+                # Extract the summary.
+                extractor = SummaryExtractor(doctree)
+                doctree.walk(extractor)
 
-            # Extract the summary.
-            extractor = SummaryExtractor(doctree)
-            doctree.walk(extractor)
+                reader = docutils.readers.doctree.Reader(parser_name='null')
 
-            reader = docutils.readers.doctree.Reader(parser_name='null')
-
-            # Publish the summary.
-            if extractor.summary:
+                # Publish the summary.
+                if extractor.summary:
+                    pub = Publisher(reader, None, None,
+                                    source=io.DocTreeInput(extractor.summary),
+                                    destination_class=io.StringOutput)
+                    pub.writer = Writer()
+                    pub.process_programmatic_settings(None, None, None)
+                    dummy = pub.publish(enable_exit_status=None)
+                    summary = pub.writer.output
+                else:
+                    summary = ''
+                
+                # Publish the details.
                 pub = Publisher(reader, None, None,
-                                source=io.DocTreeInput(extractor.summary),
+                                source=io.DocTreeInput(doctree),
                                 destination_class=io.StringOutput)
                 pub.writer = Writer()
                 pub.process_programmatic_settings(None, None, None)
                 dummy = pub.publish(enable_exit_status=None)
-                summary = pub.writer.output
-            else:
-                summary = ''
+                details = pub.writer.output
                 
-            # Publish the details.
-            pub = Publisher(reader, None, None,
-                            source=io.DocTreeInput(doctree),
-                            destination_class=io.StringOutput)
-            pub.writer = Writer()
-            pub.process_programmatic_settings(None, None, None)
-            dummy = pub.publish(enable_exit_status=None)
-            details = pub.writer.output
-                
-            return Struct(summary, details)
-        else:
-            return Struct('', '')
+                return Struct(summary, details)
+
+            except docutils.utils.SystemMessage, error:
+                xx, line, message = str(error).split(':', 2)
+                print '%s:%d:%s'%(decl.file.name, decl.line + int(line), message)
+
+        return Struct('', '')
