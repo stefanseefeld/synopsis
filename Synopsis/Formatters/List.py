@@ -29,8 +29,10 @@ class Formatter(Processor, ASG.Visitor):
         if self.show_scope is not None:
             if '.' in self.show_scope:
                 self.scope = tuple(self.show_scope.split('.'))
-            else:
+            elif '::' in self.show_scope:
                 self.scope = tuple(self.show_scope.split('::'))
+            else:
+                self.scope = (self.show_scope,)
                 
             for d in self.ir.declarations:
                 d.accept(self)

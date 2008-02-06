@@ -15,9 +15,13 @@ class Include:
     def __init__(self, target, name, is_macro, is_next):
 
         self.target = target
+        """The target SourceFile object being referenced."""
         self.name = name
+        """The name by which the target is referenced."""
         self.is_macro = is_macro
+        """True if the directive uses a macro."""
         self.is_next = is_next
+        """True if this is using #include_next (GNU extension)."""
 
 
 class MacroCall:
@@ -41,9 +45,15 @@ class SourceFile:
         """Constructor"""
 
         self.name = name
+        """The filename."""
         self.abs_name = abs_name
+        """The absolute filename."""
         self.annotations = {'language':language, 'primary':primary}
+        """Dictionary with file annotations."""
         self.includes = []
+        """List of includes this file contains."""
         self.declarations = []
+        """List of declarations this file contains."""
         self.macro_calls = {}
+        """Dictionary of macro calls this file contains."""
 

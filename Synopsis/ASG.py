@@ -259,11 +259,17 @@ class Declaration(object):
     def __init__(self, file, line, type, name):
 
         self.file  = file
+        """SourceFile instance this declaration is part of."""
         self.line  = line
+        """The line number of this declaration."""
         self.name = name
+        """The name of the declared object."""
         self.type = type
+        """A string describing the (language-specific) type of the declared object."""
         self.accessibility = DEFAULT
+        """Accessibility descriptor for the declared object."""
         self.annotations = {}
+        """A dictionary holding any annotations of this object."""
 
     def accept(self, visitor):
         """Visit the given visitor"""

@@ -268,7 +268,9 @@ class ASGTranslator(ASTVisitor):
                 self.docformat = expression_text
 
         qname = QName(self.scope_name() + (node.name,))
-        if type(self.scope[-1]) == ASG.Class:
+        if type(self.scope[-1]) in (ASG.Function, ASG.Operation):
+            return
+        elif type(self.scope[-1]) == ASG.Class:
             attribute = ASG.Variable(self.file, node.lineno, 'class attribute',
                                      qname, self.any_type, False)
         else:
@@ -290,10 +292,13 @@ class ASGTranslator(ASTVisitor):
 
     def visitAssAttr(self, node):
         self.default_visit(node, node.attrname)
-        if self.name[0] == 'self' and type(self.scope[-1]) == ASG.Operation:
-            qname = QName(self.name[1:])
-            self.attributes.append(ASG.Variable(self.file, node.lineno,
-                                                'attribute', qname, self.any_type, False))
+        if type(self.scope[-1]) == ASG.Operation:
+            # We only parse constructors, so look out for
+            # self attributes defined here.
+            if self.name[0] == 'self':
+                qname = QName(self.name[1:])
+                self.attributes.append(ASG.Variable(self.file, node.lineno,
+                                                    'attribute', qname, self.any_type, False))
 
     def visitGetattr(self, node, suffix):
         self.default_visit(node, node.attrname + '.' + suffix)
