@@ -7,6 +7,7 @@
 #
 
 from Synopsis.Processor import *
+from Synopsis.QualifiedName import QualifiedCxxName as QName
 
 import os.path, cPickle, urllib
 
@@ -77,7 +78,7 @@ class XRefCompiler(Processor):
 
             for line in lines:
                 target, file, line, scope, context = line.split()
-                target = tuple([intern(t) for t in urllib.unquote(target).split('\t')])
+                target = QName([intern(t) for t in urllib.unquote(target).split('\t')])
                 scope = [intern(s) for s in urllib.unquote(scope).split('\t')]
                 if scope == ['','']:
                     scope = ()
@@ -98,7 +99,7 @@ class XRefCompiler(Processor):
                             del scope[i+1:]
                             scope[i] = scope[i][1:]
                             break
-                scope = tuple(scope)
+                #scope = tuple(scope)
                 target_data = data.setdefault(target, [[],[],[]])
                 if context == 'DEF':
                     target_data[0].append( (file, line, scope) )

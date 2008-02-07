@@ -157,6 +157,6 @@ class XRef(View):
                     link = href(rel(self.filename(), entry.link), escape(str(name.prune(cname))))
                     self.write(element('li', file_href + type + link))
                 else:
-                    self.write(element('li', file_href + type + str(name.prunt(cname))))
+                    self.write(element('li', file_href + type + str(name.prune(cname))))
             self.write('</ul></li>\n')
         self.write('</ul>\n')
