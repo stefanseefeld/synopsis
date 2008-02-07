@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 
 class NameMapper(Processor, ASG.Visitor):
     """Abstract base class for name mapping."""

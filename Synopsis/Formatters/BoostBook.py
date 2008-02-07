@@ -9,7 +9,7 @@
 """a BoostBook formatter"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 
 import sys, getopt, os, os.path
 
@@ -100,7 +100,7 @@ class Formatter(Processor, ASG.Visitor):
    def label(self, ref):
 
       location = self.__toc.lookup(str(ref))
-      ref = Util.ccolonName(ref, self.scope())
+      ref = str(self.scope().prune(ref))
       if location != "": return name("\"" + location + "\"", ref)
       else: return ref
 
@@ -109,18 +109,18 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_base_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name)
+      self.__type_ref = str(type.name)
+      self.__type_label = str(type.name)
         
    def visit_unknown_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_ref = str(type.name)
+      self.__type_label = str(self.scope().prune(type.name))
 
    def visit_declared_type(self, type):
 
-      self.__type_label = Util.ccolonName(type.name, self.scope())
-      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = str(self.scope().prune(type.name))
+      self.__type_ref = str(type.name)
 
    def visit_modifier_type(self, type):
 
@@ -163,7 +163,7 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_typedef(self, typedef):
 
-      self.start_entity("typedef", name=Util.ccolonName(self.scope(), typedef.name))
+      self.start_entity("typedef", name=str(self.scope().prune(typedef.name)))
       self.write_entity("type", self.format_type(typedef.alias))
       self.end_entity("typedef")
 
@@ -181,7 +181,7 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_module(self, module):
 
-      self.start_entity("namespace", name=Util.ccolonName(self.scope(), module.name))
+      self.start_entity("namespace", name=str(self.scope().prune(module.name)))
       self.write("\n")
       self.process_doc(module.annotations.get('doc', ''))
       self.push_scope(module.name)
@@ -191,7 +191,7 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_class(self, class_):
 
-      self.start_entity("class", name=Util.ccolonName(self.scope(), class_.name))
+      self.start_entity("class", name=str(self.scope().prune(class_.name)))
       # class_.type
       for p in class_.parents:
          p.accept(self)
@@ -225,7 +225,7 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_function(self, function):
 
-      self.start_entity("function", name=Util.ccolonName(self.scope(), function.real_name))
+      self.start_entity("function", name=str(self.scope().prune(function.real_name)))
       self.do_function(function)
       self.end_entity("function")
       self.write("\n")
@@ -243,7 +243,7 @@ class Formatter(Processor, ASG.Visitor):
             self.start_entity(tag)
       if tag is None:
          tag = "method"
-         self.start_entity(tag, name=Util.ccolonName(self.scope(), operation.real_name))
+         self.start_entity(tag, name=str(self.scope().prune(operation.real_name)))
       self.do_function(operation)
       self.end_entity(tag)
       self.write("\n")

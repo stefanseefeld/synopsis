@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -40,7 +40,7 @@ class Inheritance(Part):
       # Iterate through the sections
       for section in sorter:
          # Write a heading
-         heading = section+' Inherited from '+ Util.ccolonName(clas.name, self.scope())
+         heading = section+' Inherited from '+ str(self.scope().prune(clas.name))
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
          for child in sorter[section]:

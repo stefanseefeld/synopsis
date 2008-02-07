@@ -8,7 +8,7 @@
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util, DeclarationSorter
+from Synopsis import ASG, DeclarationSorter
 from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
@@ -139,8 +139,8 @@ class FormatterBase:
 
     def label(self, ref):
 
-        location = self.__toc.lookup(Util.ccolonName(ref))
-        ref = Util.ccolonName(ref, self.scope())
+        location = self.__toc.lookup(ref)
+        ref = str(self.scope().prune(ref))
         if location != '': return name('"' + location + '"', ref)
         else: return ref
 
@@ -192,18 +192,18 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     def visit_base_type(self, type):
 
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name)
+        self.__type_ref = str(type.name)
+        self.__type_label = str(type.name)
 
     def visit_unknown_type(self, type):
 
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name, self.scope())
+        self.__type_ref = str(type.name)
+        self.__type_label = str(self.scope().prune(type.name))
         
     def visit_declared_type(self, type):
 
-        self.__type_label = Util.ccolonName(type.name, self.scope())
-        self.__type_ref = Util.ccolonName(type.name)
+        self.__type_label = str(self.scope().prune(type.name))
+        self.__type_ref = str(type.name)
 
     def visit_modifier_type(self, type):
 
@@ -386,7 +386,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
     def visit_inheritance(self, inheritance):
 
         for a in inheritance.attributes: self.element("modifier", a)
-        self.element("classname", Util.ccolonName(inheritance.parent.name, self.scope()))
+        self.element("classname", str(self.scope().prune((inheritance.parent.name))))
 
     def visit_parameter(self, parameter):
 

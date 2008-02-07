@@ -74,11 +74,7 @@ class NamedType(Type):
 
     def __init__(self, language, name):
         super(NamedType, self).__init__(language)
-        self._name = name
-
-    def _set_name(self, name): self._name = tuple(name)
-    name = property(lambda self: self._name, _set_name)
-
+        self.name = name
 
 class BaseType(NamedType):
     """Class for base types"""
@@ -263,7 +259,7 @@ class Declaration(object):
         self.line  = line
         """The line number of this declaration."""
         self.name = name
-        """The name of the declared object."""
+        """The (fully qualified) name of the declared object."""
         self.type = type
         """A string describing the (language-specific) type of the declared object."""
         self.accessibility = DEFAULT

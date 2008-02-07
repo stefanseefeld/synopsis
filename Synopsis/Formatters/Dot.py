@@ -12,10 +12,10 @@ Uses 'dot' from graphviz to generate various graphs.
 
 from Synopsis.Processor import *
 from Synopsis.QualifiedName import *
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters import TOC
-
-import sys, tempfile, getopt, os, os.path, types, errno, re
+from Synopsis.Formatters import quote_name, open_file
+import sys, os
 
 verbose = False
 debug = False
@@ -32,7 +32,7 @@ class SystemError:
 
    def __repr__(self):
 
-      return "SystemError: %(retval)x\"%(command)s\" failed."%self.__dict__
+      return 'SystemError: %(retval)x"%(command)s" failed.'%self.__dict__
 
 def system(command):
    """Run the command. If the command fails, an exception SystemError is
@@ -67,10 +67,8 @@ class DotFileGenerator:
       number = self.nodes[name]
 
       # Quote to remove characters that dot can't handle
-      label = re.sub('<',r'\<',label)
-      label = re.sub('>',r'\>',label)
-      label = re.sub('{',r'\{',label)
-      label = re.sub('}',r'\}',label)
+      for p in [('<', '\<'), ('>', '\>'), ('{','\{'), ('}','\}')]:
+         label = label.replace(*p)
 
       if self.bgcolor:
          attr['fillcolor'] = self.bgcolor
@@ -419,7 +417,7 @@ def _format_html(input, output, base_url):
    _format(input, output + ".map", "imap")
    prefix, name = os.path.split(output)
    reference = name + ".png"
-   html = Util.open(output + ".html")
+   html = open_file(output + ".html")
    html.write('<img alt="'+name+'" src="' + reference + '" hspace="8" vspace="8" border="0" usemap="#')
    html.write(name + "_map\" />\n")
    html.write("<map name=\"" + name + "_map\">")
@@ -475,9 +473,9 @@ class Formatter(Processor):
          toc = None
 
       head, tail = os.path.split(self.output)
-      tmpfile = os.path.join(head, Util.quote(tail)) + ".dot"
+      tmpfile = os.path.join(head, quote_name(tail)) + ".dot"
       if self.verbose: print "Dot Formatter: Writing dot file..."
-      dotfile = Util.open(tmpfile)
+      dotfile = open_file(tmpfile)
       dotfile.write("digraph \"%s\" {\n"%(self.title))
       if self.layout == 'horizontal':
          dotfile.write('rankdir="LR";\n')

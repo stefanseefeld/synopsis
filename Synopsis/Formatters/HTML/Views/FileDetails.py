@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Source import *
@@ -114,15 +114,14 @@ class FileDetails(View):
             else: plural = 's'
             if len(curr_scope):
                self.write('<h3>%s%s in %s</h3>\n<div>'%(
-                  curr_type.capitalize(), plural,
-                  escape(Util.ccolonName(curr_scope))))
+                  curr_type.capitalize(), plural, escape(str(curr_scope))))
             else:
                self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
             br = 0
             
          # Format this declaration
          entry = self.processor.toc[name]
-         label = escape(Util.ccolonName(name, curr_scope))
+         label = escape(str(curr_scope.prune(name)))
          label = replace_spaces(label)
          if entry:
             link = rel(self.filename(), entry.link)

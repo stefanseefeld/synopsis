@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 
 class AccessRestrictor(Processor, ASG.Visitor):
    """This class processes declarations, and removes those that need greated

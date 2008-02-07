@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import IR, ASG, Util
+from Synopsis import IR, ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 

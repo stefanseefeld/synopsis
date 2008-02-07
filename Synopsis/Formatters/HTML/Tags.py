@@ -16,54 +16,65 @@ def attributes(keys):
 
     return ' '.join(['%s="%s"'%(k,v) for k,v in keys.items()])
 
-def rel(frm, to):
-    "Find link to to relative to frm"
+def rel(origin, target):
+    "Find link to target relative to origin."
 
-    frm = frm.split('/'); to = to.split('/')
-    if len(frm) < len(to): check = len(frm)-1
-    else: check = len(to)-1
+    origin, target = origin.split('/'), target.split('/')
+    if len(origin) < len(target): check = len(origin) - 1
+    else: check = len(target) - 1
     for l in range(check):
-        if to[0] == frm[0]: del to[0]; del frm[0]
+        if target[0] == origin[0]:
+            del target[0]
+            del origin[0]
         else: break
-    # If frm is a directory, and to is in that directory, frm[0] == to[0]
-    if len(frm) == 1 and len(to) > 1 and frm[0] == to[0]:
-        # Remove directory from to, but respect len(frm)-1 below
-        del to[0]
-    if frm: to = ['..'] * (len(frm) - 1) + to
-    return '/'.join(to)
+    # If origin is a directory, and target is in that directory, origin[0] == target[0]
+    if len(origin) == 1 and len(target) > 1 and origin[0] == target[0]:
+        # Remove directory from target, but respect len(origin) - 1 below
+        del target[0]
+    if origin: target = ['..'] * (len(origin) - 1) + target
+    return '/'.join(target)
 
-def href(_ref, _label, **keys):
+def href(_ref, _label, **attrs):
     "Return a href to 'ref' with name 'label' and attributes"
 
     # Remove target if not using frames
-    if keys.has_key('target') and not using_frames:
-        del keys['target']
-    return '<a href="%s" %s>%s</a>'%(_ref,attributes(keys),_label)
+    if attrs.has_key('target') and not using_frames:
+        del attrs['target']
+    return '<a href="%s" %s>%s</a>'%(_ref,attributes(attrs),_label)
+
+def img(**attrs):
+    "Return an img element."
+
+    return '<img %s/>'%attributes(attrs)
 
 def name(ref, label):
     "Return a name anchor with given reference and label"
 
     return '<a class="name" name="%s">%s</a>'%(ref,label)
 
-def span(clas, body):
+def span(class_, body):
     "Wrap the body in a span of the given class"
 
-    return '<span class="%s">%s</span>'%(clas,body)
+    if class_:
+        return '<span class="%s">%s</span>'%(class_,body)
+    else:
+        return '<span>%s</span>'%body
 
-def div(clas, body):
+def div(class_, body):
     "Wrap the body in a div of the given class"
 
-    return '<div class="%s">%s</div>'%(clas,body)
+    if class_:
+        return '<div class="%s">%s</div>'%(class_,body)
+    else:
+        return '<div>%s</div>'%body
 
-def element(_type, body, **keys):
+def element(_, body = None, **keys):
     "Wrap the body in a tag of given type and attributes"
 
-    return '<%s %s>%s</%s>'%(_type,attributes(keys),body,_type)
-
-def solotag(_type, **keys):
-    "Create a solo tag (no close tag) of given type and attributes"
-
-    return '<%s %s/>'%(_type,attributes(keys))
+    if body:
+        return '<%s %s>%s</%s>'%(_, attributes(keys), body, _)
+    else:
+        return '<%s %s />'%(_, attributes(keys))
 
 def desc(text):
     "Create a description div for the given text"

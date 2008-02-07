@@ -11,10 +11,10 @@ View base class, contains base functionality and common interface for all Views.
 """
 
 from Synopsis.Processor import Parametrized, Parameter
-from Synopsis import Util
+from Synopsis.Formatters import open_file
 from Tags import *
 
-import re, os.path
+import re, os
 
 class Format(Parametrized):
     """Default and base class for formatting a view layout. The Format
@@ -50,7 +50,7 @@ class Format(Parametrized):
         os.write('<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type"/>\n')
         os.write(element('title','Synopsis - '+ title) + '\n')
         css = self.prefix + 'style.css'
-        os.write(solotag('link', type='text/css', rel='stylesheet', href=css) + '\n')
+        os.write(element('link', type='text/css', rel='stylesheet', href=css) + '\n')
         os.write(headextra)
         os.write("</head>\n%s\n"%body)
 
@@ -236,10 +236,10 @@ class View(Parametrized):
     def open_file(self):
         """Returns a new output stream. This template method is for internal
         use only, but may be overriden in derived classes.
-        The default joins output dir and self.filename()
-        and uses Util.open()"""
+        The default joins output dir and self.filename()"""
 
-        return Util.open(os.path.join(self.processor.output, self.filename()))
+        path = os.path.join(self.processor.output, self.filename())
+        return open_file(path)
 
     def close_file(self):
         """Closes the internal output stream. This template method is for

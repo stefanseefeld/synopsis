@@ -9,7 +9,7 @@
 """a TexInfo formatter """
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.DocString import DocString
 import sys, getopt, os, os.path, re
 
@@ -25,15 +25,15 @@ class MenuMaker(ASG.Visitor):
 
    def __init__(self, scope, os):
 
-      self.__scope = scope
-      self.__os = os
+      self.scope = scope
+      self.os = os
 
-   def write(self, text): self.__os.write(text)
+   def write(self, text): self.os.write(text)
    def start(self): self.write('@menu\n')
    def end(self): self.write('@end menu\n')
    def visit_declaration(self, node):
 
-      name = escape(Util.dotName(node.name, self.__scope))
+      name = escape(str(self.scope.prune(node.name)))
       self.write('* ' + name + '::\t' + node.type + '\n')
 
    visit_group = visit_declaration
@@ -81,18 +81,18 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_base_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name)
+      self.__type_ref = str(type.name)
+      self.__type_label = str(type.name)
         
    def visit_unknown_type(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_ref = str(type.name)
+      self.__type_label = str(self.scope().prune(type.name))
         
    def visit_declared_type(self, type):
 
-      self.__type_label = Util.ccolonName(type.name, self.scope())
-      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = str(self.scope().prune(type.name))
+      self.__type_ref = str(type.name)
         
    def visit_modifier_type(self, type):
 
@@ -184,17 +184,13 @@ class Formatter(Processor, ASG.Visitor):
 
    def visit_inheritance(self, inheritance):
 
-      #map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
-      #self.entity("classname", Util.ccolonName(inheritance.parent().name, self.scope()))
       self.write('parent class')
 
    def visit_parameter(self, parameter):
 
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier)
       parameter.type.accept(self)
       label = self.write('{' + self.type_label() + '}')
       label = self.write(' @var{' + parameter.name + '}')
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier)
 
    def visit_function(self, function):
 
@@ -204,7 +200,6 @@ class Formatter(Processor, ASG.Visitor):
          ret_label = '{' + self.type_label() + '}'
       else:
          ret_label = '{}'
-      #self.write('@node ' + self.decl_label(function.real_name) + '\n')
       self.write('@deftypefn ' + function.type + ' ' + ret_label + ' ' + self.decl_label(function.real_name) + ' (')
       first = 1
       for parameter in function.parameters:

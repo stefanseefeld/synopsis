@@ -7,7 +7,6 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -38,7 +37,7 @@ class Summary(Part):
         if label is None: label = ref
         if self.__link_detail:
             # Insert a reference instead
-            return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
+            return span('name',self.reference(ref, str(self.scope().prune(label))))
         return Part.label(self, ref, label)
 	
     def write_section_start(self, heading):
