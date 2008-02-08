@@ -5,6 +5,7 @@
 # see the file COPYING for details.
 #
 
+from Synopsis.QualifiedName import QualifiedCxxName as QName
 from Synopsis.process import process
 from Synopsis.Processor import *
 from Synopsis.Parsers import Cxx
@@ -25,13 +26,13 @@ class Cxx2IDL(TypeMapper):
         if name[0][0:4] == "POA_":
             interface = map(None, name)
             interface[0] = interface[0][4:]
-            unknown.resolve("IDL", name, tuple(interface))
+            unknown.resolve("IDL", name, QName(interface))
             if self.verbose:
                print 'mapping', '::'.join(name), 'to', '::'.join(interface)
         elif name[-1][-4:] == "_ptr" or name[-1][-4:] == "_var":
             interface = map(None, name)
             interface[-1] = interface[-1][:-4]
-            unknown.resolve("IDL", name, tuple(interface))
+            unknown.resolve("IDL", name, QName(interface))
             if self.verbose:
                print 'mapping', '::'.join(name), 'to', '::'.join(interface)
 

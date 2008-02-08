@@ -28,23 +28,23 @@ class TypeTranslator(idlvisitor.TypeVisitor):
    def __init__(self, types):
       self.types = types
       self.__result = None
-      self.__basetypes = {idltype.tk_void:       "void",
-                          idltype.tk_short:      "short",
-                          idltype.tk_long:       "long",
-                          idltype.tk_ushort:     "unsigned short",
-                          idltype.tk_ulong:      "unsigned long",
-                          idltype.tk_float:      "float",
-                          idltype.tk_double:     "double",
-                          idltype.tk_boolean:    "boolean",
-                          idltype.tk_char:       "char",
-                          idltype.tk_octet:      "octet",
-                          idltype.tk_any:        "any",
-                          idltype.tk_TypeCode:   "CORBA::TypeCode",
-                          idltype.tk_Principal:  "CORBA::Principal",
-                          idltype.tk_longlong:   "long long",
-                          idltype.tk_ulonglong:  "unsigned long long",
-                          idltype.tk_longdouble: "long double",
-                          idltype.tk_wchar:      "wchar"}
+      self.__basetypes = {idltype.tk_void:       QName(('void',)),
+                          idltype.tk_short:      QName(('short',)),
+                          idltype.tk_long:       QName(('long',)),
+                          idltype.tk_ushort:     QName(('unsigned short',)),
+                          idltype.tk_ulong:      QName(('unsigned long',)),
+                          idltype.tk_float:      QName(('float',)),
+                          idltype.tk_double:     QName(('double',)),
+                          idltype.tk_boolean:    QName(('boolean',)),
+                          idltype.tk_char:       QName(('char',)),
+                          idltype.tk_octet:      QName(('octet',)),
+                          idltype.tk_any:        QName(('any',)),
+                          idltype.tk_TypeCode:   QName(('CORBA','TypeCode',)),
+                          idltype.tk_Principal:  QName(('CORBA','Principal',)),
+                          idltype.tk_longlong:   QName(('long long',)),
+                          idltype.tk_ulonglong:  QName(('unsigned long long',)),
+                          idltype.tk_longdouble: QName(('long double',)),
+                          idltype.tk_wchar:      QName(('wchar',))}
 
    def internalize(self, idltype):
 
@@ -54,7 +54,6 @@ class TypeTranslator(idlvisitor.TypeVisitor):
    def has_key(self, name): return self.types.has_key(name)
 
    def add(self, name, type):
-
       self.types[name] = type
 
    def get(self, name):
@@ -62,49 +61,47 @@ class TypeTranslator(idlvisitor.TypeVisitor):
 
    def visitBaseType(self, idltype):
 
-      type = ASG.BaseType("IDL", (self.__basetypes[idltype.kind()],))
+      type = ASG.BaseType('IDL', self.__basetypes[idltype.kind()])
       self.types[type.name] = type
       self.__result = type.name
 
    def visitStringType(self, idltype):
 
-      if not self.types.has_key(["string"]):
-         self.types[["string"]] = ASG.BaseType("IDL", ("string",))
-      self.__result = ["string"]
-      #if idltype.bound() == 0:
-      #    self.__result_type = "string"
-      #else:
-      #    self.__result_type = "string<" + str(type.bound()) + ">"
+      # FIXME: Should we create a Parametrized with the appropriate bound parameters ?
+      if idltype.bound() == 0:
+         qname = QName(('string',))
+      else:
+         qname = QName(('string<%s>'%idltype.bound(),))
+      if qname not in self.types:
+         self.types[qname] = ASG.BaseType('IDL', qname)
+      self.__result = qname
 
    def visitWStringType(self, idltype):
 
-      if not self.types.has_key(["wstring"]):
-         self.types[["wstring"]] = ASG.BaseType("IDL", ("wstring",))
-      self.__result = ["wstring"]
-      #if type.bound() == 0:
-      #    self.__result_type = "wstring"
-      #else:
-      #    self.__result_type = "wstring<" + str(type.bound()) + ">"
+      # FIXME: Should we create a Parametrized with the appropriate bound parameters ?
+      if idltype.bound() == 0:
+         qname = QName(('wstring',))
+      else:
+         qname = QName(('wstring<%s>'%idltype.bound(),))
+      if qname not in self.types:
+         self.types[qname] = ASG.BaseType('IDL', qname)
+      self.__result = qname
 
    def visitSequenceType(self, idltype):
 
-      if not self.types.has_key(["sequence"]):
-         self.types[["sequence"]] = ASG.BaseType("IDL", ("sequence",))
+      qname = QName(('sequence',))
+      if not self.types.has_key(qname):
+         self.types[qname] = ASG.BaseType("IDL", qname)
       idltype.seqType().accept(self)
       ptype = self.types[self.__result]
-      #if type.bound() == 0:
-      #    self.__result_type = "sequence<" + self.__result_type + ">"
-      #else:
-      #    self.__result_type = "sequence<" + self.__result_type + ", " +\
-      #                         str(type.bound()) + ">"
-      type = ASG.Parametrized("IDL", self.types[["sequence"]], [ptype])
+      type = ASG.Parametrized("IDL", self.types[qname], [ptype])
       qname  = QName(('sequence<%s>'%str(ptype.name),))
       self.types[qname] = type
       self.__result = qname
         
    def visitDeclaredType(self, idltype):
 
-      self.__result = idltype.decl().scopedName()
+      self.__result = QName(idltype.decl().scopedName())
 
 class ASGTranslator(idlvisitor.AstVisitor):
 
