@@ -332,7 +332,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       visible = node.mainFile() or not self.primary_file_only
       qname = QName(list(self.scope()) + [node.identifier()])
       if self.primary_file_only and not node.mainFile():
-         forward = ASG.Forward(sourcefile, node.line(), 'union', name)
+         forward = ASG.Forward(sourcefile, node.line(), 'union', qname)
          if visible:
             self.add_declaration(forward)
          self.addType(qname, ASG.Declared('IDL', qname, forward))
