@@ -13,7 +13,6 @@ import sys, os.path
 import compiler, tokenize, token
 from compiler.consts import OP_ASSIGN
 from compiler.visitor import ASTVisitor
-from types import StringType, UnicodeType, TupleType
 
 class TokenParser:
 
@@ -174,7 +173,7 @@ class ASGTranslator(ASTVisitor):
         self.file = None
         self.types = types
         self.attributes = []
-        self.any_type = ASG.BaseType('Python',('',))
+        self.any_type = ASG.BaseType('Python',QName('',))
         self.docformat = ''
         self.documentable = None
         self.name = QName()
@@ -204,7 +203,7 @@ class ASGTranslator(ASTVisitor):
 
     def visitConst(self, node):
         if self.documentable:
-            if type(node.value) in (StringType, UnicodeType):
+            if type(node.value) in (str, unicode):
                 self.documentable.annotations['doc'] = DocString(node.value, self.docformat)
             else:
                 self.documentable = None
@@ -362,7 +361,7 @@ class ASGTranslator(ASTVisitor):
         defaults = [None] * (len(argnames) - len(defaults)) + defaults
         values = self.token_parser.function_parameters(node.lineno)
         for argname, default in zip(node.argnames, defaults):
-            if type(argname) is TupleType:
+            if type(argname) is tuple:
                 for a in argname:
                     # FIXME: It is generally impossible to match tuple parameters
                     # to defaults individually, we ignore default values for now.

@@ -47,9 +47,9 @@ class HeadingFormatter(Fragment):
 
         types = self.processor.ir.types
 
-        scope, text = [], []
+        scope, text = type(qname)(), []
         for name in qname[:-1]:
-            scope.append(name)
+            scope += (name,)
             if types.has_key(scope):
                 ns_type = types[scope]
                 if isinstance(ns_type, ASG.Declared):
