@@ -126,7 +126,7 @@ class DirectoryLayout (TOC.Linker):
         if (isinstance(decl, ASG.Scope) or
             # If this is a forward-declared class template with known specializations,
             # we want to treat it like an ASG.Class, as far as formatting is concerned.
-            (False and isinstance(decl, ASG.Forward) and decl.specializations)):
+            (isinstance(decl, ASG.Forward) and decl.specializations)):
             # This is a class or module, so it has its own file
             return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it

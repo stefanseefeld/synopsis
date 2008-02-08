@@ -85,15 +85,13 @@ class FileIndex(View):
             scope = QualifiedPythonName()
         else:
             scope = QualifiedCxxName()
-        last = []
+        last = scope
         for name, decl in items:
-            # TODO make this nicer :)
             entry = self.processor.toc[name]
             if not entry: continue
             # Print link to declaration's view
             link = rel(self.filename(), entry.link)
             label = isinstance(decl, ASG.Function) and decl.real_name or decl.name
-            # Increase scope
             i = 0
             while i < len(label) - 1 and i < len(scope) and label[i] == scope[i]:
                 i += 1
@@ -112,6 +110,6 @@ class FileIndex(View):
             self.write(div('href',href(link, label, target='content', title=title)))
             # Store this name in case, f.ex, it's a class and the next item is
             # in that class scope
-            last = list(name)
+            last = name
         self.write('</div>\n' * len(scope))
         self.end_file()

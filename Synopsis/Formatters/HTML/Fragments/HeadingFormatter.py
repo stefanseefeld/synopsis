@@ -31,11 +31,12 @@ class HeadingFormatter(Fragment):
             self.source = None
             
     def format_name(self, qname):
-        """Formats a reference to each parent scope"""
+        """Formats a qualified name such that each name component becomes a link
+        to the respective scope."""
 
-        scope, text = [], []
+        scope, text = type(qname)(), []
         for name in qname[:-1]:
-            scope.append(name)
+            scope = scope + (name,)
             text.append(self.reference(scope))
         text.append(escape(qname[-1]))
         return '%s\n'%(qname.sep).join(text) + '\n'
@@ -65,10 +66,10 @@ class HeadingFormatter(Fragment):
 
         types = self.processor.ir.types
 
-        scope, text = [], []
+        scope, text = type(qname)(), []
         last_decl = None
         for name in qname:
-            scope.append(name)
+            scope += (name,)
             if types.has_key(scope):
                 ns_type = types[scope]
                 if isinstance(ns_type, ASG.Declared):
@@ -191,7 +192,7 @@ class HeadingFormatter(Fragment):
         if not forward.template:
             return ''
 
-        params = templ.parameters
+        params = forward.template.parameters
         params = ', '.join([self.format_parameter(p) for p in params])
         templ = div('class-template', "template &lt;%s&gt;"%params)
 

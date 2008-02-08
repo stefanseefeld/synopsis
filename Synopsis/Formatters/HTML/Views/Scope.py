@@ -76,6 +76,13 @@ class Scope(View):
             self.process_scope(scope)
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Scope)]
             self.scopes_queue.extend(scopes)
+            forwards = [c for c in scope.declarations
+                        if isinstance(c, ASG.Forward) and c.specializations]
+            # Treat forward-declared class template like a scope if it has
+            # specializations, since these are only listed in a Scope view.
+            # Process them directly as they don't have child declarations.
+            for f in forwards:
+                self.process_scope(f)
 
     def register_filenames(self):
         """Registers a view for every Scope."""
@@ -101,7 +108,7 @@ class Scope(View):
             self.__filename = self.directory_layout.scope(self.__scope)
         else:
             self.__filename = self.root()[0]
-        self.__title = escape(' '.join(self.__scope))
+        self.__title = escape(str(self.__scope))
         self.start_file()
         self.write_navigation_bar()
         # Loop throught all the view Parts

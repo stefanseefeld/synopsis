@@ -6,6 +6,7 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import ASG
 from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
@@ -58,6 +59,9 @@ class Summary(Part):
       
     def process(self, scope):
         "Print out the summaries from the given scope"
+
+        if type(scope) == ASG.Forward:
+            return
 
         doc = self.processor.documentation
         sorter = self.processor.sorter.clone(scope.declarations)

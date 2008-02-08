@@ -16,8 +16,8 @@ class TemplateSpecializations(Fragment):
         if not forward.template:
             return ''
         if forward.specializations:
-            spec = ' '.join([self.reference(s.name)
-                             for s in forward.specializations])
+            spec = '\n'.join([div(None, self.reference(s.name))
+                              for s in forward.specializations])
             return div('specializations', 'Specializations: ' + div(None, spec))
         elif forward.primary_template:
             return div('primary-template',

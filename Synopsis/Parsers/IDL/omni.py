@@ -294,7 +294,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          forward = ASG.Forward(sourcefile, node.line(), 'exception', qname)
          if visible:
             self.add_declaration(forward)
-         self.addType(name, ASG.Declared('IDL', qname, forward))
+         self.addType(qname, ASG.Declared('IDL', qname, forward))
          return
       exc = ASG.Class(sourcefile, node.line(), 'exception', qname)
       if visible:
