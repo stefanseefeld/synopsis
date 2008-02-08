@@ -139,7 +139,7 @@ class Source(View):
 
     def lookup_symbol(self, name):
 
-        e = self.__toc.lookup(tuple(name))
+        e = self.__toc.lookup(name)
         #if not e:
         #    print 'failed to look up', name
         return e and self.rel_url + e.link or ''

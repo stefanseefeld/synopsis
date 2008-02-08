@@ -77,24 +77,19 @@ class XRef(View):
     def process_link(self, file, line, scope):
         """Outputs the info for one link"""
 
-        # Make a link to the highlighted source
         file_link = self.directory_layout.file_source(file)
         file_link = rel(self.filename(), file_link) + "#%d"%line
-        # Try and make a descriptive
         desc = ''
         type = self.processor.ir.types.get(scope)
         if isinstance(type, ASG.Declared):
             desc = ' ' + type.declaration.type
-        # Try and find a link to the scope
-        scope_text = '::'.join(scope)
         entry = self.processor.toc[scope]
         if entry:
-            scope_text = href(rel(self.filename(), entry.link), escape(scope_text))
+            label = href(rel(self.filename(), entry.link), escape(str(scope)))
         else:
-            scope_text = escape(scope_text)
-        # Output list element
+            label = escape(str(scope))
         self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
-            file_link, file, line, desc, scope_text))
+            file_link, file, line, desc, label))
     
     def describe_decl(self, decl):
         """Returns a description of the declaration. Detects constructors and
@@ -129,23 +124,25 @@ class XRef(View):
                 link = self.directory_layout.link(type.declaration)
                 self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
         if target_data[0]:
-            self.write('<li>Defined at:<ul>\n')
+            self.write('<li>Defined at:\n<ul>\n')
             for file, line, scope in target_data[0]:
                 self.process_link(file, line, scope)
             self.write('</ul></li>\n')
         if target_data[1]:
-            self.write('<li>Called from:<ul>\n')
+            self.write('<li>Called from:\n<ul>\n')
             for file, line, scope in target_data[1]:
                 self.process_link(file, line, scope)
             self.write('</ul></li>\n')
         if target_data[2]:
-            self.write('<li>Referenced from:<ul>\n')
+            self.write('<li>Referenced from:\n<ul>\n')
             for file, line, scope in target_data[2]:
                 self.process_link(file, line, scope)
             self.write('</ul></li>\n')
         if isinstance(decl, ASG.Scope):
-            self.write('<li>Declarations:<ul>\n')
+            self.write('<li>Declarations:\n<ul>\n')
             for child in decl.declarations:
+                if isinstance(child, ASG.Builtin) and child.type == 'EOS':
+                    continue
                 file, line = child.file.name, child.line
                 file_link = self.directory_layout.file_source(file)
                 file_link = rel(self.filename(),file_link) + '#%d'%line
@@ -158,5 +155,5 @@ class XRef(View):
                     self.write(element('li', file_href + type + link))
                 else:
                     self.write(element('li', file_href + type + str(name.prune(cname))))
-            self.write('</ul></li>\n')
+            self.write('</ul>\n</li>\n')
         self.write('</ul>\n')

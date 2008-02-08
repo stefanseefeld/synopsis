@@ -7,6 +7,7 @@
 #
 
 from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters import quote_name
 from Default import Default
 
 class XRefLinker(Default):
@@ -24,6 +25,6 @@ class XRefLinker(Default):
             return ''
         page = self.xref.get_page_for(decl.name)
         filename = self.directory_layout.xref(page)
-        filename = filename + '#' + str(decl.name)
+        filename = filename + '#' + quote_name(str(decl.name))
         return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
 

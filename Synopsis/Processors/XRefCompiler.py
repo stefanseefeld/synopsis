@@ -79,9 +79,7 @@ class XRefCompiler(Processor):
             for line in lines:
                 target, file, line, scope, context = line.split()
                 target = QName([intern(t) for t in urllib.unquote(target).split('\t')])
-                scope = [intern(s) for s in urllib.unquote(scope).split('\t')]
-                if scope == ['','']:
-                    scope = ()
+                scope = QName([intern(s) for s in urllib.unquote(scope).split('\t')])
                 line = int(line)
                 file = intern(file)
                 if no_locals:

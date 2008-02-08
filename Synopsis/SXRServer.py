@@ -150,7 +150,10 @@ class SXRServer:
         html += ident_search_form%{'script' : self.cgi_url}
 
         if qualified:
-            name = tuple(name.split('::'))
+            if '::' in name:
+                name = tuple(name.split('::'))
+            else:
+                name = tuple(name.split('.'))
             found = False
             # Check for exact match
             if self.data.has_key(name):
