@@ -94,8 +94,7 @@ class XRefCompiler(Processor):
                     for i in range(len(scope)):
                         if len(scope[i]) > 0 and scope[i][0] == '`':
                             # Function scope, truncate here
-                            del scope[i+1:]
-                            scope[i] = scope[i][1:]
+                            scope = scope[:i] + (scope[i][1:],)
                             break
                 #scope = tuple(scope)
                 target_data = data.setdefault(target, [[],[],[]])
