@@ -7,6 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
+from Synopsis.QualifiedName import *
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
@@ -30,7 +31,9 @@ class SXRTranslator:
     def link(self, linker):
 
         for a in self.sxr.getElementsByTagName('a'):
-            ref = str(a.getAttribute('href')).split('.')
+            # For now assume this is a Python file. C++ files are still handled
+            # via Parsers/Cxx/syn/link.cc
+            ref = QualifiedPythonName(str(a.getAttribute('href')).split('.'))
             target = linker(ref)
             a.setAttribute('href', target)
 

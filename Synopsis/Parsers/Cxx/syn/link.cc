@@ -338,6 +338,18 @@ std::string scoped_name_to_attribute(const Python::List &o)
   return name;
 }
 
+std::string scoped_name_to_href(const Python::List &o)
+{
+  std::string name;
+  if (o.empty()) return name;
+  for (Python::List::iterator i = o.begin(); i != o.end() - 1; ++i)
+  {
+    name = string_to_attribute(Python::Object::narrow<std::string>(*i)) + "::";
+  }
+  name += string_to_attribute(Python::Object::narrow<std::string>(*o.rbegin()));
+  return name;
+}
+
 //. Reads the input file, inserts links, and writes the result to the
 //. output. It uses the 'links' line map to iterate through the file
 //. sequentially.
@@ -345,6 +357,9 @@ void link_file(const char *input_filename,
 	       const char *output_filename,
 	       Python::Object map) throw (std::string)
 {
+  Python::Object qname_module = Python::Module::import("Synopsis.QualifiedName");
+  Python::Object qname_factory = qname_module.attr("QualifiedCxxName");
+
   std::ifstream in(input_filename);
   if (!in)
   {
@@ -389,7 +404,8 @@ void link_file(const char *input_filename,
 	  case Link::REF_START:
 	  {
 	    Python::List name(link->name.begin(), link->name.end());
-	    Python::Object retn = map(Python::Tuple(name));
+            Python::Object qname = qname_factory(name);
+	    Python::Object retn = map(qname);
 	    if (PyErr_Occurred())
 	    {
 	      PyErr_Print();
@@ -401,7 +417,7 @@ void link_file(const char *input_filename,
 	      if (link->type == Link::LINK_START)
 		out << "<a name=\"" << scoped_name_to_attribute(name);
 	      else
-		out << "<a href=\"#" << scoped_name_to_attribute(name);
+		out << "<a href=\"#" << scoped_name_to_href(name);
 	    }
 	    else
 	    {
