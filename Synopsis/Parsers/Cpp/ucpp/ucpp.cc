@@ -132,7 +132,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
                           &verbose,
                           &debug,
                           &profile)
-        || !extract(py_system_flags, flags) || !extract(py_flags, flags))
+        || !extract(py_flags, flags) || !extract(py_system_flags, flags))
       return 0;
     
     Py_INCREF(py_error);
@@ -230,7 +230,6 @@ extern "C"
     // turn 'filename' into an absolute path so we can match it against
     // base_path
     std::string abs_filename = Path(filename).abs().str();
-
     bool activate = false;
     if ((primary_file_only && strcmp(input, filename)) || 
 	(base_path.size() && abs_filename.substr(0, base_path.size()) != base_path))
