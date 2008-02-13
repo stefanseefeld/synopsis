@@ -13,7 +13,7 @@ use by python.
 """
 
 from Synopsis.Processor import Processor, Parameter
-import occ
+import ParserImpl
 
 import os, os.path, tempfile
 
@@ -57,24 +57,14 @@ class Parser(Processor):
                                       debug = self.debug)
 
             try:
-                self.ir = occ.parse(self.ir, ii_file,
-                                    os.path.abspath(file),
-                                    self.primary_file_only,
-                                    os.path.abspath(self.base_path) + os.sep,
-                                    self.sxr_prefix,
-                                    self.verbose,
-                                    self.debug)
+                self.ir = ParserImpl.parse(self.ir, ii_file,
+                                           os.path.abspath(file),
+                                           self.primary_file_only,
+                                           os.path.abspath(self.base_path) + os.sep,
+                                           self.sxr_prefix,
+                                           self.verbose,
+                                           self.debug)
             finally:
                 if self.preprocess: os.remove(ii_file)
 
             return self.output_and_return_ir()
-
-    def dump(self, **kwds):
-        """Run the occ directly without ast intervention."""
-
-        input = kwds.get('input', self.input)
-        verbose = kwds.get('verbose', self.verbose)
-        debug = kwds.get('debug', self.debug)
-
-        for file in input:
-            occ.dump(file, verbose, debug)

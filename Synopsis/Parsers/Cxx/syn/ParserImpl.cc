@@ -188,7 +188,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
   }
 }
 
-PyObject *occ_parse(PyObject * /* self */, PyObject *args)
+PyObject *parse(PyObject * /* self */, PyObject *args)
 {
   Class::do_init_static();
   Metaclass::do_init_static();
@@ -226,7 +226,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   if (syn_sxr_prefix) filter.set_sxr_prefix(syn_sxr_prefix);
 
   AST::SourceFile *source_file = filter.get_sourcefile(src);
-  // Run OCC to generate the AST
+  // Run OCC to generate the IR
   try
   {
     RunOpencxx(source_file, cppfile, ir);
@@ -251,16 +251,16 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   return ir;
 }
 
-PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
+PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},
 			 {0}};
 }
 
-extern "C" void initocc()
+extern "C" void initParserImpl()
 {
-  Python::Module module = Python::Module::define("occ", methods);
-  module.set_attr("version", "0.1");
+  Python::Module module = Python::Module::define("ParserImpl", methods);
+  module.set_attr("version", "0.10");
   Python::Object processor = Python::Object::import("Synopsis.Processor");
   Python::Object error_base = processor.attr("Error");
-  py_error = PyErr_NewException("occ.ParseError", error_base.ref(), 0);
+  py_error = PyErr_NewException("ParserImpl.ParseError", error_base.ref(), 0);
   module.set_attr("ParseError", py_error);
 }
