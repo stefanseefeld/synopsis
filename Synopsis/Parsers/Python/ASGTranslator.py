@@ -240,6 +240,7 @@ class ASGTranslator(ASTVisitor):
         else:
             qname = QName(self.scope_name() + (name,))
             module = ASG.Module(self.file, node.lineno, 'module', qname)            
+        self.types[qname] = ASG.Declared('Python', qname, module)
 
         self.scope.append(module)
         self.documentable = module

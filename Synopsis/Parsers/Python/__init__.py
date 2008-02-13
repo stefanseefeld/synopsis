@@ -105,9 +105,11 @@ class Parser(Processor):
             for c in components[:-1]:
                 package_name.append(c)
                 package_path = os.path.join(package_path, c)
+                qname = QName(package_name)
                 if not os.path.isfile(os.path.join(package_path, '__init__.py')):
-                    raise InvalidArgument('"%s" is not a package'%QName(package_name))
-                module = ASG.Module(sourcefile, -1, 'package', QName(package_name))
+                    raise InvalidArgument('"%s" is not a package'%qname)
+                module = ASG.Module(sourcefile, -1, 'package', qname)
+                self.ir.types[qname] = ASG.Declared('Python', qname, module)
                 if package:
                     package.declarations.append(module)
                 else:
