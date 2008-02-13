@@ -106,9 +106,9 @@ class Scope(View):
         self.__scope = scope.name
         if self.__scope:
             self.__filename = self.directory_layout.scope(self.__scope)
+            self.__title = escape(str(self.__scope))
         else:
-            self.__filename = self.root()[0]
-        self.__title = escape(str(self.__scope))
+            self.__filename, self.__title = self.root()
         self.start_file()
         self.write_navigation_bar()
         # Loop throught all the view Parts

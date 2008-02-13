@@ -148,7 +148,7 @@ class SXRGenerator:
             self.print_token(t)
   
 
-    def handle_name_as_xref(self, xref, name):
+    def handle_name_as_xref(self, xref, name, type = None):
 
         kind, value, (srow, scol), (erow, ecol), line = self.next_token()
         if (kind, value) != (token.NAME, name):
@@ -156,8 +156,11 @@ class SXRGenerator:
 
         if self.col != scol:
             self.xref.write(' ' * (scol - self.col))
-        format = '<a href="%s">%s</a>'
-        self.xref.write(format %('.'.join(xref), value))
+        if type:
+            a = '<a href="%s" type="%s">%s</a>'%('.'.join(xref), type, value)
+        else:
+            a = '<a href="%s">%s</a>'%('.'.join(xref), value)
+        self.xref.write(a)
         self.col = ecol
   
 
@@ -205,7 +208,7 @@ class SXRGenerator:
         self.handle_token(def_token[1])
         name = nodes[1 + offset][1]
         qname = tuple(self.scopes + [name])
-        self.handle_name_as_xref(qname, name)
+        self.handle_name_as_xref(qname, name, 'definition')
         # Handle the parameters.
         self.handle(nodes[2 + offset])
 
@@ -255,7 +258,7 @@ class SXRGenerator:
         self.handle_token(class_token[1])
         name = nodes[1][1]
         qname = tuple(self.scopes + [name])
-        self.handle_name_as_xref(qname, name)
+        self.handle_name_as_xref(qname, name, 'definition')
         base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
         self.handle_tokens(nodes[2])
         bases = []

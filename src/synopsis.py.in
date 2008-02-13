@@ -19,13 +19,11 @@ cppflags = ['-I.',
 
 cxx = Cxx.Parser(base_path = srcdir + os.sep,
                  cppflags = cppflags,
-                 syntax_prefix = 'links',
-                 xref_prefix = 'xref')
+                 sxr_prefix = 'sxr')
 
 cxx_sxr = Cxx.Parser(base_path = topdir + os.sep,
                      cppflags = cppflags,
-                     syntax_prefix = 'links',
-                     xref_prefix = 'xref')
+                     sxr_prefix = 'sxr')
 
 link = Linker(MacroFilter(pattern=r'^Synopsis_(.*)_hh_$'),
               Comments.Translator(markup='rst',

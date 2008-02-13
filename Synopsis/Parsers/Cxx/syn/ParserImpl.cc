@@ -10,11 +10,11 @@
 #include <Synopsis/Trace.hh>
 #include <Support/ErrorHandler.hh>
 #include "Translator.hh"
+#include "SXRGenerator.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "dumper.hh"
 #include "filter.hh"
-#include "linkstore.hh"
 
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
@@ -109,10 +109,7 @@ bool syn_multi_files;
 const char* syn_base_path = "";
 
 // If set then this is the prefix for the filename to store links to
-const char* syn_syntax_prefix = 0;
-
-// If set then this is the prefix for the filename to store xref info to
-const char* syn_xref_prefix = 0;
+const char* syn_sxr_prefix = 0;
 
 PyObject *py_error;
 
@@ -161,13 +158,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
   SymbolFactory symbols(SymbolFactory::NONE);
   Parser parser(lexer, symbols, ruleset);
 
-  FileFilter* filter = FileFilter::instance();
-
-  Builder builder(sourcefile);
-  SWalker swalker(filter, &builder, &buffer);
-  if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
-    swalker.set_store_links(new LinkStore(filter, &swalker));
-
   PTree::Node *ptree = parser.parse();
   const Parser::ErrorList &errors = parser.errors();
   if (!errors.empty())
@@ -178,13 +168,23 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
   }
   else if (ptree)
   {
+    FileFilter* filter = FileFilter::instance();
+
+    Builder builder(sourcefile);
+    SWalker swalker(filter, &builder, &buffer);
+    SXRGenerator *sxr_generator = 0;
+    if (filter->should_xref(sourcefile))
+    {
+      sxr_generator = new SXRGenerator(filter, &swalker);
+      swalker.set_store_links(sxr_generator);
+    }
+
     swalker.translate(ptree);
       
-    // Setup synopsis c++ to py convertor
-    Translator translator(filter, ir);//declarations, types);
+    Translator translator(filter, ir);
     translator.set_builtin_decls(builder.builtin_decls());
-    // Convert!
     translator.translate(builder.scope());
+    delete sxr_generator;
   }
 }
 
@@ -198,12 +198,11 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   PyObject *ir;
   const char *src, *cppfile;
   int primary_file_only, verbose, debug;
-  if (!PyArg_ParseTuple(args, "Ossizzzii",
+  if (!PyArg_ParseTuple(args, "Ossizzii",
                         &ir, &cppfile, &src,
                         &primary_file_only,
                         &syn_base_path,
-                        &syn_syntax_prefix,
-                        &syn_xref_prefix,
+                        &syn_sxr_prefix,
                         &verbose,
                         &debug))
     return 0;
@@ -224,8 +223,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   // Setup the filter
   FileFilter filter(ir, src, syn_base_path, syn_primary_only);
-  if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
-  if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
+  if (syn_sxr_prefix) filter.set_sxr_prefix(syn_sxr_prefix);
 
   AST::SourceFile *source_file = filter.get_sourcefile(src);
   // Run OCC to generate the AST

@@ -12,9 +12,7 @@ from Synopsis.Processors import *
 from Synopsis.Processors import Comments
 from Synopsis.Formatters import SXR
 
-cxx = Cxx.Parser(base_path='../src/',
-                 syntax_prefix='links',
-                 xref_prefix='xref')
+cxx = Cxx.Parser(base_path='../src/', sxr_prefix='sxr',)
 
 ss = Comments.Translator(filter = Comments.SSFilter(),
                          processor = Comments.Grouper())
@@ -33,6 +31,4 @@ process(cxx_ss = Composite(cxx, ss),
         cxx_javadoc = Composite(cxx, javadoc),
         cxx_rst = Composite(cxx, rst),
         link = Linker(),
-        sxr = SXR.Formatter(src_dir = '../src/',
-                            xref_prefix='xref',
-                            syntax_prefix='links'))
+        sxr = SXR.Formatter(src_dir = '../src/', sxr_prefix='sxr'))

@@ -18,27 +18,25 @@ import sys, os, os.path
 
 srcdir = '@srcdir@'
 topdir = '@topdir@'
-python = Python.Parser(base_path = topdir + os.sep,
-                       syntax_prefix='links')
+python = Python.Parser(base_path = topdir + os.sep, sxr_prefix='sxr')
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = ['-I%s'%(topdir + '/include'),
                              '-I%s'%(sysconfig.get_python_inc())],
-                 syntax_prefix='links',
-                 xref_prefix='xref')
+                 sxr_prefix='sxr')
 
 class MyHTML(HTML.Formatter):
    """We have to subclass in order to be able to make the 'xref_file'
    parameter of the XRef view accessible to the command line"""
 
-   xref = Parameter('', 'xref file usef for cross referencing')
+   xref = Parameter('', 'xref file used for cross referencing')
     
    def process(self, ir, **kwds):
         
       self.set_parameters(kwds)
 
       self.content = [Scope(),
-                      Source(prefix = 'links'),
+                      Source(prefix = 'sxr'),
                       XRef(xref_file = self.xref),
                       FileDetails(),
                       InheritanceTree(),
@@ -52,8 +50,7 @@ sxr = SXR.Formatter(url = '/sxr',
                     exclude = ['build', 'dist', 'doc', 'share', 'debian',
                                '.svn', 'autom4te.cache',
                                '*.pyc', '*.so', '*~'],
-                    xref_prefix='xref',
-                    syntax_prefix='links',
+                    sxr_prefix='sxr',
                     sxr_template = os.path.join(srcdir, 'sxr-template.html'))
 
 process(python = python,
@@ -62,7 +59,7 @@ process(python = python,
         link = Linker(),
         archive = Processor(),
         strip = ScopeStripper(),
-        xref = XRefCompiler(prefix='xref'),
+        xref = XRefCompiler(prefix='sxr'),
         html = MyHTML(),
         sxr = sxr,
         dump = Dump.Formatter(),

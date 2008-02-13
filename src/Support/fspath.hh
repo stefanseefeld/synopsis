@@ -6,8 +6,8 @@
 //
 //
 
-#ifndef Support_path_hh_
-#define Support_path_hh_
+#ifndef Support_fspath_hh_
+#define Support_fspath_hh_
 
 #include <boost/filesystem/operations.hpp>
 

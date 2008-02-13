@@ -14,7 +14,7 @@
 #include <Synopsis/Parser.hh>
 #undef Scope
 
-#include "linkstore.hh"
+#include "SXRGenerator.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "decoder.hh"
@@ -29,10 +29,10 @@ using namespace Synopsis;
 void SWalker::visit(PTree::ReturnStatement *node)
 {
   STrace trace("SWalker::visit(PTree::ReturnStatement*)");
-  if (!my_links) return;
+  if (!sxr_) return;
 
   // Link 'return' keyword
-  my_links->span(PTree::first(node), "keyword");
+  sxr_->span(PTree::first(node), "keyword");
 
   // Translate the body of the return, if present
   if (PTree::length(node) == 3) translate(PTree::second(node));
@@ -59,7 +59,7 @@ void SWalker::visit(PTree::InfixExpr *node)
   if (func)
   {
     my_type = func->return_type();
-    if (my_links) my_links->link(PTree::second(node), func->declared());
+    if (sxr_) sxr_->xref(PTree::second(node), func->declared());
   }
   return;
 }
@@ -68,7 +68,7 @@ void SWalker::translate_variable(PTree::Node *spec)
 {
   // REVISIT: Figure out why this is so long!!!
   STrace trace("SWalker::TranslateVariable");
-  if (my_links) find_comments(spec);
+  if (sxr_) find_comments(spec);
   try
   {
     PTree::Node *name_spec = spec;
@@ -93,7 +93,7 @@ void SWalker::translate_variable(PTree::Node *spec)
           try { my_scope = Types::declared_cast<AST::Scope>(type); }
           catch (const Types::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<parse_name(spec->First())<<"' found but not a scope!"); }
           // Link the scope name
-          if (my_links) my_links->link(spec->First(), my_scope->declared());
+          if (sxr_) sxr_->xref(spec->First(), my_scope->declared());
         */
         spec = PTree::rest(PTree::rest(spec));
       }
@@ -134,7 +134,7 @@ void SWalker::translate_variable(PTree::Node *spec)
           // It is a variable
           my_type = var->vtype();
           // Store a link to the variable itself (not its type)
-          if (my_links) my_links->link(name_spec, type);
+          if (sxr_) sxr_->xref(name_spec, type);
           /*cout << "var type name is " << my_type_formatter->format(my_type) << endl;*/
         }
         else if ((enumor = dynamic_cast<AST::Enumerator*>(declared.declaration())) != 0)
@@ -142,7 +142,7 @@ void SWalker::translate_variable(PTree::Node *spec)
           // It is an enumerator
           my_type = 0; // we have no use for enums in type code
           // But still a link is needed
-          if (my_links) my_links->link(name_spec, type);
+          if (sxr_) sxr_->xref(name_spec, type);
           /*cout << "enum type name is " << my_type_formatter->format(type) << endl;*/
         }
         else
@@ -171,8 +171,8 @@ void SWalker::translate_variable(PTree::Node *spec)
         throw nodeERROR(name_spec, "Warning: function '" << name << "' not found!");
       }
       // Store a link to the function name
-      if (my_links)
-        my_links->link(name_spec, func->declared(), LinkStore::FunctionCall);
+      if (sxr_)
+        sxr_->xref(name_spec, func->declared(), SXRGenerator::FunctionCall);
       // Now find returnType
       my_type = func->return_type();
     }
@@ -263,7 +263,7 @@ void SWalker::visit(PTree::ExprStatement *node)
 void SWalker::visit(PTree::UnaryExpr *node)
 {
   STrace trace("SWalker::visit(UnaryExpr*)");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
   // TODO: lookup unary operator
   translate(PTree::second(node));
 }
@@ -392,8 +392,8 @@ void SWalker::visit(PTree::DotMemberExpr *node)
 void SWalker::visit(PTree::IfStatement *node)
 {
   STrace trace("SWalker::visit(IfStatement*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   // Start a temporary namespace, in case expr is a declaration
   my_builder->start_namespace("if", NamespaceUnique);
   // Parse expression
@@ -408,7 +408,7 @@ void SWalker::visit(PTree::IfStatement *node)
   my_builder->end_namespace();
   if (PTree::length(node) == 7)
   {
-    if (my_links) my_links->span(PTree::nth(node, 5), "keyword");
+    if (sxr_) sxr_->span(PTree::nth(node, 5), "keyword");
     AST::Namespace* ns = my_builder->start_namespace("else", NamespaceUnique);
     ns->declarations().insert(ns->declarations().begin(), decls.begin(), decls.end());
     // Translate else statement, same deal as above
@@ -422,8 +422,8 @@ void SWalker::visit(PTree::IfStatement *node)
 void SWalker::visit(PTree::SwitchStatement *node)
 {
   STrace trace("SWalker::visit(SwitchStatement*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   my_builder->start_namespace("switch", NamespaceUnique);
   // Parse expression
   translate(PTree::third(node));
@@ -438,8 +438,8 @@ void SWalker::visit(PTree::SwitchStatement *node)
 void SWalker::visit(PTree::CaseStatement *node)
 {
   STrace trace("SWalker::visit(Case*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
   translate(PTree::nth(node, 3));
 }
@@ -447,23 +447,23 @@ void SWalker::visit(PTree::CaseStatement *node)
 void SWalker::visit(PTree::DefaultStatement *node)
 {
   STrace trace("SWalker::visit(DefaultStatement*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::third(node));
 }
 
 void SWalker::visit(PTree::BreakStatement *node)
 {
   STrace trace("SWalker::visit(Break*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
 }
 
 void SWalker::visit(PTree::ForStatement *node)
 {
   STrace trace("SWalker::visit(For*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   my_builder->start_namespace("for", NamespaceUnique);
   // Parse expressions
   translate(PTree::third(node));
@@ -481,8 +481,8 @@ void SWalker::visit(PTree::ForStatement *node)
 void SWalker::visit(PTree::WhileStatement *node)
 {
   STrace trace("SWalker::visit(While*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   my_builder->start_namespace("while", NamespaceUnique);
   // Parse expression
   translate(PTree::third(node));
@@ -504,14 +504,14 @@ void SWalker::visit(PTree::PostfixExpr *node)
 void SWalker::visit(PTree::ParenExpr *node)
 {
   STrace trace("SWalker::visit(Paren*)");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
   translate(PTree::second(node));
 }
 
 void SWalker::visit(PTree::CastExpr *node)
 {
   STrace trace("SWalker::visit(Cast*)");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
   PTree::Node *type_expr = PTree::second(node);
   //Translate(type_expr->First());
   PTree::Encoding enc = PTree::second(type_expr)->encoded_type();
@@ -520,8 +520,8 @@ void SWalker::visit(PTree::CastExpr *node)
     my_decoder->init(enc);
     my_type = my_decoder->decodeType();
     my_type = TypeResolver(my_builder).resolve(my_type);
-    if (my_type && my_links)
-      my_links->link(PTree::first(type_expr), my_type);
+    if (my_type && sxr_)
+      sxr_->xref(PTree::first(type_expr), my_type);
   }
   else my_type = 0;
   translate(PTree::nth(node, 3));
@@ -530,8 +530,8 @@ void SWalker::visit(PTree::CastExpr *node)
 void SWalker::visit(PTree::TryStatement *node)
 {
   STrace trace("SWalker::visit(Try*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   my_builder->start_namespace("try", NamespaceUnique);
   translate(PTree::second(node));
   my_builder->end_namespace();
@@ -539,7 +539,7 @@ void SWalker::visit(PTree::TryStatement *node)
   {
     // [ catch ( arg ) [{}] ]
     PTree::Node *catch_node = PTree::nth(node, n);
-    if (my_links) my_links->span(PTree::first(catch_node), "keyword");
+    if (sxr_) sxr_->span(PTree::first(catch_node), "keyword");
     my_builder->start_namespace("catch", NamespaceUnique);
     PTree::Node *arg = PTree::third(catch_node);
     if (PTree::length(arg) == 2)
@@ -549,7 +549,7 @@ void SWalker::visit(PTree::TryStatement *node)
       Types::Type* arg_type = my_decoder->decodeType();
       // Link the type
       Types::Type* arg_link = TypeResolver(my_builder).resolve(arg_type);
-      if (my_links) my_links->link(PTree::first(arg), arg_link);
+      if (sxr_) sxr_->xref(PTree::first(arg), arg_link);
       // Create a declaration for the argument
       if (PTree::second(arg))
       {
@@ -588,11 +588,11 @@ void SWalker::visit(PTree::ArrayExpr *node)
     LOG("ARRAY-OPER: " << tf.format(object) << " [] " << tf.format(arg));
     AST::Function* func;
     my_type = my_lookup->arrayOperator(object, arg, func);
-    if (func && my_links)
+    if (func && sxr_)
     {
       // Link the [ and ] to the function operator used
-      my_links->link(PTree::nth(node, 1), func->declared());
-      my_links->link(PTree::nth(node, 3), func->declared());
+      sxr_->xref(PTree::nth(node, 1), func->declared());
+      sxr_->xref(PTree::nth(node, 3), func->declared());
     }
   }
   catch (const TranslateError& e)
@@ -613,8 +613,8 @@ void SWalker::visit(PTree::CondExpr *node)
 void SWalker::visit(PTree::Kwd::This *node)
 {
   STrace trace("SWalker::visit(This*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(node, "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(node, "keyword");
   // Set my_type to type of 'this', stored in the name lookup for this func
   my_type = my_lookup->lookupType("this");
 }
@@ -651,7 +651,7 @@ PTree::Node *SWalker::translate_function_body(PTree::Node *)
 void SWalker::visit(PTree::AccessDecl *node)
 {
   STrace trace("SWalker::visit(AccessDecl*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG
   node->print(std::cout);
 #endif
@@ -660,7 +660,7 @@ void SWalker::visit(PTree::AccessDecl *node)
 void SWalker::visit(PTree::UserAccessSpec *node)
 {
   STrace trace("SWalker::visist(UserAccessSpec*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG
   node->print(std::cout);
 #endif
@@ -669,11 +669,11 @@ void SWalker::visit(PTree::UserAccessSpec *node)
 void SWalker::visit(PTree::DoStatement *node)
 {
   STrace trace("SWalker::visit(Do*) NYI");
-  if (my_links)
+  if (sxr_)
   {
     find_comments(node);
-    my_links->span(PTree::first(node), "keyword");
-    my_links->span(PTree::third(node), "keyword");
+    sxr_->span(PTree::first(node), "keyword");
+    sxr_->span(PTree::third(node), "keyword");
   }
   // Translate block
   my_builder->start_namespace("do", NamespaceUnique);
@@ -691,14 +691,14 @@ void SWalker::visit(PTree::DoStatement *node)
 void SWalker::visit(PTree::ContinueStatement *node)
 {
   STrace trace("SWalker::visit(Continue*) NYI");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
 }
 
 void SWalker::visit(PTree::GotoStatement *node)
 {
   STrace trace("SWalker::visist(Goto*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG  
   node->print(std::cout);
 #endif
@@ -707,7 +707,7 @@ void SWalker::visit(PTree::GotoStatement *node)
 void SWalker::visit(PTree::LabelStatement *node)
 {
   STrace trace("SWalker::visit(Label*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG
   node->print(std::cout);
 #endif
@@ -736,16 +736,16 @@ void SWalker::visit(PTree::PmExpr *node)
 void SWalker::visit(PTree::ThrowExpr *node)
 {
   STrace trace("SWalker::visit(Throw*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
 }
 
 void SWalker::visit(PTree::SizeofExpr *node)
 {
   STrace trace("SWalker::visit(Sizeof*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   // TODO: find the type for highlighting, and figure out what the ??? is
   my_type = my_lookup->lookupType("int");
 }
@@ -753,7 +753,7 @@ void SWalker::visit(PTree::SizeofExpr *node)
 void SWalker::visit(PTree::NewExpr *node)
 {
   STrace trace("SWalker::visit(New*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG
   node->print(std::cout);
 #endif
@@ -762,7 +762,7 @@ void SWalker::visit(PTree::NewExpr *node)
 PTree::Node *SWalker::translate_new3(PTree::Node *node)
 {
   STrace trace("SWalker::translate_new3 NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
 #ifdef DEBUG
   node->print(std::cout);
 #endif
@@ -772,15 +772,15 @@ PTree::Node *SWalker::translate_new3(PTree::Node *node)
 void SWalker::visit(PTree::DeleteExpr *node)
 {
   STrace trace("SWalker::visit(DeleteExpr*)");
-  if (my_links) find_comments(node);
-  if (my_links) my_links->span(PTree::first(node), "keyword");
+  if (sxr_) find_comments(node);
+  if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
 }
 
 void SWalker::visit(PTree::FstyleCastExpr *node)
 {
   STrace trace("SWalker::visit(FstyleCast*) NYI");
-  if (my_links) find_comments(node);
+  if (sxr_) find_comments(node);
   my_type = 0;
   //Translate(node->Third()); <-- unknown ptree???? FIXME
   my_decoder->init(node->encoded_type());

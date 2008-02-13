@@ -16,7 +16,7 @@
 #include <boost/wave/preprocessing_hooks.hpp>
 #include <stack>
 #include <Synopsis/Trace.hh>
-#include <Support/path.hh>
+#include <Support/fspath.hh>
 
 using namespace Synopsis;
 namespace wave = boost::wave;

@@ -22,7 +22,7 @@ class Builder;
 namespace Synopsis {class Buffer;}
 class Decoder;
 class TypeFormatter;
-class LinkStore;
+class SXRGenerator;
 class Lookup;
 class FileFilter;
 
@@ -52,7 +52,7 @@ public:
   //. Sets store links to true.
   //. This will cause the whole ptree to be traversed, and any linkable
   //. identifiers found will be stored
-  void set_store_links(LinkStore*);
+  void set_store_links(SXRGenerator*);
 
   //. Get a name from the ptree
   std::string parse_name(PTree::Node *) const;
@@ -215,7 +215,7 @@ private:
   bool my_extract_tails;
   //. Storage for links. This is only set if we should be storing links, so
   //. it must be checked before every use
-  LinkStore* my_links;
+  SXRGenerator *sxr_;
   //. True if this TranslateDeclarator should try to store the decl type
   bool my_store_decl;
   

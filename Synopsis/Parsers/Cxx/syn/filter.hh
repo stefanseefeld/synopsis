@@ -43,13 +43,7 @@ public:
     //. Sets the prefix for syntax output filenames.
     //. The syntax filename will be the source filename prepended with the
     //. prefix, so you probably want the prefix to be a directory.
-    void set_syntax_prefix(const char* filename);
-
-    //. Sets the prefix for xref output filenames.
-    //. The xref filename will be the source filename prepended with the
-    //. prefix, so you probably want the prefix to be a directory.
-    void set_xref_prefix(const char* filename);
-
+    void set_sxr_prefix(const char* filename);
 
     //. Returns the AST::SourceFile for the given filename. If length is
     //. given, then the filename is assumed to be that length. This is useful
@@ -63,9 +57,6 @@ public:
     bool should_visit_function_impl(AST::SourceFile* file);
 
     //. Returns true if links should be generated for the given sourcefile
-    bool should_link(AST::SourceFile* file);
-
-    //. Returns true if xref info should be generated for the given sourcefile
     bool should_xref(AST::SourceFile* file);
 
     //. Returns true if the given declaration should be stored in the final
@@ -77,11 +68,8 @@ public:
     //. Strips a filename of the basename if present
     std::string strip_base_path(const std::string& filename);
 
-    //. Returns the filename to use for storing syntax info
-    std::string get_syntax_filename(AST::SourceFile* file);
-
-    //. Returns the filename to use for storing xref info
-    std::string get_xref_filename(AST::SourceFile* file);
+    //. Returns the filename to use for storing sxr info
+    std::string get_sxr_filename(AST::SourceFile* file);
 
     //. Returns a list of all the sourcefiles
     void get_all_sourcefiles(AST::SourceFile::vector&);

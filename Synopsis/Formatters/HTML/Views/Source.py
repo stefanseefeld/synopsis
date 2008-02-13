@@ -13,30 +13,28 @@ from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
 import os, urllib
 
-link = None
-try:
-    from Synopsis.Parsers.Cxx import link
-except ImportError:
-    print "Warning: unable to import link module. Continuing..."
-
-
 class SXRTranslator:
     """Read in an sxr file, resolve references, and write it out as
     part of a Source view."""
 
-    def __init__(self, filename):
+    def __init__(self, filename, language):
 
         self.sxr = parse(filename)
+        if language == 'Python':
+            self.qname = lambda name: QualifiedPythonName(str(name).split('.'))
+        else:
+            self.qname = lambda name: QualifiedCxxName(str(name).split('::'))
 
     def link(self, linker):
 
         for a in self.sxr.getElementsByTagName('a'):
-            # For now assume this is a Python file. C++ files are still handled
-            # via Parsers/Cxx/syn/link.cc
-            ref = QualifiedPythonName(str(a.getAttribute('href')).split('.'))
+            ref = self.qname(a.getAttribute('href'))
             target = linker(ref)
             a.setAttribute('href', target)
-
+            if a.hasAttribute('type'):
+                a.removeAttribute('type')
+            if a.hasAttribute('from'):
+                a.removeAttribute('from')
 
     def translate(self, writer):
 
@@ -106,45 +104,16 @@ class Source(View):
 
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
-            translator = SXRTranslator(sxr)
+            translator = SXRTranslator(sxr, file.annotations['language'])
             linker = self.external_url and self.external_ref or self.lookup_symbol
             translator.link(linker)
-
             translator.translate(self)
-        elif not link:
-            # No link module..
-            self.write('link module for highlighting source unavailable')
-            try:
-                self.write(open(file.abs_name,'r').read())
-            except IOError, e:
-                self.write("An error occurred:"+ str(e))
-        else:
-            # Call link module
-            f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
-            f_in = file.abs_name
-            f_link = os.path.join(self.prefix, source)
-            try:
-                lookup = self.external_url and self.external_ref or self.lookup_symbol
-                link.link(lookup, f_in, f_out, f_link)
-
-            except link.error, msg:
-                print "An error occurred:",msg
-
-            try:
-                self.write(open(f_out,'r').read())
-                os.unlink(f_out)
-
-            except IOError, e:
-                self.write("An error occurred:"+ str(e))
-
         self.end_file()
 
 
     def lookup_symbol(self, name):
 
         e = self.__toc.lookup(name)
-        #if not e:
-        #    print 'failed to look up', name
         return e and self.rel_url + e.link or ''
 
 

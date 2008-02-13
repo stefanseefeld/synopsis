@@ -49,11 +49,8 @@ struct FileFilter::Private
     //. A vector of strings
     typedef std::vector<std::string> string_vector;
 
-    //. The syntax filename prefix
-    std::string syntax_prefix;
-
-    //. The xref filename prefix
-    std::string xref_prefix;
+    //. The sxr filename prefix
+    std::string sxr_prefix;
 
     //. Type of the map from filename to SourceFile
     typedef std::map<std::string, AST::SourceFile*> file_map_t;
@@ -142,24 +139,14 @@ FileFilter* FileFilter::instance()
     return filter_instance;
 }
 
-// Sets the prefix for syntax output filenames.
-void FileFilter::set_syntax_prefix(const char* filename)
+// Sets the prefix for sxr output filenames.
+void FileFilter::set_sxr_prefix(const char* filename)
 {
-    m->syntax_prefix = filename;
-    if (m->syntax_prefix.size() > 0
-        && m->syntax_prefix[m->syntax_prefix.size()-1] != '/')
-       m->syntax_prefix.append("/");
+    m->sxr_prefix = filename;
+    if (m->sxr_prefix.size() > 0
+        && m->sxr_prefix[m->sxr_prefix.size()-1] != '/')
+       m->sxr_prefix.append("/");
 }
-
-// Sets the prefix for xref output filenames.
-void FileFilter::set_xref_prefix(const char* filename)
-{
-    m->xref_prefix = filename;
-    if (m->xref_prefix.size() > 0
-        && m->xref_prefix[m->xref_prefix.size()-1] != '/')
-       m->xref_prefix.append("/");
-}
-
 
 // Returns the AST::SourceFile for the given filename.
 AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t length)
@@ -211,7 +198,7 @@ bool FileFilter::is_main(std::string filename)
 bool FileFilter::should_visit_function_impl(AST::SourceFile* file)
 {
   // First check if not linking or xreffing
-  if (m->syntax_prefix.empty() || m->xref_prefix.empty())
+  if (m->sxr_prefix.empty())
     return false;
 
   return file->is_main();
@@ -219,15 +206,9 @@ bool FileFilter::should_visit_function_impl(AST::SourceFile* file)
 
 
 // Returns true if links should be generated for the given sourcefile
-bool FileFilter::should_link(AST::SourceFile* file)
-{
-  return !m->syntax_prefix.empty() && file->is_main();
-}
-
-// Returns true if xref info should be generated for the given sourcefile
 bool FileFilter::should_xref(AST::SourceFile* file)
 {
-  return !m->xref_prefix.empty() && file->is_main();
+  return !m->sxr_prefix.empty() && file->is_main();
 }
 
 // Returns true if the given declaration should be stored in the final
@@ -270,15 +251,9 @@ std::string FileFilter::strip_base_path(const std::string& filename)
 }
 
 // Return syntax filename
-std::string FileFilter::get_syntax_filename(AST::SourceFile* file)
+std::string FileFilter::get_sxr_filename(AST::SourceFile* file)
 {
-    return m->syntax_prefix + file->filename();
-}
-
-// Return xref filename
-std::string FileFilter::get_xref_filename(AST::SourceFile* file)
-{
-    return m->xref_prefix + file->filename();
+    return m->sxr_prefix + file->filename() + ".sxr";
 }
 
 // Returns all sourcefiles

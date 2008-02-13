@@ -40,8 +40,7 @@ py_packages = ["Synopsis",
 ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/IDL', '_omniidl' + module_ext),
                ('Synopsis/Parsers/C', 'ParserImpl' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
+               ('Synopsis/Parsers/Cxx', 'ParserImpl' + module_ext)]
 
 scripts = ['synopsis', 'sxr-server']
 if sys.platform == "win32":

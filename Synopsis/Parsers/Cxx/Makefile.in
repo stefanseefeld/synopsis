@@ -22,16 +22,14 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-OCC_SO	:= occ$(LIBRARY_EXT)
-LINK_SO	:= link$(LIBRARY_EXT)
+TARGET	:= ParserImpl$(LIBRARY_EXT)
 
 OCC_FILES := HashTable Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
-SYN_FILES := Translator occ swalker ast builder type dict \
-             dumper decoder swalker-syntax linkstore \
-             lookup filter
+SYN_FILES := swalker ast builder type dict  dumper decoder lookup filter \
+             Translator SXRGenerator ParserImpl
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
@@ -46,25 +44,14 @@ CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
-TARGETS	:= $(OCC_SO) $(LINK_SO)
-
 vpath %.cc $(srcdir)
 vpath %.c $(srcdir)
 vpath %.h $(srcdir)
 vpath %.hh $(srcdir)
 
-all: $(TARGETS) #display-ptree dump-symbols
+all: $(TARGET)
 
-doc: occ.syn occ-impl.syn
-
-# Link C++ files together
-occ.syn: $(HDR_SYN)
-	@echo linking C++ headers together
-	$(SYNOPSIS) link --output=$@ $^
-
-occ-impl.syn: $(HDR_SYN) $(CC_SYN)
-	@echo linking all C++ files together
-	$(SYNOPSIS) link --output=$@ $^
+doc:
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)
@@ -90,12 +77,8 @@ $(CC_SYN): %.cc.syn: %.cc
 	$(SYNOPSIS) cxx --output=$@ $?
 
 # This creates the final occ python module
-$(OCC_SO): $(SYN_OBJ) opencxx.a
+$(TARGET): $(SYN_OBJ) opencxx.a
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
-
-# This creates the final link python module
-$(LINK_SO): $(srcdir)/syn/link.cc
-	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Compile an archive of the OCC files
 opencxx.a : $(OCC_OBJ)

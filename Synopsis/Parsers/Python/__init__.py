@@ -53,7 +53,7 @@ class Parser(Processor):
 
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'Path prefix to strip off of input file names.')
-    syntax_prefix = Parameter(None, 'Path prefix (directory) to contain syntax info.')
+    sxr_prefix = Parameter(None, 'Path prefix (directory) to contain sxr info.')
     
     def process(self, ir, **kwds):
 
@@ -129,13 +129,12 @@ class Parser(Processor):
                     # Only process if we have not visited it yet.
                     self.all_files.append(target[0])
 
-        if self.syntax_prefix:
-            xref = os.path.join(self.syntax_prefix, short_filename + '.sxr')
-            dirname = os.path.dirname(xref)
+        if self.sxr_prefix:
+            sxr = os.path.join(self.sxr_prefix, short_filename + '.sxr')
+            dirname = os.path.dirname(sxr)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, 0755)
 
             sxr_generator = SXRGenerator()
             module = sourcefile.declarations[0]
-            sxr_generator.process_file(module.name, sourcefile, xref)
-
+            sxr_generator.process_file(module.name, sourcefile, sxr)
