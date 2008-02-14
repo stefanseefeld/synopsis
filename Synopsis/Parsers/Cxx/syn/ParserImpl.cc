@@ -34,6 +34,7 @@
 #include <cstring>
 #include <cstdio>
 #include <stdexcept>
+#include <memory>
 
 using namespace Synopsis;
 

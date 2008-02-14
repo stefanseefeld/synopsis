@@ -7,6 +7,7 @@
 
 #include "ErrorHandler.hh"
 #include <iostream>
+#include <cstdlib>
 
 #ifndef _WIN32
 # include <signal.h>

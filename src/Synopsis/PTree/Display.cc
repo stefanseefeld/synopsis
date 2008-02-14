@@ -7,6 +7,8 @@
 
 #include <Synopsis/PTree/Display.hh>
 #include <typeinfo>
+#include <memory>
+#include <cstdlib>
 #if defined(__GNUC__) &&  __GNUC__ >= 3
 # include <cxxabi.h>
 

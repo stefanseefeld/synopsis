@@ -25,7 +25,6 @@ class ClassArray;
 class Member;
 class MemberList;
 class ChangedMemberList;
-struct ChangedMemberList::Cmem;
 
 using namespace Synopsis;
 

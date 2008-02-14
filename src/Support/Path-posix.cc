@@ -7,8 +7,10 @@
 
 #include "Path.hh"
 #include <vector>
+#include <algorithm>
 #include <stdexcept>
 #include <cerrno>
+#include <cstring>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>

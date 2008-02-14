@@ -186,7 +186,7 @@ public:
 class TranslateError : public std::exception
 {
 public:
-    char* str()
+    char const * str()
     {
         return "";
     }
