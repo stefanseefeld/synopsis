@@ -1157,6 +1157,8 @@ class RST(Formatter):
 
             except docutils.utils.SystemMessage, error:
                 xx, line, message = str(error).split(':', 2)
-                print '%s:%d:%s'%(decl.file.name, decl.line + int(line), message)
+                print 'In DocString attached to declaration at %s:%d:'%(decl.file.name,
+                                                                        decl.line)
+                print '  line %s:%s'%(line, message)
 
         return Struct('', '')

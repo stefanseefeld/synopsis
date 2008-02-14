@@ -72,8 +72,8 @@ private:
   //. is seen first. Since ClassSpec and Declarator don't know they are part
   //. of a template declaration, we cache it here so it gets consumed when
   //. the Class or PrototypeScope are created.
-  //. FIXME: Should ClassSpec get a flag so it knows it's a template, similar
-  //.        to Encodings helt in Declarators ?
+  // FIXME: Should ClassSpec get a flag so it knows it's a template, similar
+  //        to Encodings helt in Declarators ?
   SymbolLookup::TemplateParameterScope *my_template_parameters;
 };
 

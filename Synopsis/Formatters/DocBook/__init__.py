@@ -7,7 +7,7 @@
 
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import ASG, DeclarationSorter
 from Syntax import *
 from Markup.Javadoc import Javadoc
@@ -462,6 +462,7 @@ class Formatter(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.output: raise MissingArgument('output')
         self.ir = self.merge_input(ir)
 
         self.documentation = DocCache(self, self.markup_formatters)

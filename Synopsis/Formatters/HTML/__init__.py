@@ -6,7 +6,7 @@
 #
 
 from Synopsis import config
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import IR, ASG
 from Synopsis.QualifiedName import *
 from Synopsis.DocString import DocString
@@ -101,6 +101,7 @@ class Formatter(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.output: raise MissingArgument('output')
 
         self.ir = self.merge_input(ir)
         # Make sure we operate on a single top-level node.

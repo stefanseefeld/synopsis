@@ -101,29 +101,27 @@ public:
   virtual void visit(NamespaceSpec *);
   //. [ using namespace Foo ; ]
   virtual void visit(UsingDirective *);
-  //. either variable, typedef or function
-  //. Variables:
-  //.  [ [modifiers] name [declarators] ; ]
-  //. Function prototype:
-  //.  [ [modifiers] name [declarators] ; ]
-  //. Typedef:
-  //.  ?
-  //. Class definition:
-  //.  [ [modifiers] [class foo ...] [declarators]? ; ]
+  //. One of:
+  //.
+  //. - Variables: [ [modifiers] name [declarators] ; ]
+  //. - Function: prototype: [ [modifiers] name [declarators] ; ]
+  //. - Typedef: ?
+  //. - Class definition: [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
   //. [ namespace Foo = Bar ; ]
   virtual void visit(NamespaceAlias *);
-  //. Function definition:
-  //.  [ [modifiers] name declarator [ { ... } ] ]
+  //. Function definition: [ [modifiers] name declarator [ { ... } ] ]
   virtual void visit(FunctionDefinition *);
-  //. [ decl-specifier-seq ]
-  //. [ decl-specifier-seq declarator ]
-  //. [ decl-specifier-seq declarator = assignment-expression ]
-  //. [ decl-specifier-seq abstract-declarator ]
-  //. [ decl-specifier-seq abstract-declarator = assignment-expression ]
-  //. [ decl-specifier-seq = assignment-expression ]
+  //. One of:
+  //.
+  //. - [ decl-specifier-seq ]
+  //. - [ decl-specifier-seq declarator ]
+  //. - [ decl-specifier-seq declarator = assignment-expression ]
+  //. - [ decl-specifier-seq abstract-declarator ]
+  //. - [ decl-specifier-seq abstract-declarator = assignment-expression ]
+  //. - [ decl-specifier-seq = assignment-expression ]
   virtual void visit(ParameterDeclaration *);
-  //. [ using Foo :: x ; ]
+  //. [ using Foo `::` x ; ]
   virtual void visit(UsingDeclaration *);
   //. [ [ declarator { = <expr> } ] , ... ]
   virtual void visit(Declarator *);
@@ -133,9 +131,11 @@ public:
   virtual void visit(ClassSpec *);
   //. [ enum [name] [{ [name [= value] ]* }] ]
   virtual void visit(EnumSpec *);
-  //. [typename]
-  //. [typename identifier]
-  //. [typename identifier = type-id]
+  //. One of:
+  //.
+  //. - [typename]
+  //. - [typename identifier]
+  //. - [typename identifier = type-id]
   virtual void visit(TypeParameter *);
   virtual void visit(AccessSpec *);
   virtual void visit(AccessDecl *);

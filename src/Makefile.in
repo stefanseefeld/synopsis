@@ -119,14 +119,10 @@ doc: cxx.syn cxx-sxr.syn
 cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
 	$(SYNOPSIS) link --output=$@ $^
-	touch 'links'
-	touch 'xref'
 
 cxx-sxr.syn: $(HDR_SXR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(SYNOPSIS) link --output=$@ $^
-	touch 'links'
-	touch 'xref'
 
 %.d: %.cc
 	$(make_dep)

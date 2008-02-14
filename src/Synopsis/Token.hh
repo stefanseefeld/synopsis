@@ -14,53 +14,38 @@ namespace Synopsis
 
 //. A Token is what the Lexer splits an input stream into.
 //. It refers to a region in the underlaying buffer and it
-//. has a type
+//. has a type.
 //.
-//. line directive:   ^"#"{blank}*{digit}+({blank}+.*)?\n
-//.
-//. pragma directive: ^"#"{blank}*"pragma".*\n
+//. - line directive:   `^"#"{blank}*{digit}+({blank}+.*)?\n`
+//. - pragma directive: `^"#"{blank}*"pragma".*\n`
+//. - Constant:
+//.   
+//.   - `{digit}+{int_suffix}*`
+//.   - `"0"{xletter}{hexdigit}+{int_suffix}*`
+//.   - `{digit}*\.{digit}+{float_suffix}*`
+//.   - `{digit}+\.{float_suffix}*`
+//.   - `{digit}*\.{digit}+"e"("+"|"-")*{digit}+{float_suffix}*`
+//.   - `{digit}+\."e"("+"|"-")*{digit}+{float_suffix}*`
+//.   - `{digit}+"e"("+"|"-")*{digit}+{float_suffix}*`
 //. 
-//. Constant	      {digit}+{int_suffix}*
-//. 		      "0"{xletter}{hexdigit}+{int_suffix}*
-//. 		      {digit}*\.{digit}+{float_suffix}*
-//. 		      {digit}+\.{float_suffix}*
-//. 		      {digit}*\.{digit}+"e"("+"|"-")*{digit}+{float_suffix}*
-//. 		      {digit}+\."e"("+"|"-")*{digit}+{float_suffix}*
-//. 		      {digit}+"e"("+"|"-")*{digit}+{float_suffix}*
-//. 
-//. CharConst	      \'([^'\n]|\\[^\n])\'
-//. WideCharConst     L\'([^'\n]|\\[^\n])\'
-//. 
-//. StringL	      \"([^"\n]|\\["\n])*\"
-//. WideStringL	      L\"([^"\n]|\\["\n])*\"
-//. 
-//. Identifier	      {letter}+({letter}|{digit})*
-//. 
-//. AssignOp	      *= /= %= += -= &= ^= <<= >>=
-//. 
-//. EqualOp	      == !=
-//. 
-//. RelOp	      <= >=
-//. 
-//. ShiftOp	      << >>
-//. 
-//. LogOrOp	      ||
-//. 
-//. LogAndOp	      &&
-//. 
-//. IncOp	      ++ --
-//. 
-//. Scope	      ::
-//. 
-//. Ellipsis	      ...
-//. 
-//. PmOp	      .* ->*
-//. 
-//. ArrowOp	      ->
-//. 
-//. others	      !%^&*()-+={}|~[];:<>?,./
-//. 
-//. BadToken	      others
+//. - CharConst:        `\'([^'\n]|\\[^\n])\'`
+//. - WideCharConst:    `L\'([^'\n]|\\[^\n])\'`
+//. - StringL:          `\"([^"\n]|\\["\n])*\"`
+//. - WideStringL:      `L\"([^"\n]|\\["\n])*\"`
+//. - Identifier:       `{letter}+({letter}|{digit})*`
+//. - AssignOp:         `*= /= %= += -= &= ^= <<= >>=`
+//. - EqualOp:          `== !=`
+//. - RelOp:            `<= >=`
+//. - ShiftOp:          `<< >>`
+//. - LogOrOp:          `||`
+//. - LogAndOp:         `&&`
+//. - IncOp:            `++ --`
+//. - Scope:            `::`
+//. - Ellipsis:         `...`
+//. - PmOp:             `.* ->*`
+//. - ArrowOp:          `->`
+//. - others:           `!%^&*()-+={}|~[];:<>?,./`
+//. - BadToken:         `others`
 //. 
 struct Token 
 {

@@ -236,3 +236,5 @@ pre.sxr .keyword { font-weight: bold;}
 pre.sxr .comment { color: green;}
 pre.sxr .string { color: green;}
 pre.sxr .literal { color: blue;}
+
+.docutils dt { font-weight: bold;}

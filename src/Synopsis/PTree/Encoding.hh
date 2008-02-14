@@ -20,46 +20,47 @@ namespace PTree
 class Node;
 class Atom;
 
-//. 'b' boolean
-//. 'c' char
-//. 'w' wchar_t
-//. 'i' int (signed, unsigned)
-//. 's' short (short int)
-//. 'l' long (long int)
-//. 'j' long long
-//. 'f' float
-//. 'd' double
-//. 'r' long double
-//. 'v' void
+//. An Encoding represents a mangled (type) name. Here is a quick reference of the grammar:
 //.
-//. 'T' template class (e.g. Foo<int,char> ==> T[3]Foo[2]ic.  [2] means
-//.     the length of "ic".  It doesn't mean the number of template
-//.     arguments.
-//. 'e' ...
-//. '?' no return type.  the return type of constructors
-//. '*' non-type template parameter
+//. - `b`: boolean
+//. - `c`: char
+//. - `w`: wchar_t
+//. - `i`: int (signed, unsigned)
+//. - `s`: short (short int)
+//. - `l`: long (long int)
+//. - `j`: long long
+//. - `f`: float
+//. - `d`: double
+//. - `r`: long double
+//. - `v`: void
+//. - `T`: template class (e.g. `Foo<int,char>` ==> `T[3]Foo[2]ic`.  `[2]` means
+//.   the length of `ic`.  It doesn't mean the number of template arguments.
 //.
-//. 'S' signed
-//. 'U' unsigned
-//. 'C' const
-//. 'V' volatile
+//. - `e`: ...
+//. - `?`: no return type.  the return type of constructors
+//. - `*`: non-type template parameter
 //.
-//. 'P' pointer
-//. 'R' reference
-//. 'A' array (e.g. char[16] ==> A16_c)
-//. 'F' function (e.g. char foo(int) ==> Fi_c)
-//. 'M' pointer to member (e.g. Type::* ==> M[4]Type)
+//. - `S`: `signed`
+//. - `U`: `unsigned`
+//. - `C`: `const`
+//. - `V`: `volatile`
 //.
-//. 'Q' qualified class (e.g. X::YY ==> Q[2][1]X[2]YY, ::YY ==> Q[2][0][2]YY)
+//. - `P`: pointer
+//. - `R`: reference
+//. - `A`: array (e.g. `char[16]` ==> `A16_c`)
+//. - `F`: function (e.g. `char foo(int)` ==> `Fi_c`)
+//. - `M`: pointer to member (e.g. `Type::*` ==> `M[4]Type`)
 //.
-//. [x] means (0x80 + x)
-//. '0' means :: (global scope)
+//. - `Q`: qualified class (e.g. `X::YY` ==> `Q[2][1]X[2]YY`, `::YY` ==> `Q[2][0][2]YY`)
+//.
+//. - `[x]`: means `0x80 + x`
+//. - `0`: means `::` (global scope)
 //.
 //. Special function names:
 //.
-//. operator + ==> +
-//. operator new[] ==> new[]
-//. operator <type> ==> @<encoded type>		cast operator
+//. - operator + ==> +
+//. - operator new[] ==> new[]
+//. - operator <type> ==> @<encoded type>		cast operator
 //.
 class Encoding 
 {
