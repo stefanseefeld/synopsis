@@ -28,6 +28,32 @@ def reset_config_variables(config_file, **vars):
     c.write(script)
     c.close()
 
+def shared_library_outputs(name, version, dest):
+    """Returns a list of file names corresponding to the installed files.
+
+    'name' -- The name of the library.
+    'version' -- The version of the library.
+    'dest' -- The destination directory."""
+
+    major, minor = version.split('.', 1)
+    if os.name == 'nt':
+        LIBEXT = '.dll'
+    elif os.uname()[0] == 'Darwin':
+        LIBEXT = '.dylib'
+    else:
+        LIBEXT = sysconfig.get_config_var('SO')
+    library = 'lib%s%s'%(name, LIBEXT)
+
+    outputs = []
+    if os.name == 'posix' and not os.uname()[0].startswith('CYGWIN'):
+        outputs.append(os.path.join(dest, '%s.%s'%(library, version)))
+        for target in '%s.%s'%(library, major), library:
+            outputs.append(os.path.join(dest, target))
+    else:
+        outputs.append(os.path.join(dest, library))
+    return outputs
+
+
 def copy_shared_library(name, version, src, dest, verbose, dry_run):
     """Copies shared library and assorted links from src to dest.
 

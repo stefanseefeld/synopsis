@@ -69,7 +69,7 @@ class build_ext(base):
         for ext in self.extensions:
             # FIXME: this ugly hack is needed since the ucpp module
             # should be installed in the Cpp package, not Cpp.ucpp
-            if ext[0][4:] in ['ucpp', 'wave']:
+            if os.path.basename(ext[0]) in ['ucpp', 'wave']:
                 path = os.path.join(self.build_lib, os.path.dirname(ext[0]), ext[1])
             else:
                 path = os.path.join(self.build_lib, ext[0], ext[1])
@@ -84,7 +84,7 @@ class build_ext(base):
 
         # FIXME: this ugly hack is needed since the ucpp module
         # should be installed in the Cpp package, not Cpp.ucpp
-        if ext[0][-4:] in ['ucpp', 'wave']:
+        if os.path.basename(ext[0]) in ['ucpp', 'wave']:
             target = os.path.dirname(ext[0])
         else:
             target = ext[0]
