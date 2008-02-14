@@ -25,11 +25,12 @@ PTree::Node const *strip_cv_from_integral_type(PTree::Node const *integral)
   if(integral == 0) return 0;
 
   if(!integral->is_atom())
+  {
     if(PTree::is_a(integral->car(), Token::CONST, Token::VOLATILE))
       return PTree::second(integral);
     else if(PTree::is_a(PTree::second(integral), Token::CONST, Token::VOLATILE))
       return integral->car();
-
+  }
   return integral;
 }
 

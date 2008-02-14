@@ -41,7 +41,7 @@ bool operator == (const Node &p, const Node &q)
   {
     const char *pstr = p.position();
     const char *qstr = q.position();
-    while(--plen >= 0)
+    while(plen-- > 0)
       if(pstr[plen] != qstr[plen]) return false;
     return true;
   }
@@ -251,10 +251,11 @@ Node *append(Node *p, Node *q)
 {
   Node *result, *tail;
   if(!p)
+  {
     if(q->is_atom())
       return cons(q, 0);
     else return q;
-
+  }
   result = tail = cons(p->car(), 0);
   p = p->cdr();
   while(p != 0)

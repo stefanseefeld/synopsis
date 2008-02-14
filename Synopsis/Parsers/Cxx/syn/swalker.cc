@@ -355,7 +355,7 @@ void SWalker::visit(PTree::Atom *node)
   // Determine type of node
   std::string s = PTree::reify(node);
   const char *str = s.c_str();
-  if (*str >= '0' && *str <= '9' || *str == '.')
+  if ((*str >= '0' && *str <= '9') || *str == '.')
   {
     // Assume whole node is a number
     if (sxr_) sxr_->span(node, "literal");
@@ -378,18 +378,18 @@ void SWalker::visit(PTree::Atom *node)
       }
       else if (*str == 'l' || *str == 'L')
       {
-        if (num_type == "int") num_type = "long";
-        else if (num_type == "long") num_type = "long long";
-        else if (num_type == "unsigned") num_type = "unsigned long";
-        else if (num_type == "float") num_type = "long double";
-        else if (num_type == "double") num_type = "long double";
+        if (strcmp(num_type, "int") == 0) num_type = "long";
+        else if (strcmp(num_type, "long") == 0) num_type = "long long";
+	else if (strcmp(num_type, "unsigned") == 0) num_type = "unsigned long";
+	else if (strcmp(num_type, "float") == 0) num_type = "long double";
+	else if (strcmp(num_type, "double") == 0) num_type = "long double";
         else
           std::cerr << "Unknown num type: " << num_type << std::endl;
       }
       else if (*str == 'u' || *str == 'U')
       {
-        if (num_type == "int") num_type = "unsigned";
-        else if (num_type == "long") num_type = "unsigned long";
+        if (strcmp(num_type, "int") == 0) num_type = "unsigned";
+        else if (strcmp(num_type, "long") == 0) num_type = "unsigned long";
         else
           std::cerr << "Unknown num type: " << num_type << std::endl;
       }

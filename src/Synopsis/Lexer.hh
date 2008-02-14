@@ -119,7 +119,7 @@ inline bool is_blank(char c)
 
 inline bool is_letter(char c)
 {
-  return 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || c == '_' || c == '$';
+  return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_' || c == '$');
 }
 
 inline bool is_digit(char c){ return '0' <= c && c <= '9';}
@@ -130,7 +130,7 @@ inline bool is_eletter(char c){ return c == 'E' || c == 'e';}
 
 inline bool is_hexdigit(char c)
 {
-  return is_digit(c) || 'A' <= c && c <= 'F' || 'a' <= c && c <= 'f';
+  return is_digit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
 }
 
 inline bool is_int_suffix(char c)

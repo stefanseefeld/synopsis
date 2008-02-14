@@ -1193,11 +1193,12 @@ bool Parser::declaration(PTree::Declaration *&statement)
     head = PTree::snoc(head, storage_s);
 
   if(mem_s == 0)
+  {
     if(opt_member_spec(mem_s))
       head = PTree::nconc(head, mem_s);
     else
       return false;
-
+  }
   if(!opt_cv_qualifier(cv_q)
      || !opt_integral_type_or_class_spec(integral, type_encode))
     return false;
@@ -1734,11 +1735,12 @@ bool Parser::constructor_decl(PTree::Node *&constructor, PTree::Encoding& encode
   opt_throw_decl(throw_decl);	// ignore in this version
 
   if(my_lexer.look_ahead(0) == ':')
+  {
     if(member_initializers(mi))
       constructor = PTree::snoc(constructor, mi);
     else
       return false;
-
+  }
   if(my_lexer.look_ahead(0) == '=')
   {
     Token eq, zero;
@@ -2056,9 +2058,10 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       opt_throw_decl(throw_decl);	// ignore in this version
 
       if(my_lexer.look_ahead(0) == ':')
+      {
 	if(member_initializers(mi)) d = PTree::snoc(d, mi);
 	else return false;
-      
+      }      
       break;		// "T f(int)(char)" is invalid.
     }
     else if(t == '[')
@@ -2573,13 +2576,15 @@ bool Parser::parameter_declaration_list_or_init(PTree::Node *&arglist, bool &is_
     return(is_args = parameter_declaration_list(arglist, encode));
   }
   else 
-    if(is_args = parameter_declaration_list(arglist, encode)) return true;
+  {
+    if((is_args = parameter_declaration_list(arglist, encode))) return true;
     else
     {
       my_lexer.restore(pos);
       encode.clear();
       return function_arguments(arglist);
     }
+  }
 }
 
 /*
@@ -3881,6 +3886,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
     const char* pos = my_lexer.save();
     if(type_id(tname))
       if(my_lexer.get_token(cp) == ')')
+      {
 	if(my_lexer.look_ahead(0) != '(')
 	{
 	  atype = PTree::list(0, PTree::list(new PTree::Atom(op), tname,
@@ -3895,7 +3901,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
 	  // the next token cannot be '('
 	  if(my_lexer.look_ahead(0) != '(') return true;
 	}
-
+      }
     // if we reach here, we have to process '(' function.arguments ')'.
     my_lexer.restore(pos);
     if(!function_arguments(exp)) return false;
