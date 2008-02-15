@@ -64,6 +64,7 @@ private:
 					std::string &name);
 
 
+  Python::Object      qname_;
   ASG::ASGKit         asg_kit_;
   ASG::TypeKit        type_kit_;
   SourceFileKit       sf_kit_;
@@ -80,6 +81,9 @@ private:
   bool                debug_;
   Buffer             *buffer_;
   PTree::Declaration *declaration_;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool                defines_class_or_enum_;
   PTree::Encoding     name_;
 };
 

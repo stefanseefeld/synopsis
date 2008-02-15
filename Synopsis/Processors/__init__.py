@@ -12,5 +12,6 @@ from MacroFilter import *
 from ModuleFilter import *
 from XRefCompiler import *
 from AccessRestrictor import *
+from TypedefFolder import *
 from TypeMapper import *
 import Comments

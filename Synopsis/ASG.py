@@ -213,15 +213,8 @@ class FunctionType(Type):
    
 
 class Dictionary(dict):
-    """Dictionary extends the builtin 'dict' in two ways:
-    It allows (modifiable) lists as keys (this is for convenience only, as users
-    don't need to convert to tuple themselfs), and it adds a 'lookup' method to
-    find a type in a set of scopes."""
-    def __setitem__(self, name, type): dict.__setitem__(self, tuple(name), type)
-    def __getitem__(self, name): return dict.__getitem__(self, tuple(name))
-    def __delitem__(self, name): dict.__delitem__(self, tuple(name))
-    def has_key(self, name): return dict.has_key(self, tuple(name))
-    def get(self, name, default=None): return dict.get(self, tuple(name), default)
+    """Dictionary extends the builtin 'dict' by adding a lookup method to it."""
+
     def lookup(self, name, scopes):
         """locate 'name' in one of the scopes"""
         for s in scopes:
@@ -233,6 +226,7 @@ class Dictionary(dict):
         if self.has_key(name):
             return self[name]
         return None
+
     def merge(self, dict):
         """merge in a foreign dictionary, overriding already defined types only
         if they are of type 'Unknown'."""
@@ -565,7 +559,9 @@ class Visitor(object):
    def visit_group(self, node):
       self.visit_declaration(node)
       for d in node.declarations: d.accept(self)
-   def visit_scope(self, node): self.visit_group(node)
+   def visit_scope(self, node):
+      self.visit_declaration(node)
+      for d in node.declarations: d.accept(self)
    def visit_module(self, node): self.visit_scope(node)
    def visit_meta_module(self, node): self.visit_module(node)
    def visit_class(self, node): self.visit_scope(node)

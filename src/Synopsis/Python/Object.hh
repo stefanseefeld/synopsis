@@ -801,24 +801,24 @@ inline void List::reverse_iterator::decr()
 
 inline void Dict::set(Object k, Object v)
 {
-  PyDict_SetItem(my_impl, k.my_impl, v.my_impl);
+  PyObject_SetItem(my_impl, k.my_impl, v.my_impl);
 }
 
 inline Object Dict::get(Object k, Object d) const
 {
-  PyObject *retn = PyDict_GetItem(my_impl, k.my_impl);
+  PyObject *retn = PyObject_GetItem(my_impl, k.my_impl);
   if (retn) Py_INCREF(retn);
   return retn ? Object(retn) : d;
 }
 
 inline bool Dict::has_key(Object k) const 
 {
-  return PyDict_GetItem(my_impl, k.my_impl) != 0;
+  return PyObject_GetItem(my_impl, k.my_impl) != 0;
 }
 
 inline bool Dict::del(Object k)
 {
-  return PyDict_DelItem(my_impl, k.my_impl) == 0;
+  return PyObject_DelItem(my_impl, k.my_impl) == 0;
 }
 
 inline Dict::iterator Dict::begin() const

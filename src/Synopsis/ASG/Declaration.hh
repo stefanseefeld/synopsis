@@ -217,7 +217,9 @@ public:
   virtual void accept(Visitor *v) { v->visit_enumerator(this);}
 };
 
-typedef Python::TypedList<Enumerator> Enumerators;
+
+//. This needs to be flexible enough to hold Enumerators and Builtins.
+typedef Python::TypedList<Declaration> Enumerators;
 
 //. Enum declaration. An enum contains multiple enumerators.
 class Enum : public Declaration

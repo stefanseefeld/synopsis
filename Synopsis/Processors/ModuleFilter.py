@@ -58,6 +58,7 @@ class ModuleFilter(Processor, ASG.Visitor):
 
     visit_builtin = visit_declaration
     visit_group = visit_declaration
+    visit_scope = visit_declaration
     visit_enum = visit_declaration
 
     def visit_module(self, module):
