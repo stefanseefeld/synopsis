@@ -46,3 +46,8 @@ class TypedefFolder(Processor, ASG.Visitor):
             else:
                 decls = self.ir.declarations
             del decls[decls.index(t)]
+
+            if type(alias.declaration) == ASG.Class:
+                i = len(alias.declaration.name)
+                for d in alias.declaration.declarations:
+                    d.name = d.name[:i-1] + (alias.name[-1],) + d.name[i:]

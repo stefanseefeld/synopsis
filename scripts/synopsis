@@ -152,13 +152,13 @@ def make_processor(argv):
         elif o == '-W':
             if a[0] == "p":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    parser_opts[o] = a
+                    parser_opts[o.replace('-', '_')] = a
             elif a[0] == "l":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    linker_opts[o] = a
+                    linker_opts[o.replace('-', '_')] = a
             elif a[0] == "f":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    formatter_opts[o] = a
+                    formatter_opts[o.replace('-', '_')] = a
 
         elif o in ['-h', '--help']:
             help = True

@@ -64,6 +64,7 @@ ASGTranslator::ASGTranslator(std::string const &filename,
     file_ = sf_kit_.create_source_file(short_filename, long_filename);
     files_.set(short_filename, file_);
   }
+  file_.set_primary(true);
 
   Python::Object define = types_.attr("__setitem__");
   types_.set(qname(sname("char")), type_kit_.create_base(sname("char")));
@@ -269,8 +270,8 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   {
     ASG::Type tt = lookup(t);
     // The type is known. If we find a body, this is a parse error:
-    if (enode)
-      throw std::runtime_error("redefinition of 'enum " + name + "'");
+//     if (enode)
+//       throw std::runtime_error("redefinition of 'enum " + name + "'");
 
     // Else it may be an elaborate specifier, or a forward declaration.
     // Nothing to do. Move on.
@@ -583,14 +584,13 @@ ASG::Type ASGTranslator::lookup_function_types(PTree::Encoding const &name,
   return return_type;
 }
 
-// FIXME: ASG should derive from Scope (a global scope IsA scope...)
-//        This method exists because currently it is not.
 void ASGTranslator::declare(ASG::Declaration declaration)
 {
   if (scope_.size())
     scope_.top().declarations().append(declaration);
   else
     declarations_.append(declaration);    
+  file_.declarations().append(declaration);
 }
 
 ASG::Type ASGTranslator::declare(ScopedName name,

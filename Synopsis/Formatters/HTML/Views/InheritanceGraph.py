@@ -138,10 +138,9 @@ class InheritanceGraph(View):
          graphs.sort(lensorter)
          if name:
             self.write('<div class="inheritance-group">')
-            scoped_name = name.split('::')
             type_str = ''
             types = self.processor.ir.types
-            type = types.get(scoped_name, None)
+            type = types.get(name, None)
             if isinstance(type, ASG.Declared):
                type_str = type.declaration.type + ' '
             self.write('Graphs in '+type_str+name+':<br/>')

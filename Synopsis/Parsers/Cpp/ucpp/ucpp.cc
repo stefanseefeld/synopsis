@@ -80,15 +80,15 @@ void create_macro(const char *filename, int line,
     if (vaarg) params.append("...");
   }
   ASG::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
-  ASG::Declared declared = types->create_declared(name, macro);
+  Python::Module qn = Python::Module::import("Synopsis.QualifiedName");
+  Python::Object qname_ = qn.attr("QualifiedCxxName");
+  ASG::Declared declared = types->create_declared(qname_(name), macro);
 
   Python::List declarations = ir->declarations();
   declarations.append(macro);
 
-  // FIXME: the 'types' attribute is not (yet) a dict type
-  // so we have to do the call conversions manually...
-  Python::Object types = ir->types();
-  types.attr("__setitem__")(Python::Tuple(name, declared));
+  Python::Dict types = ir->types();
+  types.set(qname_(name), declared);
 }
 
 bool extract(PyObject *py_flags, std::vector<const char *> &out)

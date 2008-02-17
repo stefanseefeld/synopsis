@@ -806,7 +806,7 @@ inline void Dict::set(Object k, Object v)
 
 inline Object Dict::get(Object k, Object d) const
 {
-  PyObject *retn = PyObject_GetItem(my_impl, k.my_impl);
+  PyObject *retn = PyDict_GetItem(my_impl, k.my_impl);
   if (retn) Py_INCREF(retn);
   return retn ? Object(retn) : d;
 }

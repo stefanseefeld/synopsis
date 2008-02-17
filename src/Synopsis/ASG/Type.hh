@@ -111,7 +111,7 @@ class FunctionPtr : public Type
 public:
   FunctionPtr() {}
   FunctionPtr(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check && o) assert_type("Function");}
+    : Type(o, false) { if (check && o) assert_type("FunctionType");}
 
   Type return_type() const { return narrow<Type>(attr("return_type")());}  
   Modifiers pre() const { return narrow<Modifiers>(attr("premod")());}  

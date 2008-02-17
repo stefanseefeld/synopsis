@@ -103,6 +103,8 @@ bpl::object parse(bpl::object ir,
   {
   }
   ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
+  // Make sure the input is correctly reproduced.
+  ctx.set_language(wave::enable_insert_whitespace(ctx.get_language(), false));
 
   if (verbose)
   {

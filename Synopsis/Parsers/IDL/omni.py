@@ -129,7 +129,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          return
       self.types.add(name, type)
 
-   def getType(self, name): return self.types.get(name)
+   def getType(self, name): return self.types.get(QName(name))
    def visitAST(self, node):
 
       self.__scope.append(ASG.Scope(sourcefile, 0, 'file', QName()))
@@ -224,7 +224,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
             array = ASG.Array('IDL', self.getType(type), [str(s) for s in d.sizes()])
             dtype = map(None, type[:-1])
             dtype.append(type[-1] + string.join(map(lambda s:"["+ str(s) +"]", d.sizes()),''))
-            self.addType(dtype, array)
+            self.addType(QName(dtype), array)
          name = list(self.scope())
          qname = QName(name + [d.identifier()])
          typedef = ASG.Typedef(sourcefile, node.line(), 'typedef', qname, self.getType(dtype), node.constrType())

@@ -8,6 +8,7 @@
 
 from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import ASG
+from Synopsis.QualifiedName import *
 from Synopsis.Formatters.HTML.Tags import escape
 import re
 
@@ -57,19 +58,18 @@ class Formatter(Parametrized):
             params = ''
         # Split ref
         if '.' in symbol:
-            symbol = symbol.split('.')
+            symbol = QualifiedPythonName(symbol.split('.'))
         else:
-            symbol = symbol.split('::')
+            symbol = QualifiedCxxName(symbol.split('::'))
         # Add params back
-        symbol = symbol[:-1] + [symbol[-1] + params]
+        symbol = symbol[:-1] + (symbol[-1] + params,)
         # Find in all scopes
-        scope = list(scope)
         while 1:
             entry = self._lookup_symbol_in(symbol, scope)
             if entry:
                 return entry.link
             if len(scope) == 0: break
-            del scope[-1]
+            scope = scope[:-1]
         # Not found
         return None
 

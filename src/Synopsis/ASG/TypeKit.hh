@@ -79,7 +79,7 @@ public:
 
   FunctionPtr create_function_ptr(const Type &retn,
 				  const Modifiers &pre, const TypeList &params)
-  { return create<FunctionPtr>("Function", Python::Tuple(lang_, retn, pre, params));}
+  { return create<FunctionPtr>("FunctionType", Python::Tuple(lang_, retn, pre, params));}
 
 private:
   std::string lang_;
