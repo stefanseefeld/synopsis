@@ -53,7 +53,7 @@ class XRefCompiler(Processor):
         self._index = {}
 
         for f in self.ir.files.values():
-            if f.annotations['primary']:
+            if f.annotations['primary'] and os.path.exists(prefix(f.name)):
                 self.compile(prefix(f.name), f.annotations['language'])
 
         # Sort the data

@@ -16,7 +16,7 @@
 #include <boost/wave/preprocessing_hooks.hpp>
 #include <stack>
 #include <Synopsis/Trace.hh>
-#include <Support/path.hh>
+#include <Support/fspath.hh>
 
 using namespace Synopsis;
 namespace wave = boost::wave;
@@ -40,6 +40,7 @@ public:
               std::string const &base_path, bool primary_file_only,
               bpl::object ir, bool v, bool d)
     : language_(language),
+      qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
       declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
@@ -95,6 +96,7 @@ private:
   bpl::object lookup_source_file(std::string const &filename, bool primary);
 
   std::string          language_;
+  bpl::object          qname_module_;
   bpl::object          asg_module_;
   bpl::object          sf_module_;
   bpl::list            declarations_;
@@ -126,24 +128,26 @@ void IRGenerator::expanding_function_like_macro(Token const &macrodef,
                                                 std::vector<Container> const &arguments)
 {
   Trace trace("IRGenerator::expand_function_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
-  if (mask_counter_) return;
-
-  position_ = macrocall.get_position();
-  Token::string_type tmp = macrocall.get_value();
-  current_macro_name_.assign(tmp.begin(), tmp.end());
-  if (arguments.size())
+  if (!mask_counter_) return;
+  if (!macro_level_counter_)
   {
-    current_macro_call_length_ =
-      arguments.back().back().get_position().get_column() +
-      // hack to take into account the following closing paren
-      arguments.back().back().get_value().size() + 1 -
-      position_.get_column();
+    position_ = macrocall.get_position();
+    Token::string_type tmp = macrocall.get_value();
+    current_macro_name_.assign(tmp.begin(), tmp.end());
+    if (arguments.size())
+    {
+      current_macro_call_length_ =
+        arguments.back().back().get_position().get_column() +
+        // hack to take into account the following closing paren
+        arguments.back().back().get_value().size() + 1 -
+        position_.get_column();
+    }
+    else
+      // HACK: let's assume there is no space. See the newer
+      //       (non-depreciated) IRGenerator for a propere implementation.
+      current_macro_call_length_ = current_macro_name_.size() + 2;
   }
-  else
-    // HACK: let's assume there is no space. See the newer
-    //       (non-depreciated) IRGenerator for a propere implementation.
-    current_macro_call_length_ = current_macro_name_.size() + 2;
+  ++macro_level_counter_;
 }
 
 inline
@@ -152,13 +156,15 @@ void IRGenerator::expanding_object_like_macro(Token const &macro,
                                               Token const &macrocall)
 {
   Trace trace("IRGenerator::expand_object_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
   if (mask_counter_) return;
-  
-  position_ = macrocall.get_position();
-  Token::string_type tmp = macrocall.get_value();
-  current_macro_name_.assign(tmp.begin(), tmp.end());
-  current_macro_call_length_ = current_macro_name_.size();
+  if (!macro_level_counter_)
+  {
+    position_ = macrocall.get_position();
+    Token::string_type tmp = macrocall.get_value();
+    current_macro_name_.assign(tmp.begin(), tmp.end());
+    current_macro_call_length_ = current_macro_name_.size();
+  }
+  ++macro_level_counter_;
 }
 
 inline
@@ -171,30 +177,20 @@ inline
 void IRGenerator::rescanned_macro(Container const &result)
 {
   Trace trace("IRGenerator::rescanned_macro", Trace::TRANSLATION);
-  if (!--macro_level_counter_)
+  if (!mask_counter_ && !--macro_level_counter_)
   {
     // All (potentially recursive) scanning is finished at this point, so we
     // can create the MacroCall object.
-    //
-    // The positions of the tokens in the result vector are the ones from
-    // the macro definition, so we only extract the expanded length, and
-    // then calculate the new positions in the (yet to be written) preprocessed
-    // file.
-    unsigned int begin = result.front().get_position().get_column() - 1;
-    unsigned int end = 
-      result.back().get_position().get_column() + 
-      result.back().get_value().size();
-    unsigned int length = end - begin;
-    // We assume the expansion happens at the point where the macro call occured,
-    // i.e. any whitespace or comments are unaltered.
+
+    Token::string_type tmp = wave::util::impl::as_string(result);
+    unsigned int length = tmp.size();
     // Wave starts to count columns at index 1, synopsis at 0.
-    begin = position_.get_column() - 1;
-    end = begin + length;
+    unsigned int begin = position_.get_column() - 1;
+    unsigned int end = begin + length;
+    int diff = current_macro_call_length_ - static_cast<int>(length);
     bpl::dict mmap = bpl::extract<bpl::dict>(file_stack_.top().attr("macro_calls"));
     bpl::list line = bpl::extract<bpl::list>(mmap.get(position_.get_line(), bpl::list()));
-    line.append(sf_module_.attr("MacroCall")(current_macro_name_,
-                                             begin, end,
-                                             current_macro_call_length_ - length));
+    line.append(sf_module_.attr("MacroCall")(current_macro_name_, begin, end, diff));
     mmap[position_.get_line()] = line;
   }
 }
@@ -275,7 +271,7 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
     params.append(std::string(tmp.begin(), tmp.end()));
   }
 
-  bpl::tuple qname = bpl::make_tuple(macro_name);
+  bpl::object qname = qname_module_.attr("QualifiedCxxName")(bpl::make_tuple(macro_name));
   bpl::object macro = asg_module_.attr("Macro")(file_stack_.top(),
                                                 position.get_line(),
                                                 "macro",
@@ -306,11 +302,10 @@ bpl::object IRGenerator::lookup_source_file(std::string const &filename,
   bpl::object source_file = files_.get(short_name);
   if (!source_file)
   {
-    source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_);
-    std::cout << "adding " << short_name << ' ' << long_name << ' ' << base_path_ << std::endl;
+    source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_, primary);
     files_[short_name] = source_file;
   }
-  if (source_file && primary)
+  else if (primary)
   {
     bpl::dict annotations = bpl::extract<bpl::dict>(source_file.attr("annotations"));
     annotations["primary"] = true;

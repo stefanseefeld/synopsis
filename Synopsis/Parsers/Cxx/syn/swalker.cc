@@ -55,6 +55,7 @@ SWalker::SWalker(FileFilter* filter, Builder* builder, Buffer* buffer)
     my_decoder(new Decoder(my_builder)),
     my_declaration(0),
     my_in_typedef(false),
+    my_defines_class_or_enum(false),
     my_template(0),
     my_lineno(0),
     my_file(0),
@@ -540,7 +541,6 @@ void SWalker::visit(PTree::ClassSpec *node)
 {
   // REVISIT: figure out why this method is so long
   STrace trace("SWalker::visit(PTree::ClassSpec*)");
-  enum { SizeForwardDecl = 2, SizeAnonClass = 3, SizeClass = 4 };
 
   AST::Parameter::vector* is_template = my_template;
   my_template = 0;
@@ -549,7 +549,10 @@ void SWalker::visit(PTree::ClassSpec *node)
   PTree::Node *pName = 0, *pInheritance = 0;
   PTree::ClassBody *pBody = 0;
 
-  if (size == SizeForwardDecl && !my_in_typedef)
+  // FIXME: this is a forward declaration even in
+  //        'typedef struct Foo foo_type;', if Foo
+  //        isn't yet known.
+  if (size == 2 && !my_in_typedef)
   {
     // Forward declaration
     // [ class|struct <name> ]
@@ -562,14 +565,14 @@ void SWalker::visit(PTree::ClassSpec *node)
     add_comments(class_, node->get_comments());
     return;
   }
-  else if (size == SizeClass)
+  else if (size == 4)
   {
     // [ class|struct <name> <inheritance> [{ body }] ]
     pName = PTree::nth(node, 1);
     pInheritance = PTree::nth(node, 2);
     pBody = static_cast<PTree::ClassBody *>(PTree::nth(node, 3));
   }
-  else if (size == SizeAnonClass)
+  else if (size == 3)
     // An anonymous struct. OpenC++ encodes us a unique
     // (may be qualified if nested) name
     // [ struct [nil nil] [{ ... }] ]
@@ -638,6 +641,7 @@ void SWalker::visit(PTree::ClassSpec *node)
 
   // Push the impl stack for a cache of func impls
   my_func_impl_stack.push_back(FuncImplVec());
+  my_defines_class_or_enum = false;
   // Translate the body of the class
   translate(pBody);
 
@@ -648,6 +652,7 @@ void SWalker::visit(PTree::ClassSpec *node)
   my_func_impl_stack.pop_back();
 
   my_builder->end_class();
+  my_defines_class_or_enum = true;
 }
 
 PTree::TemplateDecl *
@@ -1378,6 +1383,7 @@ SWalker::translate_type_specifier(PTree::Node *tspec)
 void SWalker::visit(PTree::Typedef *node)
 {
   STrace trace("SWalker::visit(Typedef*)");
+  my_defines_class_or_enum = false;
   bool in_typedef_back = my_in_typedef;
   my_in_typedef = true;
   if (sxr_) sxr_->span(PTree::first(node), "keyword");
@@ -1388,6 +1394,7 @@ void SWalker::visit(PTree::Typedef *node)
   for (PTree::Node *declarator = PTree::third(node); declarator; declarator = PTree::tail(declarator, 2))
     translate_typedef_declarator(declarator->car());
   my_in_typedef = in_typedef_back;
+  my_defines_class_or_enum = false;
 }
 
 void SWalker::translate_typedef_declarator(PTree::Node *node)
@@ -1406,7 +1413,7 @@ void SWalker::translate_typedef_declarator(PTree::Node *node)
   // Get name of typedef
   std::string name = my_decoder->decodeName(encname);
   // Create typedef object
-  AST::Typedef* tdef = my_builder->add_typedef(my_lineno, name, type, false);
+  AST::Typedef* tdef = my_builder->add_typedef(my_lineno, name, type, my_defines_class_or_enum);
   add_comments(tdef, dynamic_cast<PTree::Declarator*>(node));
   // if storing links, find name
   if (sxr_)
@@ -1579,6 +1586,7 @@ void SWalker::visit(PTree::EnumSpec *node)
     //my_declaration->SetComments(0); ?? typedef doesn't have comments?
   }
   if (sxr_) sxr_->xref(PTree::second(node), theEnum);
+  my_defines_class_or_enum = true;
 }
 
 void SWalker::visit(PTree::UsingDirective *node)

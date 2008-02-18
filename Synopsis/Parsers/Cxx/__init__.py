@@ -12,7 +12,7 @@ use by python.
 @see C++/SWalker
 """
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 import ParserImpl
 
 import os, os.path, tempfile
@@ -29,6 +29,7 @@ class Parser(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
 
         if self.preprocess:

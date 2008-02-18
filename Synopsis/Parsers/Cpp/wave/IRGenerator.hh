@@ -152,8 +152,8 @@ bool IRGenerator::expanding_function_like_macro(Context const &ctx,
                                                 IteratorT const &seqend)
 {
   Trace trace("IRGenerator::expand_function_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
-  if (!mask_counter_)
+  if (mask_counter_) return false;
+  if (!macro_level_counter_)
   {
     position_ = macrocall.get_position();
     Token::string_type tmp = macrocall.get_value();
@@ -163,6 +163,7 @@ bool IRGenerator::expanding_function_like_macro(Context const &ctx,
     unsigned int end = seqend->get_position().get_column() + 1;
     current_macro_call_length_ = end - position_.get_column();
   }
+  ++macro_level_counter_;
   return false;
 }
 
@@ -173,14 +174,15 @@ bool IRGenerator::expanding_object_like_macro(Context const& ctx,
                                               Token const &macrocall)
 {
   Trace trace("IRGenerator::expand_object_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
-  if (!mask_counter_)
-  {  
+  if (mask_counter_) return false;
+  if (!macro_level_counter_)
+  {
     position_ = macrocall.get_position();
     Token::string_type tmp = macrocall.get_value();
     current_macro_name_.assign(tmp.begin(), tmp.end());
     current_macro_call_length_ = current_macro_name_.size();
   }
+  ++macro_level_counter_;
   return false;
 }
 
@@ -196,30 +198,20 @@ void IRGenerator::rescanned_macro(Context const &ctx,
                                   Container const &result)
 {
   Trace trace("IRGenerator::rescanned_macro", Trace::TRANSLATION);
-  if (!--macro_level_counter_)
+  if (!mask_counter_ && !--macro_level_counter_)
   {
     // All (potentially recursive) scanning is finished at this point, so we
     // can create the MacroCall object.
-    //
-    // The positions of the tokens in the result vector are the ones from
-    // the macro definition, so we only extract the expanded length, and
-    // then calculate the new positions in the (yet to be written) preprocessed
-    // file.
-    unsigned int begin = result.front().get_position().get_column() - 1;
-    unsigned int end = 
-      result.back().get_position().get_column() + 
-      result.back().get_value().size();
-    unsigned int length = end - begin;
-    // We assume the expansion happens at the point where the macro call occured,
-    // i.e. any whitespace or comments are unaltered.
+
+    Token::string_type tmp = wave::util::impl::as_string(result);
+    unsigned int length = tmp.size();
     // Wave starts to count columns at index 1, synopsis at 0.
-    begin = position_.get_column() - 1;
-    end = begin + length;
+    unsigned int begin = position_.get_column() - 1;
+    unsigned int end = begin + length;
+    int diff = current_macro_call_length_ - static_cast<int>(length);
     bpl::dict mmap = bpl::extract<bpl::dict>(file_stack_.top().attr("macro_calls"));
     bpl::list line = bpl::extract<bpl::list>(mmap.get(position_.get_line(), bpl::list()));
-    line.append(sf_module_.attr("MacroCall")(current_macro_name_,
-                                             begin, end,
-                                             current_macro_call_length_ - length));
+    line.append(sf_module_.attr("MacroCall")(current_macro_name_, begin, end, diff));
     mmap[position_.get_line()] = line;
   }
 }

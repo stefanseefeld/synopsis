@@ -7,7 +7,7 @@
 
 """Preprocessor for C, C++, IDL"""
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Emulator import get_compiler_info
 from ParserImpl import parse
 import os.path
@@ -24,6 +24,7 @@ class Parser(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
 
         system_flags = []

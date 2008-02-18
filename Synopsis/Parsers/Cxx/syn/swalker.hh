@@ -201,6 +201,10 @@ private:
   //. return type and modifiers, etc.
   PTree::Node * my_declaration;
   bool my_in_typedef;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool my_defines_class_or_enum;
+
   //. A pointer to the current template parameters, if any, used to get the
   //. template parameters and set in the declaration. Should be 0 if not
   //. in a template.
