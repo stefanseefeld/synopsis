@@ -16,6 +16,7 @@
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include "ASGTranslator.hh"
+// #include "SXRGenerator.hh"
 #include <Support/ErrorHandler.hh>
 #include <fstream>
 
@@ -37,15 +38,13 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   PyObject *py_ir;
   const char *src, *cppfile;
   char const * base_path = "";
-  char const * syntax_prefix = 0;
-  char const * xref_prefix = 0;
+  char const * sxr_prefix = 0;
   int primary_file_only, verbose, debug;
-  if (!PyArg_ParseTuple(args, "Ossizzzii",
+  if (!PyArg_ParseTuple(args, "Ossizzii",
                         &py_ir, &cppfile, &src,
                         &primary_file_only,
                         &base_path,
-                        &syntax_prefix,
-                        &xref_prefix,
+                        &sxr_prefix,
                         &verbose,
                         &debug))
     return 0;
@@ -84,6 +83,11 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     {
       ASGTranslator translator(src, base_path, primary_file_only, ir, verbose, debug);
       translator.translate(ptree, buffer);
+//       if (sxr_prefix)
+//       {
+//         SXRGenerator sxr_generator(src, base_path, primary_file_only, ir, verbose, debug);
+//         srx_generator.generate(ptree, buffer);
+//       }
     }
   }
   catch (std::exception const &e)

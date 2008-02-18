@@ -12,6 +12,7 @@ prefix	:=
 subdirs	:= $(filter-out Paths/src, $(wildcard Paths/*))
 subdirs += COS
 subdirs += hybrid
+subdirs += math
 
 action	:= all
 

@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 import ParserImpl
 
 import os, os.path, tempfile
@@ -17,12 +17,12 @@ class Parser(Processor):
     cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
-    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
-    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
+    sxr_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
 
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
 
         if self.preprocess:
@@ -56,8 +56,7 @@ class Parser(Processor):
                                            os.path.abspath(file),
                                            self.primary_file_only,
                                            base_path,
-                                           self.syntax_prefix,
-                                           self.xref_prefix,
+                                           self.sxr_prefix,
                                            self.verbose,
                                            self.debug)
             finally:

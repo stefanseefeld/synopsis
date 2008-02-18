@@ -251,7 +251,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             # This will result in index terms being grouped by name, with each
             # qualified name being listed within that group.
             indexterm = self.element('primary', escape(declaration.real_name[-1]))
-            indexterm += self.element('secondary', escape('::'.join(declaration.real_name)))
+            indexterm += self.element('secondary', escape(str(declaration.real_name)))
             self.write_element('indexterm', indexterm, type='functions')
 
         language = declaration.file.annotations['language']
@@ -261,10 +261,8 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.process_doc(declaration)
         self.end_element()
 
-    def visit_module(self, module):
-
+    def format_module_or_group(self, module, title):
         self.start_element('section')
-        title = module.name and '%s %s'%(module.type, module.name[-1]) or 'Global Module'
         self.write_element('title', title)
         self.write('\n')
 
@@ -307,6 +305,16 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             self.end_element()
             self.write('\n')
 
+    def visit_module(self, module):
+        if module.name:
+            title = '%s %s'%(module.type, module.name[-1])
+        else:
+            title = 'Global %s'%module.type.capitalize()
+            
+        self.format_module_or_group(module, title)
+        
+    def visit_group(self, group):
+        self.format_module_or_group(group, group.name[-1].capitalize())
 
     def visit_class(self, class_):
 
@@ -317,7 +325,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.write_element('title', escape(title))
         self.write('\n')
         indexterm = self.element('primary', escape(class_.name[-1]))
-        indexterm += self.element('secondary', escape('::'.join(class_.name)))
+        indexterm += self.element('secondary', escape(str(class_.name)))
         self.write_element('indexterm', indexterm, type='types')
         self.write('\n')
 
