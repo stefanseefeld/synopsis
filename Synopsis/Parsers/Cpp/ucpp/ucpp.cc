@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <memory>
 #include <functional>
+#include <algorithm>
 
 using namespace Synopsis;
 
