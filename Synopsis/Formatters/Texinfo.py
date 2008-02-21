@@ -8,7 +8,7 @@
 
 """a TexInfo formatter """
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import ASG
 from Synopsis.DocString import DocString
 import sys, getopt, os, os.path, re
@@ -46,6 +46,7 @@ class Formatter(Processor, ASG.Visitor):
    def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
+      if not self.output: raise MissingArgument('output')
       self.ir = self.merge_input(ir)
 
       self.__os = open(self.output, 'w+')

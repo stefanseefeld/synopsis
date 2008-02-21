@@ -78,50 +78,41 @@ To be written...
 
 @node IR, Parsers, Overview, Top
 @chapter The Internal Representation
-The backbone of synopsis is an Abstract Syntax Tree, together with a
-Type dictionary. Both are designed to be sufficiently abstract to support
-a variety of languges, without giving up the necessary details to retain
-language specific information. The AST module contains the type that are
-used to generate all the nodes of a syntax tree, such as 'Class', 'Module',
-or 'Variable', while the Type module contains the associated meta types,
-i.e. for example 'Parametrized', 'BaseType', 'Declared'. Both modules
-define a Visitor which you can use for introspection of the AST/Type dictionary,
-to manipulate the data and or to generate some output from it.
+The backbone of synopsis is an Internal Representation of the parsed source code.
+This is essentially a set of different representations, such as an Abstract Semantic Graph,
+a Symbol Table, Parse Tree, etc.
+These are designed to be (mostly) language-agnostic, so they can be used with multiple
+languages.
+
+This chapter describes the most important common building blocks of the Internal 
+Representation.
 @page
 
 @menu
-* AST::    AST type hierarchy                    
-* Type::   Type type hierarchy                
-* Util::   Common utils
+* IR::            Internal Representation
+* QualifiedName:: Qualified Name
+* SourceFile::    Source File
+* DocString::     Documentation String
+* ASG::           Abstract Semantic Graph
 @end menu
 
-@node AST, Type, IR, IR
+@node Internal Representation, QualifiedName, , IR
+@section The Internal Representation
+@include IR.texi
+@page
+
+@node ASG, , IR, IR
 @section The AST Module
-@include ast.texi
+@include ASG.texi
 @page
-@node Type, Util, AST, IR
-@section The Type Module
-@include type.texi
-@page
-@node Util,  , Type, IR
-@section The Util Module
-@include util.texi
 
 @node Parsers, Processors, IR, Top
 @chapter The Parsers Module
-Synopsis provides a set of parsers that generate an Abstract Syntax Tree
-from various programming languages. They are usually part of third party
-projects, such that we only need to provide a thin wrapper to bind them
-to the synopsis core.
+Synopsis provides a set of parsers that generate an Abstract Semantic Graph
+from various programming languages.
 @page
-@section The Cxx Module
-@include parsers-cxx.texi
-@page
-@section The IDL Module
-@include parsers-idl.texi
-@page
-@section The Python Module
-@include parsers-py.texi
+@section The Parsers Package
+@include Parsers.texi
 
 @node Processors, Formatters, Parsers, Top
 @chapter The Processors Module
@@ -129,7 +120,7 @@ The linker performs some first modifications to the AST/Type dictionary
 as to resolve cross references (even across languages !), strip off
 unwanted scopes, parse the comments that are associated with the declarations
 for cross references, etc.
-@include processors.texi
+@include Processors.texi
 
 @node Formatters,  , Processors, Top
 
@@ -142,48 +133,23 @@ purposes, ranging from online browsing, over graph generation, to generating
 hardcopies.
 
 @menu
-* Formatters.ASCII::             ASCII formatter            
 * Formatters.HTML::              HTML formatter
-* Formatters.Dump::              Dump formatter (for debugging)
-* Formatters.Dia::               Dia formatter    
 * Formatters.DocBook::           DocBook formatter
-* Formatters.Dot::               Dot formatter
-* Formatters.HTML_Simple::       small HTML formatter
-* Formatters.TexInfo::           TexInfo formatter
+* Formatters.SXR::               SXR formatter
 @end menu
 
 @page
-@node Formatters.ASCII, Formatters.HTML, Formatters, Formatters
-@section The ASCII Module
-@include formatters-ascii.texi
-@page
-@node Formatters.HTML, Formatters.Dump, Formatters.ASCII, Formatters
+@node Formatters.HTML, Formatters.DocBook, , Formatters
 @section The HTML Module
-@include formatters-html.texi
+@include Formatters-HTML.texi
 @page
-@node Formatters.Dump, Formatters.Dia, Formatters.HTML, Formatters
-@section The Dump Module
-@include formatters-dump.texi
-@page
-@node Formatters.Dia, Formatters.DocBook, Formatters.Dump, Formatters
-@section The Dia Module
-@include formatters-dia.texi
-@page
-@node Formatters.DocBook, Formatters.Dot, Formatters.Dia, Formatters
+@node Formatters.DocBook, Formatters.SXR, Formatters.HTML, Formatters
 @section The DocBook Module
-@include formatters-db.texi
+@include Formatters-DocBook.texi
 @page
-@node Formatters.Dot, Formatters.HTML_Simple, Formatters.DocBook, Formatters
-@section The Dot Module
-@include formatters-dot.texi
-@page
-@node Formatters.HTML_Simple, Formatters.TexInfo, Formatters.Dot, Formatters
-@section The HTML_Simple Module
-@include formatters-html-simple.texi
-@page
-@node Formatters.TexInfo,  , Formatters.HTML_Simple, Formatters
+@node Formatters.SXR,  , Formatters.DocBook, Formatters
 @section The TexInfo Module
-@include formatters-texi.texi
+@include Formatters-SXR.texi
 
 @unnumbered Type Index
 @printindex tp

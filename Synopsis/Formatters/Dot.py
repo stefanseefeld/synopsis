@@ -455,6 +455,7 @@ class Formatter(Processor):
                  'ps' : 'ps',
                  'png' : 'png',
                  'gif' : 'gif',
+                 'svg' : 'svg',
                  'map' : 'imap',
                  'html' : 'html'}
 

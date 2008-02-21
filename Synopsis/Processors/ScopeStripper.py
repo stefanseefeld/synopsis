@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import ASG
 
 class ScopeStripper(Processor, ASG.Visitor):
@@ -20,30 +20,33 @@ class ScopeStripper(Processor, ASG.Visitor):
     def __init__(self, **kwds):
 
         Processor.__init__(self, **kwds)
-        self.__root = []
-        self.__in = 0
-
+        self.declarations = []
+        self.inside = False
+        self._scope = ()
 
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.scope: raise MissingArgument('scope')
         self.ir = self.merge_input(ir)
-        if self.scope:
+        if '::' in self.scope:
+            self._scope = tuple(self.scope.split('::'))
+        else:
+            self._scope = tuple(self.scope.split('.'))
 
-            self.__scope = tuple(self.scope.split('::'))
-            # strip prefixes and remove non-matching declarations
-            self.strip_declarations(self.ir.declarations)
-
-            # Remove types not in strip
-            self.strip_types(self.ir.types)
+        # strip prefixes and remove non-matching declarations
+        self.strip_declarations(self.ir.declarations)
+        
+        # Remove types not in strip
+        self.strip_types(self.ir.types)
 
         return self.output_and_return_ir()
 
       
     def strip_name(self, name):
 
-        depth = len(self.__scope)
-        if name[0:depth] == self.__scope:
+        depth = len(self._scope)
+        if name[:depth] == self._scope:
             if len(name) == depth: return None
             return name[depth:]
         return None
@@ -53,7 +56,7 @@ class ScopeStripper(Processor, ASG.Visitor):
 
         for decl in declarations:
             decl.accept(self)
-        declarations[:] = self.declarations()
+        declarations[:] = self.declarations
 
 	
     def strip_types(self, types):
@@ -71,23 +74,20 @@ class ScopeStripper(Processor, ASG.Visitor):
                 raise
 
 
-    def declarations(self): return self.__root
-
-   
     def strip(self, declaration):
         """test whether the declaration matches one of the prefixes, strip
         it off, and return success. Success means that the declaration matches
         the prefix set and thus should not be removed from the ASG."""
 
-        passed = 0
-        if not self.__scope: return 1
-        depth = len(self.__scope)
+        passed = False
+        if not self._scope: return True
+        depth = len(self._scope)
         name = declaration.name
-        if name[0:depth] == self.__scope and len(name) > depth:
+        if name[:depth] == self._scope and len(name) > depth:
             if self.verbose: print "symbol", '::'.join(name),
             declaration.name = name[depth:]
             if self.verbose: print "stripped to", '::'.join(declaration.name)
-            passed = 1
+            passed = True
         if self.verbose and not passed:
             print "symbol", '::'.join(declaration.name), "removed"
         return passed
@@ -95,13 +95,13 @@ class ScopeStripper(Processor, ASG.Visitor):
 
     def visit_scope(self, scope):
 
-        root = self.strip(scope) and not self.__in
+        root = self.strip(scope) and not self.inside
         if root:
-            self.__in = 1
-            self.__root.append(scope)
+            self.inside = True
+            self.declarations.append(scope)
         for declaration in scope.declarations:
             declaration.accept(self)
-        if root: self.__in = 0
+        if root: self.inside = False
 
 
     def visit_class(self, class_):
@@ -120,8 +120,8 @@ class ScopeStripper(Processor, ASG.Visitor):
 
     def visit_declaration(self, decl):
 
-        if self.strip(decl) and not self.__in:
-            self.__root.append(decl)
+        if self.strip(decl) and not self.inside:
+            self.declarations.append(decl)
 
 
     def visit_enumerator(self, enumerator):

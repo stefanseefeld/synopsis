@@ -8,7 +8,7 @@
 import ASG
 import cPickle
 
-class IR:
+class IR(object):
     """Top-level Internal Representation. This is essentially a dictionary
     of different representations such as Parse Tree, Abstract Semantic Graph, etc.
     """
@@ -19,6 +19,11 @@ class IR:
         self.files = files or {}
         self.declarations = declarations or []
         self.types = types or ASG.Dictionary()
+
+    def copy(self):
+        """Make a shallow copy of this IR."""
+
+        return type(self)(self.files.copy(), self.declarations[:], self.types.copy())
 
     def save(self, filename):
         """Saves an IR object to the given filename"""

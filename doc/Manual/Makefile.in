@@ -10,35 +10,34 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 topdir	:= @topdir@
 
-synopsis := @PYTHON@ synopsis.py
+synopsis:= @PYTHON@ synopsis.py
+xsltproc:= xsltproc --novalid --path $(shell pwd) --xinclude
+fop	:= xmlroff --backend=cairo
 
 # This is a default setting suitable for the sxr-server demo applet
 # use 'make sxr sxr=<URL>' to generate the sxr db for another URL
 sxr	:= http://localhost:8000/sxr
 
-python_src	:= $(wildcard $(topdir)/Synopsis/*.py)
-python_src	+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
-python_src	+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
-python_src	+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
-#python_src	+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
+python_src := $(wildcard $(topdir)/Synopsis/*.py)
+python_src += $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
+python_src += $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
+python_src += $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
+#python_src += $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
 
-python_syn	:= $(patsubst $(topdir)/%.py, %.syn, $(python_src))
+python_syn := $(patsubst $(topdir)/%.py, %.syn, $(python_src))
 
-texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
+texi-help := aux cp cps fn fns ky log pg toc tp tps vr vrs
 
-
-TEXI		:= ast.texi type.texi util.texi \
-            parsers-cxx.texi parsers-idl.texi parsers-py.texi \
-            processors.texi \
-            formatters-ascii.texi formatters-html.texi formatters-dump.texi \
-            formatters-dia.texi formatters-db.texi formatters-dot.texi \
-            formatters-html-simple.texi formatters-texi.texi
+MODULES	:= IR #ASG Processor Processors Parsers Formatters-HTML Formatters-DocBook Formatters-SXR cxx
+TEXI	:= $(patsubst %, %.texi, $(MODULES))
+DB	:= $(patsubst %, %.xml, $(MODULES))
 
 vpath %.py $(topdir)
 vpath %.cc $(topdir)
 vpath %.h $(topdir)
 vpath %.hh $(topdir)
 vpath Manual.texi $(srcdir)
+vpath Manual.xml $(srcdir)
 
 all: html pdf info
 
@@ -75,77 +74,77 @@ python.syn: $(python_syn)
 	@echo linking Python files together
 	$(synopsis) link_python --output=$@ $^
 
-ast.syn:	python.syn
+IR.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::AST' --output=$@ $^
+	$(synopsis) link --scopes='Synopsis.IR,Synopsis.QualifiedName,Synopsis.SourceFile,Synopsis.DocString' --output=$@ $^
 
-type.syn:	python.syn
+ASG.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Type' --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.ASG' --output=$@ $^
 
-util.syn:	python.syn
+Processor.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Util' --output=$@ $^
+	$(synopsis) link --scopes='Synopsis.Processor,Synopsis.process' --output=$@ $^
 
-parsers-cxx-py.syn:	python.syn
+Processors.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Parsers::Cxx' --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.Processors' --output=$@ $^
 
-parsers-cxx.syn:	parsers-cxx-py.syn
+Parsers.syn: python.syn
 	@echo linking $@
-	$(synopsis) link --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.Parsers' --output=$@ $^
 
-parsers-idl.syn:	python.syn
+Formatters-HTML.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Parsers::IDL' --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.Formatters.HTML' --output=$@ $^
 
-parsers-py.syn:	python.syn
+Formatters-DocBook.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Parsers::Python' --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.Formatters.DocBook' --output=$@ $^
 
-processors.syn:	python.syn
+Formatters-SXR.syn: python.syn
 	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Processors' --output=$@ $^
+	$(synopsis) strip --scope='Synopsis.Formatters.SXR' --output=$@ $^
 
-formatters-ascii.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::ASCII' --output=$@ $^
-
-formatters-html.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::HTML' --output=$@ $^
-
-formatters-dump.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::Dump' --output=$@ $^
-
-formatters-dia.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::Dia' --output=$@ $^
-
-formatters-db.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::DocBook' --output=$@ $^
-
-formatters-dot.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::Dot' --output=$@ $^
-
-formatters-html-simple.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::HTML_Simple' --output=$@ $^
-
-formatters-texi.syn:	python.syn
-	@echo linking $@
-	$(synopsis) strip --scope='Synopsis::Formatters::TexInfo' --output=$@ $^
-
-%.texi:   %.syn
+%.texi: %.syn
 	@echo formatting $@
 	$(synopsis) texi --output=$@ $^
 
-Manual.pdf:	Manual.texi $(TEXI)
+title:=
+
+%.xml: %.syn
+	@echo formatting $@
+	$(synopsis) docbook --title=$(title) --output=$@ $^
+
+cxx.xml: cxx.syn
+	@echo formatting $@
+	$(synopsis) docbook --title=$(title) --output=$@ $^
+
+IR.xml: override title:='The Internal Representation'
+ASG.xml: override title:='The Abstract Semantic Graph'
+Processor.xml: override title='The Processor Framework'
+Processors.xml: override title='ASG Processors'
+Parsers.xml: override title='Parsers'
+Formatters-HTML.xml: override title='The HTML Formatter'
+Formatters-DocBook.xml: override title='The DocBook Formatter'
+Formatters-SXR.xml: override title='The SXR Formatter'
+
+#Manual.pdf: Manual.texi $(TEXI)
+#	@echo generating $@
+#	texi2pdf -I $(srcdir) $<
+
+html/db: Manual.xml $(DB)
 	@echo generating $@
-	texi2pdf -I $(srcdir) $<
+	cp $(srcdir)/synopsis.css $@
+	$(xsltproc) -o $@/ $(srcdir)/html.xsl $<
+
+Manual.pdf: Manual.fo $(DB)
+	@echo generating $@
+	$(fop) $<
+
+Manual.fo: Manual.xml $(DB)
+	@echo generating $@
+	$(xsltproc) -o $@ $(srcdir)/fo.xsl $<
 
 info:	$(TEXI) Manual.texi
 	@echo generating info files
@@ -159,7 +158,7 @@ install: all
 	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:
-	rm -rf synopsis links xref *.syn links.toc $(TEXI) \
+	rm -rf synopsis sxr *.syn links.toc $(TEXI) \
      $(addprefix Manual., $(texi-help))
 
 distclean:  clean

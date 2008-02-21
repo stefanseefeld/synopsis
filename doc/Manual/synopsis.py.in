@@ -11,6 +11,7 @@ from Synopsis.Formatters.HTML.DirectoryLayout import *
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
+from Synopsis.Formatters import DocBook
 from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
@@ -53,14 +54,34 @@ sxr = SXR.Formatter(url = '/sxr',
                     sxr_prefix='sxr',
                     sxr_template = os.path.join(srcdir, 'sxr-template.html'))
 
+class MyLinker(Processor):
+   """Build a processor that collects ASGs from multiple scopes."""
+
+   scopes = Parameter('', 'A comma-separated list of scopes')
+
+   def process(self, ir, **kwds):
+
+      self.set_parameters(kwds)
+      ir = self.merge_input(ir)
+      processor = ScopeStripper(scope='Synopsis')
+      # strip off package prefix
+      ir = processor.process(ir)
+      self.ir = IR.IR(types = ir.types, files = ir.files)
+      for s in self.scopes.split(','):
+         package, module = s.rsplit('.', 1)
+         # filter out unwated modules
+         self.ir.declarations.extend([d for d in ir.declarations if d.name == (module,)])
+      self.output_and_return_ir()
+
 process(python = python,
         cxx = cxx,
         link_python = Linker(),
-        link = Linker(),
         archive = Processor(),
+        link = MyLinker(),
         strip = ScopeStripper(),
         xref = XRefCompiler(prefix='sxr'),
         html = MyHTML(),
         sxr = sxr,
         dump = Dump.Formatter(),
-        texi = Texinfo.Formatter())
+        texi = Texinfo.Formatter(),
+        docbook = DocBook.Formatter())

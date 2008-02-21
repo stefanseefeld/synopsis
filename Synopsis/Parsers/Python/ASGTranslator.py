@@ -317,7 +317,7 @@ class ASGTranslator(ASTVisitor):
             return
         qname = QName(self.scope_name() + (node.name,))
         if type(self.scope[-1]) == ASG.Class:
-            function = ASG.Operation(self.file, node.lineno, 'operation',
+            function = ASG.Operation(self.file, node.lineno, 'method',
                                      [], self.any_type, [], qname, node.name)
         else:
             function = ASG.Function(self.file, node.lineno, 'function',
