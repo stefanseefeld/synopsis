@@ -1223,6 +1223,7 @@ void
 SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*>& params)
 {
   STrace trace("SWalker::translate_parameters");
+  if (PTree::length(p_params) == 1 && *p_params->car() == "void") return;
   while (p_params)
   {
     // A parameter has a type, possibly a name and possibly a value
@@ -1238,73 +1239,17 @@ SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*
       std::cerr << "Premature end of decoding!" << std::endl;
       break; // 0 means end of encoding
     }
-    // Discover contents. Ptree may look like:
-    //[register iostate [* a] = [0 + 2]]
-    //[register iostate [nil] = 0]
-    //[register iostate [nil]]
-    //[iostate [nil] = 0]
-    //[iostate [nil]]   etc
-
-    // Note 2005-05-06: Modified parameter-declaration-list
-    //                  to hold PTree::ParameterDeclarations,
-    //                  which have a reserved slot for the 'register'
-    //                  (but which may be empty). --stefan
-    if (PTree::length(param) > 1)
+    if (PTree::length(param) == 3)
     {
-      // There is a parameter
-      int type_ix, value_ix = -1, len = PTree::length(param);
-      if (len >= 4 && *PTree::nth(param, len-2) == '=')
-      {
-        // There is an =, which must be followed by the value
-        value_ix = len-1;
-        type_ix = len-4;
-      }
-      else
-      {
-        // No =, so last is name and second last is type
-        type_ix = len-2;
-      }
+      PTree::Declarator *decl = static_cast<PTree::Declarator*>(PTree::nth(param, 2));
+      name = parse_name(decl->name());
+      value = parse_name(decl->initializer());
       // Link type
-      if (sxr_ && !param->is_atom() && PTree::nth(param, type_ix))
-        sxr_->xref(PTree::nth(param, type_ix), type);
+      if (sxr_ && PTree::nth(param, 1)) sxr_->xref(PTree::nth(param, 1), type);
+
       // Skip keywords (eg: register) which are Leaves
-      for (int ix = 0;
-	   ix < type_ix && PTree::nth(param, ix) && PTree::nth(param, ix)->is_atom();
-	   ix++)
-      {
-        PTree::Node *leaf = PTree::nth(param, ix);
-        premods.push_back(parse_name(leaf));
-      }
-      // Find name
-      if (PTree::Node *pname = PTree::nth(param, type_ix+1))
-      {
-        if (PTree::last(pname) && !PTree::last(pname)->is_atom() && 
-	    PTree::first(PTree::last(pname)) &&
-            *PTree::first(PTree::last(pname)) == ')' && PTree::length(pname) >= 4)
-        {
-          // Probably a function pointer type
-          // pname is [* [( [* convert] )] ( [params] )]
-          // set to [( [* convert] )] from example
-          pname = PTree::nth(pname, PTree::length(pname) - 4);
-          if (pname && !pname->is_atom() && PTree::length(pname) == 3)
-          {
-            // set to [* convert] from example
-            pname = PTree::second(pname);
-            if (pname && PTree::second(pname) && PTree::second(pname)->is_atom())
-              name = parse_name(PTree::second(pname));
-          }
-        }
-        else if (!pname->is_atom() && PTree::last(pname) && PTree::last(pname)->car())
-        {
-          // * and & modifiers are stored with the name so we must skip them
-          PTree::Node *last = PTree::last(pname)->car();
-          if (*last != '*' && *last != '&')
-            // The last node is the name:
-            name = PTree::reify(last);
-        }
-      }
-      // Find value
-      if (value_ix >= 0) value = PTree::reify(PTree::nth(param, value_ix));
+      PTree::Node *leaf = PTree::nth(param, 0);
+      if (leaf) premods.push_back(parse_name(leaf));
     }
     // Add the AST.Parameter type to the list
     params.push_back(new AST::Parameter(premods, type, postmods, name, value));

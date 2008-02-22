@@ -25,6 +25,12 @@ class Syntax(ASG.Visitor):
 
     def finish(self): pass
 
+    def typeid(self, type):
+        
+        self._typeid = ''
+        type.accept(self)
+        return self._typeid
+
 
 class PythonSyntax(Syntax):
 
@@ -97,13 +103,15 @@ class PythonDetailSyntax(PythonSyntax):
 class CxxSyntax(Syntax):
 
     def visit_function(self, node):
-        text = escape(str(node.return_type))
+
+        text = node.return_type and self.typeid(node.return_type) or ''
         text += ' %s(%s);\n'%(escape(node.real_name[-1]),
                               ', '.join([self.visit_parameter(p)
                                          for p in node.parameters]))
         self.output.write(text)
 
     def visit_parameter(self, parameter):
+
         text = escape(str(parameter.type))
         if parameter.name:
             text += ' %s'%parameter.name
@@ -111,28 +119,41 @@ class CxxSyntax(Syntax):
             text += ' = %s'%escape(parameter.value)
         return text
 
+    def visit_typedef(self, node):
+
+        self.output.write('typedef %s %s;\n'%(self.typeid(node.alias), node.name[-1]))
+
     def visit_variable(self, variable):
-        variable.vtype.accept(self)
-        self.output.write('%s %s;\n'%(self._typename, variable.name[-1]))
+        self.output.write('%s %s;\n'%(self.typeid(variable.vtype), variable.name[-1]))
 
     def visit_const(self, const):
-        const.ctype.accept(self)
-        self.output.write('%s %s;\n'%(self._typename, const.name[-1]))
+        self.output.write('%s %s;\n'%(self.typeid(const.ctype), const.name[-1]))
 
-    def visit_base_type(self, type):
-        self._typename = type.name[-1]
-    def visit_unknown_type(self, type): self._typename = '&lt;unknown&gt;'
-    def visit_declared_type(self, type): self._typename = type.name[-1]
+    def visit_base_type(self, type): self._typeid = type.name[-1]
+    def visit_unknown_type(self, type): self._typeid = escape(str(type.name))
+    def visit_declared_type(self, type): self._typeid = escape(str(type.name))
     def visit_modifier_type(self, type):
-        type.alias.accept(self)
-        self._typename = '%s %s %s'%(escape(' '.join(type.premod)),
-                                   self._typename,
+
+        self._typeid = '%s %s %s'%(escape(' '.join(type.premod)),
+                                   self.typeid(type.alias),
                                    escape(' '.join(type.postmod)))
-    def visit_array(self, type): self._typename = 'array'
-    def visit_template(self, type): self._typename = 'A'
-    def visit_parametrized(self, type): self._typename = escape(str(type))
-    def visit_function_type(self, type): self._typename = 'C'
-    def visit_dependent(self, type): self._typename = 'D'
+    def visit_array(self, type):
+
+        self._typeid = '%s%s'%(escape(str(type.name)), ''.join(['[%s]'%s for s in type.sizes]))
+
+    def visit_template(self, type): self._typeid = escape(str(type.name))
+
+    def visit_parametrized(self, type):
+
+        self._typeid = '%s&lt;%s&gt;'%(self.typeid(type.template),
+                                       ', '.join([self.typeid(p) for p in type.parameters]))
+
+    def visit_function_type(self, type):
+
+        self._typeid = '%s(%s)'%(self.typeid(type.return_type),
+                                 ', '.join([self.typeid(p) for p in type.parameters]))
+                                   
+    def visit_dependent(self, type): self._typeid = type.name[-1]
 
 
 class CxxSummarySyntax(CxxSyntax):
@@ -162,7 +183,7 @@ class CxxSummarySyntax(CxxSyntax):
         self.output.write('%s %s;\n'%(class_.type, escape(class_.name[-1])))
         
     def visit_class_template(self, class_): self.visit_class(class_)
-    def visit_typedef(self, node): pass
+
     def visit_enumerator(self, node):
         if node.value:
             return '%s=%s'%(node.name[-1], escape(node.value))
@@ -206,7 +227,6 @@ class CxxDetailSyntax(CxxSyntax):
         self.output.write('%s %s;\n'%(class_.type, escape(class_.name[-1])))
         
     def visit_class_template(self, node): pass
-    def visit_typedef(self, node): pass
 
     def visit_enumerator(self, node):
         if node.value:

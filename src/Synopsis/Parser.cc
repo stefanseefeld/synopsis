@@ -2091,9 +2091,11 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
   if(recursive_decl) type_encode.recursion(recursive_encode);
   if(recursive) decl = d;
   else
+  {
+    if (name_encode.empty()) name_encode = PTree::Encoding();
     if(d == 0) decl = new PTree::Declarator(type_encode, name_encode, *declared_name);
     else decl = new PTree::Declarator(d, type_encode, name_encode, *declared_name);
-
+  }
   return true;
 }
 
@@ -2616,6 +2618,13 @@ bool Parser::parameter_declaration_list(PTree::Node *&arglist,
       Token tk;
       my_lexer.get_token(tk);
       encode.ellipsis_arg();
+      arglist = PTree::snoc(list, new PTree::Atom(tk));
+      break;
+    }
+    else if (my_lexer.look_ahead(0) == Token::VOID && my_lexer.look_ahead(1) == ')')
+    {
+      Token tk;
+      my_lexer.get_token(tk);
       arglist = PTree::snoc(list, new PTree::Atom(tk));
       break;
     }

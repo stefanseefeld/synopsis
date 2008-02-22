@@ -211,9 +211,6 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
 
     visit_function = visit_declaration
 
-    def visit_enumerator(self, enumerator):
-        print "sorry, <enumerator> not implemented"
-
     def visit_enum(self, enum):
         print "sorry, <enum> not implemented"
 
@@ -471,9 +468,6 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         parameter.type.accept(self)
 
     visit_function = visit_declaration
-
-    def visit_enumerator(self, enumerator):
-        print "sorry, <enumerator> not implemented"
 
     def visit_enum(self, enum):
 
