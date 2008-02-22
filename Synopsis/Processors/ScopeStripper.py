@@ -143,6 +143,11 @@ class ScopeStripper(Processor, ASG.Visitor):
             parameter.accept(self)
 
 
+    def visit_parameter(self, parameter):
+
+        self.strip(parameter)
+
+
     def visit_function_template(self, function):
 
         self.visit_function(function)

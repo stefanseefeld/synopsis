@@ -50,7 +50,7 @@ class Formatter(Processor, ASG.Visitor):
       self.ir = self.merge_input(ir)
 
       self.__os = open(self.output, 'w+')
-      self.__scope = []
+      self.scope = ()
       self.__indent = 0
 
       for d in self.ir.declarations:
@@ -58,7 +58,6 @@ class Formatter(Processor, ASG.Visitor):
 
       return self.ir
 
-   def scope(self): return self.__scope
    def write(self, text): self.__os.write(text)
 
    def type_label(self): return escape(self.__type_label)
@@ -88,11 +87,11 @@ class Formatter(Processor, ASG.Visitor):
    def visit_unknown_type(self, type):
 
       self.__type_ref = str(type.name)
-      self.__type_label = str(self.scope().prune(type.name))
+      self.__type_label = str(self.scope.prune(type.name))
         
    def visit_declared_type(self, type):
 
-      self.__type_label = str(self.scope().prune(type.name))
+      self.__type_label = str(self.scope.prune(type.name))
       self.__type_ref = str(type.name)
         
    def visit_modifier_type(self, type):
@@ -151,13 +150,14 @@ class Formatter(Processor, ASG.Visitor):
       #self.write('@node ' + self.decl_label(module.name) + '\n')
       self.write('@deftp ' + module.type + ' ' + self.decl_label(module.name) + '\n')
       self.format_comments(module)
-      self.scope().append(module.name[-1])
-      #menu = MenuMaker(self.scope(), self.__os)
+      old_scope = self.scope
+      self.scope = module.name
+      #menu = MenuMaker(str(self.scope), self.__os)
       #menu.start()
       #for declaration in module.declarations: declaration.accept(menu)
       #menu.end()
       for declaration in module.declarations: declaration.accept(self)
-      self.scope().pop()
+      self.scope = old_scope
       self.write('@end deftp\n')
 
    def visit_class(self, class_):
@@ -173,14 +173,15 @@ class Formatter(Processor, ASG.Visitor):
             parent.accept(self)
          self.write('\n')
       self.format_comments(class_)
-      self.scope().append(class_.name[-1])
-      #menu = MenuMaker(self.scope(), self.__os)
+      old_scope = self.scope
+      self.scope = class_.name
+      #menu = MenuMaker(str(self.scope), self.__os)
       #menu.start()
       #for d in class_.declarations: d.accept(menu)
       #menu.end()
       for d in class_.declarations:
          d.accept(self)
-      self.scope().pop()
+      self.scope = old_scope
       self.write('@end deftp\n')
 
    def visit_inheritance(self, inheritance):
@@ -223,7 +224,7 @@ class Formatter(Processor, ASG.Visitor):
          ret_label = '{}'
       try:
          #self.write('@node ' + self.decl_label(operation.name) + '\n')
-         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
+         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(str(self.scope)) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
       except:
          print operation.real_name
          sys.exit(0)

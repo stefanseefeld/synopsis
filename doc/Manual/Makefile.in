@@ -28,7 +28,7 @@ python_syn := $(patsubst $(topdir)/%.py, %.syn, $(python_src))
 
 texi-help := aux cp cps fn fns ky log pg toc tp tps vr vrs
 
-MODULES	:= IR #ASG Processor Processors Parsers Formatters-HTML Formatters-DocBook Formatters-SXR cxx
+MODULES	:= IR ASG Processor Processors Parsers Formatters-HTML Formatters-DocBook Formatters-SXR cxx
 TEXI	:= $(patsubst %, %.texi, $(MODULES))
 DB	:= $(patsubst %, %.xml, $(MODULES))
 

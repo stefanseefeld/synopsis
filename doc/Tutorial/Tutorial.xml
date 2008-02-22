@@ -872,8 +872,8 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
     <xi:include href="Synopsis.Formatters.Dump.Formatter.xml">
       <xi:fallback>The Dump formatter reference...</xi:fallback>
     </xi:include>
-    <xi:include href="Synopsis.Formatters.Docbook.Formatter.xml">
-      <xi:fallback>The Docbook formatter reference...</xi:fallback>
+    <xi:include href="Synopsis.Formatters.DocBook.Formatter.xml">
+      <xi:fallback>The DocBook formatter reference...</xi:fallback>
     </xi:include>
     <xi:include href="Synopsis.Formatters.Texinfo.Formatter.xml">
       <xi:fallback>The Texinfo formatter reference...</xi:fallback>
