@@ -11,7 +11,7 @@
 from Synopsis.Processor import *
 from Synopsis import ASG
 from Synopsis.DocString import DocString
-import sys, getopt, os, os.path, re
+import sys, os, re
 
 
 _tags = re.compile(r'@(?!(table|item|samp|end))')
@@ -49,16 +49,14 @@ class Formatter(Processor, ASG.Visitor):
       if not self.output: raise MissingArgument('output')
       self.ir = self.merge_input(ir)
 
-      self.__os = open(self.output, 'w+')
+      self.os = open(self.output, 'w+')
       self.scope = ()
-      self.__indent = 0
-
       for d in self.ir.declarations:
          d.accept(self)
 
       return self.ir
 
-   def write(self, text): self.__os.write(text)
+   def write(self, text): self.os.write(text)
 
    def type_label(self): return escape(self.__type_label)
 
@@ -152,7 +150,7 @@ class Formatter(Processor, ASG.Visitor):
       self.format_comments(module)
       old_scope = self.scope
       self.scope = module.name
-      #menu = MenuMaker(str(self.scope), self.__os)
+      #menu = MenuMaker(str(self.scope), self.os)
       #menu.start()
       #for declaration in module.declarations: declaration.accept(menu)
       #menu.end()
@@ -175,7 +173,7 @@ class Formatter(Processor, ASG.Visitor):
       self.format_comments(class_)
       old_scope = self.scope
       self.scope = class_.name
-      #menu = MenuMaker(str(self.scope), self.__os)
+      #menu = MenuMaker(str(self.scope), self.os)
       #menu.start()
       #for d in class_.declarations: d.accept(menu)
       #menu.end()
@@ -224,7 +222,7 @@ class Formatter(Processor, ASG.Visitor):
          ret_label = '{}'
       try:
          #self.write('@node ' + self.decl_label(operation.name) + '\n')
-         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(str(self.scope)) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
+         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(self.scope) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
       except:
          print operation.real_name
          sys.exit(0)

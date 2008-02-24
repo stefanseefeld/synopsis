@@ -6,7 +6,7 @@
 @ifinfo
 Synopsis Reference Manual
 
-Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+Copyright @copyright{} 2001-2008 Stefan Seefeld
 All rights reserved.
 Licensed to the public under the terms of the GNU LGPL (>= 2),
 see the file COPYING for details.
@@ -16,15 +16,15 @@ see the file COPYING for details.
 @c title page for the printed version
 @titlepage
 @title Synopsis
-@subtitle Version: 0.9
-@author Stefan Seefeld, Stephen Davies
+@subtitle Version: 0.10
+@author Stefan Seefeld
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+Copyright @copyright{} 2001-2008 Stefan Seefeld
 
 @sp 2
-This is Version: 0.9 of the Synopsis Reference Manual
+This is Version: 0.10 of the Synopsis Reference Manual
 @sp 2
 
 All rights reserved.
@@ -36,7 +36,7 @@ see the file COPYING for details.
 @headings off
 @evenheading @thispage @|  @| @thischapter
 @oddheading  @thissection @|  @| @thispage
-@everyfooting @| Synopsis Manual @| Version: 0.4
+@everyfooting @| Synopsis Manual @| Version: 0.10
 @end iftex
 
 @c top level menu
@@ -51,10 +51,12 @@ some intro here
 * Copying::                     This manual is freely redistributable.
 * Acknowledgments::             Thanks!
 * Overview::                    How does it work
-* IR::                          The backbone of the synopsis tool
-* Parsers::                     Parser plugins
-* Processors::                  Processor plugins
-* Formatters::                  Formatter plugins
+* Internal Representation::     The Internal Representation
+* ASG::                         The Abstract Semantic Graph
+* Processor::                   The Processor Framework
+* Parsers::                     The Parsers Package
+* Processors::                  The Processors Package
+* Formatters::                  The Formatters Package
 @end menu
 
 @node Copying, Acknowledgments, Top, Top
@@ -62,7 +64,7 @@ some intro here
 @cindex copyright notice
 @cindex Copyright
 
-Copyright (C) 2001 Stefan Seefeld, Stephen Davies
+Copyright (C) 2001-2008 Stefan Seefeld
 
 All rights reserved.
 Licensed to the public under the terms of the GNU LGPL (>= 2),
@@ -72,65 +74,38 @@ see the file COPYING for details.@refill
 @unnumbered Acknowledgments
 @cindex acknowledgments
 
-@node Overview, IR, Acknowledgments, Top
+@node Overview, Internal Representation, Acknowledgments, Top
 @chapter Overview
 To be written...
 
-@node IR, Parsers, Overview, Top
+@node Internal Representation, ASG, Overview, Top
 @chapter The Internal Representation
-The backbone of synopsis is an Internal Representation of the parsed source code.
-This is essentially a set of different representations, such as an Abstract Semantic Graph,
-a Symbol Table, Parse Tree, etc.
-These are designed to be (mostly) language-agnostic, so they can be used with multiple
-languages.
 
-This chapter describes the most important common building blocks of the Internal 
-Representation.
-@page
-
-@menu
-* IR::            Internal Representation
-* QualifiedName:: Qualified Name
-* SourceFile::    Source File
-* DocString::     Documentation String
-* ASG::           Abstract Semantic Graph
-@end menu
-
-@node Internal Representation, QualifiedName, , IR
-@section The Internal Representation
 @include IR.texi
 @page
 
-@node ASG, , IR, IR
-@section The AST Module
+@node ASG, Processor, Internal Representation, Top
+@chapter The ASG Module
 @include ASG.texi
 @page
 
-@node Parsers, Processors, IR, Top
-@chapter The Parsers Module
-Synopsis provides a set of parsers that generate an Abstract Semantic Graph
-from various programming languages.
+@node Processor, Parsers, ASG, Top
+@chapter The Processor Module
+@include Processor.texi
 @page
-@section The Parsers Package
+
+@node Parsers, Processors, Processor, Top
+@chapter The Parsers Module
 @include Parsers.texi
+@page
 
 @node Processors, Formatters, Parsers, Top
 @chapter The Processors Module
-The linker performs some first modifications to the AST/Type dictionary
-as to resolve cross references (even across languages !), strip off
-unwanted scopes, parse the comments that are associated with the declarations
-for cross references, etc.
 @include Processors.texi
+@page
 
-@node Formatters,  , Processors, Top
-
+@node Formatters, , Processors, Top
 @chapter The Formatters Module
-The backbone of synopsis is an Abstract Syntax Tree, which can be
-traversed using the Visitor Pattern. One of the main uses of Visitors
-is to provide different Formatters, which traverse the AST to generate
-formatted output. This module contains a range of formatters for various
-purposes, ranging from online browsing, over graph generation, to generating
-hardcopies.
 
 @menu
 * Formatters.HTML::              HTML formatter
@@ -140,15 +115,15 @@ hardcopies.
 
 @page
 @node Formatters.HTML, Formatters.DocBook, , Formatters
-@section The HTML Module
+@chapter The Formatters.HTML Module
 @include Formatters-HTML.texi
-@page
+
 @node Formatters.DocBook, Formatters.SXR, Formatters.HTML, Formatters
-@section The DocBook Module
+@chapter The Formatters.DocBook Module
 @include Formatters-DocBook.texi
-@page
-@node Formatters.SXR,  , Formatters.DocBook, Formatters
-@section The TexInfo Module
+
+@node Formatters.SXR, , Formatters.DocBook, Formatters
+@chapter The Formatters.SXR Module
 @include Formatters-SXR.texi
 
 @unnumbered Type Index

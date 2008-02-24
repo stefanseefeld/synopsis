@@ -236,7 +236,7 @@ class DeclarationFormatter(Fragment):
         # Param Type
         id_holder = [parameter.name]
         typestr = self.format_type(parameter.type, id_holder)
-        if typestr: text.append(' %s '%typestr)
+        if typestr: text.append(typestr)
         # Postmodifiers
         text.extend([span('keyword', m) for m in parameter.postmodifier])
         # Param name
