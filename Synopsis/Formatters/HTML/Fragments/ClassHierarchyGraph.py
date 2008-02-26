@@ -28,7 +28,7 @@ class ClassHierarchyGraph(ClassHierarchySimple):
         label = self.formatter.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
         ir = IR.IR({}, [class_], self.processor.ir.types)
-        dot = Dot.Formatter()
+        dot = Dot.Formatter(bgcolor=self.processor.graph_color)
         dot.toc = self.processor.toc
         try:
             dot.process(ir,

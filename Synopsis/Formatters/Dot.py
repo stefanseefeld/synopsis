@@ -42,19 +42,31 @@ def system(command):
    if (ret>>8) != 0:
       raise SystemError(ret, command)
 
+
+def normalize(color):
+   """Generate a color triplet from a color string."""
+
+   if type(color) is str and color[0] == '#':
+      return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
+   elif type(color) is tuple:
+      return color
+
+
+def light(color):
+
+   import colorsys
+   hsv = colorsys.rgb_to_hsv(*color)
+   return colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2]/2)
+
+
 class DotFileGenerator:
    """A class that encapsulates the dot file generation"""
    def __init__(self, os, direction, bgcolor):
 
       self.__os = os
       self.direction = direction
-      self.bgcolor = bgcolor
-      # bgcolor is either a named color, or a hex value starting with '#', or a hsv triple
-      if self.bgcolor:
-         if type(self.bgcolor) is str:
-            if self.bgcolor[0] == '#': self.bgcolor = '"%s"'%self.bgcolor
-         if type(self.bgcolor) is tuple:
-            self.bgcolor = '"%f,%f,%f"'%(self.bgcolor[0], self.bgcolor[1], self.bgcolor[2])
+      self.bgcolor = bgcolor and '"#%X%X%X"'%bgcolor
+      self.light_color = bgcolor and '"#%X%X%X"'%light(bgcolor) or 'gray75'
       self.nodes = {}
 
    def write(self, text): self.__os.write(text)
@@ -75,7 +87,7 @@ class DotFileGenerator:
          attr['style'] = 'filled'
 
       self.write("Node" + str(number) + " [shape=\"record\", label=\"{" + label + "}\"")
-      self.write(", fontSize = 10, height = 0.2, width = 0.4")
+      #self.write(", fontSize = 10, height = 0.2, width = 0.4")
       self.write(''.join([', %s=%s'%item for item in attr.items()]))
       if ref: self.write(', URL="' + ref + '"')
       self.write('];\n')
@@ -208,7 +220,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if self.type_ref():
          self.write_node(self.type_ref().link, self.type_label(), self.type_label())
       elif self.toc:
-         self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+         self.write_node('', self.type_label(), self.type_label(), color=self.light_color, fontcolor=self.light_color)
       else:
          self.write_node('', self.type_label(), self.type_label())
         
@@ -235,7 +247,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if ref:
          self.write_node(ref.link, name, label)
       elif self.toc:
-         self.write_node('', name, label, color='gray75', fontcolor='gray75')
+         self.write_node('', name, label, color=self.light_color, fontcolor=self.light_colors)
       else:
          self.write_node('', name, label)
 
@@ -301,7 +313,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          if self.type_ref():
             self.write_node(self.type_ref().link, self.type_label(), self.type_label())
          elif self.toc:
-            self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+            self.write_node('', self.type_label(), self.type_label(), color=self.light_color, fontcolor=self.light_color)
          else:
             self.write_node('', self.type_label(), self.type_label())
         
@@ -313,13 +325,13 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
       name = self.get_class_name(node)
       if self.__current == 1:
-         self.write_node('', name, name, style='filled', color='lightgrey')
+         self.write_node('', name, name, style='filled', color=self.light_color, fontcolor=self.light_color)
       else:
          ref = self.toc and self.toc[node.name] or None
          if ref:
             self.write_node(ref.link, name, name)
          elif self.toc:
-            self.write_node('', name, name, color='gray75', fontcolor='gray75')
+            self.write_node('', name, name, color=self.light_color, fontcolor=self.light_color)
          else:
             self.write_node('', name, name)
 
@@ -348,7 +360,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
                            if ref:
                               self.write_node(ref.link, child_label, child_label)
                            elif self.toc:
-                              self.write_node('', child_label, child_label, color='gray75', fontcolor='gray75')
+                              self.write_node('', child_label, child_label, color=self.light_color, fontcolor=self.light_color)
                            else:
                               self.write_node('', child_label, child_label)
 
@@ -432,12 +444,12 @@ class Formatter(Processor):
    the various InheritanceGenerators"""
 
    title = Parameter('Inheritance Graph', 'the title of the graph')
-   type = Parameter('class', 'type of graph (one of \'file\', \'class\', \'single\'')
+   type = Parameter('class', 'type of graph (one of "file", "class", "single"')
    hide_operations = Parameter(True, 'hide operations')
    hide_attributes = Parameter(True, 'hide attributes')
    show_aggregation = Parameter(False, 'show aggregation')
    bgcolor = Parameter(None, 'background color for nodes')
-   format = Parameter('ps', "Generate output in format 'dot', 'ps', 'png', 'gif', 'map', 'html'")
+   format = Parameter('ps', 'Generate output in format "dot", "ps", "png", "svg", "gif", "map", "html"')
    layout = Parameter('vertical', 'Direction of graph')
    prefix = Parameter(None, 'Prefix to strip from all class names')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
@@ -447,6 +459,13 @@ class Formatter(Processor):
       global verbose, debug
       
       self.set_parameters(kwds)
+      if self.bgcolor:
+         bgcolor = normalize(self.bgcolor)
+         if not bgcolor:
+            raise InvalidArgument('bgcolor=%s'%repr(self.bgcolor))
+         else:
+            self.bgcolor = bgcolor
+
       self.ir = self.merge_input(ir)
       verbose = self.verbose
       debug = self.debug
@@ -514,10 +533,10 @@ class Formatter(Processor):
          os.rename(tmpfile, self.output)
       elif format == "png":
          _format_png(tmpfile, self.output)
-         os.remove(tmpfile)
+         #os.remove(tmpfile)
       elif format == "html":
          _format_html(tmpfile, self.output, self.base_url)
-         os.remove(tmpfile)
+         #os.remove(tmpfile)
       else:
          _format(tmpfile, self.output, format)
          os.remove(tmpfile)

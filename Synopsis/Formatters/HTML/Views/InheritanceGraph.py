@@ -152,7 +152,7 @@ class InheritanceGraph(View):
             #output = os.path.join(self.processor.output, 'InheritanceGraph', str(count))
             output = os.path.join(self.processor.output,
                                   os.path.splitext(self.filename())[0]) + '-%s'%count
-            dot = Dot.Formatter()
+            dot = Dot.Formatter(bgcolor=self.processor.graph_color)
             ir = IR.IR({}, declarations, self.processor.ir.types)
             try:
                dot.process(ir,

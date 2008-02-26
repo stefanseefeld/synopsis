@@ -17,4 +17,14 @@
 <xsl:param name="variablelist.as.block" select="1"/>
 <xsl:param name="index.on.type" select="1"/>
 
+<!-- Allow line breaks in verbatim code environments with a backslash
+     to indicate continuation.  -->
+<xsl:param name="hyphenate.verbatim">1</xsl:param>
+<xsl:attribute-set
+    name="monospace.verbatim.properties" 
+    use-attribute-sets="verbatim.properties monospace.properties">
+  <xsl:attribute name="wrap-option">wrap</xsl:attribute>
+  <xsl:attribute name="hyphenation-character">\</xsl:attribute>
+</xsl:attribute-set>
+
 </xsl:stylesheet>

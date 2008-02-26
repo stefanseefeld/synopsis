@@ -6,6 +6,7 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
 from Synopsis import ASG
 from Synopsis.Formatters.TOC import TOC, Linker
@@ -13,6 +14,7 @@ from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.DirectoryLayout import quote_name
 from Synopsis.Formatters.XRef import *
+import time
 
 class XRef(View):
     """A module for creating views full of xref infos"""
@@ -157,3 +159,14 @@ class XRef(View):
                     self.write(element('li', file_href + type + str(name.prune(cname))))
             self.write('</ul>\n</li>\n')
         self.write('</ul>\n')
+
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
+
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

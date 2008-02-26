@@ -86,9 +86,10 @@ class ModuleLister(ASG.Visitor):
 
 class InheritanceFormatter:
 
-    def __init__(self, base_dir):
+    def __init__(self, base_dir, bgcolor):
 
         self.base_dir = base_dir
+        self.bgcolor = bgcolor
 
     def format_class(self, class_, format):
 
@@ -97,7 +98,7 @@ class InheritanceFormatter:
         
         from Synopsis.Formatters import Dot
         filename = os.path.join(self.base_dir, escape(str(class_.name)) + '.%s'%format)
-        dot = Dot.Formatter()
+        dot = Dot.Formatter(bgcolor=self.bgcolor)
         try:
             dot.process(IR.IR(declarations = [class_]),
                         output=filename,
@@ -112,13 +113,14 @@ class InheritanceFormatter:
 class FormatterBase:
 
     def __init__(self, processor, output, base_dir,
-                 nested_modules, secondary_index, inheritance_graphs):
+                 nested_modules, secondary_index, inheritance_graphs, graph_color):
         self.processor = processor
         self.output = output
         self.base_dir = base_dir
         self.nested_modules = nested_modules
         self.secondary_index = secondary_index
         self.inheritance_graphs = inheritance_graphs
+        self.graph_color = graph_color
         self.__scope = ()
         self.__scopestack = []
         self.__indent = 0
@@ -387,7 +389,8 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.write_element('indexterm', indexterm, type='types')
         
         if self.inheritance_graphs:
-            formatter = InheritanceFormatter(os.path.join(self.base_dir, 'images'))
+            formatter = InheritanceFormatter(os.path.join(self.base_dir, 'images'),
+                                             self.graph_color)
             png = formatter.format_class(class_, 'png')
             svg = formatter.format_class(class_, 'svg')
             if png or svg:
@@ -549,6 +552,7 @@ class Formatter(Processor):
     inline_inherited_members = Parameter(False, 'show inherited members')
     secondary_index_terms = Parameter(True, 'add fully-qualified names to index')
     with_inheritance_graphs = Parameter(True, 'whether inheritance graphs should be generated')
+    graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
    
     def process(self, ir, **kwds):
 
@@ -566,7 +570,8 @@ class Formatter(Processor):
                                            os.path.dirname(self.output),
                                            self.nested_modules,
                                            self.secondary_index_terms,
-                                           self.with_inheritance_graphs)
+                                           self.with_inheritance_graphs,
+                                           self.graph_color)
 
         declarations = self.ir.declarations
 

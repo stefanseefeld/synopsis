@@ -97,6 +97,7 @@ class Formatter(Processor):
    
     markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
                                   'Markup-specific formatters.')
+    graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
 
     def process(self, ir, **kwds):
 

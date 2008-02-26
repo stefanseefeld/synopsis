@@ -28,7 +28,8 @@ python_syn := $(patsubst $(topdir)/%.py, %.syn, $(python_src))
 
 texi-help := aux cp cps fn fns ky log pg toc tp tps vr vrs
 
-MODULES	:= IR ASG Processor Processors Parsers Formatters-HTML Formatters-DocBook Formatters-SXR cxx
+MODULES	:= Cxx-API IR ASG Processor Processors Parsers 
+MODULES += Formatters-HTML Formatters-DocBook Formatters-SXR
 TEXI	:= $(patsubst %, %.texi, $(MODULES))
 DB	:= $(patsubst %, %.xml, $(MODULES))
 
@@ -106,6 +107,10 @@ Formatters-SXR.syn: python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis.Formatters.SXR' --output=$@ $^
 
+Cxx-API.syn: cxx.syn
+	@echo linking $@
+	$(synopsis) strip --scope='Synopsis' --output=$@ $^
+
 %.texi: %.syn
 	@echo formatting $@
 	$(synopsis) texi --output=$@ $^
@@ -113,10 +118,6 @@ Formatters-SXR.syn: python.syn
 title:=
 
 %.xml: %.syn
-	@echo formatting $@
-	$(synopsis) docbook --title=$(title) --output=$@ $^
-
-cxx.xml: cxx.syn
 	@echo formatting $@
 	$(synopsis) docbook --title=$(title) --output=$@ $^
 
@@ -128,6 +129,7 @@ Parsers.xml: override title='Parsers'
 Formatters-HTML.xml: override title='The HTML Formatter'
 Formatters-DocBook.xml: override title='The DocBook Formatter'
 Formatters-SXR.xml: override title='The SXR Formatter'
+Cxx-API.xml: override title='The C++ API'
 
 #Manual.pdf: Manual.texi $(TEXI)
 #	@echo generating $@
@@ -146,9 +148,9 @@ Manual.fo: Manual.xml $(DB)
 	@echo generating $@
 	$(xsltproc) -o $@ $(srcdir)/fo.xsl $<
 
-info:	$(TEXI) Manual.texi
+info:	Manual.texi $(TEXI)
 	@echo generating info files
-	makeinfo -I $(srcdir) Manual.texi
+	makeinfo -I $(srcdir) $<
 
 install: all
 	mkdir -p $(datadir)/synopsis
@@ -158,7 +160,7 @@ install: all
 	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:
-	rm -rf synopsis sxr *.syn links.toc $(TEXI) \
+	rm -rf synopsis sxr *.syn links.toc *.fo images $(DB) $(TEXI) \
      $(addprefix Manual., $(texi-help))
 
 distclean:  clean

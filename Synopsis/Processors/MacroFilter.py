@@ -10,7 +10,9 @@ from Synopsis import ASG
 import re
 
 class MacroFilter(Processor, ASG.Visitor):
-    """A MacroFilter allows macros to be filtered, based on pattern matching"""
+    """A MacroFilter allows macros to be filtered, based on pattern matching.
+
+    Macros with matching names will be removed."""
 
     pattern = Parameter('', 'Regular expression to match macro names with.')
 
