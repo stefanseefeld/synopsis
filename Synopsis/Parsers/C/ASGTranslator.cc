@@ -367,6 +367,7 @@ void ASGTranslator::translate_parameters(PTree::Node *node,
 					 ASG::Function::Parameters &parameters)
 {
   Trace trace("ASGTranslator::translate_parameters", Trace::TRANSLATION);
+  if (PTree::length(node) == 1 && *node->car() == "void") return;
   while (node)
   {
     // A parameter has a type, possibly a name and possibly a value.
@@ -376,73 +377,21 @@ void ASGTranslator::translate_parameters(PTree::Node *node,
     if (*node->car() == ',')
       node = node->cdr();
     PTree::Node *parameter = PTree::first(node);
+
     ASG::Type type = types.get(0);
     types.del(0); // pop one value
-
-    // Discover contents. Ptree may look like:
-    //[register iostate [* a] = [0 + 2]]
-    //[register iostate [nil] = 0]
-    //[register iostate [nil]]
-    //[iostate [nil] = 0]
-    //[iostate [nil]]   etc
-    if (PTree::length(parameter) > 1)
+    if (PTree::length(parameter) == 3)
     {
-      // There is a parameter
-      int type_ix, value_ix = -1, len = PTree::length(parameter);
-      if (len >= 4 && *PTree::nth(parameter, len-2) == '=')
-      {
-        // There is an =, which must be followed by the value
-        value_ix = len-1;
-        type_ix = len-4;
-      }
-      else
-      {
-        // No =, so last is name and second last is type
-        type_ix = len-2;
-      }
-      // Skip keywords (eg: register) which are atoms
-      for (int ix = 0;
-	   ix < type_ix && 
-	     PTree::nth(parameter, ix) &&
-	     PTree::nth(parameter, ix)->is_atom();
-	   ++ix)
-      {
-        PTree::Node *atom = PTree::nth(parameter, ix);
-        premods.append(PTree::reify(atom));
-      }
-      // Find name
-      if (PTree::Node *n = PTree::nth(parameter, type_ix+1))
-      {
-        if (PTree::last(n) && !PTree::last(n)->is_atom() && 
-	    PTree::first(PTree::last(n)) &&
-            *PTree::first(PTree::last(n)) == ')' && PTree::length(n) >= 4)
-        {
-          // Probably a function pointer type
-          // pname is [* [( [* convert] )] ( [params] )]
-          // set to [( [* convert] )] from example
-          n = PTree::nth(n, PTree::length(n) - 4);
-          if (n && !n->is_atom() && PTree::length(n) == 3)
-          {
-            // set to [* convert] from example
-            n = PTree::second(n);
-            if (n && PTree::second(n) && PTree::second(n)->is_atom())
-              name = PTree::reify(PTree::second(n));
-          }
-        }
-        else if (!n->is_atom() && PTree::last(n) && PTree::last(n)->car())
-        {
-          // * and & modifiers are stored with the name so we must skip them
-          PTree::Node *last = PTree::last(n)->car();
-          if (*last != '*' && *last != '&')
-            // The last node is the name:
-            name = PTree::reify(last);
-        }
-      }
-      // Find value
-      if (value_ix >= 0) value = PTree::reify(PTree::nth(parameter, value_ix));
+      PTree::Declarator *decl = static_cast<PTree::Declarator*>(PTree::nth(parameter, 2));
+      name = PTree::reify(decl->name());
+      value = PTree::reify(decl->initializer());
+
+      // Skip keywords (eg: register) which are Leaves
+      PTree::Node *atom = PTree::nth(parameter, 0);
+      if (atom) premods.append(PTree::reify(atom));
     }
     ASG::Parameter p = asg_kit_.create_parameter(premods, type, postmods,
-						   name, value);
+                                                 name, value);
     parameters.append(p);
     node = PTree::rest(node);
   }
