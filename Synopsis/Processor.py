@@ -20,6 +20,7 @@ class Error(Exception):
 class InvalidArgument(Error): pass
 class MissingArgument(Error): pass
 class InvalidCommand(Error): pass
+class InternalError(Error): pass
 
 class Parameter(object):
    """A Parameter is a documented value, kept inside a Processor."""

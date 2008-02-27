@@ -87,17 +87,28 @@ void SXRGenerator::xref(PTree::Node *node, Context context, ScopedName const &na
   if (!filter_->should_xref(file))
     return;
 
-  // Get info for storing an xref record
-  int line = walker_->line_of_ptree(node);
-
   // Get info for storing a syntax record
-  int col = find_col(file, line, node->begin());
+  int begin_line = walker_->line_of_ptree(node);
+  int begin_col = find_col(file, begin_line, node->begin());
 
-  if (col < 0)
-    return; // inside macro
-  int len = node->end() - node->begin();
+  if (begin_col < 0) return; // inside macro
 
-  store_xref(file, line, col, len, context, name, desc);
+  std::string filename;
+  unsigned long end_line = buffer_->origin(node->end(), filename);
+
+  if (begin_line == end_line)
+  {
+    int len = node->end() - node->begin();
+    store_xref(file, begin_line, begin_col, len, context, name, desc, false);
+  }
+  else
+  {
+    // Generate one xref plus continuations for each additional line.
+    int end_col = find_col(file, end_line, node->end());
+    for (int line = begin_line; line < end_line; ++line, begin_col = 0)
+      store_xref(file, line, begin_col, -1, context, name, desc, line != begin_line);
+    store_xref(file, end_line, 0, end_col, context, name, desc, true);
+  }
 }
 
 //. A class which acts as a Types Visitor to store the correct link to a given
@@ -271,7 +282,10 @@ void SXRGenerator::long_span(PTree::Node *node, char const *desc)
 }
 
 // Store a link in the Syntax File
-void SXRGenerator::store_xref(AST::SourceFile* file, int line, int col, int len, Context context, ScopedName const &qname, std::string const &desc)
+void SXRGenerator::store_xref(AST::SourceFile* file,
+                              int line, int col, int len, Context context,
+                              ScopedName const &qname, std::string const &desc,
+                              bool continuation)
 {
   SXRBuffer *sxr = get_buffer(file);
   std::vector<AST::Scope*> scopes;
@@ -304,7 +318,7 @@ void SXRGenerator::store_xref(AST::SourceFile* file, int line, int col, int len,
   std::string from = join(scope->name(), "::");
   std::string type = context_names[context];
   std::string title = desc + " " + join(name, "::");
-  sxr->insert_xref(line, col, len, join(qname, "::"), type, from, title);
+  sxr->insert_xref(line, col, len, join(qname, "::"), type, from, title, continuation);
 }
 
 SXRBuffer *SXRGenerator::get_buffer(AST::SourceFile* file)

@@ -83,7 +83,9 @@ private:
   typedef std::map<AST::SourceFile *, SXRBuffer *> SXRDict;
   
   void store_span(unsigned int line, unsigned int col, unsigned int len, char const *type);
-  void store_xref(AST::SourceFile*, int line, int col, int len, Context context, ScopedName const &name, std::string const &desc);
+  void store_xref(AST::SourceFile*,
+                  int line, int col, int len, Context context,
+                  ScopedName const &name, std::string const &desc, bool continuation);
 
   SXRBuffer *get_buffer(AST::SourceFile*);
 

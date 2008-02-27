@@ -49,7 +49,7 @@ def normalize(color):
    if type(color) is str and color[0] == '#':
       return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
    elif type(color) is tuple:
-      return color
+      return (color[0] * 255, color[1] * 255, color[2] * 255)
 
 
 def light(color):

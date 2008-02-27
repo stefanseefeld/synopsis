@@ -20,7 +20,10 @@ class SXRTranslator:
 
     def __init__(self, filename, language):
 
-        self.sxr = parse(filename)
+        try:
+            self.sxr = parse(filename)
+        except:
+            raise InternalError('parsing %s'%filename)
         if language == 'Python':
             self.qname = lambda name: QualifiedPythonName(str(name).split('.'))
         else:
@@ -36,6 +39,8 @@ class SXRTranslator:
                 a.removeAttribute('type')
             if a.hasAttribute('from'):
                 a.removeAttribute('from')
+            if a.hasAttribute('continuation'):
+                a.removeAttribute('continuation')
 
     def translate(self, writer):
 

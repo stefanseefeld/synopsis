@@ -32,8 +32,9 @@ public:
     };
 
     Entry(unsigned int c, int l, Kind k, std::string const &n, std::string const &t,
-          std::string const &f, std::string const &d)
-      : column(c), length(l), kind(k), name(n), type(t), from(f), description(d) {}
+          std::string const &f, std::string const &d, bool a)
+      : column(c), length(l), kind(k), name(n), type(t), from(f), description(d),
+        continuation(a) {}
 
     unsigned int column;
     int length;
@@ -42,6 +43,7 @@ public:
     std::string type;
     std::string from;
     std::string description;
+    bool continuation;
   };
 
   SXRBuffer(std::string const &out, std::string const &in, std::string const &name)
@@ -65,15 +67,16 @@ public:
                    std::string const &type)
   {
     Line &l = lines_[line];
-    l.insert(Entry(column, length, Entry::SPAN, "", type, "", ""));
+    l.insert(Entry(column, length, Entry::SPAN, "", type, "", "", false));
   }
   void insert_xref(unsigned int line, unsigned int column, unsigned int length,
                    std::string const &name, std::string const &type,
-                   std::string const &from, std::string const &description)
+                   std::string const &from, std::string const &description,
+                   bool continuation)
   {
     Line &l = lines_[line];
     l.insert(Entry(column, length, Entry::XREF, encode(name),
-                   type, encode(from), encode(description)));
+                   type, encode(from), encode(description), continuation));
   }
 
   void write()
@@ -94,7 +97,7 @@ public:
             insert(entry.type.data(), entry.type.size());
             insert("\">", 2);
             if (entry.length == -1) finish_line();
-            else advance(line, entry.column +  entry.length);
+            else advance(line, entry.column + entry.length);
             insert("</span>", 7);
             break;
           case Entry::XREF:
@@ -106,9 +109,11 @@ public:
             insert(entry.from.data(), entry.from.size());
             insert("\" type=\"", 8);
             insert(entry.type.data(), entry.type.size());
+            if (entry.continuation)
+              insert("\" continuation=\"true", 20);
             insert("\">", 2);
             if (entry.length == -1) finish_line();
-            else advance(line, entry.column +  entry.length);
+            else advance(line, entry.column + entry.length);
             insert("</a>", 4);
             break;
         }

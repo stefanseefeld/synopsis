@@ -84,12 +84,18 @@ class XRefCompiler(Processor):
 
 
         if self.verbose: print "XRefCompiler: Reading", filename
-        document = parse(filename)
+        try:
+            document = parse(filename)
+        except:
+            raise InternalError('parsing %s'%filename)
         sxr = document.documentElement
         filename = sxr.getAttribute('filename')
         lines = sxr.getElementsByTagName('line')
         for lineno, line in enumerate(lines):
             for a in line.getElementsByTagName('a'):
+                if a.getAttribute('continuation') == 'true':
+                    print 'continuing'
+                    continue
                 qname = QName(a.getAttribute('href'))
                 origin = QName(a.getAttribute('from'))
                 type = str(a.getAttribute('type'))
