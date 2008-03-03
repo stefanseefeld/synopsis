@@ -63,7 +63,7 @@ public:
     outbuf_.close();
   }
 
-  void insert_span(unsigned int line, unsigned int column, unsigned int length,
+  void insert_span(unsigned int line, unsigned int column, int length,
                    std::string const &type)
   {
     Line &l = lines_[line];

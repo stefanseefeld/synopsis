@@ -87,7 +87,10 @@ class XRefCompiler(Processor):
         try:
             document = parse(filename)
         except:
-            raise InternalError('parsing %s'%filename)
+            if self.debug:
+                raise
+            else:
+                raise InternalError('parsing %s'%filename)
         sxr = document.documentElement
         filename = sxr.getAttribute('filename')
         lines = sxr.getElementsByTagName('line')

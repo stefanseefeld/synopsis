@@ -58,6 +58,8 @@ public:
       primary_file_only_(primary_file_only),
       mask_counter_(0),
       macro_level_counter_(0),
+      current_line_(1),
+      current_offset_(0),
       verbose_(v),
       debug_(d)
   {
@@ -124,7 +126,6 @@ private:
   bpl::dict            files_;
   bpl::object          file_;
   std::string          raw_filename_;
-  Token::position_type position_;
   std::string          base_path_;
   FileStack            file_stack_;
   std::string          include_dir_;
@@ -134,8 +135,11 @@ private:
   unsigned int         macro_level_counter_;
   //. The name of the macro currently being expanded.
   std::string          current_macro_name_;
-  //. The length of the character sequence representing the current macro call.
-  unsigned int         current_macro_call_length_;
+  Token::position_type current_macro_call_start_;
+  Token::position_type current_macro_call_end_;
+  unsigned int         current_line_;
+  //. Offset induced by macro expansion.
+  int                  current_offset_;
   bool                 verbose_;
   bool                 debug_;
 };
@@ -155,13 +159,10 @@ bool IRGenerator::expanding_function_like_macro(Context const &ctx,
   if (mask_counter_) return false;
   if (!macro_level_counter_)
   {
-    position_ = macrocall.get_position();
+    current_macro_call_start_ = macrocall.get_position();
+    current_macro_call_end_ = seqend->get_position();
     Token::string_type tmp = macrocall.get_value();
     current_macro_name_.assign(tmp.begin(), tmp.end());
-    // We are looking for the column after the closing right paren,
-    // which is the last token in the sequence.
-    unsigned int end = seqend->get_position().get_column() + 1;
-    current_macro_call_length_ = end - position_.get_column();
   }
   ++macro_level_counter_;
   return false;
@@ -177,10 +178,10 @@ bool IRGenerator::expanding_object_like_macro(Context const& ctx,
   if (mask_counter_) return false;
   if (!macro_level_counter_)
   {
-    position_ = macrocall.get_position();
+    current_macro_call_start_ = current_macro_call_end_ = macrocall.get_position();
     Token::string_type tmp = macrocall.get_value();
     current_macro_name_.assign(tmp.begin(), tmp.end());
-    current_macro_call_length_ = current_macro_name_.size();
+    current_macro_call_end_.set_column(current_macro_call_start_.get_column() + current_macro_name_.size());
   }
   ++macro_level_counter_;
   return false;
@@ -202,17 +203,23 @@ void IRGenerator::rescanned_macro(Context const &ctx,
   {
     // All (potentially recursive) scanning is finished at this point, so we
     // can create the MacroCall object.
-
+    Token::position_type start = current_macro_call_start_;
+    if (start.get_line() != current_line_)
+    {
+      // This is the first macro expansion in this line.
+      current_line_ = start.get_line();
+      current_offset_ = 0;
+    }
     Token::string_type tmp = wave::util::impl::as_string(result);
-    unsigned int length = tmp.size();
-    // Wave starts to count columns at index 1, synopsis at 0.
-    unsigned int begin = position_.get_column() - 1;
-    unsigned int end = begin + length;
-    int diff = current_macro_call_length_ - static_cast<int>(length);
-    bpl::dict mmap = bpl::extract<bpl::dict>(file_stack_.top().attr("macro_calls"));
-    bpl::list line = bpl::extract<bpl::list>(mmap.get(position_.get_line(), bpl::list()));
-    line.append(sf_module_.attr("MacroCall")(current_macro_name_, begin, end, diff));
-    mmap[position_.get_line()] = line;
+
+    bpl::list calls = bpl::extract<bpl::list>(file_stack_.top().attr("macro_calls"));
+    calls.append(sf_module_.attr("MacroCall")
+                 (current_macro_name_,
+                  bpl::make_tuple(current_macro_call_start_.get_line(), current_macro_call_start_.get_column() - 1),
+                  bpl::make_tuple(current_macro_call_end_.get_line(), current_macro_call_end_.get_column() - 1),
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + current_offset_),
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() - 1 + current_offset_)));
+    current_offset_ += start.get_column() + tmp.size() - 1 - current_macro_call_end_.get_column();
   }
 }
 

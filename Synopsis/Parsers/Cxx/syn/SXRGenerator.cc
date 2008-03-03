@@ -70,10 +70,9 @@ SWalker* SXRGenerator::swalker()
 
 int SXRGenerator::map_column(AST::SourceFile *file, int line, char const *ptr)
 {
-  char const *pos = ptr;
-  while (pos > buffer_->ptr() && *--pos != '\n')
-    ; // do nothing inside loop
-  int col = ptr - pos - 1;
+  char const *line_start = ptr;
+  while (line_start > buffer_->ptr() && *line_start != '\n') --line_start;
+  int col = ptr - (line_start + 1);
   // Resolve macro maps
   return file->map_column(line, col);
 }
@@ -228,7 +227,7 @@ void SXRGenerator::xref(PTree::Node *node, AST::Declaration const *decl)
   xref(node, Definition, decl->name(), decl->type(), decl);
 }
 
-void SXRGenerator::store_span(unsigned int line, unsigned int col, unsigned int len, char const *type)
+void SXRGenerator::store_span(unsigned int line, unsigned int col, int len, char const *type)
 {
   // TODO: desc maps to href title...
   AST::SourceFile* file = walker_->current_file();
