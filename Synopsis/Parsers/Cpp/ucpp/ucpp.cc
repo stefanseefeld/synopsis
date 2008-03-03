@@ -83,7 +83,8 @@ void create_macro(const char *filename, int line,
   ASG::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
   Python::Module qn = Python::Module::import("Synopsis.QualifiedName");
   Python::Object qname_ = qn.attr("QualifiedCxxName");
-  ASG::Declared declared = types->create_declared(qname_(name), macro);
+  ASG::Declared declared = types->create_declared(qname_(Python::Tuple(Python::Object(name))),
+                                                  macro);
 
   Python::List declarations = ir->declarations();
   declarations.append(macro);
@@ -147,12 +148,13 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     sf_kit.reset(new SourceFileKit(language));
     types.reset(new ASG::TypeKit(language));
 
+//     std::cout << "base path " << base_path << std::endl;
     if (py_base_path)
     {
       Path path(py_base_path);
       base_path = path.abs().str();
     }
-
+//     std::cout << "base path " << base_path << std::endl;
     source_file.reset(new SourceFile(lookup_source_file(input, true)));
 
     // ucpp considers __STDC__ to be predefined, and doesn't allow
@@ -232,6 +234,7 @@ extern "C"
     // base_path
     std::string abs_filename = Path(filename).abs().str();
     bool activate = false;
+//     std::cout << base_path << ' ' << abs_filename << std::endl;
     if ((primary_file_only && strcmp(input, filename)) || 
 	(base_path.size() && abs_filename.substr(0, base_path.size()) != base_path))
       active = false;
@@ -240,6 +243,9 @@ extern "C"
       if (!active) active = activate = true;
     }
 
+//     std::cout << "synopsis_file_hook " << filename << ' ' << new_file << ' ' << active << std::endl;
+//     std::cout << base_path.size() << ' ' << abs_filename << ' ' << base_path << std::endl;
+//     std::cout << input << ' ' << filename << std::endl;
     if (!active) return;
 
     // just for symmetry, don't report if we were just activated 
@@ -254,18 +260,21 @@ extern "C"
 
   //. This function is a callback from the ucpp code to store macro
   //. expansions
-  void synopsis_macro_hook(const char *name, int line_num,
-			   int start, int end, int diff)
+  void synopsis_macro_hook(const char *name,
+                           int start_line, int start_col, int end_line, int end_col,
+			   int e_start_line, int e_start_col, int e_end_line, int e_end_col)
   {
     if (!active) return;
     if (debug) 
-      std::cout << "macro : " << name << ' ' << line_num << ' '
-		<< start << ' ' << end << ' ' << diff << std::endl;
+      std::cout << "macro : " << name << " (" << start_line << ':' << start_col << ")<->("
+		<< end_line << ':' << end_col << ") expanded to ("
+                << e_start_line << ':' << e_start_col << ")<->(" << e_end_line << ':' << e_end_col << ')'
+                << std::endl;
 
-    Python::Dict mmap = source_file->macro_calls();
-    Python::List line = mmap.get(line_num, Python::List());
-    line.append(sf_kit->create_macro_call(name, start, end, diff));
-    mmap.set(line_num, line);
+    Python::List calls = source_file->macro_calls();
+    calls.append(sf_kit->create_macro_call(name,
+                                           start_line, start_col, end_line, end_col,
+                                           e_start_line, e_start_col, e_end_line, e_end_col));
   }
 
   //. This function is a callback from the ucpp code to store includes

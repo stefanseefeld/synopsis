@@ -102,6 +102,8 @@ public:
   Object operator () (Tuple);
   Object operator () (Tuple, Dict);
 
+  Object get(Object) const;
+
   //. try to downcast to T, throw on failure
   template <typename T>
   static T narrow(Object) throw(TypeError);
@@ -372,6 +374,15 @@ inline bool Object::set_attr(const std::string &name, Object value)
 				    value.ref());
   return retn != -1;
 }
+
+inline Object Object::get(Object k) const 
+{
+  PyObject *retn = PyObject_GetItem(my_impl, k.my_impl);
+  if (!retn) check_exception();
+  Py_INCREF(retn);
+  return Object(retn);
+}
+
 
 template <typename T>
 inline T Object::narrow(Object o) throw(Object::TypeError)

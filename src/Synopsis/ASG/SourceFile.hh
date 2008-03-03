@@ -31,9 +31,14 @@ public:
   MacroCall(const Python::Object &o) throw(TypeError) : Python::Object(o) { assert_type();}
   void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.SourceFile", "MacroCall");}
   std::string name() { return narrow<std::string>(attr("name"));}
-  long start() { return narrow<long>(attr("start"));}
-  long end() { return narrow<long>(attr("end"));}
-  long diff() { return narrow<long>(attr("diff"));}
+  long start_line() { return narrow<long>(attr("start").get(0));}
+  long start_col() { return narrow<long>(attr("start").get(1));}
+  long end_line() { return narrow<long>(attr("end").get(0));}
+  long end_col() { return narrow<long>(attr("end").get(1));}
+  long e_start_line() { return narrow<long>(attr("expanded_start").get(0));}
+  long e_start_col() { return narrow<long>(attr("expanded_start").get(1));}
+  long e_end_line() { return narrow<long>(attr("expanded_end").get(0));}
+  long e_end_col() { return narrow<long>(attr("expanded_end").get(1));}
 };
 
 }

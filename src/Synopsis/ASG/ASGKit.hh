@@ -175,9 +175,15 @@ public:
 			 bool is_macro, bool is_next)
   { return create<Include>("Include", Python::Tuple(sf, name, is_macro, is_next));}
 
-  MacroCall create_macro_call(const std::string &name, int start, int end, int diff)
-  { return create<MacroCall>("MacroCall", Python::Tuple(name, start, end, diff));}
-
+  MacroCall create_macro_call(const std::string &name,
+                              int start_line, int start_col, int end_line, int end_col,
+                              int e_start_line, int e_start_col, int e_end_line, int e_end_col)
+  { return create<MacroCall>("MacroCall",
+                             Python::Tuple(name,
+                                           Python::Tuple(start_line, start_col),
+                                           Python::Tuple(end_line, end_col),
+                                           Python::Tuple(e_start_line, e_start_col),
+                                           Python::Tuple(e_end_line, e_end_col)));}
 private:
   std::string lang_;
 };

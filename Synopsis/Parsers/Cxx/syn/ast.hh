@@ -327,27 +327,6 @@ private:
     bool m_is_next;
 };
 
-class MacroCallDict
-{
-public:
-  struct MacroCall
-  {
-    std::string name;
-    long start;
-    long end;
-    long diff;
-    bool operator <(const MacroCall &o) const { return start < o.start;}
-  };
-
-  typedef std::set<MacroCall> Line;
-  typedef std::map<long, Line> Lines;
-
-  void add(const char *name, int linenum, int start, int end, int diff);
-  int map(int linenum, int pos);
-private:
-  Lines my_lines;
-};
-
 //. Information about a source file used to generate the AST.
 //.
 //. Generally an AST will include SourceFile objects for *all* files,
@@ -357,77 +336,50 @@ private:
 class SourceFile : public cleanup
 {
 public:
-    //. A vector of SourceFiles
-    typedef std::vector<SourceFile*> vector;
+  //. A vector of SourceFiles
+  typedef std::vector<SourceFile*> vector;
 
-    //. Constructor
-    SourceFile(const std::string& filename, const std::string& full_filename, bool is_main);
+  //. Constructor
+  SourceFile(std::string const &name, std::string const &abs_name, bool is_primary)
+    : name_(name), abs_name_(abs_name), is_primary_(is_primary) {}
 
-    //. Returns the filename of this SourceFile (may be stripped by a
-    //. basename)
-    const std::string& filename() const
-    {
-        return m_filename;
-    }
+  std::string const &name() const { return name_;}
+  const std::string& abs_name() const { return abs_name_;}
+  bool is_primary() const { return is_primary_;}
+  Declaration::vector& declarations() { return declarations_;}
+  const Declaration::vector& declarations() const { return declarations_;}
+  Include::vector& includes() { return includes_;}
+  const Include::vector& includes() const { return includes_;}
 
-    //. Returns the full filename of this SourceFile
-    const std::string& full_filename() const
-    {
-        return m_full_filename;
-    }
+  void add_macro_call(char const *name, int line, int start_col, int end_col, int offset);
 
-    //. Returns whether this is a main file (as opposed to extra included file
-    //. just being stored for its list of includes)
-    bool is_main()
-    {
-        return m_is_main;
-    }
-
-    //. Returns the vector of declarations in this file
-    Declaration::vector& declarations()
-    {
-        return m_declarations;
-    }
-
-    //. Returns a const vector of declarations in this file
-    const Declaration::vector& declarations() const
-    {
-        return m_declarations;
-    }
-
-    //. Returns a vector of includes in this file
-    Include::vector& includes()
-    {
-        return m_includes;
-    }
-
-    //. Returns a const vector of includes in this file
-    const Include::vector& includes() const
-    {
-        return m_includes;
-    }
-
-    MacroCallDict &macro_calls() { return my_macro_calls;}
-    const MacroCallDict &macro_calls() const { return my_macro_calls;}
+  //. Map a position in the preprocessed file to a position in the original file.
+  //. If the position happens to fall right into an expanded macro, -1 is returned.
+  int map_column(int line, int col);
   
 private:
-    //. The filename
-    std::string m_filename;
+  struct MacroCall
+  {
+    MacroCall(char const *n, int s, int e, int o)
+      : name(n), start(s), end(e), offset(o) {}
+    std::string name;
+    // start column of the expanded macro
+    long start;
+    // end column of the expanded macro
+    long end;
+    // offset of all subsequent tokens in the stream, caused by this expansion.
+    long offset;
+    bool operator <(const MacroCall &o) const { return start < o.start;}
+  };
+  typedef std::set<MacroCall> Line;
+  typedef std::map<long, Line> Lines;
 
-    //. The full filename
-    std::string m_full_filename;
-
-    //. Whether this file is a main file 
-    bool m_is_main;
-
-    //. The vector of declarations
-    Declaration::vector m_declarations;
-
-    //. The vector of includes
-    Include::vector m_includes;
-
-  //. The macro call dictionary
-  MacroCallDict my_macro_calls;
+  std::string name_;
+  std::string abs_name_;
+  bool is_primary_;
+  Declaration::vector declarations_;
+  Include::vector includes_;
+  Lines macro_calls_;
 };
 
 //. A Builtin is a node to be used internally.

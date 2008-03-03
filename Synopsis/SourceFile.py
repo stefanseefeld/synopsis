@@ -28,13 +28,18 @@ class MacroCall:
     """A class to support mapping from positions in a preprocessed file
     back to positions in the original file."""
 
-    def __init__(self, name, start, end, diff):
+    def __init__(self, name, start, end, expanded_start, expanded_end):
 
         self.name = name
+        "The name of the macro being called."
         self.start = start
+        "(line, column) pair indicating the start of the call."
         self.end = end
-        self.diff = diff
-
+        "(line, column) pair indicating the end of the call."
+        self.expanded_start = expanded_start
+        "(line, column) pair indicating the start of the expansion in the preprocessed file."
+        self.expanded_end = expanded_end
+        "(line, column) pair indicating the end of the expansion in the preprocessed file."
 
 class SourceFile:
     """The information about a file that the ASG was generated from.
@@ -54,6 +59,6 @@ class SourceFile:
         """List of includes this file contains."""
         self.declarations = []
         """List of declarations this file contains."""
-        self.macro_calls = {}
-        """Dictionary of macro calls this file contains."""
+        self.macro_calls = []
+        """List of macro calls this file contains."""
 

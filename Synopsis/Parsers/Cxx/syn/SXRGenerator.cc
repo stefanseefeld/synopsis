@@ -68,14 +68,14 @@ SWalker* SXRGenerator::swalker()
   return walker_;
 }
 
-int SXRGenerator::find_col(AST::SourceFile *file, int line, char const *ptr)
+int SXRGenerator::map_column(AST::SourceFile *file, int line, char const *ptr)
 {
   char const *pos = ptr;
   while (pos > buffer_->ptr() && *--pos != '\n')
     ; // do nothing inside loop
   int col = ptr - pos - 1;
   // Resolve macro maps
-  return file->macro_calls().map(line, col);
+  return file->map_column(line, col);
 }
 
 void SXRGenerator::xref(PTree::Node *node, Context context, ScopedName const &name, std::string const &desc, AST::Declaration const *decl)
@@ -89,7 +89,7 @@ void SXRGenerator::xref(PTree::Node *node, Context context, ScopedName const &na
 
   // Get info for storing a syntax record
   int begin_line = walker_->line_of_ptree(node);
-  int begin_col = find_col(file, begin_line, node->begin());
+  int begin_col = map_column(file, begin_line, node->begin());
 
   if (begin_col < 0) return; // inside macro
 
@@ -104,7 +104,7 @@ void SXRGenerator::xref(PTree::Node *node, Context context, ScopedName const &na
   else
   {
     // Generate one xref plus continuations for each additional line.
-    int end_col = find_col(file, end_line, node->end());
+    int end_col = map_column(file, end_line, node->end());
     for (int line = begin_line; line < end_line; ++line, begin_col = 0)
       store_xref(file, line, begin_col, -1, context, name, desc, line != begin_line);
     store_xref(file, end_line, 0, end_col, context, name, desc, true);
@@ -243,7 +243,7 @@ void SXRGenerator::span(PTree::Node *node, char const *desc)
   AST::SourceFile* file = walker_->current_file();
   if (!filter_->should_xref(file))
     return;
-  int col = find_col(file, line, node->begin());
+  int col = map_column(file, line, node->begin());
   if (col < 0)
     return; // inside macro
   int len = node->end() - node->begin();
@@ -258,7 +258,7 @@ void SXRGenerator::long_span(PTree::Node *node, char const *desc)
   AST::SourceFile* file = walker_->current_file();
   if (!filter_->should_xref(file))
     return;
-  int left_col = find_col(file, left_line, node->begin());
+  int left_col = map_column(file, left_line, node->begin());
   if (left_col < 0)
     return; // inside macro
   int len = node->end() - node->begin();
@@ -273,7 +273,7 @@ void SXRGenerator::long_span(PTree::Node *node, char const *desc)
   else
   {
     // Must output one for each line
-    int right_col = find_col(file, right_line, node->end());
+    int right_col = map_column(file, right_line, node->end());
     for (int line = left_line; line < right_line; line++, left_col = 0)
       store_span(line, left_col, -1, desc);
     // Last line is a bit different
@@ -328,7 +328,7 @@ SXRBuffer *SXRGenerator::get_buffer(AST::SourceFile* file)
   {
     std::string filename = filter_->get_sxr_filename(file);
     makedirs(Path(filename).dirname());
-    buf = new SXRBuffer(filename.c_str(), file->full_filename(), file->filename());
+    buf = new SXRBuffer(filename.c_str(), file->abs_name(), file->name());
     buffers_.insert(std::make_pair(file, buf));
   }
   else

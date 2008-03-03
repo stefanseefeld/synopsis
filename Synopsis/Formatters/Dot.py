@@ -247,7 +247,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if ref:
          self.write_node(ref.link, name, label)
       elif self.toc:
-         self.write_node('', name, label, color=self.light_color, fontcolor=self.light_colors)
+         self.write_node('', name, label, color=self.light_color, fontcolor=self.light_color)
       else:
          self.write_node('', name, label)
 

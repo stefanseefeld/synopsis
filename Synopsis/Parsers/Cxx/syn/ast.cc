@@ -52,38 +52,25 @@
 
 using namespace AST;
 
-void MacroCallDict::add(const char *name, int linenum, int start, int end, int diff)
+void SourceFile::add_macro_call(char const *name, int l, int s, int e, int o)
 {
-  Line &line = my_lines[linenum];
-  MacroCall call;
-  call.start = start;
-  call.end = end;
-  call.diff = diff;
-  line.insert(call);
+  Line &line = macro_calls_[l];
+  line.insert(MacroCall(name, s, e, o));
 }
 
-int MacroCallDict::map(int linenum, int pos)
+int SourceFile::map_column(int l, int col)
 {
-  Lines::iterator i = my_lines.find(linenum);
-  if (i == my_lines.end()) return pos;
+  Lines::iterator i = macro_calls_.find(l);
+  if (i == macro_calls_.end()) return col;
   Line &line = i->second;
-  Line::iterator j = line.begin(), end = line.end();
-  while (j != end && j->start < pos)
+  int offset = 0;
+  for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start < col; ++j)
   {
-    const MacroCall &call = *j++;
-    if (pos < call.end) return -1;
-    pos += call.diff;
+    if (col < j->end) return -1;
+    offset = j->offset;
   }
-  return pos;
+  return col - offset;
 }
-
-//
-// AST::SourceFile
-//
-
-SourceFile::SourceFile(const std::string& filename, const std::string& full_filename, bool is_main)
-    : m_filename(filename), m_full_filename(full_filename), m_is_main(is_main)
-{ }
 
 //
 // AST::Include

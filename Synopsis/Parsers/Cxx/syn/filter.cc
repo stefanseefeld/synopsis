@@ -70,10 +70,10 @@ namespace
 //. parts not mirrored here are preserved.
 AST::SourceFile *import_source_file(PyObject *ir,
 				    const std::string &name,
-				    const std::string &long_name,
-				    bool main)
+				    const std::string &abs_name,
+				    bool primary)
 {
-  AST::SourceFile *sourcefile = new AST::SourceFile(name, long_name, main);
+  AST::SourceFile *sourcefile = new AST::SourceFile(name, abs_name, primary);
 
   PyObject *files = PyObject_GetAttrString(ir, "files");
   assert(files);
@@ -82,32 +82,38 @@ AST::SourceFile *import_source_file(PyObject *ir,
   if (!py_source_file) return sourcefile; // the given file wasn't preprocessed into the AST
 
   PyObject *macro_calls = PyObject_GetAttrString(py_source_file, "macro_calls");
-  if (macro_calls)
+  long size = PyObject_Length(macro_calls);
+  for (long i = 0; i != size; ++i)
   {
-    PyObject *lines = PyDict_Keys(macro_calls);
-    long size = PyObject_Length(lines);
-    for (long i = 0; i != size; ++i)
+    PyObject *call = PyList_GetItem(macro_calls, i);
+    PyObject *call_name = PyObject_GetAttrString(call, "name");
+    PyObject *end = PyObject_GetAttrString(call, "end");
+    PyObject *expanded_start = PyObject_GetAttrString(call, "expanded_start");
+    PyObject *expanded_end = PyObject_GetAttrString(call, "expanded_end");
+    char const *macro_name = PyString_AsString(call_name);
+    int col = PyInt_AsLong(PyTuple_GetItem(end, 1));
+    int start_line = PyInt_AsLong(PyTuple_GetItem(expanded_start, 0));
+    int start_col = PyInt_AsLong(PyTuple_GetItem(expanded_start, 1));
+    int end_line = PyInt_AsLong(PyTuple_GetItem(expanded_end, 0));
+    int end_col = PyInt_AsLong(PyTuple_GetItem(expanded_end, 1));
+    if (start_line == end_line)
+      sourcefile->add_macro_call(macro_name,
+                                 start_line, start_col, end_col, end_col - col);
+    else
     {
-      PyObject *line_number = PyList_GetItem(lines, i);
-      int l = PyInt_AsLong(line_number);
-      PyObject *line = PyDict_GetItem(macro_calls, line_number);
-      long line_length = PyObject_Length(line);
-      for (long j = 0; j != line_length; ++j)
-      {
-	PyObject *call = PyList_GetItem(line, j);
-	PyObject *name, *start, *end, *diff;
-	name = PyObject_GetAttrString(call, "name");
-	start = PyObject_GetAttrString(call, "start");
-	end = PyObject_GetAttrString(call, "end");
-	diff = PyObject_GetAttrString(call, "diff");
-	sourcefile->macro_calls().add(PyString_AsString(name), l,
-				      PyInt_AsLong(start),
-				      PyInt_AsLong(end),
-				      PyInt_AsLong(diff));
-      }
+      // first line
+      sourcefile->add_macro_call(macro_name, start_line, start_col, -1, 0);
+      for (int line = start_line + 1; line != end_line; ++line)
+        sourcefile->add_macro_call(macro_name, line, 0, -1, 0);
+      // last line
+      sourcefile->add_macro_call(macro_name, end_line, 0, end_col, end_col - col);
     }
-    Py_DECREF(macro_calls);
+    Py_DECREF(expanded_end);
+    Py_DECREF(expanded_start);
+    Py_DECREF(end);
+    Py_DECREF(call_name);
   }
+  Py_DECREF(macro_calls);
   return sourcefile;
 }
 }
@@ -201,14 +207,14 @@ bool FileFilter::should_visit_function_impl(AST::SourceFile* file)
   if (m->sxr_prefix.empty())
     return false;
 
-  return file->is_main();
+  return file->is_primary();
 }
 
 
 // Returns true if links should be generated for the given sourcefile
 bool FileFilter::should_xref(AST::SourceFile* file)
 {
-  return !m->sxr_prefix.empty() && file->is_main();
+  return !m->sxr_prefix.empty() && file->is_primary();
 }
 
 // Returns true if the given declaration should be stored in the final
@@ -220,7 +226,7 @@ bool FileFilter::should_store(AST::Declaration* decl)
         return false;
     // Check the decl itself first, although for namespaces the SourceFile
     // referenced by file() can be any of the files that opened it
-    if (decl->file()->is_main())
+    if (decl->file()->is_primary())
         return true;
     if (AST::Scope* scope = dynamic_cast<AST::Scope*>(decl))
     {
@@ -253,7 +259,7 @@ std::string FileFilter::strip_base_path(const std::string& filename)
 // Return syntax filename
 std::string FileFilter::get_sxr_filename(AST::SourceFile* file)
 {
-    return m->sxr_prefix + file->filename() + ".sxr";
+    return m->sxr_prefix + file->name() + ".sxr";
 }
 
 // Returns all sourcefiles

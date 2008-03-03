@@ -89,12 +89,9 @@ private:
 
   SXRBuffer *get_buffer(AST::SourceFile*);
 
-  //. Calculates the column number of 'ptr'. m_buffer_start is used as a
-  //. lower bounds, since the function counts backwards until it finds a
-  //. newline. As an added bonus, the returned column number is adjusted
-  //. using the link map generated from expanding macros so it can be output
-  //. straight to the link file :) The adjustment requires the line number.
-  int find_col(AST::SourceFile *file, int line, char const *ptr);
+  //. Computes ptr's column in the original source. This requires looking for
+  //. macro call expansion that may have displaced ptr in the preprocessed file.
+  int map_column(AST::SourceFile *file, int line, char const *ptr);
 
   //. The filter
   FileFilter* filter_;

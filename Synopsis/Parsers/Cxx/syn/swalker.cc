@@ -479,7 +479,7 @@ void SWalker::visit(PTree::NamespaceSpec *node)
     ns = my_builder->start_namespace(parse_name(id), NamespaceNamed);
     ns->set_file(my_file);
   }
-  else ns = my_builder->start_namespace(my_file->filename(), NamespaceAnon);
+  else ns = my_builder->start_namespace(my_file->name(), NamespaceAnon);
 
   add_comments(ns, static_cast<PTree::NamespaceSpec*>(node));
   if (sxr_ && PTree::first(id)) sxr_->xref(id, ns);
@@ -1248,8 +1248,8 @@ SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*
       if (sxr_ && PTree::nth(param, 1)) sxr_->xref(PTree::nth(param, 1), type);
 
       // Skip keywords (eg: register) which are Leaves
-      PTree::Node *leaf = PTree::nth(param, 0);
-      if (leaf) premods.push_back(parse_name(leaf));
+      PTree::Node *atom = PTree::nth(param, 0);
+      if (atom) premods.push_back(parse_name(atom));
     }
     // Add the AST.Parameter type to the list
     params.push_back(new AST::Parameter(premods, type, postmods, name, value));

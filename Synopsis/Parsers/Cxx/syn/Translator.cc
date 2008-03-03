@@ -381,7 +381,7 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
     PyObject* pyfile = m->py(file);
     
     // Add the declarations if it's a main file
-    if (file->is_main())
+    if (file->is_primary())
     {
       decls = PyObject_GetAttrString(pyfile, "declarations");
       assertObject(decls);
@@ -556,17 +556,17 @@ PyObject *Translator::SourceFile(AST::SourceFile* file)
   Trace trace("Translator::SourceFile", Trace::TRANSLATION);
   PyObject *files = PyObject_GetAttrString(m_ir, "files");
   assertObject(files);
-  PyObject *pyfile = PyDict_GetItemString(files, const_cast<char *>(file->filename().c_str()));
+  PyObject *pyfile = PyDict_GetItemString(files, const_cast<char *>(file->name().c_str()));
   if (!pyfile) // the file wasn't found, create it now
   {
-    PyObject *filename, *full_filename;
+    PyObject *name, *abs_name;
     pyfile = PyObject_CallMethod(m_sf_module, "SourceFile", "OOO",
-				 filename = m->py(file->filename()),
-				 full_filename = m->py(file->full_filename()),
+				 name = m->py(file->name()),
+				 abs_name = m->py(file->abs_name()),
 				 m->cxx());
     assertObject(pyfile);
-    Py_DECREF(filename);
-    Py_DECREF(full_filename);
+    Py_DECREF(name);
+    Py_DECREF(abs_name);
   }
   else Py_INCREF(pyfile);
 

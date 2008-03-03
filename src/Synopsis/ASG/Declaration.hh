@@ -43,7 +43,7 @@ public:
     annotations.set("primary", flag);
   }
   Python::List includes() { return attr("includes");}
-  Python::Dict macro_calls() { return attr("macro_calls");}
+  Python::List macro_calls() { return attr("macro_calls");}
   ASG::Declarations declarations();
 };
 

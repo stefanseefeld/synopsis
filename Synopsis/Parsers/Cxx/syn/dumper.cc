@@ -260,7 +260,7 @@ void Dumper::visit(const std::vector<AST::Declaration*>& decls)
     std::vector<AST::Declaration*>::const_iterator iter, end;
     iter = decls.begin(), end = decls.end();
     for (; iter != end; ++iter)
-        if (!m_filename.size() || (*iter)->file()->filename() == m_filename)
+        if (!m_filename.size() || (*iter)->file()->name() == m_filename)
             (*iter)->accept(this);
 }
 

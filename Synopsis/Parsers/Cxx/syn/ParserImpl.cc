@@ -136,7 +136,7 @@ const char *strip_prefix(const char *filename, const char *prefix)
 void error()
 {
   SWalker *instance = SWalker::instance();
-  std::cerr << "processing " << instance->current_file()->filename()
+  std::cerr << "processing " << instance->current_file()->name()
             << " at line " << instance->current_lineno()
             << std::endl;
 }
@@ -154,7 +154,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
     perror(file);
     exit(1);
   }
-  Buffer buffer(ifs.rdbuf(), sourcefile->filename());
+  Buffer buffer(ifs.rdbuf(), sourcefile->name());
   Lexer lexer(&buffer, tokenset);
   SymbolFactory symbols(SymbolFactory::NONE);
   Parser parser(lexer, symbols, ruleset);

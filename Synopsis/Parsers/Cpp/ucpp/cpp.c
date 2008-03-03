@@ -78,7 +78,11 @@ char *current_filename = 0, *current_long_filename = 0;
 static int current_incdir = -1;
 
 #ifdef SYNOPSIS
-void synopsis_macro_hook(const char* name, int line, int start, int end, int diff);
+void synopsis_macro_hook(const char* name,
+                         int start_line, int start_col,
+                         int end_line, int end_col,
+                         int e_start_line, int e_start_col,
+                         int e_end_line, int e_end_col);
 void synopsis_include_hook(const char* source_file, const char* target_file,
 			   const char *fname, int system, int is_macro, int is_next);
 void synopsis_file_hook(const char* file, int new_file);
@@ -2119,26 +2123,31 @@ int cpp(struct lexer_state *ls)
 			if ((m = get_macro(ls->ctok->name)) != 0) {
 				int x;
 #ifdef SYNOPSIS
-				int o_pos, o_pos2, o_diff, o_line;
-				int i_pos, i_pos2, i_diff, i_line;
-				i_pos = ls->ctok->pos;
-				i_line = ls->line;
-				o_pos = ls->output_pos;
-				o_line = ls->oline;
+				int o_pos_start, o_pos_end, o_line_start, o_line_end;
+				int i_pos_start, i_pos_end, i_line_start, i_line_end;
+                                /* ucpp counts columns from 1, Synopsis counts from 0. */
+				i_pos_start = ls->ctok->pos - 1;
+				i_line_start = ls->line;
+				o_pos_start = ls->output_pos;
+				o_line_start = ls->oline;
 
 				x = substitute_macro(ls, m, 0, 1, 0,
 					ls->ctok->line);
 				if (!(ls->flags & LEXER))
 					garbage_collect(ls->gf);
-				o_pos2 = ls->output_pos;
-				o_diff = o_pos2 - o_pos;
-				i_pos2 = ls->input_pos + (ls->discard ? 1 : 0);
-				i_diff = i_pos2 - i_pos;
+                                i_line_end = ls->line;
+                                i_pos_end = ls->ctok->pos - 1;
+				o_line_end = ls->oline;
+				o_pos_end = ls->output_pos - 1;
+/* 				i_pos_end = ls->input_pos + (ls->discard ? 1 : 0) - 1; */
 /* 				if (!strcmp(current_filename, original_filename)) { */
-				    /*printf("MACRO: INPUT(line %d: %d -> %d = +- %d) OUTPUT(line %d: %d -> %d = +- %d)\n",
-					    i_line, i_pos, i_pos2, i_diff,
-					    o_line, o_pos, o_pos2, o_diff);*/
-				    synopsis_macro_hook(m->name, i_line, o_pos, o_pos2, i_diff - o_diff);
+/*                                 printf("macro call at : %d:%d <-> %d:%d\n", */
+/*                                        i_line_start, i_pos_start, i_line_end, i_pos_end); */
+/*                                 printf("macro expands to %d:%d <-> %d:%d\n", */
+/*                                        o_line_start, o_pos_start, o_line_end, o_pos_end); */
+ 				    synopsis_macro_hook(m->name,
+                                                        i_line_start, i_pos_start, i_line_end, i_pos_end,
+                                                        o_line_start, o_pos_start, o_line_end, o_pos_end);
 /* 				} */
 #else
 				x = substitute_macro(ls, m, 0, 1, 0,
