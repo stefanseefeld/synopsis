@@ -88,6 +88,7 @@ class XRefCompiler(Processor):
             document = parse(filename)
         except:
             if self.debug:
+                print 'Error parsing', filename
                 raise
             else:
                 raise InternalError('parsing %s'%filename)

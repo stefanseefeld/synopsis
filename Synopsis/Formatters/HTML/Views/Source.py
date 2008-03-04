@@ -7,7 +7,7 @@
 #
 
 from Synopsis import config
-from Synopsis.Processor import Parameter
+from Synopsis.Processor import *
 from Synopsis.QualifiedName import *
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -18,12 +18,16 @@ class SXRTranslator:
     """Read in an sxr file, resolve references, and write it out as
     part of a Source view."""
 
-    def __init__(self, filename, language):
+    def __init__(self, filename, language, debug):
 
         try:
             self.sxr = parse(filename)
         except:
-            raise InternalError('parsing %s'%filename)
+            if debug:
+                print 'Error parsing', filename
+                raise
+            else:
+                raise InternalError('parsing %s'%filename)
         if language == 'Python':
             self.qname = lambda name: QualifiedPythonName(str(name).split('.'))
         else:
@@ -110,7 +114,7 @@ class Source(View):
 
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
-            translator = SXRTranslator(sxr, file.annotations['language'])
+            translator = SXRTranslator(sxr, file.annotations['language'], self.processor.debug)
             linker = self.external_url and self.external_ref or self.lookup_symbol
             translator.link(linker)
             translator.translate(self)
