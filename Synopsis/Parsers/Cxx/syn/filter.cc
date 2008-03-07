@@ -164,11 +164,11 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
         filename.assign(filename_ptr);
     
     Path path = Path(filename).abs();
-    std::string long_filename = path.str();
+    std::string abs_filename = path.str();
     path.strip(m->base_path);
-    std::string short_filename = path.str();
+    filename = path.str();
     // Look in map
-    Private::file_map_t::iterator iter = m->file_map.find(long_filename);
+    Private::file_map_t::iterator iter = m->file_map.find(abs_filename);
     if (iter != m->file_map.end())
         // Found
         return iter->second;
@@ -176,12 +176,12 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     // Not found, create a new SourceFile. Note filename in the object is
     // stripped of the basename
     AST::SourceFile* file = import_source_file(m->ast,
-					       short_filename,
-					       long_filename, 
-					       is_main(long_filename));
+					       filename,
+					       abs_filename, 
+					       is_main(abs_filename));
 
     // Add to the map
-    m->file_map[long_filename] = file;
+    m->file_map[abs_filename] = file;
 
     return file;
 }

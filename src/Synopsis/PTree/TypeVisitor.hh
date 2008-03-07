@@ -31,6 +31,7 @@ public:
   virtual void visit(TemplateInstantiation *) { my_type = Token::ntTemplateInstantiation;}
   virtual void visit(ExternTemplate *) { my_type = Token::ntExternTemplate;}
   virtual void visit(MetaclassDecl *) { my_type = Token::ntMetaclassDecl;}
+  virtual void visit(ParameterDeclaration *) { my_type = Token::ntParameterDecl;}
   virtual void visit(LinkageSpec *) { my_type = Token::ntLinkageSpec;}
   virtual void visit(NamespaceSpec *) { my_type = Token::ntNamespaceSpec;}
   virtual void visit(NamespaceAlias *) { my_type = Token::ntNamespaceAlias;}

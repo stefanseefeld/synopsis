@@ -146,6 +146,7 @@ struct Token
     ntTypedef,
     ntTemplateDecl,
     ntMetaclassDecl,
+    ntParameterDecl,
     ntLinkageSpec,
     ntAccessSpec,
     ntUserAccessSpec,

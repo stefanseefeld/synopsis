@@ -1083,7 +1083,7 @@ PTree::ClassSpec *Walker::get_class_template_spec(PTree::Node *body)
   if(*PTree::third(body) == ';')
   {
     PTree::Node *spec = strip_cv_from_integral_type(PTree::second(body));
-    return dynamic_cast<PTree::ClassSpec *>(spec);
+    return static_cast<PTree::ClassSpec *>(spec);
   }
   return 0;
 }
