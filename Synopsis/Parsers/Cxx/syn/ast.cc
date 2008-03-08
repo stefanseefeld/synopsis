@@ -64,9 +64,9 @@ int SourceFile::map_column(int l, int col)
   if (i == macro_calls_.end()) return col;
   Line &line = i->second;
   int offset = 0;
-  for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start < col; ++j)
+  for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start <= col; ++j)
   {
-    if (col < j->end) return -1;
+    if (col <= j->end) return -1;
     offset = j->offset;
   }
   return col - offset;
