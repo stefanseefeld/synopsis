@@ -10,6 +10,7 @@
 from Synopsis.Processor import *
 from Synopsis import ASG, DeclarationSorter
 from Synopsis.Formatters import quote_name
+from Synopsis.Formatters.TOC import TOC
 from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
@@ -29,6 +30,13 @@ def reference(name):
     """Generate an id suitable as a 'linkend' / 'id' attribute, i.e. for linking."""
 
     return quote_name(str(name))
+
+class Linker:
+    """Helper class to be used to resolve references from doc-strings to declarations."""
+
+    def link(self, decl):
+
+        return reference(decl.name)
 
 
 class _BaseClasses(ASG.Visitor):
@@ -276,7 +284,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
         if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
             return
-        self.start_element('section')
+        self.start_element('section', id=reference(declaration.name))
         self.write_element('title', escape(declaration.name[-1]))
         if isinstance(declaration, ASG.Function):
             # The primary index term is the unqualified name,
@@ -380,7 +388,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
         if self.processor.hide_undocumented and not class_.annotations.get('doc'):
             return
-        self.start_element('section')
+        self.start_element('section', id=reference(class_.name))
         title = '%s %s'%(class_.type, class_.name[-1])
         self.write_element('title', escape(title))
         indexterm = self.element('primary', escape(class_.name[-1]))
@@ -477,7 +485,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
             return
 
-        self.start_element('section')
+        self.start_element('section', id=reference(enum.name))
         self.write_element('title', escape(enum.name[-1]))
         indexterm = self.element('primary', escape(enum.name[-1]))
         if self.secondary_index:
@@ -561,6 +569,9 @@ class Formatter(Processor):
         self.ir = self.merge_input(ir)
 
         self.documentation = DocCache(self, self.markup_formatters)
+        self.toc = TOC(Linker())
+        for d in self.ir.declarations:
+            d.accept(self.toc)
 
         output = open(self.output, 'w')
         output.write('<section>\n')

@@ -17,6 +17,7 @@ class Struct:
     def __init__(self, summary = '', details = ''):
         self.summary = summary
         self.details = details
+        
 
 class Formatter(Parametrized):
     """Interface class that takes a 'doc' annotation and formats its
@@ -43,7 +44,7 @@ class Formatter(Parametrized):
     def lookup_symbol(self, symbol, scope):
         """Given a symbol and a scope, returns an URL.
         Various methods are tried to resolve the symbol. First the
-        parameters are taken off, then we try to split the ref using '.' or
+        parameters are taken off, then we try to split the symbol using '.' or
         '::'. The params are added back, and then we try to match this scoped
         name against the current scope. If that fails, then we recursively try
         enclosing scopes.
@@ -56,7 +57,6 @@ class Formatter(Parametrized):
             symbol = symbol[:index]
         else:
             params = ''
-        # Split ref
         if '.' in symbol:
             symbol = QualifiedPythonName(symbol.split('.'))
         else:
@@ -76,44 +76,28 @@ class Formatter(Parametrized):
 
     def _lookup_symbol_in(self, symbol, scope):
 
-        # Try scope + ref[0]
-        entry = self.processor.toc.lookup(scope + symbol[:1])
-        if entry:
-            # Found.
-            if len(symbol) > 1:
-                # Find sub-refs
-                entry = self._lookup_symbol_in(symbol[1:], scope + symbol[:1])
-                if entry:
-                    # Recursive sub-ref was okay!
-                    return entry 
-            else:
-                # This was the last scope in ref. Done!
-                return entry
-        # Try a method name match:
-        if len(symbol) == 1:
-            entry = self._find_method_entry(symbol[0], scope)
-            if entry: return entry
-        # Not found at this scope
-        return None
+        paren = symbol[-1].find('(')
+        if paren:
+            return self._find_method_entry(symbol[-1], scope + symbol[:-1])
+        else:
+            return self.processor.toc.lookup(scope + symbol)
 
 
     def _find_method_entry(self, name, scope):
-        """Tries to find a TOC entry for a method adjacent to decl. The
-        enclosing scope is found using the types dictionary, and the
-        real_name's of all the functions compared to ref."""
 
         try:
             scope = self.processor.ir.types[scope]
         except KeyError:
-            #print "No parent scope:",decl.name[:-1]
             return None
-        if not scope: return None
-        if not isinstance(scope, ASG.Declared): return None
+        if not isinstance(scope, ASG.Declared):
+            return None
         scope = scope.declaration
-        if not isinstance(scope, ASG.Scope): return None
+        if not isinstance(scope, ASG.Scope):
+            return None
+        # For now disregard parameters during lookup.
+        name = name[:name.find('(')]
         for d in scope.declarations:
             if isinstance(d, ASG.Function):
                 if d.real_name[-1] == name:
                     return self.processor.toc.lookup(d.name)
-        # Failed
         return None

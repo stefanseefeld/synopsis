@@ -10,6 +10,8 @@ from Synopsis.Formatters.DocBook.Markup import *
 from docutils import writers, nodes, languages
 from docutils.nodes import *
 from docutils.core import *
+from docutils.readers import standalone
+from docutils.transforms import Transform
 import string, re, StringIO
 
 from types import ListType
@@ -352,10 +354,10 @@ class DocBookTranslator(nodes.NodeVisitor):
         #     which don't map nicely to docbook elements and 
         #     reST allows one to insert arbitrary fields into
         #     the header, We need to be able to handle fields
-        #     which either don't map or nicely or are unexpected.
+        #     which either don't map nicely or are unexpected.
         #     I'm thinking of just using DocBook to display these
         #     elements in some sort of tabular format -- but
-        #     to collecting them is not straight-forward.  
+        #     to collect them is not straight-forward.  
         #     Paragraphs, links, lists, etc... can all live within
         #     the values so we either need a separate visitor
         #     to translate these elements, or to maintain state
@@ -1115,6 +1117,32 @@ class RST(Formatter):
 
         formatter = self
 
+        class Linker(Transform):
+            """Resolve references that don't have explicit targets
+            in the same doctree."""
+
+            default_priority = 1
+    
+            def apply(self):
+                for ref in self.document.traverse(reference):
+                    if ref.resolved or not ref.hasattr("refname"):
+                        return
+                    name = ref['name']
+                    id = formatter.lookup_symbol(name, decl.name[:-1])
+                    print 'find id', id, 'for', name
+                    if id:
+                        ref.resolved = 1
+                        ref['refid'] = id
+                    else:
+                        ref.replace_self(Text(name))
+
+
+        class Reader(standalone.Reader):
+
+            def get_transforms(self):
+                return [Linker] + standalone.Reader.get_transforms(self)
+
+
         errstream = StringIO.StringIO()
         settings = {}
         settings['halt_level'] = 2
@@ -1124,7 +1152,7 @@ class RST(Formatter):
         doc = decl.annotations.get('doc')
         if doc:
             try:
-                doctree = publish_doctree(doc.text,
+                doctree = publish_doctree(doc.text, reader=Reader(),
                                           settings_overrides=settings)
                 # Extract the summary.
                 extractor = SummaryExtractor(doctree)

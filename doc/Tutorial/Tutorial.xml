@@ -5,7 +5,7 @@
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
-    <releaseinfo>Version 0.9</releaseinfo>
+    <releaseinfo>Version 0.10</releaseinfo>
     <author>
       <firstname>Stefan</firstname>
       <surname>Seefeld</surname>
@@ -541,14 +541,6 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         with some special tools using xpath expressions.</para>
       <para>It is used right now for all unit tests.</para>
     </section>
-    <section id="ascii-formatter">
-      <title>ASCII Formatter</title>
-      <para>The ASCII formatter attempts to output the ASG in a format that is
-      suitable for recompilation, or close to. You can use this to check
-      that your code and comments are getting parsed correctly, or out of
-      interest to see the structure of the ASG after Linking. Like the DUMP
-      formatter, this is mostly of use for debugging.</para>
-    </section>
     <section id="docbook-formatter">
       <title>Docbook Formatter</title>
     </section>
@@ -898,7 +890,57 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
       <title>Javadoc</title>
     </section>
     <section id="rest">
-      <title>Restructured Text</title>
+      <title>ReStructured Text</title>
+      <para>Synopsis supports the full set of ReStructuredText markup (See 
+        <ulink url="http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html"/>).
+        In order to process ReST docstrings, docutils 0.4 or higher must be installed. 
+        If Docutils is not installed, ReST docstrings will be rendered as plaintext.</para>
+      <para>Here are a couple of suggestions specifically targetted at documenting APIs:</para>
+      <variablelist>
+        <varlistentry>
+          <term>Field lists for compact documentation of parameters</term>
+          <listitem>
+            <para>Some illustration here</para>
+            <programlisting>
+  //. Inserts a control point with the given weight.
+  //. The knot value determines the position in the sequence.
+  //.
+  //. :Parameters:
+  //.
+  //.   :knot: the parameter value at which to insert a new knot
+  //.   :vertex: the control point
+  //.   :weight: the weight of the control point
+  void insert_control_point(double knot, const Vertex &amp;vertex,
+                            double weight);
+            </programlisting>
+            <para>Some illustration here</para>
+            <programlisting>
+  def process(ir, **kwds):
+      """Run this processor.
+
+         :Parameters:
+            :ir: the internal representation
+
+         :Keyword Parameters:
+
+            :primary_only: True if only the primary file should be parsed.
+            :sxr_prefix: Name of the directory within which to store SXR data."""
+            </programlisting>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Links</term>
+          <listitem>
+            <para>As usual, hyperlinks are indicated by a trailing underscore.
+              If the text itself doesn't provide the target, the name is looked
+              up in the current symbol dictionary.</para>
+            <programlisting>
+//. The Nurbs class...
+//. ... you may prefer to use a `Paths::Bezier`_ curve.
+            </programlisting>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
   </appendix>
 </book>

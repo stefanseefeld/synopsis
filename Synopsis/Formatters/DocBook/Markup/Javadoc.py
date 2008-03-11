@@ -154,7 +154,7 @@ class Javadoc(Formatter):
                     name = target
                 else:
                     name = name.strip()
-                target = self.lookup_symbol(name, decl.name)
+                target = self.lookup_symbol(name, decl.name[:-1])
                 if target:
                     text += href(target, name)
                 else:

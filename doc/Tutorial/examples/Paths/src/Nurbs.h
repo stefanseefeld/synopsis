@@ -20,10 +20,10 @@ public:
   //. Inserts a control point with the given weight.
   //. The knot value determines the position in the sequence.
   //.
-  //. :Parameters:
-  //.   - 'knot': the parameter value at which to insert a new knot
-  //.   - 'vertex': the control point
-  //.   - 'weight': the weight of the control point
+  //. Parameters:
+  //.   :knot: the parameter value at which to insert a new knot
+  //.   :vertex: the control point
+  //.   :weight: the weight of the control point
   void insert_control_point(double knot, const Vertex &vertex,
                             double weight);
   virtual void draw();
