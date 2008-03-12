@@ -22,6 +22,8 @@ AC_ARG_WITH(syn-cxx,
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_LEX
+AC_PROG_YACC
 
 dnl ** Integer representation
 

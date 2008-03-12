@@ -14,8 +14,8 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
-FLEX 	:= flex -t
-BISON 	:= bison -d -o y.tab.c
+LEX 	:= @LEX@
+YACC 	:= @YACC@ -d
 MAKEDEP	:= $(CXX) -M
 IDLMODULE_VERSION := 0x2630# => CORBA 2.6, front-end 3.0
 CPPFLAGS:= @CPPFLAGS@ -I . 
@@ -54,11 +54,11 @@ clean:
 
 y.tab.h y.tab.cc: $(YYSRC)
 	@-rm $@
-	$(BISON) $<
+	$(YACC) $<
 	mv -f y.tab.c y.tab.cc
 
 lex.yy.cc: $(LLSRC) y.tab.h
-	$(FLEX) $< > $@
+	$(LEX) -o $@ $<
 	echo '#ifdef __VMS' >> $@
 	echo '// Some versions of DEC C++ for OpenVMS set the module name used by the' >> $@
 	echo '// librarian based on the last #line encountered.' >> $@

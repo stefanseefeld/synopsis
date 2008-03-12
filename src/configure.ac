@@ -39,8 +39,10 @@ AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
-AC_CHECK_PROGS(AR, ar aal, ar)
+AC_CHECK_PROGS(AR, ar aal xiar, ar)
+AC_CHECK_PROGS(LD, ld xild, ld)
 AC_SUBST(AR)
+AC_SUBST(LD)
 AC_PROG_LN_S
 
 # Determine major, minor, and bugfix version
