@@ -85,7 +85,7 @@ class Formatter(Processor):
     directory_layout = Parameter(NestedDirectoryLayout(), 'how to lay out the output files')
     toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
     toc_out = Parameter('', 'name of file into which to store the TOC')
-    sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info'
+    sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info')
 
     index = Parameter([ModuleTree(), FileTree()], '')
     detail = Parameter([ModuleIndex(), FileIndex()], '')
