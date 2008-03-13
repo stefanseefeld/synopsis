@@ -1,47 +1,30 @@
 #
-# Copyright (C) 2000 Stefan Seefeld
-# Copyright (C) 2000 Stephen Davies
+# Copyright (C) 2008 Stefan Seefeld
 # All rights reserved.
 # Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
 
+from Synopsis import SXR
 from Synopsis.Processor import *
 from Synopsis.QualifiedName import *
 from xml.dom.minidom import parse
+import os.path
 
-import os.path, cPickle, urllib
+class SXRCompiler(Processor):
+    """This class compiles symbol references stored in sxr files into a single symbol table."""
 
-class XRefCompiler(Processor):
-    """This class compiles a set of text-based xref files from the C++ parser
-    into a cPickled data structure with a name index.
-   
-    The format of the data structure is:
-    <pre>
-    (data, index) = cPickle.load()
-    data = dict<scoped targetname, target_data>
-    index = dict<name, list<scoped targetname>>
-    target_data = (definitions = list<target_info>,
-                   func calls = list<target_info>,
-                   references = list<target_info>)
-    target_info = (filename, int(line number), scoped context name)
-    </pre>
-    The scoped targetnames in the index are guaranteed to exist in the data
-    dictionary.
-    """
-
-    prefix = Parameter('', 'where to look for xref files')
+    prefix = Parameter('', 'where to look for sxr files')
     no_locals = Parameter(True, '')
 
     def process(self, ir, **kwds):
       
         self.set_parameters(kwds)
         if not self.prefix: raise MissingArgument('prefix')
-        if not self.output: raise MissingArgument('output')
         self.ir = self.merge_input(ir)
 
         def prefix(filename):
-            "Map filename to xref filename."
+            "Map filename to sxr filename."
 
             # Even though filenames shouldn't be absolute, we protect ourselves
             # against accidents.
@@ -49,29 +32,11 @@ class XRefCompiler(Processor):
                 filename = os.path.splitdrive(filename)[1][1:]
             return os.path.join(self.prefix, filename) + '.sxr'
 
-        self._data = {}
-        self._index = {}
-
         for f in self.ir.files.values():
             if f.annotations['primary'] and os.path.exists(prefix(f.name)):
                 self.compile(prefix(f.name), f.annotations['language'])
 
-        # Sort the data
-        for target, target_data in self._data.items():
-            target_data[1].sort()
-            target_data[2].sort()
-  
-            name = target[-1]
-            self._index.setdefault(name,[]).append(target)
-            # If it's a function name, also add without the parameters
-            paren = name.find('(')
-            if paren != -1:
-                self._index.setdefault(name[:paren],[]).append(target)
-
-        if self.verbose: print 'XRefCompiler: Writing', self.output
-        f = open(self.output, 'wb')
-        cPickle.dump((self._data, self._index), f)
-        f.close()
+        self.ir.sxr.generate_index()
 
         return self.ir
 
@@ -83,7 +48,7 @@ class XRefCompiler(Processor):
             QName = lambda name: QualifiedCxxName(str(name).split('::'))
 
 
-        if self.verbose: print "XRefCompiler: Reading", filename
+        if self.verbose: print "SXRCompiler: Reading", filename
         try:
             document = parse(filename)
         except:
@@ -117,14 +82,14 @@ class XRefCompiler(Processor):
                             # Function scope, truncate here
                             origin = origin[:i] + (origin[i][1:],)
                             break
-                target_data = self._data.setdefault(qname, [[],[],[]])
+                entry = self.ir.sxr.setdefault(qname, SXR.Entry())
                 if type == 'definition':
-                    target_data[0].append((filename, lineno + 1, origin))
-                elif type == 'CALL':
-                    target_data[1].append((filename, lineno + 1, origin))
-                elif type == 'REF':
-                    target_data[2].append((filename, lineno + 1, origin))
+                    entry.definitions.append((filename, lineno + 1, origin))
+                elif type == 'call':
+                    entry.calls.append((filename, lineno + 1, origin))
+                elif type == 'reference':
+                    entry.references.append((filename, lineno + 1, origin))
                 else:
-                    print 'Warning: Unknown type:', type
+                    print 'Warning: Unknown sxr type in %s:%d : %s'%(filename, lineno + 1, type)
  
 

@@ -48,7 +48,8 @@ List of options:
   -o <file>, --output=<file>  Write output to <file>.
   -p <lang>, --parser=<lang>  Select a parser for <lang>.
   -Wp,<arg>[,<arg>...]        Send <args> to the parser.
-  --translate[=<markup>]      Translate comments to doc-strings, processing it as
+  -t [<markup>]
+    --translate[=<markup>]    Translate comments to doc-strings, processing it as
                                 <markup> (typical values are 'javadoc' or 'rst').
   --cfilter=<filter>          Specify a comment filter.
   --cprocessor=<processor>    Specify a comment processor.
@@ -61,6 +62,8 @@ List of options:
   -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
   -I <path>                   Add <path> to list of include paths.
   -D <macro>                  Add <macro> to list of predefined macros.
+  -s <directory>,
+    --sxr=<directory>         Specify sxr directory. If given, process source cross-references.
 """
    
 def make_processor(argv):
@@ -85,10 +88,10 @@ def make_processor(argv):
     help = False
 
     opts, args = getopt.getopt(argv,
-                               'o:p:l:f:I:D:W:jvhVdP',
+                               'o:p:t:l:f:s:I:D:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
-                                'linker=', 'formatter=',
+                                'linker=', 'formatter=', 'sxr='
                                 'version', 'help', 'verbose', 'debug', 'profile'])
     
     for o, a in opts:
@@ -107,7 +110,7 @@ def make_processor(argv):
             parser = __import__('Synopsis.Parsers.%s.Parser'%a,
                                 'verbose' in options)
 
-        elif o == '--translate':
+        elif o in ['-t', '--translate']:
             if 'markup' in translator_opts:
                 error('Multiple translators specified.')
             translator_opts['markup'] = a or ''
@@ -159,6 +162,11 @@ def make_processor(argv):
             elif a[0] == "f":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
                     formatter_opts[o.replace('-', '_')] = a
+
+        elif o in ['-s', '--sxr']:
+            parser_opts['sxr_prefix'] = a
+            linker_opts['sxr_prefix'] = a
+            formatter_opts['sxr_prefix'] = a
 
         elif o in ['-h', '--help']:
             help = True

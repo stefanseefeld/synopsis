@@ -10,7 +10,7 @@ from ScopeStripper import *
 from NameMapper import *
 from MacroFilter import *
 from ModuleFilter import *
-from XRefCompiler import *
+from SXRCompiler import *
 from AccessRestrictor import *
 from TypedefFolder import *
 from TypeMapper import *

@@ -16,15 +16,16 @@ class XRefLinker(Default):
     def register(self, formatter):
 
         Default.register(self, formatter)
-        self.xref = self.processor.xref
+        self.pager = self.processor.xref
+        self.sxr = self.processor.ir.sxr
 
     def format_declaration(self, decl):
 
-        info = self.xref.get_info(decl.name)
-        if not info:
+        entry = self.sxr.get(decl.name)
+        if not entry:
             return ''
-        page = self.xref.get_page_for(decl.name)
+        page = self.pager.get(decl.name)
         filename = self.directory_layout.xref(page)
-        filename = filename + '#' + quote_name(str(decl.name))
+        filename += '#' + quote_name(str(decl.name))
         return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
 

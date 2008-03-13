@@ -11,7 +11,8 @@
   </chapter>
   <chapter id="cxx-reference">
     <title>C++ API Reference</title>
-    <xi:include href="cxx.xml">
+    <abstract>Abstract explaining the C++ API reference.</abstract>
+    <xi:include href="Cxx-API.xml">
       <xi:fallback><para>The generated Cxx reference...</para></xi:fallback>
     </xi:include>
     <index type="types">
@@ -23,6 +24,7 @@
   </chapter>
   <chapter id="python-reference">
     <title>Python API Reference</title>
+    <abstract>Abstract explaining the Python API reference.</abstract>
     <xi:include href="IR.xml">
       <xi:fallback><para>The generated IR reference...</para></xi:fallback>
     </xi:include>

@@ -30,5 +30,5 @@ process(cxx_ss = Composite(cxx, ss),
         cxx_ssd_prev = Composite(cxx, ssd_prev),
         cxx_javadoc = Composite(cxx, javadoc),
         cxx_rst = Composite(cxx, rst),
-        link = Linker(),
+        link = Linker(sxr_prefix='sxr'),
         sxr = SXR.Formatter(src_dir = '../src/', sxr_prefix='sxr'))

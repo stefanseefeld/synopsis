@@ -46,7 +46,7 @@ html: html/python html/cxx
 sxr: html/sxr
 pdf: Manual.pdf
 
-html/%: %.syn %.xref
+html/%: %.syn
 	@echo formatting $@
 	$(synopsis) html --output=$@ $<
 	touch $@
@@ -59,10 +59,6 @@ html/sxr: sxr.syn
 sxr.syn: python.syn cxx-sxr.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
-
-%.xref: %.syn
-	@echo generating $@
-	$(synopsis) xref --output=$@ $<
 
 # Compile Python files
 $(python_syn): %.syn: %.py

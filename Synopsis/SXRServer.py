@@ -5,7 +5,8 @@
 # see the file COPYING for details.
 #
 
-import sys, os, os.path, fnmatch, cPickle
+from Synopsis import IR
+import os, fnmatch
 
 def escape(text):
     """escape special characters ('&', '\"', '<', '>')"""
@@ -63,8 +64,9 @@ class SXRServer:
         self.cgi_url = cgi_url
         self.src_url = src_url
         self.src_dir = os.path.join(root, 'Source')
-        xref_db = os.path.join(root, 'xref_db')
-        self.data, self.index = cPickle.load(open(xref_db, 'rb'))
+        ir = IR.load(os.path.join(root, 'sxr.syn'))
+        self.data = ir.sxr
+        self.index = ir.sxr.index()
 
         if template_file:
             template = open(template_file).read()
@@ -95,23 +97,23 @@ class SXRServer:
         html = ''
         if not data.has_key(name): return '\n'
         html += '<h3>%s</h3>\n'%escape('::'.join(name))
-        target_data = data[name]
-        if target_data[0]:
+        entry = data[name]
+        if entry.definitions:
             html += '<li>Defined at:<br/>\n'
             html += '<ul>\n'
-            for file, line, scope in target_data[0]:
+            for file, line, scope in entry.definitions:
                 html +=  '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
-        if target_data[1]:
+        if entry.calls:
             html += '<li>Called from:<br/>\n'
             html += '<ul>\n'
-            for file, line, scope in target_data[1]:
+            for file, line, scope in entry.calls:
                 html += '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
-        if target_data[2]:
+        if entry.references:
             html += '<li>Referenced from:<br/>\n'
             html += '<ul>\n'
-            for file, line, scope in target_data[2]:
+            for file, line, scope in entry.references:
                 html += '<li>%s</li>\n'%(self.ident_ref(file, line, scope))
             html += '</ul></li>\n'
         return html

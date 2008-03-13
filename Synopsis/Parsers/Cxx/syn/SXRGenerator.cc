@@ -31,13 +31,13 @@ namespace
 
 char const *context_names[] =
 {
-  "REF",
+  "reference",
   "definition",
   "SPAN",
   "IMPL",
   "UDIR",
   "UDEC",
-  "CALL"
+  "call"
 };
 
 }

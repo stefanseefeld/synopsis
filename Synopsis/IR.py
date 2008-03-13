@@ -6,6 +6,7 @@
 #
 
 import ASG
+import SXR
 import cPickle
 
 class IR(object):
@@ -13,17 +14,21 @@ class IR(object):
     of different representations such as Parse Tree, Abstract Semantic Graph, etc.
     """
 
-    def __init__(self, files=None, declarations=None, types=None):
+    def __init__(self, files=None, declarations=None, types=None, sxr=None):
         """Constructor"""
 
         self.files = files or {}
         self.declarations = declarations or []
         self.types = types or ASG.Dictionary()
+        self.sxr = sxr or SXR.SXR()
 
     def copy(self):
         """Make a shallow copy of this IR."""
 
-        return type(self)(self.files.copy(), self.declarations[:], self.types.copy())
+        return type(self)(self.files.copy(),
+                          self.declarations[:],
+                          self.types.copy(),
+                          self.sxr)
 
     def save(self, filename):
         """Saves an IR object to the given filename"""
@@ -38,8 +43,6 @@ class IR(object):
         this IR, and types are merged by overwriting existing types -
         Unduplicator is responsible for sorting out the mess this may cause :)"""
 
-        self.types.merge(other.types)
-        self.declarations.extend(other.declarations)
         #merge files
         replacement = {}
         for filename, file in other.files.iteritems():
@@ -59,6 +62,13 @@ class IR(object):
                 for i in f.includes:
                     if i.target == r:
                         i.target = replacement[r]
+
+        # merge ASG
+        self.types.merge(other.types)
+        self.declarations.extend(other.declarations)
+
+        # merge SXR
+        self.sxr.merge(other.sxr)
 
 
 def load(filename):

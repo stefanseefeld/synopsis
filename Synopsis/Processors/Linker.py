@@ -15,6 +15,7 @@ class Linker(Composite, ASG.Visitor):
 
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
    sort_modules = Parameter(True, 'Sort module content alphabetically.')
+   sxr_prefix = Parameter('', 'Compile sxr data, if defined.')
 
    def process(self, ir, **kwds):
 
@@ -49,6 +50,9 @@ class Linker(Composite, ASG.Visitor):
          import ModuleSorter
          self.ir = ModuleSorter.ModuleSorter().process(self.ir)
          
+      if self.sxr_prefix:
+         import SXRCompiler
+         self.ir = SXRCompiler.SXRCompiler(prefix=self.sxr_prefix).process(self.ir)
 
       # now deal with the sub-processors, if any
       output = self.output

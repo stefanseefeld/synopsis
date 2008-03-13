@@ -63,7 +63,7 @@ class SXRTranslator:
 class Source(View):
     """A module for creating a view for each file with hyperlinked source"""
 
-    prefix = Parameter('', 'prefix to the syntax files')
+    prefix = Parameter(None, 'prefix to the syntax files')
     external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
    
     def filename(self):
@@ -79,6 +79,8 @@ class Source(View):
     def process(self):
         """Creates a view for every file"""
 
+        if self.processor.sxr_prefix is None: return
+        
         # Get the TOC
         self.__toc = self.processor.toc
         # create a view for each primary file
@@ -89,6 +91,8 @@ class Source(View):
 
     def register_filenames(self):
         """Registers a view for every source file"""
+
+        if self.processor.sxr_prefix is None: return
 
         for file in self.processor.ir.files.values():
             if file.annotations['primary']:

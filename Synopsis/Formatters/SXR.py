@@ -8,8 +8,8 @@
 """The SXR Facade around the HTML Formatter """
 
 from Synopsis import config
-from Synopsis.Processor import Processor, Parameter
-from Synopsis.Processors.XRefCompiler import XRefCompiler
+from Synopsis import IR
+from Synopsis.Processor import *
 import HTML
 from HTML.View import View, Template
 from HTML.Views import Directory, Source, RawFile
@@ -75,7 +75,6 @@ class Formatter(Processor):
 
     title = Parameter('Synopsis - Cross-Reference', 'title to put into html header')
     url = Parameter('/sxr.cgi', 'the base url to use for the sxr cgi')
-    sxr_prefix = Parameter(None, 'path prefix (directory) to contain sxr info')
     src_dir = Parameter('', 'starting point for directory listing')
     exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
     sxr_template = Parameter(os.path.join(config.datadir, 'sxr-template.html'), 'html template to be used by the sxr.cgi script')
@@ -84,12 +83,12 @@ class Formatter(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.output: raise MissingArgument('output')
+        if not self.sxr_prefix: raise MissingArgument('sxr_prefix')
+
         self.ir = self.merge_input(ir)
 
         if not os.path.exists(self.output): os.makedirs(self.output)
-
-        xref = XRefCompiler(prefix = self.sxr_prefix)
-        self.ir = xref.process(self.ir, output = os.path.join(self.output, 'xref_db'))
 
         content = [SXRIndex(sxr_cgi = self.url,
                             template = Template(template = self.sxr_template)),
@@ -115,4 +114,8 @@ class Formatter(Processor):
             copyfile(self.sxr_template,
                      os.path.join(self.output, 'sxr-template.html'))
             
+        # Store the SXR data only.
+        ir = IR.IR(sxr=self.ir.sxr)
+        ir.save(os.path.join(self.output, 'sxr.syn'))
+
         return self.ir

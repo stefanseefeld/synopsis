@@ -7,7 +7,6 @@ from Synopsis.Processors import *
 from Synopsis.Parsers import Python
 from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML.DirectoryLayout import *
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
@@ -26,25 +25,13 @@ cxx = Cxx.Parser(base_path = topdir + os.sep,
                              '-I%s'%(sysconfig.get_python_inc())],
                  sxr_prefix='sxr')
 
-class MyHTML(HTML.Formatter):
-   """We have to subclass in order to be able to make the 'xref_file'
-   parameter of the XRef view accessible to the command line"""
-
-   xref = Parameter('', 'xref file used for cross referencing')
-    
-   def process(self, ir, **kwds):
-        
-      self.set_parameters(kwds)
-
-      self.content = [Scope(),
-                      Source(prefix = 'sxr'),
-                      XRef(xref_file = self.xref),
-                      FileDetails(),
-                      InheritanceTree(),
-                      InheritanceGraph(),
-                      NameIndex()]
-      
-      return HTML.Formatter.process(self, ir)
+html = HTML.Formatter(content = [Scope(),
+                                 Source(prefix = 'sxr'),
+                                 XRef(),
+                                 FileDetails(),
+                                 InheritanceTree(),
+                                 InheritanceGraph(),
+                                 NameIndex()])
 
 sxr = SXR.Formatter(url = '/sxr',
                     src_dir = '@topdir@',
@@ -66,7 +53,7 @@ class MyLinker(Processor):
       processor = ScopeStripper(scope='Synopsis')
       # strip off package prefix
       ir = processor.process(ir)
-      self.ir = IR.IR(types = ir.types, files = ir.files)
+      self.ir = IR.IR(types = ir.types, files = ir.files, sxr = ir.sxr)
       for s in self.scopes.split(','):
          package, module = s.rsplit('.', 1)
          # filter out unwated modules
@@ -75,12 +62,11 @@ class MyLinker(Processor):
 
 process(python = python,
         cxx = cxx,
-        link_python = Linker(),
+        link_python = Linker(sxr_prefix='sxr'),
         archive = Processor(),
         link = MyLinker(),
         strip = ScopeStripper(),
-        xref = XRefCompiler(prefix='sxr'),
-        html = MyHTML(),
+        html = html,
         sxr = sxr,
         dump = Dump.Formatter(),
         texi = Texinfo.Formatter(),

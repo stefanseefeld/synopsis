@@ -13,8 +13,8 @@ from Synopsis.DocString import DocString
 from Synopsis.FileTree import make_file_tree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
-from Synopsis.Formatters.XRef import CrossReferencer
 from DirectoryLayout import *
+from XRefPager import XRefPager
 from Views import *
 from Frame import Frame
 from FrameSet import FrameSet
@@ -85,10 +85,13 @@ class Formatter(Processor):
     directory_layout = Parameter(NestedDirectoryLayout(), 'how to lay out the output files')
     toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
     toc_out = Parameter('', 'name of file into which to store the TOC')
+    sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info'
 
     index = Parameter([ModuleTree(), FileTree()], '')
     detail = Parameter([ModuleIndex(), FileIndex()], '')
     content = Parameter([Scope(),
+                         Source(),
+                         XRef(),
                          FileDetails(),
                          InheritanceTree(),
                          InheritanceGraph(),
@@ -127,7 +130,7 @@ class Formatter(Processor):
         self.file_tree = make_file_tree(self.ir.files.values())
 
         # Create the cross reference table (shared by XRef / Scope views)
-        self.xref = CrossReferencer()
+        self.xref = XRefPager(self.ir)
 
         from Synopsis.DeclarationSorter import DeclarationSorter
         self.sorter = DeclarationSorter()

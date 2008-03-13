@@ -218,7 +218,7 @@ void IRGenerator::rescanned_macro(Context const &ctx,
                   bpl::make_tuple(current_macro_call_start_.get_line(), current_macro_call_start_.get_column() - 1),
                   bpl::make_tuple(current_macro_call_end_.get_line(), current_macro_call_end_.get_column() - 1),
                   bpl::make_tuple(start.get_line(), start.get_column() - 1 + current_offset_),
-                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() - 1 + current_offset_)));
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() + current_offset_)));
     current_offset_ += start.get_column() + tmp.size() - 1 - current_macro_call_end_.get_column();
   }
 }
