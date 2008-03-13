@@ -68,7 +68,7 @@ class FileIndex(View):
 
         self.start_file()
         self.write(element('b', os.sep.join(name))+'<br/>\n')
-        if self.__link_source:
+        if self.__link_source and self.processor.sxr_prefix:
             link = rel(self.filename(),
                        self.directory_layout.file_source(filename))
             self.write('(' + href(link, 'Source', target='content')+')<br/>\n')
