@@ -75,6 +75,7 @@ class Formatter(Processor):
 
     title = Parameter('Synopsis - Cross-Reference', 'title to put into html header')
     url = Parameter('/sxr.cgi', 'the base url to use for the sxr cgi')
+    sxr_prefix = Parameter(None, 'path prefix (directory) to contain sxr info')
     src_dir = Parameter('', 'starting point for directory listing')
     exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
     sxr_template = Parameter(os.path.join(config.datadir, 'sxr-template.html'), 'html template to be used by the sxr.cgi script')
@@ -107,6 +108,7 @@ class Formatter(Processor):
         html = HTML.Formatter(index = [],
                               detail = [],
                               content = content,
+                              sxr_prefix = self.sxr_prefix,
                               stylesheet = self.stylesheet)
         self.ir = html.process(self.ir, output = self.output)
         
