@@ -207,8 +207,14 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
     ASG::Forward forward = asg_kit_.create_forward(file_, lineno_,
                                                    type, sname);
     add_comments(forward, class_spec->get_comments());
-    if (visible) declare(forward);
-    declare(sname, forward);
+    if (visible)
+    {
+      declare(forward);
+      declare_type(sname, forward);
+    }
+    else
+      declare_type(sname);
+      
     defines_class_or_enum_ = true;
     return;
   }
@@ -237,8 +243,14 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
   ScopedName sname(name);
   ASG::Class class_ = asg_kit_.create_class(file_, lineno_, type, sname);
   add_comments(class_, class_spec->get_comments());
-  if (visible) declare(class_);
-  declare(sname, class_);
+  if (visible)
+  {
+    declare(class_);
+    declare_type(sname, class_);
+  }
+  else
+    declare_type(sname);
+
   scope_.push(class_);
   defines_class_or_enum_ = false;
   body->accept(this);
@@ -322,8 +334,14 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   ASG::Enum enum_ = asg_kit_.create_enum(file_, lineno_, name, enumerators);
   add_comments(enum_, enum_spec);
 
-  if (visible) declare(enum_);
-  declare(ScopedName(name), enum_);
+  if (visible)
+  {
+    declare(enum_);
+    declare_type(ScopedName(name), enum_);
+  }
+  else
+    declare_type(ScopedName(name));
+
   defines_class_or_enum_ = true;
 }
 
@@ -356,8 +374,13 @@ void ASGTranslator::visit(PTree::Typedef *typed)
                                                            sname,
                                                            alias, defines_class_or_enum_);
     add_comments(declaration, declarator->get_comments());
-    if (visible) declare(declaration);
-    declare(sname, declaration);
+    if (visible)
+    {
+      declare(declaration);
+      declare_type(sname, declaration);
+    }
+    else
+      declare_type(sname);
   }
   defines_class_or_enum_ = false;
 }
@@ -542,12 +565,21 @@ void ASGTranslator::declare(ASG::Declaration declaration)
   file_.declarations().append(declaration);
 }
 
-ASG::Type ASGTranslator::declare(ScopedName name,
-                                 ASG::Declaration declaration)
+ASG::Type ASGTranslator::declare_type(ScopedName name,
+                                      ASG::Declaration declaration)
 {
-  Trace trace("ASGTranslator::declare", Trace::SYMBOLLOOKUP);
+  Trace trace("ASGTranslator::declare_type", Trace::SYMBOLLOOKUP);
   trace << name;
   ASG::Type type = type_kit_.create_declared(name, declaration);
+  types_.set(qname(name), type);
+  return type;
+}
+
+ASG::Type ASGTranslator::declare_type(ScopedName name)
+{
+  Trace trace("ASGTranslator::declare_type(unknown)", Trace::SYMBOLLOOKUP);
+  trace << name;
+  ASG::Type type = type_kit_.create_unknown(name);
   types_.set(qname(name), type);
   return type;
 }

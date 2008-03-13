@@ -54,7 +54,8 @@ private:
 
 
   void declare(ASG::Declaration);
-  ASG::Type declare(ScopedName name, ASG::Declaration declaration);
+  ASG::Type declare_type(ScopedName name, ASG::Declaration declaration);
+  ASG::Type declare_type(ScopedName name);
 
   PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, ASG::Type &);
   PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
