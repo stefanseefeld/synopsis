@@ -91,7 +91,7 @@ def make_processor(argv):
                                'o:p:t:l:f:s:I:D:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
-                                'linker=', 'formatter=', 'sxr='
+                                'linker=', 'formatter=', 'sxr=',
                                 'version', 'help', 'verbose', 'debug', 'profile'])
     
     for o, a in opts:
