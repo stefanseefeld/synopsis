@@ -63,9 +63,22 @@ class SXRTranslator:
 class Source(View):
     """A module for creating a view for each file with hyperlinked source"""
 
-    prefix = Parameter(None, 'prefix to the syntax files')
     external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
    
+    def register(self, frame):
+
+        super(Source, self).register(frame)
+        self.icons = {}
+        if self.processor.sxr_prefix:
+            share = config.datadir
+            self.icons['C'] = 'src-c.png'
+            self.icons['C++'] = 'src-c++.png'
+            self.icons['Python'] = 'src-py.png'
+            for l in self.icons:
+                src = os.path.join(share, self.icons[l])
+                self.directory_layout.copy_file(src, self.icons[l])
+
+
     def filename(self):
 
         return self.__filename
@@ -79,7 +92,8 @@ class Source(View):
     def process(self):
         """Creates a view for every file"""
 
-        if self.processor.sxr_prefix is None: return
+        self.prefix = self.processor.sxr_prefix
+        if self.prefix is None: return
         
         # Get the TOC
         self.__toc = self.processor.toc

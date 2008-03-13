@@ -10,6 +10,6 @@ class DocString:
    
     def __init__(self, text, markup):
 
-       self.text = text
-       self.markup = markup
+        self.text = text
+        self.markup = markup
 

@@ -29,13 +29,7 @@ rst = Comments.Translator(markup='rst',
                           filter = Comments.SSDFilter(),
                           processor = Comments.Grouper())
 
-html = HTML.Formatter(content = [Scope(),
-                                 Source(prefix = 'sxr'),
-                                 XRef(),
-                                 FileDetails(),
-                                 InheritanceTree(),
-                                 InheritanceGraph(),
-                                 NameIndex()])
+html = HTML.Formatter(sxr_prefix = 'sxr')
 
 process(cxx_ss = Composite(cxx, ss),
         cxx_ssd_prev = Composite(cxx, ssd_prev),

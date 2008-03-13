@@ -14,7 +14,7 @@ from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.DirectoryLayout import quote_name
 from Synopsis.Formatters.XRef import *
-import time
+import os, time
 
 class XRef(View):
     """A module for creating views full of xref infos"""
@@ -29,6 +29,11 @@ class XRef(View):
         self.__toc = TOC(None)
 
         if self.processor.sxr_prefix is None: return
+
+        self.icon = 'xref.png'
+        share = config.datadir
+        src = os.path.join(share, 'xref.png')
+        self.directory_layout.copy_file(src, self.icon)
 
         # Add an entry for every xref
         for name in self.processor.ir.sxr.keys():

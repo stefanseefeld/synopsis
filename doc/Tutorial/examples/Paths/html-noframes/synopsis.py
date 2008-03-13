@@ -15,7 +15,7 @@ from Synopsis.Formatters.HTML.DirectoryLayout import *
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import Dot
 
-cxx = Cxx.Parser(base_path='../src/', sxr_prefix='sxr')
+cxx = Cxx.Parser(base_path='../src/')
 
 ss = Comments.Translator(filter = Comments.SSFilter(),
                          processor = Comments.Grouper())
@@ -29,20 +29,11 @@ rst = Comments.Translator(markup='rst',
                           filter = Comments.SSDFilter(),
                           processor = Comments.Grouper())
 
-html = HTML.Formatter(directory_layout=DirectoryLayout(),
-                      index = [],
-                      detail = [],
-                      content = [Scope(),
-                                 Source(prefix = 'sxr'),
-                                 XRef(),
-                                 FileDetails(),
-                                 InheritanceTree(),
-                                 InheritanceGraph(),
-                                 NameIndex()])
+html = HTML.Formatter(index = [], detail = [])
 
 process(cxx_ss = Composite(cxx, ss),
         cxx_ssd_prev = Composite(cxx, ssd_prev),
         cxx_javadoc = Composite(cxx, javadoc),
         cxx_rst = Composite(cxx, rst),
-        link = Linker(sxr_prefix='sxr'),
+        link = Linker(),
         html = html)

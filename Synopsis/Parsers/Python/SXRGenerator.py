@@ -84,7 +84,7 @@ class SXRGenerator:
         self.parameters = []
         self.scopes = []
 
-    def process_file(self, scope, sourcefile, xref):
+    def process_file(self, scope, sourcefile, sxr):
 
         self.scopes = list(scope)
         input = open(sourcefile.abs_name, 'r+')
@@ -94,15 +94,15 @@ class SXRGenerator:
         input.seek(0)
         self.lexer = tokenize.generate_tokens(input.readline)
         #self.lexer = LexerDebugger(tokenize.generate_tokens(input.readline))
-        self.xref = open(xref, 'w+')
+        self.sxr = open(sxr, 'w+')
         lineno_template = '%%%ds' % self.lines
         lineno = lineno_template % self.lineno
-        self.xref.write(header % {'filename': sourcefile.name})
+        self.sxr.write(header % {'filename': sourcefile.name})
         try:
             self.handle(ptree)
         except StopIteration:
             raise
-        self.xref.write(trailer)
+        self.sxr.write(trailer)
         self.scopes.pop()
 
     def handle(self, ptree):
@@ -148,19 +148,19 @@ class SXRGenerator:
             self.print_token(t)
   
 
-    def handle_name_as_xref(self, xref, name, type = None):
+    def handle_name_as_xref(self, xref, name, from_ = None, type = None):
 
         kind, value, (srow, scol), (erow, ecol), line = self.next_token()
         if (kind, value) != (token.NAME, name):
             raise 'Internal error in line %d: expected name "%s", got "%s" (%d)'%(name, self.lineno, item, t[1], t[0])
 
         if self.col != scol:
-            self.xref.write(' ' * (scol - self.col))
-        if type:
-            a = '<a href="%s" type="%s">%s</a>'%('.'.join(xref), type, value)
-        else:
-            a = '<a href="%s">%s</a>'%('.'.join(xref), value)
-        self.xref.write(a)
+            self.sxr.write(' ' * (scol - self.col))
+        attrs = []
+        if from_: attrs.append('from="%s"'%from_)
+        if type: attrs.append('type="%s"'%type)
+        a = '<a href="%s" %s>%s</a>'%('.'.join(xref), ' '.join(attrs), value)
+        self.sxr.write(a)
         self.col = ecol
   
 
@@ -208,7 +208,7 @@ class SXRGenerator:
         self.handle_token(def_token[1])
         name = nodes[1 + offset][1]
         qname = tuple(self.scopes + [name])
-        self.handle_name_as_xref(qname, name, 'definition')
+        self.handle_name_as_xref(qname, name, from_='.'.join(self.scopes), type='definition')
         # Handle the parameters.
         self.handle(nodes[2 + offset])
 
@@ -258,7 +258,7 @@ class SXRGenerator:
         self.handle_token(class_token[1])
         name = nodes[1][1]
         qname = tuple(self.scopes + [name])
-        self.handle_name_as_xref(qname, name, 'definition')
+        self.handle_name_as_xref(qname, name, from_='.'.join(self.scopes), type='definition')
         base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
         self.handle_tokens(nodes[2])
         bases = []
@@ -359,14 +359,14 @@ class SXRGenerator:
             self.print_newline()
         else:
             if self.col != scol:
-                self.xref.write(' ' * (scol - self.col))
+                self.sxr.write(' ' * (scol - self.col))
             if keyword.iskeyword(value):
                 format = '<span class="py-keyword">%s</span>'
             elif kind == token.STRING:
                 format = '<span class="py-string">%s</span>'
                 chunks = value.split('\n')
                 for c in chunks[:-1]:
-                    self.xref.write(format % escape(c))
+                    self.sxr.write(format % escape(c))
                     self.print_newline()
                 value = chunks[-1]
                     
@@ -376,7 +376,7 @@ class SXRGenerator:
             else:
                 format = '%s'
 
-            self.xref.write(format % escape(value))
+            self.sxr.write(format % escape(value))
             self.col = ecol
 
 
@@ -384,7 +384,7 @@ class SXRGenerator:
 
         self.col = 0
         self.lineno += 1
-        self.xref.write('</line>\n')
-        self.xref.write('<line>')
+        self.sxr.write('</line>\n')
+        self.sxr.write('<line>')
 
 
