@@ -10,11 +10,8 @@ from Synopsis.Formatters.DocBook.Markup import *
 from docutils import writers, nodes, languages
 from docutils.nodes import *
 from docutils.core import *
-from docutils.readers import standalone
-from docutils.transforms import Transform
+from docutils.parsers.rst import roles
 import string, re, StringIO
-
-from types import ListType
 
 class Writer(writers.Writer):
 
@@ -136,7 +133,7 @@ class DocBookTranslator(nodes.NodeVisitor):
                 # apply here, as an element with no attribute
                 # isn't well-formed XML.
                 parts.append(name.lower())
-            elif isinstance(value, ListType):
+            elif isinstance(value, list):
                 values = [str(v) for v in value]
                 parts.append('%s="%s"' % (name.lower(),
                                           self.attval(' '.join(values))))
@@ -1115,33 +1112,18 @@ class RST(Formatter):
 
     def format(self, decl):
 
-        formatter = self
+        def ref(name, rawtext, text, lineno, inliner,
+                options={}, content=[]):
 
-        class Linker(Transform):
-            """Resolve references that don't have explicit targets
-            in the same doctree."""
+            name = utils.unescape(text)
+            uri = self.lookup_symbol(name, decl.name[:-1])
+            if uri:
+                node = reference(rawtext, name, refid=uri, **options)
+            else:
+                node = emphasis(rawtext, name)
+            return [node], []
 
-            default_priority = 1
-    
-            def apply(self):
-                for ref in self.document.traverse(reference):
-                    if ref.resolved or not ref.hasattr("refname"):
-                        return
-                    name = ref['name']
-                    id = formatter.lookup_symbol(name, decl.name[:-1])
-                    print 'find id', id, 'for', name
-                    if id:
-                        ref.resolved = 1
-                        ref['refid'] = id
-                    else:
-                        ref.replace_self(Text(name))
-
-
-        class Reader(standalone.Reader):
-
-            def get_transforms(self):
-                return [Linker] + standalone.Reader.get_transforms(self)
-
+        roles.register_local_role('', ref)
 
         errstream = StringIO.StringIO()
         settings = {}
@@ -1152,8 +1134,7 @@ class RST(Formatter):
         doc = decl.annotations.get('doc')
         if doc:
             try:
-                doctree = publish_doctree(doc.text, reader=Reader(),
-                                          settings_overrides=settings)
+                doctree = publish_doctree(doc.text, settings_overrides=settings)
                 # Extract the summary.
                 extractor = SummaryExtractor(doctree)
                 doctree.walk(extractor)

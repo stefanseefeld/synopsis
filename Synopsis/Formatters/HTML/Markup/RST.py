@@ -9,8 +9,7 @@ from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
 from docutils.nodes import *
 from docutils.core import *
-from docutils.readers import standalone
-from docutils.transforms import Transform
+from docutils.parsers.rst import roles
 import re, StringIO
 
 
@@ -64,29 +63,19 @@ class RST(Formatter):
 
         formatter = self
         
-        class Linker(Transform):
-            """Resolve references that don't have explicit targets
-            in the same doctree."""
+        def ref(name, rawtext, text, lineno, inliner,
+                options={}, content=[]):
 
-            default_priority = 1
-    
-            def apply(self):
-                for ref in self.document.traverse(reference):
-                    if ref.resolved or not ref.hasattr("refname"):
-                        return
-                    name = ref['name']
-                    uri = formatter.lookup_symbol(name, decl.name[:-1])
-                    if uri:
-                        ref.resolved = 1
-                        ref['refuri'] = rel(view.filename(), uri)
-                    else:
-                        ref.replace_self(Text(name))
+            name = utils.unescape(text)
+            uri = formatter.lookup_symbol(name, decl.name[:-1])
+            if uri:
+                ref = rel(view.filename(), uri)
+                node = reference(rawtext, name, refuri=ref, **options)
+            else:
+                node = emphasis(rawtext, name)
+            return [node], []
 
-        class Reader(standalone.Reader):
-
-            def get_transforms(self):
-                return [Linker] + standalone.Reader.get_transforms(self)
-
+        roles.register_local_role('', ref)
 
         errstream = StringIO.StringIO()
         settings = {}
@@ -97,8 +86,7 @@ class RST(Formatter):
         doc = decl.annotations.get('doc')
         if doc:
             try:
-                doctree = publish_doctree(doc.text, reader=Reader(),
-                                          settings_overrides=settings)
+                doctree = publish_doctree(doc.text, settings_overrides=settings)
                 # Extract the summary.
                 extractor = SummaryExtractor(doctree)
                 doctree.walk(extractor)

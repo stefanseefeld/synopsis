@@ -83,7 +83,7 @@ class Formatter(Parametrized):
     def _lookup_symbol_in(self, symbol, scope):
 
         paren = symbol[-1].find('(')
-        if paren:
+        if paren != -1:
             return self._find_method_entry(symbol[-1], scope + symbol[:-1])
         else:
             return self.processor.toc.lookup(scope + symbol)

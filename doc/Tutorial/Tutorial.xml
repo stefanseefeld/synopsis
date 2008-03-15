@@ -900,47 +900,101 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         <varlistentry>
           <term>Field lists for compact documentation of parameters</term>
           <listitem>
-            <para>Some illustration here</para>
+            <para>A typical documentation of a C++ function:</para>
             <programlisting>
   //. Inserts a control point with the given weight.
   //. The knot value determines the position in the sequence.
   //.
-  //. :Parameters:
-  //.
+  //. Parameters:
   //.   :knot: the parameter value at which to insert a new knot
   //.   :vertex: the control point
   //.   :weight: the weight of the control point
   void insert_control_point(double knot, const Vertex &amp;vertex,
                             double weight);
             </programlisting>
-            <para>Some illustration here</para>
+            <para>A possible documentation of a Python function:</para>
             <programlisting>
   def process(ir, **kwds):
       """Run this processor.
 
-         :Parameters:
+         Parameters:
             :ir: the internal representation
 
-         :Keyword Parameters:
-
+         Keyword Parameters:
             :primary_only: True if only the primary file should be parsed.
             :sxr_prefix: Name of the directory within which to store SXR data."""
             </programlisting>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term>Links</term>
+          <term>Identifier Cross-References</term>
           <listitem>
-            <para>As usual, hyperlinks are indicated by a trailing underscore.
-              If the text itself doesn't provide the target, the name is looked
-              up in the current symbol dictionary.</para>
+            <para>Interpreted text is used to classify and mark up program identifiers,
+              such as the names of variables, functions, classes, and modules.</para>
             <programlisting>
 //. The Nurbs class...
-//. ... you may prefer to use a `Paths::Bezier`_ curve.
+//. ... you may prefer to use a `Bezier` curve.
             </programlisting>
+            <para>The identifier (<varname>Bezier</varname>) is looked up starting from 
+              the scope of the current declaration. Qualified names such as 
+              <varname>Paths::Bezier</varname> in C++, or <varname>Synopsis.ASG</varname> in Python,
+              work as expected, too.</para>
           </listitem>
         </varlistentry>
       </variablelist>
+      <para>ReStructuredText is a very powerful yet compact language, providing the means to 
+        include hyperlinks, tables, verbatim blocks, inlined images, and more:</para>
+            <programlisting>
+//. The Nurbs class. It implements a nurbs curve
+//. for the given order. It is a very powerful
+//. and flexible curve representation. For simpler
+//. cases you may prefer to use a `Paths::Bezier` curve.
+//.
+//. While non-rational curves are not sufficient to represent a circle,
+//. this is one of many sets of NURBS control points for an almost uniformly 
+//. parameterized circle:
+//.
+//. +--+----+-------------+
+//. |x |  y | weight      |
+//. +==+====+=============+
+//. |1 |  0 | 1           |
+//. +--+----+-------------+
+//. |1 |  1 | `sqrt(2)/2` |
+//. +--+----+-------------+
+//. |0 |  1 | 1           |
+//. +--+----+-------------+
+//. |-1|  1 | `sqrt(2)/2` |
+//. +--+----+-------------+
+//. |-1|  0 | 1           |
+//. +--+----+-------------+
+//. |-1| -1 | `sqrt(2)/2` |
+//. +--+----+-------------+
+//. |0 | -1 | 1           |
+//. +--+----+-------------+
+//. |1 | -1 | `sqrt(2)/2` |
+//. +--+----+-------------+
+//. |1 |  0 | 1           |
+//. +--+----+-------------+
+//.
+//. The order is three, the knot vector is {0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4}.
+//. It should be noted that the circle is composed of four quarter circles,
+//. tied together with double knots. Although double knots in a third order NURBS
+//. curve would normally result in loss of continuity in the first derivative,
+//. the control points are positioned in such a way that the first derivative is continuous.
+//. (From Wikipedia_ )
+//.
+//. .. _Wikipedia: http://en.wikipedia.org/wiki/NURBS
+//.
+//. Example::
+//.
+//.   Nurbs&lt;3&gt; circle;
+//.   circle.insert_control_point(0, Vertex(1., 0.), 1.);
+//.   circle.insert_control_point(0, Vertex(1., 1.), sqrt(2.)/2.);
+//.   ...
+//.
+            </programlisting>
+            <para>To see how this is formatted please refer to the
+              <ulink url="http://synopsis.fresco.org/docs/examples/index.html#docbook">DocBook example</ulink>.</para>
     </section>
   </appendix>
 </book>

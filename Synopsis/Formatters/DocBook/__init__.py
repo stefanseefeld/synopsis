@@ -168,6 +168,7 @@ class FormatterBase:
         type = self.__elements.pop()
         self.__indent = self.__indent - 2
         self.write('\n</' + type + '>')
+        self.write('\n')
 
     def write_element(self, element, body, end = '\n', **params):
         """Write a single element on one line (though body may contain
@@ -281,7 +282,6 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
     #################### ASG Visitor ###########################################
 
     def visit_declaration(self, declaration):
-
         if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
             return
         self.start_element('section', id=reference(declaration.name))
@@ -327,21 +327,22 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             declarations = [d for d in declarations if not isinstance(d, ASG.Module)]
             self.generate_module_list(modules)
 
-        sorter = DeclarationSorter.DeclarationSorter(declarations)
+        sorter = DeclarationSorter.DeclarationSorter(declarations,
+                                                     group_as_section=False)
         if self.processor.generate_summary:
             self.start_element('section')
             self.write_element('title', 'Summary')
             summary = SummaryFormatter(self.processor, self.output)
             if sort:
                 for s in sorter:
-                    if s[-1] == 's': title = s + 'es Summary'
-                    else: title = s + 's Summary'
-                    self.start_element('section')
-                    self.write_element('title', escape(title))
+                    #if s[-1] == 's': title = s + 'es Summary'
+                    #else: title = s + 's Summary'
+                    #self.start_element('section')
+                    #self.write_element('title', escape(title))
                     for d in sorter[s]:
                         if not self.processor.hide_undocumented or d.annotations.get('doc'):
                             d.accept(summary)
-                    self.end_element()
+                    #self.end_element()
             else:
                 for d in declarations:
                     if not self.processor.hide_undocumented or d.annotations.get('doc'):
@@ -355,12 +356,12 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         suffix = self.processor.generate_summary and ' Details' or ''
         if sort:
             for section in sorter:
-                title = section + suffix
-                self.start_element('section')
-                self.write_element('title', escape(title))
+                #title = section + suffix
+                #self.start_element('section')
+                #self.write_element('title', escape(title))
                 for d in sorter[section]:
                     d.accept(self)
-                self.end_element()
+                #self.end_element()
         else:
             for d in declarations:
                 d.accept(self)            
@@ -432,7 +433,8 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
                             continue
                     declarations.append(d)
 
-        sorter = DeclarationSorter.DeclarationSorter(declarations)
+        sorter = DeclarationSorter.DeclarationSorter(declarations,
+                                                     group_as_section=False)
 
         if self.processor.generate_summary:
             self.start_element('section')
@@ -440,13 +442,13 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             summary = SummaryFormatter(self.processor, self.output)
             summary.process_doc(class_)
             for section in sorter:
-                title = section + ' Summary'
-                self.start_element('section')
-                self.write_element('title', escape(title))
+                #title = section + ' Summary'
+                #self.start_element('section')
+                #self.write_element('title', escape(title))
                 for d in sorter[section]:
                     if not self.processor.hide_undocumented or d.annotations.get('doc'):
                         d.accept(summary)
-                self.end_element()
+                #self.end_element()
             self.end_element()
             self.write('\n')
             self.start_element('section')
@@ -455,12 +457,12 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.push_scope(class_.name)
         suffix = self.processor.generate_summary and ' Details' or ''
         for section in sorter:
-            title = section + suffix
-            self.start_element('section')
-            self.write_element('title', escape(title))
+            #title = section + suffix
+            #self.start_element('section')
+            #self.write_element('title', escape(title))
             for d in sorter[section]:
                 d.accept(self)
-            self.end_element()
+            #self.end_element()
         self.pop_scope()
         self.end_element()
         self.write('\n')
@@ -551,7 +553,9 @@ class DocCache:
 class Formatter(Processor):
     """Generate a DocBook reference."""
 
-    markup_formatters = Parameter({'rst':RST(), 'javadoc':Javadoc()},
+    markup_formatters = Parameter({'rst':RST(),
+                                   'reStructuredText':RST(),
+                                   'javadoc':Javadoc()},
                                   'Markup-specific formatters.')
     title = Parameter(None, 'title to be used in top-level section')
     nested_modules = Parameter(False, """Map the module tree to a tree of docbook sections.""")

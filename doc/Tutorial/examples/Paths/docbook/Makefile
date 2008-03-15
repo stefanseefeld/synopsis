@@ -40,6 +40,7 @@ install-html: all
 ifdef prefix
 	mkdir -p $(prefix)
 	cp -r Paths/* $(prefix)
+	cp Paths.xml $(prefix)
 	if test -f Paths.pdf; then cp Paths.pdf $(prefix); fi
 endif
 

@@ -4,6 +4,7 @@
 //. A Vertex is a 2D point.
 struct Vertex
 {
+  Vertex(double xx, double yy): x(xx), y(yy) {}
   double x; //.< the x coordinate
   double y; //.< the y coordinate
 };

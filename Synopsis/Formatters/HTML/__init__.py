@@ -98,7 +98,9 @@ class Formatter(Processor):
                          NameIndex()],
                         '')
    
-    markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
+    markup_formatters = Parameter({'javadoc':Javadoc(),
+                                   'rst':RST(),
+                                   'reStructuredText':RST()},
                                   'Markup-specific formatters.')
     graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
 

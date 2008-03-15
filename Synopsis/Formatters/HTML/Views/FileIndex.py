@@ -11,7 +11,6 @@ from Synopsis import ASG
 from Synopsis.QualifiedName import *
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-
 import os
 
 class FileIndex(View):
@@ -25,8 +24,8 @@ class FileIndex(View):
        super(FileIndex, self).register(frame)
        self.__filename = ''
        self.__title = ''
-       self.__link_source = self.processor.has_view('Source')
-       self.__link_details = self.processor.has_view('FileDetails')
+       self.link_source = self.processor.has_view('Source') and self.processor.sxr_prefix
+       self.link_details = self.processor.has_view('FileDetails')
 
     def filename(self):
         """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -67,17 +66,17 @@ class FileIndex(View):
         self.__title = os.sep.join(name)
 
         self.start_file()
-        self.write(element('b', os.sep.join(name))+'<br/>\n')
-        if self.__link_source and self.processor.sxr_prefix:
+        self.write(element('b', os.sep.join(name))+'\n')
+        if self.link_source:
             link = rel(self.filename(),
-                       self.directory_layout.file_source(filename))
-            self.write('(' + href(link, 'Source', target='content')+')<br/>\n')
-        if self.__link_details:
+                      self.directory_layout.file_source(filename))
+            self.write(div('', href(link, 'source code', target='content')) + '\n')
+        if self.link_details:
             link = rel(self.filename(),
                        self.directory_layout.file_details(filename))
-            self.write('(' + href(link, 'Details', target='content')+')<br/>\n')
+            self.write(div('', href(link, 'details', target='content')) + '\n')
 
-        self.write('<b>Declarations:</b><br/>\n')
+        self.write(div('heading', 'Declarations') + '\n')
         # Sort items (by name)
         items = [(d.name, d) for d in file.declarations]
         items.sort()

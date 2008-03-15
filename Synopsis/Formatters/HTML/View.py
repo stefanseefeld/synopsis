@@ -248,7 +248,7 @@ class View(Parametrized):
         self.__os.close()
         self.__os = None
 	
-    def start_file(self, body='<body>', headextra=''):
+    def start_file(self, body='', headextra=''):
         """Start a new file with given filename, title and body. This method
         opens a file for writing, and writes the html header crap at the top.
         You must specify a title, which is prepended with the project name.
@@ -260,6 +260,8 @@ class View(Parametrized):
         self.__os = self.open_file()
         prefix = rel(self.filename(), '')
         self.template.init(self.processor, prefix)
+        if not body:
+            body = '<body class="%s">'%self.__class__.__name__
         self.template.view_header(self.__os, self.title(), body, headextra, self)
     
     def end_file(self, body='</body>'):
