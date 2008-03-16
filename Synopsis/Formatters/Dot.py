@@ -173,17 +173,17 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       self.__type_ref = self.toc and self.toc[type.link] or None
       self.__type_label = str(self.scope.prune(type.name))
         
-   def visit_base_type(self, type):
+   def visit_builtin_type_id(self, type):
 
       self.__type_ref = None
       self.__type_label = type.name[-1]
 
-   def visit_dependent(self, type):
+   def visit_dependent_type_id(self, type):
 
       self.__type_ref = None
       self.__type_label = type.name[-1]
         
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
 
       self.__type_ref = self.toc and self.toc[type.declaration.name] or None
       if isinstance(type.declaration, ASG.Class):
@@ -191,7 +191,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       else:
          self.__type_label = str(self.scope.prune(type.declaration.name))
 
-   def visit_parametrized(self, type):
+   def visit_parametrized_type_id(self, type):
 
       if type.template:
          type_ref = self.toc and self.toc[type.template.name] or None
@@ -205,7 +205,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       self.__type_ref = type_ref
       self.__type_label = type_label + "<" + ','.join(parameters_label) + ">"
 
-   def visit_template(self, type):
+   def visit_template_id(self, type):
       self.__type_ref = None
       def clip(x, max=20):
          if len(x) > max: return '...'
@@ -257,7 +257,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
          #
          # find attributes of type 'Class' so we can link to it
          for a in filter(lambda a:isinstance(a, ASG.Variable), node.declarations):
-            if isinstance(a.vtype, ASG.Declared):
+            if isinstance(a.vtype, ASG.DeclaredTypeId):
                d = a.vtype.declaration
                if isinstance(d, ASG.Class) and self.nodes.has_key(self.get_class_name(d)):
                   self.write_edge(self.get_class_name(node), self.get_class_name(d),
@@ -296,13 +296,13 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
    #################### Type Visitor ##########################################
 
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
       if self.__current < self.__levels or self.__levels == -1:
          self.__current = self.__current + 1
          type.declaration.accept(self)
          self.__current = self.__current - 1
       # to restore the ref/label...
-      InheritanceGenerator.visit_declared_type(self, type)
+      InheritanceGenerator.visit_declared_type_id(self, type)
 
    #################### ASG Visitor ###########################################
         
@@ -344,10 +344,10 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
       # if this is the main class
       if self.__current == 1 and self.__types:
-         # fool the visitDeclared method to stop walking upwards
+         # fool the visit_declared_type_id method to stop walking upwards
          self.__levels = 0
          for t in self.__types.values():
-            if isinstance(t, ASG.Declared):
+            if isinstance(t, ASG.DeclaredTypeId):
                child = t.declaration
                if isinstance(child, ASG.Class):
                   for i in child.parents:
@@ -505,7 +505,7 @@ class Formatter(Processor):
          generator = SingleInheritanceGenerator(dotfile, self.layout,
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
-                                                -1, self.ir.types,
+                                                -1, self.ir.asg.types,
                                                 toc, self.prefix, False,
                                                 self.bgcolor)
       elif self.type == 'class':
@@ -525,7 +525,7 @@ class Formatter(Processor):
          for f in self.ir.files.values():
             generator.visit_file(f)
       else:
-         for d in self.ir.declarations:
+         for d in self.ir.asg.declarations:
             d.accept(generator)
       dotfile.write("}\n")
       dotfile.close()
@@ -533,10 +533,10 @@ class Formatter(Processor):
          os.rename(tmpfile, self.output)
       elif format == "png":
          _format_png(tmpfile, self.output)
-         #os.remove(tmpfile)
+         os.remove(tmpfile)
       elif format == "html":
          _format_html(tmpfile, self.output, self.base_url)
-         #os.remove(tmpfile)
+         os.remove(tmpfile)
       else:
          _format(tmpfile, self.output, format)
          os.remove(tmpfile)

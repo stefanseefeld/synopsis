@@ -112,13 +112,13 @@ class Formatter(Processor):
         self.ir = self.merge_input(ir)
         # Make sure we operate on a single top-level node.
         # (Python package, C++ global namespace, etc.)
-        if (len(self.ir.declarations) != 1 or
-            not isinstance(self.ir.declarations[0], ASG.Module)):
+        if (len(self.ir.asg.declarations) != 1 or
+            not isinstance(self.ir.asg.declarations[0], ASG.Module)):
             # Assume this is C++ in this case.
             self.root = ASG.Module(None, -1, 'namespace', QualifiedName())
-            self.root.declarations = ir.declarations
+            self.root.declarations = ir.asg.declarations
         else:
-            self.root = self.ir.declarations[0]
+            self.root = self.ir.asg.declarations[0]
 
         self.directory_layout.init(self)
         self.documentation = DocCache(self, self.markup_formatters)

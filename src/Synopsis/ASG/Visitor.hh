@@ -58,35 +58,35 @@ public:
   virtual void visit_operation(const Operation*) = 0;
 };
 
-class Type;
-class Unknown;
-class Modifier;
-class Array;
-class Named;
-class Base;
-class Dependent;
-class Declared;
-class Template;
-class Parametrized;
-class FunctionPtr;
+class TypeId;
+class UnknownTypeId;
+class ModifierTypeId;
+class ArrayTypeId;
+class NamedTypeId;
+class BuiltinTypeId;
+class DependentTypeId;
+class DeclaredTypeId;
+class TemplateId;
+class ParametrizedTypeId;
+class FunctionTypeId;
 
 //. The Type Visitor base class
-class TypeVisitor
+class TypeIdVisitor
 {
 public:
   // Virtual destructor makes abstract
-  virtual ~TypeVisitor() {}
-  virtual void visit_type(const Type*) = 0;
-  virtual void visit_named(const Named*) = 0;
-  virtual void visit_base(const Base*) = 0;
-  virtual void visit_dependent(const Dependent*) = 0;
-  virtual void visit_unknown(const Unknown*) = 0;
-  virtual void visit_modifier(const Modifier*) = 0;
-  virtual void visit_array(const Array*) = 0;
-  virtual void visit_declared(const Declared*) = 0;
-  virtual void visit_template(const Template*) = 0;
-  virtual void visit_parametrized(const Parametrized*) = 0;
-  virtual void visit_function_ptr(const FunctionPtr*) = 0;
+  virtual ~TypeIdVisitor() {}
+  virtual void visit_type_id(const TypeId*) = 0;
+  virtual void visit_named_type_id(const NamedTypeId*) = 0;
+  virtual void visit_builtin_type_id(const BuiltinTypeId*) = 0;
+  virtual void visit_dependent_type_id(const DependentTypeId*) = 0;
+  virtual void visit_unknown_type_id(const UnknownTypeId*) = 0;
+  virtual void visit_modifier_type_id(const ModifierTypeId*) = 0;
+  virtual void visit_array_type_id(const ArrayTypeId*) = 0;
+  virtual void visit_declared_type_id(const DeclaredTypeId*) = 0;
+  virtual void visit_template_id(const TemplateId*) = 0;
+  virtual void visit_parametrized_type_id(const ParametrizedTypeId*) = 0;
+  virtual void visit_function_type_id(const FunctionTypeId*) = 0;
 };
 
 }

@@ -37,7 +37,7 @@ class Scope(View):
 
         self.scope_queue = []
         self.__toc = TOC(self.directory_layout)
-        for d in self.processor.ir.declarations:
+        for d in self.processor.ir.asg.declarations:
             d.accept(self.__toc)
       
     def toc(self):

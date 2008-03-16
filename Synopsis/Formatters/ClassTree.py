@@ -131,9 +131,9 @@ class ClassTree(ASG.Visitor):
             parent = inheritance.parent
             if hasattr(parent, 'declaration'):	
                 self.add_inheritance(parent.declaration.name, class_.name)
-            elif isinstance(parent, ASG.Parametrized) and parent.template:
+            elif isinstance(parent, ASG.ParametrizedTypeId) and parent.template:
                 self.add_inheritance(parent.template.name, class_.name)
-            elif isinstance(parent, ASG.UnknownType):
+            elif isinstance(parent, ASG.UnknownTypeId):
                 self.add_inheritance(parent.link, class_.name)
         for d in class_.declarations:
             d.accept(self)

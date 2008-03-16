@@ -165,27 +165,27 @@ class Part(Parametrized, ASG.Visitor):
             self.__id_holder = save_id
         return self.__type_label
 
-    def visit_base_type(self, type):
+    def visit_builtin_type_id(self, type):
         "Sets the label to be a reference to the type's name"
 
         self.__type_label = self.reference(type.name)
         
-    def visit_unknown_type(self, type):
+    def visit_unknown_type_id(self, type):
         "Sets the label to be a reference to the type's link"
 
         self.__type_label = self.reference(type.link)
         
-    def visit_declared_type(self, type):
+    def visit_declared_type_id(self, type):
         "Sets the label to be a reference to the type's name"
 
         self.__type_label = self.reference(type.name)
 
-    def visit_dependent(self, type):
+    def visit_dependent_type_id(self, type):
         "Sets the label to be the type's name (which has no proper scope)"
         
         self.__type_label = type.name[-1]
         
-    def visit_modifier_type(self, type):
+    def visit_modifier_type_id(self, type):
         "Adds modifiers to the formatted label of the modifier's alias"
         
         alias = self.format_type(type.alias)
@@ -196,7 +196,7 @@ class Part(Parametrized, ASG.Visitor):
         post = ''.join([amp(x) for x in type.postmod])
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
-    def visit_parametrized(self, type):
+    def visit_parametrized_type_id(self, type):
         "Adds the parameters to the template name in angle brackets"
 
         if type.template:
@@ -206,13 +206,13 @@ class Part(Parametrized, ASG.Visitor):
         parameters = [self.format_type(p) for p in type.parameters]
         self.__type_label = "%s&lt;%s&gt;"%(type_label,', '.join(parameters))
 
-    def visit_template(self, type):
+    def visit_template_id(self, type):
         "Labs the template with the parameters"
 
         self.__type_label = "template&lt;%s&gt;"%','.join(['typename %s'%self.format_type(p)
                                                            for p in type.parameters])
 
-    def visit_function_type(self, type):
+    def visit_function_type_id(self, type):
         "Labels the function type with return type, name and parameters"
       
         ret = self.format_type(type.return_type)

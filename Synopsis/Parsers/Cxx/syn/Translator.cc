@@ -306,11 +306,12 @@ Translator::Translator(FileFilter* filter, PyObject *ir)
   assertObject(m_asg_module);
   m_sf_module  = PyImport_ImportModule("Synopsis.SourceFile");
   assertObject(m_sf_module);
-  
-  m_declarations = PyObject_GetAttrString(m_ir, "declarations");
+  PyObject *asg = PyObject_GetAttrString(m_ir, "asg");
+  m_declarations = PyObject_GetAttrString(asg, "declarations");
   assertObject(m_declarations);
-  m_dictionary = PyObject_GetAttrString(m_ir, "types");
+  m_dictionary = PyObject_GetAttrString(asg, "types");
   assertObject(m_dictionary);
+  Py_DECREF(asg);
   
   m = new Private(this);
 }
@@ -419,7 +420,7 @@ PyObject *Translator::Base(Types::Base* type)
 {
   Trace trace("Translator::Base", Trace::TRANSLATION);
   PyObject *name, *base;
-  base = PyObject_CallMethod(m_asg_module, "BaseType", "OO",
+  base = PyObject_CallMethod(m_asg_module, "BuiltinTypeId", "OO",
                              m->cxx(), name = m->QName(type->name()));
   PyObject_SetItem(m_dictionary, name, base);
   Py_DECREF(name);
@@ -430,7 +431,7 @@ PyObject *Translator::Dependent(Types::Dependent* type)
 {
   Trace trace("Translator::Dependent", Trace::TRANSLATION);
   PyObject *name, *base;
-  base = PyObject_CallMethod(m_asg_module, "Dependent", "OO",
+  base = PyObject_CallMethod(m_asg_module, "DependentTypeId", "OO",
                              m->cxx(), name = m->QName(type->name()));
   PyObject_SetItem(m_dictionary, name, base);
   Py_DECREF(name);
@@ -441,7 +442,7 @@ PyObject *Translator::Unknown(Types::Named* type)
 {
   Trace trace("Translator::Unknown", Trace::TRANSLATION);
   PyObject *name, *unknown;
-  unknown = PyObject_CallMethod(m_asg_module, "UnknownType", "OO",
+  unknown = PyObject_CallMethod(m_asg_module, "UnknownTypeId", "OO",
                                 m->cxx(), name = m->QName(type->name()));
   PyObject_SetItem(m_dictionary, name, unknown);
   Py_DECREF(name);
@@ -452,7 +453,7 @@ PyObject *Translator::Declared(Types::Declared* type)
 {
   Trace trace("Translator::Declared", Trace::TRANSLATION);
   PyObject *name, *declared, *decl;
-  declared = PyObject_CallMethod(m_asg_module, "Declared", "OOO",
+  declared = PyObject_CallMethod(m_asg_module, "DeclaredTypeId", "OOO",
                                  m->cxx(), name = m->QName(type->name()), 
                                  decl = m->py(type->declaration()));
   // Skip zero-length names (eg: dummy declarators/enumerators)
@@ -467,7 +468,7 @@ PyObject *Translator::Template(Types::Template* type)
 {
   Trace trace("Translator::Template", Trace::TRANSLATION);
   PyObject *name, *templ, *decl, *params;
-  templ = PyObject_CallMethod(m_asg_module, "Template", "OOOO",
+  templ = PyObject_CallMethod(m_asg_module, "TemplateId", "OOOO",
                               m->cxx(), name = m->QName(type->name()), 
                               decl = m->py(type->declaration()),
                               params = m->List(type->parameters()));
@@ -482,7 +483,7 @@ PyObject *Translator::Modifier(Types::Modifier* type)
 {
   Trace trace("Translator::Modifier", Trace::TRANSLATION);
   PyObject *modifier, *alias, *pre, *post;
-  modifier = PyObject_CallMethod(m_asg_module, "ModifierType", "OOOO",
+  modifier = PyObject_CallMethod(m_asg_module, "ModifierTypeId", "OOOO",
                                  m->cxx(), alias = m->py(type->alias()),
                                  pre = m->List(type->pre()), post = m->List(type->post()));
   Py_DECREF(alias);
@@ -495,7 +496,7 @@ PyObject *Translator::Array(Types::Array *type)
 {
   Trace trace("Translator::Array", Trace::TRANSLATION);
   PyObject *array, *alias, *sizes;
-  array = PyObject_CallMethod(m_asg_module, "Array", "OOO",
+  array = PyObject_CallMethod(m_asg_module, "ArrayTypeId", "OOO",
                               m->cxx(), alias = m->py(type->alias()), 
                               sizes = m->List(type->sizes()));
   Py_DECREF(alias);
@@ -507,7 +508,7 @@ PyObject *Translator::Parameterized(Types::Parameterized* type)
 {
   Trace trace("Translator::Parametrized", Trace::TRANSLATION);
   PyObject *parametrized, *templ, *params;
-  parametrized = PyObject_CallMethod(m_asg_module, "Parametrized", "OOO",
+  parametrized = PyObject_CallMethod(m_asg_module, "ParametrizedTypeId", "OOO",
                                      m->cxx(), templ = m->py(type->template_type()), 
                                      params = m->List(type->parameters()));
   Py_DECREF(templ);
@@ -519,7 +520,7 @@ PyObject *Translator::FuncPtr(Types::FuncPtr* type)
 {
   Trace trace("Translator::FuncType", Trace::TRANSLATION);
   PyObject *func, *ret, *pre, *params;
-  func = PyObject_CallMethod(m_asg_module, "FunctionType", "OOOO",
+  func = PyObject_CallMethod(m_asg_module, "FunctionTypeId", "OOOO",
                              m->cxx(), ret = m->py(type->return_type()), 
                              pre = m->List(type->pre()),
                              params = m->List(type->parameters()));

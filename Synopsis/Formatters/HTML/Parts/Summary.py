@@ -23,13 +23,13 @@ class Summary(Part):
     def register(self, view):
 
         Part.register(self, view)
-        self.__link_detail = 0
+        self.__link_detail = False
 
-    def set_link_detail(self, boolean):
+    def set_link_detail(self, flag):
         """Sets link_detail flag to given value.
         @see label()"""
 
-        self.__link_detail = boolean
+        self.__link_detail = flag
 
     def label(self, ref, label=None):
         """Override to check link_detail flag. If it's set, returns a reference

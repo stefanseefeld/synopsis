@@ -79,7 +79,7 @@ class Inheritance(Part):
 
       for inheritance in class_.parents:
          parent = inheritance.parent
-         if isinstance(parent, ASG.Declared):
+         if isinstance(parent, ASG.DeclaredTypeId):
             parent = parent.declaration
             if isinstance(parent, ASG.Class):
                self._process_class(parent, names)

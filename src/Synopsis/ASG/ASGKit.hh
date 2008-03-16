@@ -10,7 +10,8 @@
 
 #include <Synopsis/Python/Kit.hh>
 #include <Synopsis/ASG/IR.hh>
-#include <Synopsis/ASG/Type.hh>
+#include <Synopsis/ASG/TypeId.hh>
+#include <Synopsis/ASG/DeclaredTypeId.hh>
 #include <Synopsis/ASG/SourceFile.hh>
 #include <Synopsis/ASG/Declaration.hh>
 
@@ -38,7 +39,64 @@ namespace ASG
 class ASGKit : public Python::Kit
 {
 public:
-  ASGKit() : Python::Kit("Synopsis.ASG") {}
+  ASGKit(std::string const &lang) : Python::Kit("Synopsis.ASG"), language_(lang) {}
+
+  TypeId create_type_id()
+  { return create<TypeId>("TypeId", Python::Tuple(language_));}
+
+  NamedTypeId create_named_type_id(ScopedName const &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<NamedTypeId>("NamedTypeId", Python::Tuple(language_, qname));
+  }
+
+  BuiltinTypeId create_builtin_type_id(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<BuiltinTypeId>("BuiltinTypeId", Python::Tuple(language_, qname));
+  }
+
+  DependentTypeId create_dependent_type_id(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<DependentTypeId>("DependentTypeId", Python::Tuple(language_, qname));
+  }
+
+  UnknownTypeId create_unknown_type_id(const ScopedName &name)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<UnknownTypeId>("UnknownTypeId", Python::Tuple(language_, qname));
+  }
+
+  DeclaredTypeId create_declared_type_id(ScopedName const &name,
+                                         Declaration const &decl)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<DeclaredTypeId>("DeclaredTypeId", Python::Tuple(language_, qname, decl));
+  }
+
+  TemplateId create_template_id(const ScopedName &name,
+                                const Declaration &decl, const Python::List &params)
+  {
+    Python::Object qname = qname_kit_.create_qname(name);
+    return create<TemplateId>("TemplateId", Python::Tuple(language_, qname, decl, params));
+  }
+
+  ModifierTypeId create_modifier_type_id(const TypeId &alias,
+                                         const Modifiers &pre, const Modifiers &post)
+  { return create<ModifierTypeId>("ModifierTypeId", Python::Tuple(language_, alias, pre, post));}
+
+  ArrayTypeId create_array_type_id(const TypeId &alias,
+                                   const Python::TypedList<int> &sizes)
+  { return create<ArrayTypeId>("ArrayTypeId", Python::Tuple(language_, alias, sizes));}
+
+  ParametrizedTypeId create_parametrized_id(const TemplateId &t,
+                                        const Python::List &params)
+  { return create<ParametrizedTypeId>("ParametrizedTypeId", Python::Tuple(language_, t, params));}
+
+  FunctionTypeId create_function_type_id(const TypeId &retn,
+                                         const Modifiers &pre, const TypeIdList &params)
+  { return create<FunctionTypeId>("FunctionTypeId", Python::Tuple(language_, retn, pre, params));}
 
   Declaration create_declaration(const SourceFile &sf, long line,
 				 const char *type, const ScopedName &name)
@@ -85,7 +143,7 @@ public:
     return create<Synopsis::ASG::Module>("Module", Python::Tuple(file, line, type, qname));
   }
 
-  Inheritance create_inheritance(const Type &parent,
+  Inheritance create_inheritance(const TypeId &parent,
 				 const Python::List &attributes)
   { return create<Inheritance>("Inheritance", Python::Tuple(parent, attributes));}
 
@@ -98,7 +156,7 @@ public:
 
   Typedef create_typedef(const SourceFile &file, int line,
 			 const std::string &type, const ScopedName &name,
-			 const Type &alias, bool constr)
+			 const TypeId &alias, bool constr)
   {
     Python::Object qname = qname_kit_.create_qname(name);
     return create<Typedef>("Typedef", Python::Tuple(file, line, type, qname, alias, constr));
@@ -120,7 +178,7 @@ public:
 
   Variable create_variable(const SourceFile &file, int line,
 			   const std::string &type, const ScopedName &name,
-			   const Type &vtype, bool constr)
+			   const TypeId &vtype, bool constr)
   {
     Python::Object qname = qname_kit_.create_qname(name);
     return create<Variable>("Variable", Python::Tuple(file, line, type, qname, vtype, constr));
@@ -128,19 +186,19 @@ public:
 
   Const create_const(const SourceFile &file, int line,
 		     const std::string &type, const ScopedName &name,
-		     const Type &ctype, const std::string &value)
+		     const TypeId &ctype, const std::string &value)
   {
     Python::Object qname = qname_kit_.create_qname(name);
     return create<Const>("Const", Python::Tuple(file, line, type, qname, ctype, value));
   }
 
-  Parameter create_parameter(const Modifiers &pre, const Type &type, const Modifiers &post,
+  Parameter create_parameter(const Modifiers &pre, const TypeId &type, const Modifiers &post,
 			     const std::string &name, const std::string &value)
   { return create<Parameter>("Parameter", Python::Tuple(pre, type, post, name, value));}
 
   Function create_function(const SourceFile &file, int line,
  			   const std::string &type, const Modifiers &pre,
- 			   const Type &ret, const Modifiers &post,
+ 			   const TypeId &ret, const Modifiers &post,
 			   const ScopedName &name, const std::string &realname)
   {
     Python::Object qname = qname_kit_.create_qname(name);
@@ -150,7 +208,7 @@ public:
 
   Operation create_operation(const SourceFile &file, int line,
 			     const std::string &type, const Modifiers &pre,
-			     const Type &ret, const Modifiers &post,
+			     const TypeId &ret, const Modifiers &post,
 			     const ScopedName &name, const std::string &realname)
   {
     Python::Object qname = qname_kit_.create_qname(name);
@@ -159,7 +217,7 @@ public:
   }
 private:
   QNameKit qname_kit_;
-
+  std::string language_;
 };
 }
 

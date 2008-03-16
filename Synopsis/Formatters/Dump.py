@@ -59,12 +59,14 @@ class Formatter(Processor):
             self.os.write("<?xml-stylesheet href='%s' type='text/css'?>\n"%self.stylesheet)
 
         self.os.write("<ir>\n")
+        self.os.write("<asg>\n")
 
         if self.show_declarations:
-            self.write_declarations(self.ir.declarations)
+            self.write_declarations(self.ir.asg.declarations)
          
         if self.show_types:
-            self.write_types(self.ir.types)
+            self.write_types(self.ir.asg.types)
+        self.os.write("<asg>\n")
 
         if self.show_files:
             self.write_files(self.ir.files)

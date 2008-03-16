@@ -9,7 +9,6 @@
 #define ASGTranslator_hh_
 
 #include <Synopsis/ASG/ASGKit.hh>
-#include <Synopsis/ASG/TypeKit.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/Buffer.hh>
 #include <stack>
@@ -37,7 +36,7 @@ private:
   virtual void visit(PTree::Typedef *);
 
   void translate_parameters(PTree::Node *,
-			    ASG::TypeList, ASG::Function::Parameters &);
+			    ASG::TypeIdList, ASG::Function::Parameters &);
 
   void add_comments(ASG::Declaration, PTree::Node *);
   //. Update positional information for the given
@@ -49,17 +48,17 @@ private:
 
   //. look up and return the named type. If this is a derived type,
   //. it may create a modifier and return that.
-  ASG::Type lookup(PTree::Encoding const &name);
-  ASG::Type lookup_function_types(PTree::Encoding const &name, ASG::TypeList &);
+  ASG::TypeId lookup(PTree::Encoding const &name);
+  ASG::TypeId lookup_function_types(PTree::Encoding const &name, ASG::TypeIdList &);
 
 
   void declare(ASG::Declaration);
-  ASG::Type declare_type(ScopedName name, ASG::Declaration declaration);
-  ASG::Type declare_type(ScopedName name);
+  ASG::TypeId declare_type(ScopedName name, ASG::Declaration declaration);
+  ASG::TypeId declare_type(ScopedName name);
 
-  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, ASG::Type &);
+  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, ASG::TypeId &);
   PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
-					    ASG::Type &type,
+					    ASG::TypeId &type,
 					    ASG::Modifiers &postmod);
   PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
 					std::string &name);
@@ -67,7 +66,6 @@ private:
 
   Python::Object      qname_;
   ASG::ASGKit         asg_kit_;
-  ASG::TypeKit        type_kit_;
   SourceFileKit       sf_kit_;
   Python::List        declarations_;
   Python::Dict        types_;

@@ -63,7 +63,7 @@ class Parser(Processor):
         self.scopes = []
       
         # Create return type for Python functions:
-        self.return_type = ASG.BaseType('Python',('',))
+        self.return_type = ASG.BuiltinTypeId('Python',('',))
 
         # Validate base_path.
         if self.base_path:
@@ -110,21 +110,21 @@ class Parser(Processor):
                 if not os.path.isfile(os.path.join(package_path, '__init__.py')):
                     raise InvalidArgument('"%s" is not a package'%qname)
                 module = ASG.Module(sourcefile, -1, 'package', qname)
-                self.ir.types[qname] = ASG.Declared('Python', qname, module)
+                self.ir.asg.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
                 if package:
                     package.declarations.append(module)
                 else:
-                    self.ir.declarations.append(module)
+                    self.ir.asg.declarations.append(module)
 
                 package = module
 
-        translator = ASGTranslator(package, self.ir.types)
+        translator = ASGTranslator(package, self.ir.asg.types)
         translator.process_file(sourcefile)
         # At this point, sourcefile contains a single declaration: the module.
         if package:
             package.declarations.extend(sourcefile.declarations)
         else:
-            self.ir.declarations.extend(sourcefile.declarations)
+            self.ir.asg.declarations.extend(sourcefile.declarations)
         if not self.primary_file_only:
             for i in translator.imports:
                 target = find_imported(i, self.base_path, sourcefile.name, self.verbose)

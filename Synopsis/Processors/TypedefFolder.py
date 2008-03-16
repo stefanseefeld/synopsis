@@ -21,7 +21,7 @@ class TypedefFolder(Processor, ASG.Visitor):
         self.scopes = []
         # Iterate over a copy so we can safely modify
         # the original in the process.
-        decls = ir.declarations[:]
+        decls = ir.asg.declarations[:]
         for d in decls:
             d.accept(self)
         return self.output_and_return_ir()
@@ -38,13 +38,13 @@ class TypedefFolder(Processor, ASG.Visitor):
 
         if t.constr:
             if self.verbose: print 'replace', t.alias.name, 'by', t.name
-            alias = self.ir.types.pop(t.alias.name)
+            alias = self.ir.asg.types.pop(t.alias.name)
             alias.declaration.name = alias.name = t.name
-            self.ir.types[alias.name] = alias
+            self.ir.asg.types[alias.name] = alias
             if len(self.scopes):
                 decls = self.scopes[-1].declarations
             else:
-                decls = self.ir.declarations
+                decls = self.ir.asg.declarations
             del decls[decls.index(t)]
 
             if type(alias.declaration) == ASG.Class:

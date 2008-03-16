@@ -34,7 +34,7 @@ class Formatter(Processor, ASG.Visitor):
             else:
                 self.scope = (self.show_scope,)
                 
-            for d in self.ir.declarations:
+            for d in self.ir.asg.declarations:
                 d.accept(self)
                 
         return self.ir

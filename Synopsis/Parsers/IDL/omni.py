@@ -23,7 +23,7 @@ def strip_filename(filename):
    return filename
 
 class TypeTranslator(idlvisitor.TypeVisitor):
-   """maps idltype objects to ASG.Type objects in a ASG.Dictionary"""
+   """maps idltype objects to ASG.TypeId objects in a ASG.Dictionary"""
 
    def __init__(self, types):
       self.types = types
@@ -61,40 +61,40 @@ class TypeTranslator(idlvisitor.TypeVisitor):
 
    def visitBaseType(self, idltype):
 
-      type = ASG.BaseType('IDL', self.__basetypes[idltype.kind()])
+      type = ASG.BuiltinTypeId('IDL', self.__basetypes[idltype.kind()])
       self.types[type.name] = type
       self.__result = type.name
 
    def visitStringType(self, idltype):
 
-      # FIXME: Should we create a Parametrized with the appropriate bound parameters ?
+      # FIXME: Should we create a ParametrizedTypeId with the appropriate bound parameters ?
       if idltype.bound() == 0:
          qname = QName(('string',))
       else:
          qname = QName(('string<%s>'%idltype.bound(),))
       if qname not in self.types:
-         self.types[qname] = ASG.BaseType('IDL', qname)
+         self.types[qname] = ASG.BuiltinTypeId('IDL', qname)
       self.__result = qname
 
    def visitWStringType(self, idltype):
 
-      # FIXME: Should we create a Parametrized with the appropriate bound parameters ?
+      # FIXME: Should we create a ParametrizedTypeId with the appropriate bound parameters ?
       if idltype.bound() == 0:
          qname = QName(('wstring',))
       else:
          qname = QName(('wstring<%s>'%idltype.bound(),))
       if qname not in self.types:
-         self.types[qname] = ASG.BaseType('IDL', qname)
+         self.types[qname] = ASG.BuiltinTypeId('IDL', qname)
       self.__result = qname
 
    def visitSequenceType(self, idltype):
 
       qname = QName(('sequence',))
       if not self.types.has_key(qname):
-         self.types[qname] = ASG.BaseType("IDL", qname)
+         self.types[qname] = ASG.BuiltinTypeId("IDL", qname)
       idltype.seqType().accept(self)
       ptype = self.types[self.__result]
-      type = ASG.Parametrized("IDL", self.types[qname], [ptype])
+      type = ASG.ParametrizedTypeId("IDL", self.types[qname], [ptype])
       qname  = QName(('sequence<%s>'%str(ptype.name),))
       self.types[qname] = type
       self.__result = qname
@@ -122,7 +122,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
    def addType(self, name, type):
 
       if self.types.has_key(name):
-         if isinstance(self.types.get(name), ASG.UnknownType):
+         if isinstance(self.types.get(name), ASG.UnknownTypeId):
             self.types.add(name, type)
          else:
             pass
@@ -137,7 +137,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       # there is no corresponding declaration
       qname = QName(('CORBA', 'Object'))
       object = ASG.Class(sourcefile, 0, 'interface', qname)
-      self.addType(qname, ASG.Declared('IDL', qname, object))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, object))
       for n in node.declarations():
          n.accept(self)
       for d in self.__scope[-1].declarations:
@@ -151,7 +151,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       if visible:
          self.add_declaration(module)
       self.__scope.append(module)
-      self.addType(qname, ASG.Declared('IDL', qname, module))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, module))
       if not self.primary_file_only or node.mainFile(): 
          comments = [c.text() for c in node.comments()]
          if comments:
@@ -168,7 +168,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       if visible:
          self.add_declaration(class_)
       self.__scope.append(class_)
-      self.addType(qname, ASG.Declared('IDL', qname, class_))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, class_))
       if not self.primary_file_only or node.mainFile(): 
          comments = [c.text() for c in node.comments()]
          if comments:
@@ -187,7 +187,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
       forward = ASG.Forward(sourcefile, node.line(), 'interface', qname)
       if visible:
          self.add_declaration(forward)
-      self.addType(qname, ASG.UnknownType('IDL', qname))
+      self.addType(qname, ASG.UnknownTypeId('IDL', qname))
         
    def visitConst(self, node):
 
@@ -221,7 +221,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          # a single typedef declaration can have a different type. *sigh*
          dtype = type
          if d.sizes():
-            array = ASG.Array('IDL', self.getType(type), [str(s) for s in d.sizes()])
+            array = ASG.ArrayTypeId('IDL', self.getType(type), [str(s) for s in d.sizes()])
             dtype = map(None, type[:-1])
             dtype.append(type[-1] + string.join(map(lambda s:"["+ str(s) +"]", d.sizes()),''))
             self.addType(QName(dtype), array)
@@ -231,7 +231,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          d_comments = comments + [c.text() for c in d.comments()]
          if d_comments:
             typedef.annotations['comments'] = d_comments
-         self.addType(qname, ASG.Declared('IDL', qname, typedef))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, typedef))
          if visible:
             self.add_declaration(typedef)
 
@@ -249,7 +249,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          # a single typedef declaration can have a different type. *sigh*
          dtype = type
          if d.sizes():
-            array = ASG.Array('IDL', self.getType(type), [str(s) for s in node.sizes()])
+            array = ASG.ArrayTypeId('IDL', self.getType(type), [str(s) for s in node.sizes()])
             dtype = type[:-1]
             dtype.append(type[-1] + string.join(map(lambda s:"["+s+"]", d.sizes()),''))
             self.addType(dtype, array)
@@ -258,7 +258,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
          d_comments = comments + [c.text() for c in d.comments()]
          if d_comments:
             member.annotations['comments'] = d_comments
-         self.addType(qname, ASG.Declared('IDL', qname, member))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, member))
          if visible:
             self.add_declaration(member)
 
@@ -270,12 +270,12 @@ class ASGTranslator(idlvisitor.AstVisitor):
          forward = ASG.Forward(sourcefile, node.line(), 'struct', qname)
          if visible:
             self.add_declaration(forward)
-         self.addType(qname, ASG.Declared('IDL', qname, forward))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, forward))
          return
       struct = ASG.Class(sourcefile, node.line(), 'struct', qname)
       if visible:
          self.add_declaration(struct)
-      self.addType(qname, ASG.Declared('IDL', qname, struct))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, struct))
       comments = [c.text() for c in node.comments()]
       if comments:
          struct.annotations['comments'] = comments
@@ -291,12 +291,12 @@ class ASGTranslator(idlvisitor.AstVisitor):
          forward = ASG.Forward(sourcefile, node.line(), 'exception', qname)
          if visible:
             self.add_declaration(forward)
-         self.addType(qname, ASG.Declared('IDL', qname, forward))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, forward))
          return
       exc = ASG.Class(sourcefile, node.line(), 'exception', qname)
       if visible:
          self.add_declaration(exc)
-      self.addType(qname, ASG.Declared('IDL', qname, exc))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, exc))
       self.__scope.append(exc)
       comments = [c.text() for c in node.comments()]
       if comments:
@@ -315,14 +315,14 @@ class ASGTranslator(idlvisitor.AstVisitor):
       type = self.types.internalize(node.caseType())
       declarator = node.declarator()
       if declarator.sizes():
-         array = ASG.Array('IDL', self.getType(type), [str(s) for s in declarator.sizes()])
+         array = ASG.ArrayTypeId('IDL', self.getType(type), [str(s) for s in declarator.sizes()])
          type = type[:-1]
          type.append(type[-1] + string.join(map(lambda s:"["+s+"]",node.sizes()),''))
          self.addType(type, array)
       qname = QName(list(self.scope()) + [node.declarator().identifier()])
       self.__scope[-1].declarations.append(
          ASG.Operation(sourcefile, node.line(), 'case',
-			  [], self.getType(type), [], qname, qname[-1]))
+                       [], self.getType(type), [], qname, qname[-1]))
 
    def visitUnion(self, node):
 
@@ -332,12 +332,12 @@ class ASGTranslator(idlvisitor.AstVisitor):
          forward = ASG.Forward(sourcefile, node.line(), 'union', qname)
          if visible:
             self.add_declaration(forward)
-         self.addType(qname, ASG.Declared('IDL', qname, forward))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, forward))
          return
       class_ = ASG.Class(sourcefile, node.line(), 'union', qname)
       self.add_declaration(class_)
       self.__scope.append(class_)
-      self.addType(qname, ASG.Declared('IDL', qname, class_))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, class_))
       comments = [c.text() for c in node.comments()]
       if comments:
          class_.annotations['comments'] = comments
@@ -348,7 +348,7 @@ class ASGTranslator(idlvisitor.AstVisitor):
 
       qname = QName(list(self.scope()) + [node.identifier()])
       enum = ASG.Enumerator(sourcefile, node.line(), qname, '')
-      self.addType(qname, ASG.Declared('IDL', qname, enum))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, enum))
       self.__enum.enumerators.append(enum)
 
    def visitEnum(self, node):
@@ -359,12 +359,12 @@ class ASGTranslator(idlvisitor.AstVisitor):
          forward = ASG.Forward(sourcefile, node.line(), 'enum', qname)
          if visible:
             self.add_declaration(forward)
-         self.addType(qname, ASG.Declared('IDL', qname, forward))
+         self.addType(qname, ASG.DeclaredTypeId('IDL', qname, forward))
          return
       self.__enum = ASG.Enum(sourcefile, node.line(), qname, [])
       if visible:
          self.add_declaration(self.__enum)
-      self.addType(qname, ASG.Declared('IDL', qname, self.__enum))
+      self.addType(qname, ASG.DeclaredTypeId('IDL', qname, self.__enum))
       comments = [c.text() for c in node.comments()]
       if comments:
          self.__enum.annotations['comments'] = comments
@@ -447,10 +447,10 @@ def parse(ir, cppfile, src, primary_file_only,
    sourcefile.annotations['primary'] = True
    new_ir = IR.IR()
    new_ir.files[sourcefile.name] = sourcefile
-   type_trans = TypeTranslator(new_ir.types)
-   ast_trans = ASGTranslator(new_ir.declarations, type_trans, primary_file_only)
+   type_trans = TypeTranslator(new_ir.asg.types)
+   ast_trans = ASGTranslator(new_ir.asg.declarations, type_trans, primary_file_only)
    tree.accept(ast_trans)
-   sourcefile.declarations[:] = new_ir.declarations
+   sourcefile.declarations[:] = new_ir.asg.declarations
    ir.merge(new_ir)
    _omniidl.clear()
    return ir

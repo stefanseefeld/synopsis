@@ -20,8 +20,8 @@ public:
   IR(const Python::Object &o) throw(TypeError) : Python::Object(o) { assert_type();}
 
   Python::Dict files() { return Python::Dict(attr("files"));}
-  Python::Object types() { return attr("types");}
-  Python::List declarations() { return Python::List(attr("declarations"));}
+  Python::Object types() { return attr("asg").attr("types");}
+  Python::List declarations() { return Python::List(attr("asg").attr("declarations"));}
   void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.IR", "IR");}
 };
 

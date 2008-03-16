@@ -173,7 +173,7 @@ class ASGTranslator(ASTVisitor):
         self.file = None
         self.types = types
         self.attributes = []
-        self.any_type = ASG.BaseType('Python',QName('',))
+        self.any_type = ASG.BuiltinTypeId('Python',QName('',))
         self.docformat = ''
         self.documentable = None
         self.name = QName()
@@ -240,7 +240,7 @@ class ASGTranslator(ASTVisitor):
         else:
             qname = QName(self.scope_name() + (name,))
             module = ASG.Module(self.file, node.lineno, 'module', qname)            
-        self.types[qname] = ASG.Declared('Python', qname, module)
+        self.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
 
         self.scope.append(module)
         self.documentable = module
@@ -281,7 +281,7 @@ class ASGTranslator(ASTVisitor):
         elif node.name.startswith('_'):
             attribute.accessibility = ASG.PROTECTED
         self.attributes.append(attribute)
-        self.types[qname] = ASG.Declared('Python', attribute.name, attribute)
+        self.types[qname] = ASG.DeclaredTypeId('Python', attribute.name, attribute)
 
     def visitAssTuple(self, node):
 
@@ -295,8 +295,11 @@ class ASGTranslator(ASTVisitor):
         if type(self.scope[-1]) == ASG.Operation:
             # We only parse constructors, so look out for
             # self attributes defined here.
+            # FIXME: There is no reason the 'self' argument actually has to be spelled 'self'.
             if self.name[0] == 'self':
-                qname = QName(self.name[1:])
+                # FIXME: qualifying variables is ambiguous, since we don't distinguish
+                #        class attributes and object attributes.
+                qname = self.scope[-2].name + self.name[1:]
                 self.attributes.append(ASG.Variable(self.file, node.lineno,
                                                     'attribute', qname, self.any_type, False))
 
@@ -337,7 +340,7 @@ class ASGTranslator(ASTVisitor):
         function.annotations['doc'] = DocString(node.doc or '', self.docformat)
         # Given that functions in Python are first-class citizens, should they be
         # treated like (named) types ?
-        self.types[qname] = ASG.Declared('Python', function.name, function)
+        self.types[qname] = ASG.DeclaredTypeId('Python', function.name, function)
 
         self.scope.append(function)
         self.documentable = function
@@ -395,13 +398,13 @@ class ASGTranslator(ASTVisitor):
             if self.types.has_key(base):
                 base = self.types[base]
             else:
-                base = ASG.UnknownType('Python', base)
+                base = ASG.UnknownTypeId('Python', base)
             bases.append(base)
         qname = QName(self.scope_name() + (node.name,))
         class_ = ASG.Class(self.file, node.lineno, 'class', qname)
         class_.parents = [ASG.Inheritance('', b, '') for b in bases]
         class_.annotations['doc'] = DocString(node.doc or '', self.docformat)
-        self.types[qname] = ASG.Declared('Python', class_.name, class_)
+        self.types[qname] = ASG.DeclaredTypeId('Python', class_.name, class_)
         self.scope.append(class_)
         self.documentable = class_
         self.visit(node.code)

@@ -35,10 +35,10 @@ class ScopeStripper(Processor, ASG.Visitor):
             self._scope = tuple(self.scope.split('.'))
 
         # strip prefixes and remove non-matching declarations
-        self.strip_declarations(self.ir.declarations)
+        self.strip_declarations(self.ir.asg.declarations)
         
         # Remove types not in strip
-        self.strip_types(self.ir.types)
+        self.strip_types(self.ir.asg.types)
 
         return self.output_and_return_ir()
 

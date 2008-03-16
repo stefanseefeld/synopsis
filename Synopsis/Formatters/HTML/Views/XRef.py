@@ -92,8 +92,8 @@ class XRef(View):
         file_link = self.directory_layout.file_source(file)
         file_link = rel(self.filename(), file_link) + "#%d"%line
         desc = ''
-        type = self.processor.ir.types.get(scope)
-        if isinstance(type, ASG.Declared):
+        type = self.processor.ir.asg.types.get(scope)
+        if isinstance(type, ASG.DeclaredTypeId):
             desc = ' ' + type.declaration.type
         entry = self.processor.toc[scope]
         if entry:
@@ -124,15 +124,15 @@ class XRef(View):
         self.write(element('a', '', name=quote_name(escape(str(name)))))
         desc = ''
         decl = None
-        type = self.processor.ir.types.get(name)
-        if isinstance(type, ASG.Declared):
+        type = self.processor.ir.asg.types.get(name)
+        if isinstance(type, ASG.DeclaredTypeId):
             decl = type.declaration
             desc = self.describe_declaration(decl)
         self.write(element('h2', desc + escape(str(name))) + '<ul>\n')
 	
         if self.link_to_scope:
-            type = self.processor.ir.types.get(name, None)
-            if isinstance(type, ASG.Declared):
+            type = self.processor.ir.asg.types.get(name, None)
+            if isinstance(type, ASG.DeclaredTypeId):
                 link = self.directory_layout.link(type.declaration)
                 self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
         if entry.definitions:

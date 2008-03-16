@@ -19,7 +19,7 @@ class ModuleSorter(Processor, ASG.Visitor):
         self.__scopestack = []
         self.__currscope = []
 
-        for decl in self.ir.declarations:
+        for decl in self.ir.asg.declarations:
             decl.accept(self)
 
         return self.output_and_return_ir()

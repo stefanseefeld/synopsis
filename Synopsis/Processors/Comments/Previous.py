@@ -20,7 +20,7 @@ class Previous(Processor, ASG.Visitor):
 
           self.last = None
           self.__laststack = []
-          for d in ir.declarations:
+          for d in ir.asg.declarations:
                d.accept(self)
                self.last = d
 

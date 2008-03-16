@@ -22,9 +22,9 @@ class ModuleFilter(Processor, ASG.Visitor):
         self.__scopestack = []
         self.__currscope = []
 
-        for decl in self.ir.declarations:
+        for decl in self.ir.asg.declarations:
            decl.accept(self)
-        self.ir.declarations[:] = self.__currscope
+        self.ir.asg.declarations[:] = self.__currscope
 
         return self.output_and_return_ir()
 

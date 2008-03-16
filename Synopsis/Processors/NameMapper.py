@@ -33,17 +33,17 @@ class NamePrefixer(NameMapper):
         if not self.prefix:
             return self.output_and_return_ir()
 
-        for decl in self.ir.declarations:
+        for decl in self.ir.asg.declarations:
             decl.accept(self)
 
         # Now we need to put the declarations in actual nested MetaModules
         for index in range(len(self.prefix), 0, -1):
             module = ASG.MetaModule(self.type, self.prefix[:index])
-            module.declarations.extend(self.ir.declarations)
-            self.ir.types[module.name] = ASG.Declared('',
-                                                      module.name,
-                                                      module)
-            self.ir.declarations[:] = [module]
+            module.declarations.extend(self.ir.asg.declarations)
+            self.ir.asg.types[module.name] = ASG.DeclaredTypeId('',
+                                                                module.name,
+                                                                module)
+            self.ir.asg.declarations[:] = [module]
 
         return self.output_and_return_ir()
 
@@ -56,10 +56,10 @@ class NamePrefixer(NameMapper):
         decl.name = new_name
         # Change the name of the associated type
         try:
-            type = self.ir.types[name]
-            del self.ir.types[name]
+            type = self.ir.asg.types[name]
+            del self.ir.asg.types[name]
             type.name = new_name
-            self.ir.types[new_name] = type
+            self.ir.asg.types[new_name] = type
         except KeyError, msg:
             if self.verbose: print "Warning: Unable to map name of type:",msg
 

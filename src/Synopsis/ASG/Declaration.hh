@@ -10,7 +10,7 @@
 
 #include <Synopsis/Python/Object.hh>
 #include <Synopsis/ASG/Visitor.hh>
-#include <Synopsis/ASG/Type.hh>
+#include <Synopsis/ASG/TypeId.hh>
 
 namespace Synopsis
 {
@@ -157,7 +157,7 @@ public:
   //. returns a Type since typedefs to classes are preserved to
   //. enhance readability of the generated docs. Note that the parent
   //. may also be a non-declaration type, such as vector<int>
-  Type parent() const { return attr("parent")();}
+  TypeId parent() const { return attr("parent")();}
 
   //. Returns the attributes of this inheritance
   Python::List attributes() const { return attr("attributes")();}
@@ -194,7 +194,7 @@ public:
     : Declaration(o, false) { if (check) assert_type("Typedef");}
 
   //. Returns the Type object this typedef aliases
-  Type alias() const { return attr("alias");}
+  TypeId alias() const { return attr("alias");}
   //. Returns true if the Type object was constructed inside the typedef
   bool constructed() const { return narrow<bool>(attr("constr"));}
 
@@ -244,7 +244,7 @@ public:
     : Declaration(o, false) { if (check) assert_type("Variable");}
 
   //. Returns the Type object of this variable
-  Type vtype() const { return attr("vtype");}
+  TypeId vtype() const { return attr("vtype");}
   //. Returns true if the Type object was constructed inside the variable
   bool constructed() const { return attr("constr");}
   //. Returns the array sizes vector
@@ -261,8 +261,8 @@ public:
   Const(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Const");}
 
-  //. Returns the Type object of this const
-  Type ctype() const { return attr("ctype");}
+  //. Returns the TypeId object of this const
+  TypeId ctype() const { return attr("ctype");}
   //. Returns the value of this enumerator
   std::string value() const { return narrow<std::string>(attr("value"));}
 
@@ -278,7 +278,7 @@ public:
 
   Modifiers premodifiers() const { return narrow<Modifiers>(attr("premodifiers"));}
   Modifiers postmodifiers() const { return narrow<Modifiers>(attr("postmodifiers"));}
-  Type type() const { return narrow<Type>(attr("type"));}
+  TypeId type() const { return narrow<TypeId>(attr("type"));}
   std::string name() const { return narrow<std::string>(attr("identifier"));}
   std::string value() const { return narrow<std::string>(attr("value"));}
 
@@ -301,8 +301,8 @@ public:
 //   //. The type of premodifiers
 //   typedef std::vector<std::string> Mods;
 
-  //. Returns the return Type
-  Type return_type() const { return attr("return_type");}
+  //. Returns the return-type
+  TypeId return_type() const { return attr("return_type");}
 
   //. Returns the real name of this function
   ScopedName real_name() const { return attr("real_name");}

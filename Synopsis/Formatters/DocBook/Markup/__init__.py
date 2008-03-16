@@ -92,10 +92,10 @@ class Formatter(Parametrized):
     def _find_method_entry(self, name, scope):
 
         try:
-            scope = self.processor.ir.types[scope]
+            scope = self.processor.ir.asg.types[scope]
         except KeyError:
             return None
-        if not isinstance(scope, ASG.Declared):
+        if not isinstance(scope, ASG.DeclaredTypeId):
             return None
         scope = scope.declaration
         if not isinstance(scope, ASG.Scope):

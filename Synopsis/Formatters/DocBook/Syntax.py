@@ -129,31 +129,31 @@ class CxxSyntax(Syntax):
     def visit_const(self, const):
         self.output.write('%s %s;\n'%(self.typeid(const.ctype), const.name[-1]))
 
-    def visit_base_type(self, type): self._typeid = type.name[-1]
-    def visit_unknown_type(self, type): self._typeid = escape(str(type.name))
-    def visit_declared_type(self, type): self._typeid = escape(str(type.name))
-    def visit_modifier_type(self, type):
+    def visit_builtin_type_id(self, type): self._typeid = type.name[-1]
+    def visit_unknown_type_id(self, type): self._typeid = escape(str(type.name))
+    def visit_declared_type_id(self, type): self._typeid = escape(str(type.name))
+    def visit_modifier_type_id(self, type):
 
         self._typeid = '%s %s %s'%(escape(' '.join(type.premod)),
                                    self.typeid(type.alias),
                                    escape(' '.join(type.postmod)))
-    def visit_array(self, type):
+    def visit_array_type_id(self, type):
 
         self._typeid = '%s%s'%(escape(str(type.name)), ''.join(['[%s]'%s for s in type.sizes]))
 
-    def visit_template(self, type): self._typeid = escape(str(type.name))
+    def visit_template_id(self, type): self._typeid = escape(str(type.name))
 
-    def visit_parametrized(self, type):
+    def visit_parametrized_type_id(self, type):
 
         self._typeid = '%s&lt;%s&gt;'%(self.typeid(type.template),
                                        ', '.join([self.typeid(p) for p in type.parameters]))
 
-    def visit_function_type(self, type):
+    def visit_function_type_id(self, type):
 
         self._typeid = '%s(%s)'%(self.typeid(type.return_type),
                                  ', '.join([self.typeid(p) for p in type.parameters]))
                                    
-    def visit_dependent(self, type): self._typeid = type.name[-1]
+    def visit_dependent_type_id(self, type): self._typeid = type.name[-1]
 
 
 class CxxSummarySyntax(CxxSyntax):

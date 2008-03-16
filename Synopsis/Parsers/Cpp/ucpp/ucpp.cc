@@ -6,7 +6,6 @@
 //
 
 #include <Synopsis/ASG/ASGKit.hh>
-#include <Synopsis/ASG/TypeKit.hh>
 #include <Support/Path.hh>
 #include <Support/ErrorHandler.hh>
 #include <vector>
@@ -35,9 +34,8 @@ const char *language;
 std::string base_path;
 // these python objects need to be referenced as pointers
 // since the python runtime environment has to be initiaized first
-std::auto_ptr<ASG::ASGKit> ast_kit;
+std::auto_ptr<ASG::ASGKit> asg_kit;
 std::auto_ptr<SourceFileKit> sf_kit;
-std::auto_ptr<ASG::TypeKit> types;
 std::auto_ptr<IR> ir;
 std::auto_ptr<SourceFile> source_file;
 const char *input = 0;
@@ -80,11 +78,11 @@ void create_macro(const char *filename, int line,
     for (int i = 0; i < num_args; ++i) params.append(args[i]);
     if (vaarg) params.append("...");
   }
-  ASG::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
+  ASG::Macro macro = asg_kit->create_macro(sf, line, name, params, text);
   Python::Module qn = Python::Module::import("Synopsis.QualifiedName");
   Python::Object qname_ = qn.attr("QualifiedCxxName");
-  ASG::Declared declared = types->create_declared(qname_(Python::Tuple(Python::Object(name))),
-                                                  macro);
+  ASG::DeclaredTypeId declared =
+    asg_kit->create_declared_type_id(qname_(Python::Tuple(Python::Object(name))), macro);
 
   Python::List declarations = ir->declarations();
   declarations.append(macro);
@@ -144,9 +142,8 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
     ir.reset(new IR(py_ir));
-    ast_kit.reset(new ASG::ASGKit());
+    asg_kit.reset(new ASG::ASGKit(language));
     sf_kit.reset(new SourceFileKit(language));
-    types.reset(new ASG::TypeKit(language));
 
 //     std::cout << "base path " << base_path << std::endl;
     if (py_base_path)
@@ -206,8 +203,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     py_ir = ir->ref(); // add new reference
     // make sure these objects are deleted before the python runtime
     source_file.reset();
-    types.reset();
-    ast_kit.reset();
+    asg_kit.reset();
     sf_kit.reset();
     ir.reset();
     return py_ir;

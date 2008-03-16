@@ -29,8 +29,7 @@ public:
 ASGTranslator::ASGTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
 			     Synopsis::IR ir, bool v, bool d)
-  : asg_kit_(),
-    type_kit_("C"),
+  : asg_kit_("C"),
     sf_kit_("C"),
     declarations_(ir.declarations()),
     types_(ir.types()),
@@ -67,20 +66,20 @@ ASGTranslator::ASGTranslator(std::string const &filename,
   file_.set_primary(true);
 
   Python::Object define = types_.attr("__setitem__");
-  types_.set(qname(sname("char")), type_kit_.create_base(sname("char")));
-  types_.set(qname(sname("short")), type_kit_.create_base(sname("short")));
-  types_.set(qname(sname("int")), type_kit_.create_base(sname("int")));
-  types_.set(qname(sname("long")), type_kit_.create_base(sname("long")));
-  types_.set(qname(sname("unsigned")), type_kit_.create_base(sname("unsigned")));
-  types_.set(qname(sname("unsigned long")), type_kit_.create_base(sname("unsigned long")));
-  types_.set(qname(sname("float")), type_kit_.create_base(sname("float")));
-  types_.set(qname(sname("double")), type_kit_.create_base(sname("double")));
-  types_.set(qname(sname("void")), type_kit_.create_base(sname("void")));
-  types_.set(qname(sname("...")), type_kit_.create_base(sname("...")));
-  types_.set(qname(sname("long long")), type_kit_.create_base(sname("long long")));
-  types_.set(qname(sname("long double")), type_kit_.create_base(sname("long double")));
+  types_.set(qname(sname("char")), asg_kit_.create_builtin_type_id(sname("char")));
+  types_.set(qname(sname("short")), asg_kit_.create_builtin_type_id(sname("short")));
+  types_.set(qname(sname("int")), asg_kit_.create_builtin_type_id(sname("int")));
+  types_.set(qname(sname("long")), asg_kit_.create_builtin_type_id(sname("long")));
+  types_.set(qname(sname("unsigned")), asg_kit_.create_builtin_type_id(sname("unsigned")));
+  types_.set(qname(sname("unsigned long")), asg_kit_.create_builtin_type_id(sname("unsigned long")));
+  types_.set(qname(sname("float")), asg_kit_.create_builtin_type_id(sname("float")));
+  types_.set(qname(sname("double")), asg_kit_.create_builtin_type_id(sname("double")));
+  types_.set(qname(sname("void")), asg_kit_.create_builtin_type_id(sname("void")));
+  types_.set(qname(sname("...")), asg_kit_.create_builtin_type_id(sname("...")));
+  types_.set(qname(sname("long long")), asg_kit_.create_builtin_type_id(sname("long long")));
+  types_.set(qname(sname("long double")), asg_kit_.create_builtin_type_id(sname("long double")));
   // some GCC extensions...
-  types_.set(qname(sname("__builtin_va_list")), type_kit_.create_base(sname("__builtin_va_list")));
+  types_.set(qname(sname("__builtin_va_list")), asg_kit_.create_builtin_type_id(sname("__builtin_va_list")));
 }
 
 void ASGTranslator::translate(PTree::Node *ptree, Buffer &buffer)
@@ -110,8 +109,8 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
     trace << "declare function " << name << " (" << type << ')' 
 	  << raw_filename_ << ':' << lineno_;
 
-    ASG::TypeList parameter_types;
-    ASG::Type return_type = lookup_function_types(type, parameter_types);
+    ASG::TypeIdList parameter_types;
+    ASG::TypeId return_type = lookup_function_types(type, parameter_types);
     ASG::Function::Parameters parameters;
     PTree::Node *p = PTree::rest(declarator);
     while (p && p->car() && *p->car() != '(') p = PTree::rest(p);
@@ -135,7 +134,7 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
   }
   else
   {
-    ASG::Type t = lookup(type);
+    ASG::TypeId t = lookup(type);
     size_t length = (name.front() - 0x80);
     ScopedName sname;
     if (scope_.size()) sname = scope_.top().name();
@@ -195,7 +194,7 @@ void ASGTranslator::visit(PTree::ClassSpec *class_spec)
     PTree::Encoding t = class_spec->encoded_name();
     try 
     {
-      ASG::Type tt = lookup(t);
+      ASG::TypeId tt = lookup(t);
       // The type is known, thus nothing to do. Move on.
       return;
     }
@@ -280,7 +279,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   PTree::Encoding t = enum_spec->encoded_name();
   try 
   {
-    ASG::Type tt = lookup(t);
+    ASG::TypeId tt = lookup(t);
     // The type is known. If we find a body, this is a parse error:
 //     if (enode)
 //       throw std::runtime_error("redefinition of 'enum " + name + "'");
@@ -368,7 +367,7 @@ void ASGTranslator::visit(PTree::Typedef *typed)
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
     ScopedName sname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    ASG::Type alias = lookup(type);
+    ASG::TypeId alias = lookup(type);
     ASG::Declaration declaration = asg_kit_.create_typedef(file_, lineno_,
                                                            "typedef",
                                                            sname,
@@ -386,7 +385,7 @@ void ASGTranslator::visit(PTree::Typedef *typed)
 }
 
 void ASGTranslator::translate_parameters(PTree::Node *node,
-					 ASG::TypeList types,
+					 ASG::TypeIdList types,
 					 ASG::Function::Parameters &parameters)
 {
   Trace trace("ASGTranslator::translate_parameters", Trace::TRANSLATION);
@@ -401,7 +400,7 @@ void ASGTranslator::translate_parameters(PTree::Node *node,
       node = node->cdr();
     PTree::Node *parameter = PTree::first(node);
 
-    ASG::Type type = types.get(0);
+    ASG::TypeId type = types.get(0);
     types.del(0); // pop one value
     if (PTree::length(parameter) == 3)
     {
@@ -521,18 +520,18 @@ bool ASGTranslator::update_position(PTree::Node *node)
   return true;
 }
 
-ASG::Type ASGTranslator::lookup(PTree::Encoding const &name)
+ASG::TypeId ASGTranslator::lookup(PTree::Encoding const &name)
 {
   Trace trace("ASGTranslator::lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   name_ = name;
-  ASG::Type type;
+  ASG::TypeId type;
   decode_type(name.begin(), type);
   return type;
 }
 
-ASG::Type ASGTranslator::lookup_function_types(PTree::Encoding const &name,
-                                               ASG::TypeList &parameters)
+ASG::TypeId ASGTranslator::lookup_function_types(PTree::Encoding const &name,
+                                                 ASG::TypeIdList &parameters)
 {
   Trace trace("ASGTranslator::lookup_function_types", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -543,7 +542,7 @@ ASG::Type ASGTranslator::lookup_function_types(PTree::Encoding const &name,
   ++i;
   while (true)
   {
-    ASG::Type parameter;
+    ASG::TypeId parameter;
     i = decode_type(i, parameter);
     if (parameter)
       parameters.append(parameter);
@@ -551,7 +550,7 @@ ASG::Type ASGTranslator::lookup_function_types(PTree::Encoding const &name,
       break;
   }
   ++i; // skip over '_'
-  ASG::Type return_type;
+  ASG::TypeId return_type;
   i = decode_type(i, return_type);
   return return_type;
 }
@@ -565,21 +564,21 @@ void ASGTranslator::declare(ASG::Declaration declaration)
   file_.declarations().append(declaration);
 }
 
-ASG::Type ASGTranslator::declare_type(ScopedName name,
-                                      ASG::Declaration declaration)
+ASG::TypeId ASGTranslator::declare_type(ScopedName name,
+                                        ASG::Declaration declaration)
 {
   Trace trace("ASGTranslator::declare_type", Trace::SYMBOLLOOKUP);
   trace << name;
-  ASG::Type type = type_kit_.create_declared(name, declaration);
+  ASG::TypeId type = asg_kit_.create_declared_type_id(name, declaration);
   types_.set(qname(name), type);
   return type;
 }
 
-ASG::Type ASGTranslator::declare_type(ScopedName name)
+ASG::TypeId ASGTranslator::declare_type(ScopedName name)
 {
   Trace trace("ASGTranslator::declare_type(unknown)", Trace::SYMBOLLOOKUP);
   trace << name;
-  ASG::Type type = type_kit_.create_unknown(name);
+  ASG::TypeId type = asg_kit_.create_unknown_type_id(name);
   types_.set(qname(name), type);
   return type;
 }
@@ -600,12 +599,12 @@ PTree::Encoding::iterator ASGTranslator::decode_name(PTree::Encoding::iterator i
 }
 
 PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i,
-						      ASG::Type &type)
+                                                     ASG::TypeId &type)
 {
   Trace trace("ASGTranslator::decode_type", Trace::PARSING);
   ASG::Modifiers premod, postmod;
   std::string name;
-  ASG::Type base;
+  ASG::TypeId base;
 
   // Loop forever until broken
   while (i != name_.end() && !name.length() && !base)
@@ -691,7 +690,7 @@ PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i
 // 	break;
       case '_':
 	--i;
-	type = ASG::Type();
+	type = ASG::TypeId();
 	return i; // end of func params
       case 'F':
 	i = decode_func_ptr(i, base, postmod);
@@ -720,7 +719,7 @@ PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i
   {
     // FIXME
     // 	std::cerr << "no type or name found decoding " << m_string << std::endl;
-    type = ASG::Type();
+    type = ASG::TypeId();
     return i;
   }
   if (!base)
@@ -731,13 +730,13 @@ PTree::Encoding::iterator ASGTranslator::decode_type(PTree::Encoding::iterator i
   if (premod.empty() && postmod.empty())
     type = base;
   else
-    type = type_kit_.create_modifier(base, premod, postmod);
+    type = asg_kit_.create_modifier_type_id(base, premod, postmod);
 
   return i;
 }
 
 PTree::Encoding::iterator ASGTranslator::decode_func_ptr(PTree::Encoding::iterator i,
-                                                         ASG::Type &type,
+                                                         ASG::TypeId &type,
                                                          ASG::Modifiers &postmod)
 {
   Trace trace("ASGTranslator::decode_func_ptr", Trace::PARSING);
@@ -750,10 +749,10 @@ PTree::Encoding::iterator ASGTranslator::decode_func_ptr(PTree::Encoding::iterat
     premod.append(postmod.get(0));
     postmod.erase(postmod.begin());
   }
-  ASG::TypeList parameters;
+  ASG::TypeIdList parameters;
   while (true)
   {
-    ASG::Type parameter;
+    ASG::TypeId parameter;
     i = decode_type(i, parameter);
     if (parameter)
       parameters.append(parameter);
@@ -762,6 +761,6 @@ PTree::Encoding::iterator ASGTranslator::decode_func_ptr(PTree::Encoding::iterat
   }
   ++i; // skip over '_'
   i = decode_type(i, type);
-  type = type_kit_.create_function_ptr(type, premod, parameters);
+  type = asg_kit_.create_function_type_id(type, premod, parameters);
   return i;
 }

@@ -47,11 +47,11 @@ class MyLinker(Processor):
       processor = ScopeStripper(scope='Synopsis')
       # strip off package prefix
       ir = processor.process(ir)
-      self.ir = IR.IR(types = ir.types, files = ir.files, sxr = ir.sxr)
+      self.ir = IR.IR(files = ir.files, asg = ASG.ASG(types = ir.asg.types), sxr = ir.sxr)
       for s in self.scopes.split(','):
          package, module = s.rsplit('.', 1)
          # filter out unwated modules
-         self.ir.declarations.extend([d for d in ir.declarations if d.name == (module,)])
+         self.ir.asg.declarations.extend([d for d in ir.asg.declarations if d.name == (module,)])
       self.output_and_return_ir()
 
 process(python = python,

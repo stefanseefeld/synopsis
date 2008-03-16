@@ -81,8 +81,8 @@ class NameIndex(View):
             if dict.has_key(key): dict[key].append(type)
             else: dict[key] = [type]
         # Fill the dict
-        [hasher(t) for t in self.processor.ir.types.values()
-         if isinstance(t, ASG.Declared) and
+        [hasher(t) for t in self.processor.ir.asg.types.values()
+         if isinstance(t, ASG.DeclaredTypeId) and
          not isinstance(t.declaration, ASG.Builtin)]
 
         # Now sort the dict

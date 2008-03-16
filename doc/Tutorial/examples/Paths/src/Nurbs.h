@@ -10,7 +10,7 @@ namespace Paths
 //. The Nurbs class. It implements a nurbs curve
 //. for the given order. It is a very powerful
 //. and flexible curve representation. For simpler
-//. cases you may prefer to use a `Paths::Bezier` curve.
+//. cases you may prefer to use a `Bezier` curve.
 //.
 //. While non-rational curves are not sufficient to represent a circle,
 //. this is one of many sets of NURBS control points for an almost uniformly 

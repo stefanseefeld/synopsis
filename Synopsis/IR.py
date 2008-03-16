@@ -14,20 +14,21 @@ class IR(object):
     of different representations such as Parse Tree, Abstract Semantic Graph, etc.
     """
 
-    def __init__(self, files=None, declarations=None, types=None, sxr=None):
+    def __init__(self, files=None, asg=None, sxr=None):
         """Constructor"""
 
         self.files = files or {}
-        self.declarations = declarations or []
-        self.types = types or ASG.Dictionary()
+        """A dictionary mapping filenames to `SourceFile.SourceFile` instances."""
+        self.asg = asg or ASG.ASG()
+        """The Abstract Semantic Graph."""
         self.sxr = sxr or SXR.SXR()
+        """The Source Cross-Reference SymbolTable."""
 
     def copy(self):
         """Make a shallow copy of this IR."""
 
         return type(self)(self.files.copy(),
-                          self.declarations[:],
-                          self.types.copy(),
+                          self.asg.copy(),
                           self.sxr)
 
     def save(self, filename):
@@ -64,8 +65,7 @@ class IR(object):
                         i.target = replacement[r]
 
         # merge ASG
-        self.types.merge(other.types)
-        self.declarations.extend(other.declarations)
+        self.asg.merge(other.asg)
 
         # merge SXR
         self.sxr.merge(other.sxr)

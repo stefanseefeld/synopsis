@@ -51,7 +51,7 @@ class Formatter(Processor, ASG.Visitor):
 
       self.os = open(self.output, 'w+')
       self.scope = ()
-      for d in self.ir.declarations:
+      for d in self.ir.asg.declarations:
          d.accept(self)
 
       return self.ir
@@ -77,28 +77,28 @@ class Formatter(Processor, ASG.Visitor):
 
    #################### Type Visitor ###########################################
 
-   def visit_base_type(self, type):
+   def visit_builtin_type_id(self, type):
 
       self.__type_ref = str(type.name)
       self.__type_label = str(type.name)
         
-   def visit_unknown_type(self, type):
+   def visit_unknown_type_id(self, type):
 
       self.__type_ref = str(type.name)
       self.__type_label = str(self.scope.prune(type.name))
         
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
 
       self.__type_label = str(self.scope.prune(type.name))
       self.__type_ref = str(type.name)
         
-   def visit_modifier_type(self, type):
+   def visit_modifier_type_id(self, type):
 
       type.alias.accept(self)
       self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
       self.__type_label = ''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod)
             
-   def visit_parametrized(self, type):
+   def visit_parametrized_type_id(self, type):
 
       if type.template:
          type.template.accept(self)
@@ -110,7 +110,7 @@ class Formatter(Processor, ASG.Visitor):
          parameters_label.append(self.__type_label)
       self.__type_label = type_label + ', '.join(parameters_label) + '>'
 
-   def visit_function_type(self, type):
+   def visit_function_type_id(self, type):
 
       # TODO: this needs to be implemented
       self.__type_ref = 'function_type'

@@ -45,7 +45,7 @@ class _BaseClasses(ASG.Visitor):
         self.classes = [] # accumulated set of classes
         self.classes_once = [] # classes not to be included again
 
-    def visit_declared_type(self, declared):
+    def visit_declared_type_id(self, declared):
         declared.declaration.accept(self)
 
     def visit_class(self, class_):
@@ -108,7 +108,7 @@ class InheritanceFormatter:
         filename = os.path.join(self.base_dir, escape(str(class_.name)) + '.%s'%format)
         dot = Dot.Formatter(bgcolor=self.bgcolor)
         try:
-            dot.process(IR.IR(declarations = [class_]),
+            dot.process(IR.IR(asg = ASG.ASG(declarations = [class_])),
                         output=filename,
                         format=format,
                         type='single')
@@ -231,28 +231,28 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     #################### Type Visitor ##########################################
 
-    def visit_base_type(self, type):
+    def visit_builtin_type_id(self, type):
 
         self.__type_ref = str(type.name)
         self.__type_label = str(type.name)
 
-    def visit_unknown_type(self, type):
+    def visit_unknown_type_id(self, type):
 
         self.__type_ref = str(type.name)
         self.__type_label = str(self.scope().prune(type.name))
         
-    def visit_declared_type(self, type):
+    def visit_declared_type_id(self, type):
 
         self.__type_label = str(self.scope().prune(type.name))
         self.__type_ref = str(type.name)
 
-    def visit_modifier_type(self, type):
+    def visit_modifier_type_id(self, type):
 
         type.alias.accept(self)
         self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
         self.__type_label = escape(''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod))
 
-    def visit_parametrized(self, type):
+    def visit_parametrized_type_id(self, type):
 
         type.template.accept(self)
         type_label = self.__type_label + '&lt;'
@@ -262,7 +262,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             parameters_label.append(self.__type_label)
         self.__type_label = type_label + ', '.join(parameters_label) + '&gt;'
 
-    def visit_function_type(self, type):
+    def visit_function_type_id(self, type):
 
         # TODO: this needs to be implemented
         self.__type_ref = 'function_type'
@@ -574,7 +574,7 @@ class Formatter(Processor):
 
         self.documentation = DocCache(self, self.markup_formatters)
         self.toc = TOC(Linker())
-        for d in self.ir.declarations:
+        for d in self.ir.asg.declarations:
             d.accept(self.toc)
 
         output = open(self.output, 'w')
@@ -588,7 +588,7 @@ class Formatter(Processor):
                                            self.with_inheritance_graphs,
                                            self.graph_color)
 
-        declarations = self.ir.declarations
+        declarations = self.ir.asg.declarations
 
         if not self.nested_modules:
 
@@ -596,11 +596,11 @@ class Formatter(Processor):
             detail_formatter.generate_module_list(modules)
 
             module_lister = ModuleLister()
-            for d in self.ir.declarations:
+            for d in self.ir.asg.declarations:
                 d.accept(module_lister)
             modules = module_lister.modules
             modules.sort(cmp=lambda a,b:cmp(a.name, b.name))
-            declarations = [d for d in self.ir.declarations
+            declarations = [d for d in self.ir.asg.declarations
                             if not isinstance(d, ASG.Module)]
             declarations.sort(cmp=lambda a,b:cmp(a.name, b.name))
             declarations = modules + declarations

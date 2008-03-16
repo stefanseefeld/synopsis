@@ -28,9 +28,9 @@ class AccessRestrictor(Processor, ASG.Visitor):
 
       if self.access is not None:
 
-         for decl in ir.declarations:
+         for decl in ir.asg.declarations:
             decl.accept(self)
-         ir.declarations = self.__currscope
+         ir.asg.declarations = self.__currscope
 
       return self.output_and_return_ir()
 

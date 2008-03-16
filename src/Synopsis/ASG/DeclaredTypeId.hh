@@ -5,10 +5,10 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_ASG_Declared_hh
-#define _Synopsis_ASG_Declared_hh
+#ifndef _Synopsis_ASG_DeclaredTypeId_hh
+#define _Synopsis_ASG_DeclaredTypeId_hh
 
-#include <Synopsis/ASG/Type.hh>
+#include <Synopsis/ASG/TypeId.hh>
 #include <Synopsis/ASG/Declaration.hh>
 
 namespace Synopsis
@@ -16,16 +16,16 @@ namespace Synopsis
 namespace ASG
 {
 
-class Declared : public Named
+class DeclaredTypeId : public NamedTypeId
 {
 public:
-  Declared() {}
-  Declared(const Object &o, bool check = true)
-    : Named(o, false) { if (check) assert_type("Declared");}
+  DeclaredTypeId() {}
+  DeclaredTypeId(const Object &o, bool check = true)
+    : NamedTypeId(o, false) { if (check) assert_type("DeclaredTypeId");}
 
   Declaration declaration() const { return attr("declaration")();}
 
-  virtual void accept(TypeVisitor *v) { v->visit_declared(this);}
+  virtual void accept(TypeIdVisitor *v) { v->visit_declared_type_id(this);}
 };
 
 //. Template types are declared template types. They have a name, a
@@ -33,41 +33,41 @@ public:
 //. declare this template. Each parameter (using AST::Parameter) should be
 //. either the correct type for non-type parameters, or a Dependent for type
 //. parameters. In either case, there may be default values.
-class Template : public Declared
+class TemplateId : public DeclaredTypeId
 {
 public:
   typedef Python::TypedList<Parameter> Parameters;
 
-  Template() {}
-  Template(const Python::Object &o, bool check = true)
-    : Declared(o, false) { if (check) assert_type("Template");}
+  TemplateId() {}
+  TemplateId(const Python::Object &o, bool check = true)
+    : DeclaredTypeId(o, false) { if (check) assert_type("TemplateId");}
 
   Parameters parameters() { return narrow<Parameters>(attr("parameters")());}
   // specializations() ???
 
-  virtual void accept(TypeVisitor *v) { v->visit_template(this);}
+  virtual void accept(TypeIdVisitor *v) { v->visit_template_id(this);}
 };
 
-class Parametrized : public Type
+class ParametrizedTypeId : public TypeId
 {
 public:
-  Parametrized() {}
-  Parametrized(const Python::Object &o, bool check = true)
-    : Type(o, false) { if (check) assert_type("Parametrized");}
+  ParametrizedTypeId() {}
+  ParametrizedTypeId(const Python::Object &o, bool check = true)
+    : TypeId(o, false) { if (check) assert_type("ParametrizedTypeId");}
 
-  Template _template() const { return narrow<Template>(attr("template")());}  
-  TypeList parameters() const { return narrow<TypeList>(attr("parameters")());}
+  TemplateId template_() const { return narrow<TemplateId>(attr("template")());}  
+  TypeIdList parameters() const { return narrow<TypeIdList>(attr("parameters")());}
 
-  virtual void accept(TypeVisitor *v) { v->visit_parametrized(this);}
+  virtual void accept(TypeIdVisitor *v) { v->visit_parametrized_type_id(this);}
 };
 
 //. Safely extracts typed Declarations from Named types. The type is first
 //. safely cast to Declared, then the declaration() safely cast to
 //. the template type.
 template <typename T>
-T declared_cast(const Type &type) throw (Python::Object::TypeError)
+T declared_type_id_cast(const TypeId &type) throw (Python::Object::TypeError)
 {
-  if (Declared declared = Python::Object::try_narrow<Declared>(type))
+  if (DeclaredTypeId declared = Python::Object::try_narrow<DeclaredTypeId>(type))
     if (Declaration decl = declared.declaration())
       if (T derived = Python::Object::try_narrow<T>(decl))
 	return derived;

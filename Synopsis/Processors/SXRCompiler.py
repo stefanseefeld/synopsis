@@ -63,7 +63,6 @@ class SXRCompiler(Processor):
         for lineno, line in enumerate(lines):
             for a in line.getElementsByTagName('a'):
                 if a.getAttribute('continuation') == 'true':
-                    print 'continuing'
                     continue
                 qname = QName(a.getAttribute('href'))
                 origin = QName(a.getAttribute('from'))

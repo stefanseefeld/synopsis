@@ -28,12 +28,12 @@ class Linker(Composite, ASG.Visitor):
       self.__dict_map = {id(root) : global_dict}
       self.__dicts = [global_dict]
 
-      self.types = self.ir.types
+      self.types = self.ir.asg.types
       
       try:
-         for d in self.ir.declarations:
+         for d in self.ir.asg.declarations:
             d.accept(self)
-         self.ir.declarations = root.declarations
+         self.ir.asg.declarations = root.declarations
       except TypeError, e:
          import traceback
          traceback.print_exc()
@@ -103,33 +103,33 @@ class Linker(Composite, ASG.Visitor):
 
    #################### Type Visitor ###########################################
 
-   def visit_base_type(self, type):
+   def visit_builtin_type_id(self, type):
 
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
 
-   def visit_unknown_type(self, type):
+   def visit_unknown_type_id(self, type):
 
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
 
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
 
       if self.types.has_key(type.name):
          self.__type = self.types[type.name]
       else:
-         print "Couldn't find declared type:",type.name
+         print "Couldn't find declared type-id:",type.name
 
-   def visit_template(self, type):
+   def visit_template_id(self, type):
 
       # Should be a Declared with the same name
       if not self.types.has_key(type.name):
          return
       declared = self.types[type.name]
-      if isinstance(declared, ASG.UnknownType):
+      if isinstance(declared, ASG.UnknownTypeId):
          #the type was declared in a file for which no ASG is retained
          return
-      elif not isinstance(declared, ASG.Declared):
+      elif not isinstance(declared, ASG.DeclaredTypeId):
          print "Warning: template declaration was not a declaration:",type.name,declared.__class__.__name__
          return
       decl = declared.declaration
@@ -141,21 +141,21 @@ class Linker(Composite, ASG.Visitor):
       else:
          print "Warning: template type disappeared:",type.name
 
-   def visit_modifier_type(self, type):
+   def visit_modifier_type_id(self, type):
 
       alias = self.link_type(type.alias)
       if alias is not type.alias:
          type.alias = alias
       self.__type = type
 
-   def visit_array(self, type):
+   def visit_array_type_id(self, type):
 
       alias = self.link_type(type.alias)
       if alias is not type.alias:
          type.alias = alias
       self.__type = type
 
-   def visit_parametrized(self, type):
+   def visit_parametrized_type_id(self, type):
 
       templ = self.link_type(type.template)
       if templ is not type.template:
@@ -163,7 +163,7 @@ class Linker(Composite, ASG.Visitor):
       type.parameters = [self.link_type(p) for p in type.parameters]
       self.__type = type
 
-   def visit_function_type(self, type):
+   def visit_function_type_id(self, type):
 
       ret = self.link_type(type.return_type)
       if ret is not type.return_type:
@@ -187,7 +187,7 @@ class Linker(Composite, ASG.Visitor):
          # Try to find a replacement declaration
          if types.has_key(d.name):
             declared = types[d.name]
-            if isinstance(type, ASG.Declared):
+            if isinstance(type, ASG.DeclaredTypeId):
                d = declared.declaration
          file.declarations.append(d)
         
@@ -345,15 +345,15 @@ class Linker(Composite, ASG.Visitor):
    def visit_inheritance(self, parent):
 
       type = parent.parent
-      if isinstance(type, (ASG.Declared, ASG.UnknownType)):
+      if isinstance(type, (ASG.DeclaredTypeId, ASG.UnknownTypeId)):
          ltype = self.link_type(type)
          if ltype is not type:
             parent.parent = ltype
-      elif isinstance(type, ASG.Parametrized):
+      elif isinstance(type, ASG.ParametrizedTypeId):
          ltype = self.link_type(type.template)
          if ltype is not type.template:
-            # Must find a ASG.Template from it
-            if not isinstance(ltype, ASG.Declared):
+            # Must find a ASG.TemplateId from it
+            if not isinstance(ltype, ASG.DeclaredTypeId):
                # Error
                return
             decl = ltype.declaration

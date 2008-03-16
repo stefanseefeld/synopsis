@@ -45,14 +45,14 @@ class HeadingFormatter(Fragment):
         """Formats a reference to each parent scope, starting at the first
         non-module scope."""
 
-        types = self.processor.ir.types
+        types = self.processor.ir.asg.types
 
         scope, text = type(qname)(), []
         for name in qname[:-1]:
             scope += (name,)
             if types.has_key(scope):
                 ns_type = types[scope]
-                if isinstance(ns_type, ASG.Declared):
+                if isinstance(ns_type, ASG.DeclaredTypeId):
                     decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Skip modules
@@ -64,7 +64,7 @@ class HeadingFormatter(Fragment):
     def format_module_of_name(self, qname):
         """Formats a reference to each parent scope and this one."""
 
-        types = self.processor.ir.types
+        types = self.processor.ir.asg.types
 
         scope, text = type(qname)(), []
         last_decl = None
@@ -72,7 +72,7 @@ class HeadingFormatter(Fragment):
             scope += (name,)
             if types.has_key(scope):
                 ns_type = types[scope]
-                if isinstance(ns_type, ASG.Declared):
+                if isinstance(ns_type, ASG.DeclaredTypeId):
                     decl = ns_type.declaration
                     if isinstance(decl, ASG.Module):
                         # Only do modules

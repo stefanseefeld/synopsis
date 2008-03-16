@@ -50,8 +50,9 @@ public:
       qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
-      declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
-      types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
+      bpl::object asg = ir.attr("asg");
+      declarations_(bpl::extract<bpl::list>(asg.attr("declarations"))()),
+      types_(bpl::extract<bpl::dict>(asg.attr("types"))()),
       files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       raw_filename_(filename),
       base_path_(base_path),
@@ -326,7 +327,7 @@ void IRGenerator::defined_macro(Context const &ctx,
                                                 qname,
                                                 params,
                                                 text);
-  bpl::object declared = asg_module_.attr("Declared")(language_, qname, macro);
+  bpl::object declared = asg_module_.attr("DeclaredTypeId")(language_, qname, macro);
   declarations_.append(macro);
   types_[qname] = declared;
 }
