@@ -18,7 +18,9 @@ import sys, os, os.path
 
 srcdir = '@srcdir@'
 topdir = '@topdir@'
-python = Python.Parser(base_path = topdir + os.sep, sxr_prefix='sxr')
+python = Python.Parser(base_path = topdir + os.sep,
+                       sxr_prefix='sxr',
+                       default_docformat='rst')
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = ['-I%s'%(topdir + '/include'),

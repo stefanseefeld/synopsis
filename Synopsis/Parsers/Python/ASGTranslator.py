@@ -163,7 +163,7 @@ class TokenParser:
 
 class ASGTranslator(ASTVisitor):
 
-    def __init__(self, package, types):
+    def __init__(self, package, types, docformat):
         """Create an ASGTranslator.
 
         package: enclosing package the generated modules are to be part of."""
@@ -174,7 +174,7 @@ class ASGTranslator(ASTVisitor):
         self.types = types
         self.attributes = []
         self.any_type = ASG.BuiltinTypeId('Python',QName('',))
-        self.docformat = ''
+        self.docformat = docformat
         self.documentable = None
         self.name = QName()
         self.imports = []

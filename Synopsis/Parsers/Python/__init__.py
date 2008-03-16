@@ -54,6 +54,7 @@ class Parser(Processor):
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'Path prefix to strip off of input file names.')
     sxr_prefix = Parameter(None, 'Path prefix (directory) to contain sxr info.')
+    default_docformat = Parameter('', 'default documentation format')
     
     def process(self, ir, **kwds):
 
@@ -118,7 +119,7 @@ class Parser(Processor):
 
                 package = module
 
-        translator = ASGTranslator(package, self.ir.asg.types)
+        translator = ASGTranslator(package, self.ir.asg.types, self.default_docformat)
         translator.process_file(sourcefile)
         # At this point, sourcefile contains a single declaration: the module.
         if package:
