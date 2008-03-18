@@ -64,6 +64,7 @@ List of options:
   -D <macro>                  Add <macro> to list of predefined macros.
   -s <directory>,
     --sxr=<directory>         Specify sxr directory. If given, process source cross-references.
+  --probe                     Probe the specified processor.
 """
    
 def make_processor(argv):
@@ -86,13 +87,15 @@ def make_processor(argv):
     formatter_opts = {}
     options = {}
     help = False
+    probe = False
 
     opts, args = getopt.getopt(argv,
                                'o:p:t:l:f:s:I:D:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
                                 'linker=', 'formatter=', 'sxr=',
-                                'version', 'help', 'verbose', 'debug', 'profile'])
+                                'version', 'help', 'verbose', 'debug', 'profile',
+                                'probe'])
     
     for o, a in opts:
         if o in ['-V', '--version']:
@@ -170,6 +173,8 @@ def make_processor(argv):
 
         elif o in ['-h', '--help']:
             help = True
+        elif o == '--probe':
+            probe = True
 
     if help:
         for p in parser, linker, formatter:
@@ -183,9 +188,6 @@ def make_processor(argv):
         if not (parser or linker or formatter):
             usage()
         sys.exit(0)
-    if not args:
-        usage()
-	sys.exit(0)
 
     # quick hack: if the parser is Cpp, rename the 'cppflags'
     # options to just 'flags'
@@ -193,6 +195,28 @@ def make_processor(argv):
         if parser_opts.has_key('cppflags'):
             parser_opts['flags'] = parser_opts['cppflags']
             del parser_opts['cppflags']
+
+    if probe:
+	if parser and parser.__module__ == 'Synopsis.Parsers.Cpp':
+            cpp = parser(**parser_opts)
+            info = cpp.probe()
+            if not info:
+                print 'Error: no compiler found'
+            else:
+                print 'Compiler:', info.compiler
+                print 'Arguments:', ', '.join(info.arguments)
+                print 'Language:', info.language
+                print 'Header search path:\n  %s\n'%'\n  '.join(info.include_paths)
+	        macros = [k + (v and '=%s'%v or '') for (k,v) in info.macros]
+
+                print 'Macro definitions:\n  %s\n'%'\n  '.join(macros)
+	else:
+            print 'Only the Cpp processor supports probing at this time.'
+	sys.exit(0)
+
+    if not args:
+        usage()
+	sys.exit(0)
 
     if translator_opts.has_key('processor'):
 	processor = translator_opts['processor']
