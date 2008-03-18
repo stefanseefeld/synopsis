@@ -66,7 +66,7 @@ class Formatter(Processor):
          
         if self.show_types:
             self.write_types(self.ir.asg.types)
-        self.os.write("<asg>\n")
+        self.os.write("</asg>\n")
 
         if self.show_files:
             self.write_files(self.ir.files)

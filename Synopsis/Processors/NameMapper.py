@@ -12,12 +12,20 @@ from Synopsis import ASG
 class NameMapper(Processor, ASG.Visitor):
     """Abstract base class for name mapping."""
 
-    def visit_group(self, node):
-        """Recursively visits declarations under this group/scope/etc"""
+    def visit_scope(self, node):
+        """Recursively visits declarations under this scope."""
 
         self.visit_declaration(node)
         for d in node.declarations:
-            d.accept(self)   
+            d.accept(self)
+
+    def visit_group(self, node):
+        """Recursively visits declarations under this group."""
+
+        self.visit_declaration(node)
+        for d in node.declarations:
+            d.accept(self)
+
 
 class NamePrefixer(NameMapper):
     """This class adds a prefix to all declaration and type names."""

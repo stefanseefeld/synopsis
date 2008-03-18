@@ -10,8 +10,6 @@ namespace Paths
 /**
  * The Bezier class. It implements a Bezier curve
  * for the given order.
- * (@see http://en.wikipedia.org/wiki/B%C3%A9zier_curve for more
- *  on Bezier curves.)
  */
 template <size_t Order>
 class Bezier : public Path

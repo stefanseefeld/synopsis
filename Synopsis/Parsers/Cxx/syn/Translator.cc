@@ -356,8 +356,8 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
   
   // List all declarations not in the builtin_decl_set
   for (; it != decls.end(); ++it)
-  if (m->builtin_decl_set.find(*it) == m->builtin_decl_set.end())
-    globals.push_back(*it);
+    if (m->builtin_decl_set.find(*it) == m->builtin_decl_set.end())
+      globals.push_back(*it);
   
   // Translate those declarations
   PyObject* list;
@@ -371,12 +371,11 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
   assertObject(pyfiles);
   assert(PyDict_Check(pyfiles));
   
-  AST::SourceFile::vector all_sourcefiles;
-  m_filter->get_all_sourcefiles(all_sourcefiles);
-  AST::SourceFile::vector::iterator file_iter = all_sourcefiles.begin();
-  while (file_iter != all_sourcefiles.end())
+  AST::SourceFile::vector files;
+  m_filter->get_all_sourcefiles(files);
+  for (AST::SourceFile::vector::iterator i = files.begin(); i != files.end(); ++i)
   {
-    AST::SourceFile* file = *file_iter++;
+    AST::SourceFile* file = *i;
     
     PyObject* decls, *new_decls, *incls, *new_incls;
     PyObject* pyfile = m->py(file);

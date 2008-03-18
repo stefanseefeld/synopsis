@@ -9,8 +9,10 @@ all: Paths
 
 Paths: Paths.xml Reference.xml
 	mkdir -p $@
+	mkdir -p $@/images
 	cp synopsis.css $@
 	$(xsltproc) -o $@/ html.xsl Reference.xml
+	cp images/*.png $@/images
 
 Paths.pdf: Paths.fo
 	$(fop) -o $@ $<

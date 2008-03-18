@@ -308,7 +308,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         if modules:
             modules.sort(cmp=lambda a,b:cmp(a.name, b.name))
             self.start_element('section')
-            self.write_element('title', 'Modules')
+            self.write_element('title', modules[0].type.capitalize() + 's')
             self.start_element('itemizedlist')
             for m in modules:
                 link = self.element('link', escape(str(m.name)), linkend=reference(m.name))

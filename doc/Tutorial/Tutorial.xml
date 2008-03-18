@@ -932,6 +932,10 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
       <option>--translate=rst</option>).</para>
     <section id="javadoc">
       <title>Javadoc</title>
+      <para>Synopsis provides support for Javadoc-style markup (See
+        <ulink url="http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javadoc.html"/>).
+        However, as Javadoc is very HTML-centric, best results will only be achieved when
+        HTML is the only output-medium.</para>
     </section>
     <section id="rest">
       <title>ReStructured Text</title>

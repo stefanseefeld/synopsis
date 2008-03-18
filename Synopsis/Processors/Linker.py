@@ -184,12 +184,15 @@ class Linker(Composite, ASG.Visitor):
       file.declarations = []
 
       for d in declarations:
-         # Try to find a replacement declaration
+         # If this is a forward declaration try to
+         # replace it by the definition...
          if types.has_key(d.name):
             declared = types[d.name]
-            if isinstance(type, ASG.DeclaredTypeId):
+            if isinstance(declared, ASG.DeclaredTypeId):
                d = declared.declaration
-         file.declarations.append(d)
+         # ...and only declare it once.
+         if d not in file.declarations:
+            file.declarations.append(d)
         
       # TODO: includes.
 
@@ -212,6 +215,24 @@ class Linker(Composite, ASG.Visitor):
       for d in module.declarations:
          d.accept(self)
       module.declarations = []
+      self.pop()
+
+
+   def visit_group(self, group):
+
+      previous = self.lookup(group.name)
+      if not previous:
+         self.append(group)
+      elif isinstance(previous, ASG.Group):
+         previous.declarations.append(group.declarations)
+         self.merge_comments(previous, group)
+         group = previous
+      else:
+         raise TypeError, 'symbol type mismatch: Synopsis.ASG.Group and %s both match "%s"'%(previous.__class__, str(previous.name))
+
+      self.push(group)
+      for d in group.declarations:
+         d.accept(self)
       self.pop()
 
 

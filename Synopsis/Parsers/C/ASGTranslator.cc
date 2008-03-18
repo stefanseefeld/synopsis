@@ -560,8 +560,10 @@ void ASGTranslator::declare(ASG::Declaration declaration)
   if (scope_.size())
     scope_.top().declarations().append(declaration);
   else
+  {
     declarations_.append(declaration);    
-  file_.declarations().append(declaration);
+    file_.declarations().append(declaration);
+  }
 }
 
 ASG::TypeId ASGTranslator::declare_type(ScopedName name,
