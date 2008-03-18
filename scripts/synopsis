@@ -204,7 +204,7 @@ def make_processor(argv):
                 print 'Error: no compiler found'
             else:
                 print 'Compiler:', info.compiler
-                print 'Arguments:', ', '.join(info.arguments)
+                print 'Flags:', ', '.join(info.flags)
                 print 'Language:', info.language
                 print 'Header search path:\n  %s\n'%'\n  '.join(info.include_paths)
 	        macros = [k + (v and '=%s'%v or '') for (k,v) in info.macros]

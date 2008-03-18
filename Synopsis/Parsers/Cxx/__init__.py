@@ -21,6 +21,7 @@ class Parser(Processor):
 
     preprocess = Parameter(True, 'whether or not to preprocess the input')
     emulate_compiler = Parameter('', 'a compiler to emulate')
+    compiler_flags = Parameter([], 'list of flags for the emulated compiler')
     cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
@@ -38,7 +39,8 @@ class Parser(Processor):
             cpp = Cpp.Parser(base_path = self.base_path,
                              language = 'C++',
                              flags = self.cppflags,
-                             emulate_compiler = self.emulate_compiler)
+                             emulate_compiler = self.emulate_compiler,
+                             compiler_flags = self.compiler_flags)
 
         for file in self.input:
 

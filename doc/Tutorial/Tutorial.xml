@@ -134,9 +134,23 @@ greet()
         multiple IRs, resolving cross-references between symbols, and formatters
         format the ASG into a variety of output media.</para>
 
-      <para>They all share a common design, to make it easy to combine them
-        into pipelines, and add custom processors. For more documentation about
-        this architecture, see <xref linkend="pipeline" />.</para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/cross-reference.svg" format="SVG" scale="80" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/cross-reference.png" format="PNG" />
+        </imageobject>
+        <caption>
+          <para>A typical processing-pipeline to generate API Documentation 
+            with source-code cross-references.</para>
+        </caption>
+      </mediaobject>
+
+      <para>All these <type>Processor</type> types share a common design, to make 
+        it easy to combine them into pipelines, and add custom processors. For more 
+        documentation about this architecture, see <xref linkend="pipeline" />.</para>
     </section>
   </chapter>
 
@@ -150,7 +164,7 @@ greet()
       to generate the output in a format and style that fulfills
       your needs.</para>
     <section id="options">
-      <title>Option handling</title>
+      <title>Option Handling</title>
       <para>The synopsis tool combines three optional types of processors: parsers (specified with the
         <option>-p</option> option), linker processors (specified with the <option>-l</option> option, 
         and formatters (specified with the <option>-f</option> option). If a parser is selected,
@@ -182,14 +196,7 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
       </para>
     </section>
     <section id="parsing">
-      <title>Parsing source code</title>
-      <para>The synopsis executable is a convenience frontend
-        to the larger Synopsis framework consisting of IR-related
-        types as well as processor classes.</para>
-      <para>While the full power of synopsis is available through
-        scripting (see <xref linkend="scripting" />), the most frequent
-        use cases are captured in the <command>synopsis</command> executable.
-      </para>
+      <title>Parsing Source-code</title>
       <para>Let's assume a simple header file, containing some declarations:</para>
       <para>
         <programlisting><xi:include href="examples/Paths/src/Path.h" parse="text"/>
@@ -202,7 +209,7 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
       </para>
       <para>
         The above represents the simplest way to use <command>synopsis</command>.
-        A simple command is used to parse a source file and to generate a document
+        A simple command is used to parse a source-file and to generate a document
         from it. The parser to be used is selected using the <option>-p</option>
         option, and the formatter with the <option>-f</option> option.
       </para>
@@ -221,8 +228,29 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
         <programlisting>synopsis -p Cxx -Wp,--base-path=&lt;prefix&gt; -f HTML -o Paths Path.h</programlisting>
       </para>
     </section>
+    <section id="compiler-emulation">
+      <title>Emulating A Compiler</title>
+      <para>Whenever the code to be parsed includes <emphasis>system headers</emphasis>, the parser needs
+        to know about their location(s), and likely also about <emphasis>system macro</emphasis> definitions
+        that may be in effect. For example, parsing:</para>
+      <programlisting>
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+typedef std::vector&lt;std::string&gt; option_list;
+      </programlisting>
+      <para>requires the parser to know where to find the <filename>vector</filename> and <filename>string</filename>
+        headers.</para>
+      <para>Synopsis will attempt to emulate a compiler for the current programming language. By default, 
+        <userinput>synopsis -p Cxx</userinput> will try to locate <application>c++</application> or similar, to
+        query system flags. However, the compiler can be specified via the <option>--emulate-compiler</option> option,
+        e.g. <userinput>synopsis -p Cxx -Wp,--emulate-compiler=/usr/local/gcc4/bin/g++</userinput>.</para>
+      <para>All languages that use the <type>Cpp</type> processor to preprocess the input accept the
+        <option>emulate-compiler</option> argument, and pass it down to the <type>Cpp</type> parser.
+        See <xref linkend="cpp-parser"/> for a detailed discussion of this process.</para>
+    </section>
     <section id="comments">
-      <title>Using comments for documentation</title>
+      <title>Using Comments For Documentation</title>
       <para>Until now the generated document didn't contain any of the text from
         comments in the source code. To do that the comments have to be translated
         first. This translation consists of a filter that picks up a particular kind
@@ -250,7 +278,7 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
   </chapter>
 
   <chapter id="scripting">
-    <title>Scripting and extending synopsis</title>
+    <title>Scripting And Extending Synopsis</title>
 
     <para>Often it isn't enough to provide textual options to the synopsis tool.
       The processors that are at the core of the synopsis framework are highly
@@ -287,7 +315,6 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
         <imageobject>
           <imagedata fileref="images/asg.svg" format="SVG" scale="80" />
         </imageobject>
-
         <imageobject>
           <imagedata fileref="images/asg.png" format="PNG" />
         </imageobject>
@@ -359,7 +386,7 @@ Parameters for processor 'Synopsis.Parsers.Cxx.Parser':
     </section>
 
     <section id="pipeline">
-      <title>Composing a pipeline</title>
+      <title>Composing A Pipeline</title>
 
       <para>With such a design, processors can simply be chained together:</para>
 
@@ -520,7 +547,7 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         it will generate a file suitable as input for a C or C++ parser, i.e. it 
         processes include and macro statements. However, it will store the encountered
         preprocessor directives in the ASG for further analysis.</para>
-      <para>As the list of included files may grow rather large, there exist two mechanisms
+      <para>As the list of included files may grow rather large, two mechanisms exist
         to restrict the number of files for which information is retained. The <type>primary_file_only</type>
         parameter is used to indicate that only the top-level file being parsed should be included.
         The <type>base_path</type> parameter, on the other hand, will restrict the number files if
@@ -540,14 +567,55 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
           <imagedata fileref="images/Files.png" format="PNG" />
         </imageobject>
       </mediaobject>
-      <para>Particular care has been taken in order to emulate system compilers, as these
-        all provide their own sets of macros, include paths, etc. Thus, the Cpp parser can
-        be trained to understand these compiler-specific settings.</para>
+      <para>Whenever the code to be parsed includes <emphasis>system headers</emphasis>, the parser needs
+        to know about their location(s), and likely also about <emphasis>system macro</emphasis> definitions
+        that may be in effect.</para>
+      <para>The <type>Cpp</type> parser provides two parameters to specify this emulation process, 
+        <varname>emulate_compiler</varname> and <varname>compiler_flags</varname>. To illustrate their use,
+        let us probe for the system flags that get generated:</para>
+    <screen>
+<prompt>&gt; </prompt><userinput>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++</userinput>
+Compiler: g++
+Flags:
+Language: C++
+Header search path:
+  /usr/lib/gcc/i386-redhat-linux/4.1.2/../../../../include/c++/4.1.2
+  ...
+  /usr/include
+
+Macro definitions:
+  __STDC__=1
+  __cplusplus=1
+  ...
+    </screen>
+    <para>Sometimes it isn't enough to have the compiler name itself. Some flags may modify the header search path,
+      or the predefined macros. For example, GCC can be instructed not to consider system headers at all:</para>
+    <screen>
+<prompt>&gt; </prompt><userinput>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++ -Wp,compiler-flags=[\"-nostdinc\"]</userinput>
+Compiler: g++
+Flags: -nostdinc
+Language: C++
+Header search path:
+
+
+Macro definitions:
+  __STDC__=1
+  __cplusplus=1
+  ...
+    </screen>
+      <para>Here, the set of predefined header search paths is empty. Note, that the 
+        <option>--compiler-flags</option> option (which, as you may remember, maps to the
+        <varname>compiler_flags</varname> processor parameter) expects a (Python) list.
+        Therefor, we use the form without the leading dashes, so we can pass Python code 
+        as argument (See <xref linkend="options"/> for details), with appropriate quoting.</para>
       <para>For details about the parameters see <xref linkend="Cpp-Parser-ref"/>.</para>
     </section>
     <section id="cc-parser">
       <title>C Parser</title>
       <para>The C parser parses C.</para>
+      <para>The C parser parses C source-code. If the <type>preprocess</type> parameter is set, it will
+        call the preprocessor (see <xref linkend="cpp-parser"/>). It generates an ASG containing
+        all declarations.</para>
     </section>
     <section id="cxx-parser">
       <title>Cxx Parser</title>
@@ -555,21 +623,19 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         call the preprocessor (see <xref linkend="cpp-parser"/>). Its main purpose is to generate
         an ASG containing all declarations. However, it can store more detailed information about
         the source code to be used in conjunction with the HTML parser to generate a cross-referenced
-        view of the code. The <type>syntax_prefix</type> and <type>xref_prefix</type> parameters are
-        used to indicate directories within which to store information about the source files being
-        parsed. For a view of the processing pipeline to generate cross-referenced code see
-        <xref linkend="cross-referencing"/>.</para>
+        view of the code. The <type>sxr_prefix</type> parameter is used to indicate the directory within
+        which to store information about the source files being parsed.</para>
     </section>
     <section id="linker">
       <title>Linker</title>
       <para>The Linker recursively traverses the ASG using the Visitor
         pattern, and replaces any duplicate types with their originals, and
         removes duplicate declarations. References to the removed declarations
-        are replaced with a reference to the original. This action is largely
-        unncessary due to the -m flags, but can still be useful in some
-        situations, such as when you have nested classes defined in separate
-        files. It also converts ASG.Modules into ASG.MetaModules, which list all
-        the files a module is defined in.</para>
+        are replaced with a reference to the original.</para>
+      <para>There are many additional transformations that may be applied during
+        linking, such as the extraction of documentation strings from comments,
+        the filtering and renaming of symbols, regrouping of declarations based on
+        special annotations, etc., etc..</para>
     </section>
     <section id="comment-parsers">
       <title>Comment Parsers</title>
@@ -727,8 +793,8 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
     <title>Description of program options for the synopsis executable</title>
     <title>The synopsis executable</title>
     <para>The synopsis executable is a little convenience frontend
-      to the larger Synopsis framework consisting of ASG related
-      types as well as processor classes.</para>
+      to the larger Synopsis framework consisting of IR-related
+      types as well as <emphasis>Processor</emphasis> classes.</para>
     <para>While the full power of synopsis is available through
       scripting (see <xref linkend="scripting" />), it is possible
       to quickly generate simple documentation by means of an

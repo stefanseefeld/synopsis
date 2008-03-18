@@ -15,7 +15,7 @@ import os.path
 class Parser(Processor):
 
     emulate_compiler = Parameter('', 'a compiler to emulate')
-    compiler_arguments = Parameter([], 'list of arguments for the emulated compiler')
+    compiler_flags = Parameter([], 'list of flags for the emulated compiler')
     flags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     cpp_output = Parameter(None, 'filename for preprocessed file')
@@ -27,7 +27,7 @@ class Parser(Processor):
         self.set_parameters(kwds)
         return get_compiler_info(self.language,
                                  self.emulate_compiler,
-                                 self.compiler_arguments)
+                                 self.compiler_flags)
 
     def process(self, ir, **kwds):
 
@@ -41,7 +41,7 @@ class Parser(Processor):
         base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
         info = get_compiler_info(self.language,
                                  self.emulate_compiler,
-                                 self.compiler_arguments)
+                                 self.compiler_flags)
         system_flags += ['-I%s'%x for x in info.include_paths]
         system_flags += ['-D%s'%k + (v and '=%s'%v or '') 
                          for (k,v) in info.macros]

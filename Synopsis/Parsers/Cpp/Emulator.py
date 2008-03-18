@@ -150,16 +150,16 @@ def find_ms_compiler_info():
 
     return found, paths, macros
 
-def find_gcc_compiler_info(language, compiler, arguments):
+def find_gcc_compiler_info(language, compiler, flags):
     """
     Try to find a GCC-based C or C++ compiler.
     Return tuple of include path list and macro dictionary."""
 
     found, paths, macros = False, [], []
-    arguments = ' '.join(arguments)
+    flags = ' '.join(flags)
     temp = TempFile(language == 'C++' and '.cc' or '.c')
     # The output below assumes the en_US locale, so make sure we use that.
-    command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, arguments, temp.name)
+    command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, flags, temp.name)
     cin, out, err = os.popen3(command)
     lines = err.readlines()
     cin.close()
@@ -206,17 +206,17 @@ def find_gcc_compiler_info(language, compiler, arguments):
     return True, paths, macros
 
 
-def find_compiler_info(language, compiler, arguments):
+def find_compiler_info(language, compiler, flags):
 
     found, paths, macros = False, [], []
 
     if compiler == 'cl' and os.name == 'nt':
-        if arguments:
-            sys.stderr.write('Warning: ignoring unknown arguments for MSVC compiler\n')
+        if flags:
+            sys.stderr.write('Warning: ignoring unknown flags for MSVC compiler\n')
         found, paths, macros = find_ms_compiler_info()
 
     else:
-        found, paths, macros = find_gcc_compiler_info(language, compiler, arguments)
+        found, paths, macros = find_gcc_compiler_info(language, compiler, flags)
         
     return found, paths, macros
 
@@ -245,8 +245,8 @@ class CompilerInfo:
     The name of the compiler, typically the executable name,
     which must either be in the path or given as an absolute,
     pathname."""
-    arguments = []
-    "Compiler arguments that impact its characteristics."
+    flags = []
+    "Compiler flags that impact its characteristics."
     language = ''
     "The programming language the compiler is used for."
     kind = ''
@@ -293,15 +293,15 @@ class CompilerList(object):
         return [c.compiler for c in self.compilers]
 
 
-    def _query(self, language, compiler, arguments):
+    def _query(self, language, compiler, flags):
         """Construct and return a CompilerInfo object for the given compiler."""
 
         ci = CompilerInfo()
         ci.compiler = compiler
-        ci.arguments = arguments
+        ci.flags = flags
         ci.language = language
         try:
-            found, paths, macros = find_compiler_info(language, compiler, arguments)
+            found, paths, macros = find_compiler_info(language, compiler, flags)
             if found:
                 ci.kind = 'system'
                 ci.timestamp = get_compiler_timestamp(compiler)
@@ -383,22 +383,22 @@ class CompilerList(object):
         for ci in self.compilers:
             if ci.is_custom:
                 compilers.append(ci)
-            ci = _query(ci.language, ci.compiler, ci.arguments)
+            ci = _query(ci.language, ci.compiler, ci.flags)
             if ci:
                 compilers.append(ci)
                 
         self.compilers = compilers
         self.save()
 
-    def find(self, language, compiler, arguments):
+    def find(self, language, compiler, flags):
 
-        if not arguments:
-            arguments = []
+        if not flags:
+            flags = []
         for ci in self.compilers:
             if (not compiler and language == ci.language
-                or (compiler == ci.compiler and arguments == ci.arguments)):
+                or (compiler == ci.compiler and flags == ci.flags)):
                 return ci
-        ci = self._query(language, compiler, arguments)
+        ci = self._query(language, compiler, flags)
         self.compilers.append(ci)
         self.save()
         return ci
@@ -408,7 +408,7 @@ class CompilerList(object):
 compiler_list = None
 
 
-def get_compiler_info(language, compiler = '', arguments = None):
+def get_compiler_info(language, compiler = '', flags = None):
     """
     Returns the compiler info for the given compiler. If none is
     specified (''), return the first available one for the given language.
@@ -420,5 +420,5 @@ def get_compiler_info(language, compiler = '', arguments = None):
     if not compiler_list:
         compiler_list = CompilerList()
 
-    ci = compiler_list.find(language, compiler, arguments)
+    ci = compiler_list.find(language, compiler, flags)
     return ci
