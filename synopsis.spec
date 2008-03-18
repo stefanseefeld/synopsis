@@ -1,5 +1,5 @@
 %define name synopsis
-%define version 0.9.1
+%define version 0.10
 %define release 1
 %define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
 %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
@@ -24,7 +24,7 @@ enable further processing such as documentation extraction,
 reverse engineering, and source-to-source translation.
 
 %package devel
-Summary: The Synopsis development environment.
+Summary: The Synopsis development environment
 Group: Development/Libraries
 Requires: synopsis = %{version}-%{release}
 Requires: pkgconfig
@@ -103,7 +103,7 @@ rm -rf $RPM_BUILD_ROOT
 %files doc
 %defattr(-, root, root)
 %{_docdir}/synopsis-%{version}/html
-#%{_docdir}/synopsis-%{version}/print
+%{_docdir}/synopsis-%{version}/print
 %{_docdir}/synopsis-%{version}/examples
 
 %files idl
@@ -111,5 +111,6 @@ rm -rf $RPM_BUILD_ROOT
 %{py_sitedir}/Synopsis/Parsers/IDL
 
 %changelog
+* Thu Mar 20 2008 Stefan Seefeld <stefan@fresco.org> 0.10-1
 * Wed Dec 20 2006 Stefan Seefeld <stefan@fresco.org> 0.9-1
 - initial package.

@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 <book xmlns:xi="http://www.w3.org/2003/XInclude">
   <bookinfo>
     <title>Synopsis Tutorial</title>
@@ -470,14 +468,14 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
          </para>
        </section>
        <section id="extending">
-         <title>Defining new processors</title>
+         <title>Defining New Processors</title>
          <para>New processors can be defined by deriving from <type>Processor</type>
            or any of its subclasses. As outlined in <xref linkend="processor"/>, 
            it has only to respect the semantics of the <function>process</function>
            method.</para>
        </section>
        <section id="process">
-         <title>Exposing the commands</title>
+         <title>Exposing The Commands</title>
          <para>With all these new processrs defined, they need to be made accessible
            to be called per command line. That is done with the <function>process</function>
            function. It sets up a dictionary of named processors, with which the script
@@ -490,10 +488,10 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
        </section>
     </section>
   </chapter>
-  <chapter>
-    <title>Processor design</title>
+  <chapter id="processors">
+    <title>Processor Design</title>
     <section id="python-parser">
-      <title>Python Parser</title>
+      <title>The Python Parser</title>
       <para>The Python parser expects Python source files as input, and compiles them into
         an Abstract Semantic Graph. At this time, this compilation is based purely on static
         analysis (parsing), and no runtime-inspection of the code is involved.</para>
@@ -538,11 +536,11 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
       </variablelist>
     </section>
     <section id="idl-parser">
-      <title>IDL Parser</title>
+      <title>The IDL Parser</title>
       <para>The IDL parser parses CORBA IDL.</para>
     </section>
     <section id="cpp-parser">
-      <title>Cpp Parser</title>
+      <title>The Cpp Parser</title>
       <para>The Cpp parser preprocesses IDL, C, and C++ files. As any normal preprocessor,
         it will generate a file suitable as input for a C or C++ parser, i.e. it 
         processes include and macro statements. However, it will store the encountered
@@ -574,7 +572,7 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         <varname>emulate_compiler</varname> and <varname>compiler_flags</varname>. To illustrate their use,
         let us probe for the system flags that get generated:</para>
     <screen>
-<prompt>&gt; </prompt><userinput>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++</userinput>
+<prompt>&gt; </prompt>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++
 Compiler: g++
 Flags:
 Language: C++
@@ -591,7 +589,7 @@ Macro definitions:
     <para>Sometimes it isn't enough to have the compiler name itself. Some flags may modify the header search path,
       or the predefined macros. For example, GCC can be instructed not to consider system headers at all:</para>
     <screen>
-<prompt>&gt; </prompt><userinput>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++ -Wp,compiler-flags=[\"-nostdinc\"]</userinput>
+<prompt>&gt; </prompt>synopsis --probe -p Cpp -Wp,--emulate-compiler=g++ -Wp,compiler-flags=[\"-nostdinc\"]
 Compiler: g++
 Flags: -nostdinc
 Language: C++
@@ -611,14 +609,14 @@ Macro definitions:
       <para>For details about the parameters see <xref linkend="Cpp-Parser-ref"/>.</para>
     </section>
     <section id="cc-parser">
-      <title>C Parser</title>
+      <title>The C Parser</title>
       <para>The C parser parses C.</para>
       <para>The C parser parses C source-code. If the <type>preprocess</type> parameter is set, it will
         call the preprocessor (see <xref linkend="cpp-parser"/>). It generates an ASG containing
         all declarations.</para>
     </section>
     <section id="cxx-parser">
-      <title>Cxx Parser</title>
+      <title>The Cxx Parser</title>
       <para>The Cxx parser parses C++. If the <type>preprocess</type> parameter is set, it will
         call the preprocessor (see <xref linkend="cpp-parser"/>). Its main purpose is to generate
         an ASG containing all declarations. However, it can store more detailed information about
@@ -627,7 +625,7 @@ Macro definitions:
         which to store information about the source files being parsed.</para>
     </section>
     <section id="linker">
-      <title>Linker</title>
+      <title>The Linker</title>
       <para>The Linker recursively traverses the ASG using the Visitor
         pattern, and replaces any duplicate types with their originals, and
         removes duplicate declarations. References to the removed declarations
@@ -637,11 +635,87 @@ Macro definitions:
         the filtering and renaming of symbols, regrouping of declarations based on
         special annotations, etc., etc..</para>
     </section>
-    <section id="comment-parsers">
-      <title>Comment Parsers</title>
+    <section id="comment-processors">
+      <title>Comment Processors</title>
+      <para>Comments are used mainly to annotate source code. These annotations may
+        consist of documentaton, or may contain processing instructions, to be parsed
+        by tools such as Synopsis.</para>
+      <para>Processing comments thus involves filtering out the relevant comments, parsing
+        their content and translating it into proper documentation strings, or otherwise perform
+        required actions (such as ASG transformations).</para>
+      <para>Here are some examples, illustrating a possible comment-processing pipeline.</para>
+      <section id="comment-filters">
+        <title>Comment Filters</title>
+        <para>To distinguish comments containing documentation, it is advisable to use
+          some convention such as using a particular prefix:</para>
+        <programlisting>
+//. Normalize a string.
+std::string normalize(std::string const &amp;);
+// float const pi;
+//. Compute an area.
+float area(float radius);
+        </programlisting>
+        <para>Using the <constant>ssd</constant>(read: Slash-Slash-Dot) prefix filter
+          instructs Synopsis only to preserve those comments that are prefixed with 
+          <code>//.</code></para>
+        <screen>synopsis -p Cxx --cfilter=ssd ...</screen>
+        <para>Synopsis provides a number of built-in comment filters for frequent / popular
+          prefixes. Here are some examples:</para>
+        <segmentedlist>
+          <segtitle>Comment prefix</segtitle><segtitle>Filter class</segtitle><segtitle>option name </segtitle>
+          <seglistitem><seg>//</seg><seg>SSFilter</seg><seg>ss</seg></seglistitem>
+          <seglistitem><seg>///</seg><seg>SSSFilter</seg><seg>sss</seg></seglistitem>
+          <seglistitem><seg>//.</seg><seg>SSDFilter</seg><seg>ssd</seg></seglistitem>
+          <seglistitem><seg>/*...*/</seg><seg>CFilter</seg><seg>c</seg></seglistitem>
+          <seglistitem><seg>/*!...*/</seg><seg>QtFilter</seg><seg>qt</seg></seglistitem>
+          <seglistitem><seg>/**...*/</seg><seg>JavaFilter</seg><seg>java</seg></seglistitem>
+        </segmentedlist>
+      </section>
+      <section id="comment-translators">
+        <title>Comment Translators</title>
+        <para>Once all irrelevant comments have been stripped off, the remainder needs to be
+          transformed into proper documentation. As the actual formatting can only be performed
+          during formatting (at which time the output medium and format is known), there are still
+          things that can be done at this time: Since in general it isn't possible to auto-detect
+          what kind of markup is used, a translator assists in mapping stripped comment strings to
+          doc-strings, to which a <varname>markup</varname> specifier is attached. While this specifier
+          is arbitrary, the only two values supported by the HTML and DocBook formatters are 
+          <varname>javadoc</varname> and <varname>rst</varname>(for ReStructuredText).</para>
+        <para>Note that this comment translation is specific to some programming languages 
+          (such as C, C++, and IDL). Notably Python does provide a built-in facility to associate
+          doc-strings to declarations. (In addition, the doc-string markup can be expressed via
+          special-purpose variable <varname>__docformat__</varname> embedded into Python source code.</para>
+      </section>
+      <section id="comment-transformers">
+        <title>Transformers</title>
+        <para>In addition to the manipulation of the comments themselves, there are actions that may 
+          be performed as a result of <emphasis>processing-instructions</emphasis> embedded into comments.
+        </para>
+        <para>For example, A <type>Grouper</type> transformer groups declarations together, based on
+          special syntax:</para>
+        <programlisting>
+  /** @group Manipulators {*/
+
+  /**
+   * Add a new control point.
+   * @param p A point
+   */
+  void add_control_point(const Vertex &amp;);
+
+  /**
+   * Remove the control point at index i.
+   * @param i An index
+   */
+  void remove_control_point(size_t i);
+  /** }*/
+  virtual void draw();
+        </programlisting>
+        <para>To process the above <code>@group</code> processing-instruction,
+          run <userinput>synopsis -p Cxx --cfilter=java -l Grouper ...</userinput></para>
+      </section>
     </section>
     <section id="dump-formatter">
-      <title>Dump Formatter</title>
+      <title>The Dump Formatter</title>
       <para>The Dump formatter's main goal is to provide a format
         that is as close to the ASG tree, is easily browsable to the
         naked eye, and provides the means to do validation or other
@@ -652,10 +726,51 @@ Macro definitions:
       <para>It is used right now for all unit tests.</para>
     </section>
     <section id="docbook-formatter">
-      <title>Docbook Formatter</title>
+      <title>The DocBook Formatter</title>
+      <para>The DocBook formatter allows to generate a DocBook section from the given ASG.</para>
+      <para>Here are the most important parameters:</para>
+      <variablelist>
+        <varlistentry>
+          <term>title</term>
+          <listitem>
+            <para>The title to be used for the toplevel section.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>nested_modules</term>
+          <listitem>
+            <para>True if nested modules are to be formatted to nested sections.
+              If False, modules are flattened and formatted in sibling sections.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>generate_summary</term>
+          <listitem>
+            <para>If True, generate a <emphasis>summary</emphasis> section for each scope,
+              followed by a <emphasis>details</emphasis> section.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>with_inheritance_graph</term>
+          <listitem>
+            <para>If True, generate <constant>SVG</constant> and <constant>PNG</constant>
+              inheritance graphs for all classes. (use the <option>graph_color</option> option
+              to set the background color of the graph nodes)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>secondary_index_terms</term>
+          <listitem>
+            <para>If True, add <varname>secondary</varname> entries in 
+              <varname>indexterms</varname>, with the
+              fully qualified names. This is useful for disambiguation when the same 
+              unqualified-id is used in multiple scopes.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
     <section id="dot-formatter">
-      <title>Dot Formatter</title>
+      <title>The Dot Formatter</title>
       <para>The Dot formatter can generate graphs for various types and output formats.
         Among the supported output formats are <type>png</type>, <type>svg</type>, and
         <type>html</type>.</para>
@@ -675,7 +790,7 @@ Macro definitions:
       </mediaobject>
     </section>
     <section id="html-formatter">
-      <title>HTML Formatter</title>
+      <title>The HTML Formatter</title>
       <para>The HTML formatter generates html output. It is designed 
         in a modular way, to let users customize in much detail how
         to format the data. All output is organized by a set of 
@@ -760,7 +875,7 @@ Macro definitions:
       </variablelist>
     </section>
     <section id="sxr-formatter">
-      <title>SXR Formatter</title>
+      <title>The SXR Formatter</title>
       <para>The SXR formatter is a variant of the HTML formatter. However, as its
         focus is not so much documentation as code navigation, there are a number
         of important differences. Its default set of views is different, and instead
@@ -777,16 +892,6 @@ Macro definitions:
         that is part of Synopsis, or by using the <emphasis>sxr-server</emphasis>
         program. The latter performs better, as the database is kept in-process,
         while in case of sxi.cgi it needs to be reloaded on each query.</para>
-    </section>
-  </chapter>
-  <chapter>
-    <title>Extending synopsis with the C++ API</title>
-    <section id="cxx-api">
-      <para>The C++ API tries to get as close as possible to the python API 
-        for the ASG and Type module (see <xref linkend="asg" />). Two factories,
-        an <type>ASGKit</type> and a <type>TypeKit</type> allow the creation of
-        all the ASG objects.</para>
-      <para></para>
     </section>
   </chapter>
   <appendix id="executable">
@@ -856,7 +961,7 @@ Macro definitions:
       %.syn: %.h
           synopsis -p Cxx -I../include -o $@ $&lt;
     </programlisting>
-    <para>Here is a listing of all available options:</para>
+    <para>Here is a listing of the most important available options:</para>
     <variablelist>
       <varlistentry>
         <term>-h</term>
@@ -932,6 +1037,33 @@ Macro definitions:
           <para>pass down additional arguments to a processor.
             For example '-Wp,-I.' sends the '-I.' option to the
             parser.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>--cfilter</term>
+        <listitem>
+          <para>Specify a comment filter (See <xref linkend="comment-filters"/>).</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>--translate</term>
+        <listitem>
+          <para>Translate comments to doc-strings, using the given markup specifier (See <xref linkend="comment-translators"/>).</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>--sxr-prefix</term>
+        <listitem>
+          <para>Specify the directory under which to store SXR info for the parsed source files.
+            This causes parsers to generate SXR info, the linker to generate an sxr Symbol Table,
+            and for the HTML formatter this causes Source and XRef views to be generated.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>--probe</term>
+        <listitem>
+          <para>This is useful in conjunction with the <option>-p Cpp</option> option to probe
+            for system header search paths and system macro definitions. (See <xref linkend="compiler-emulation"/>).</para>
         </listitem>
       </varlistentry>
     </variablelist>

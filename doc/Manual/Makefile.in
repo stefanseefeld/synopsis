@@ -73,7 +73,7 @@ python.syn: $(python_syn)
 
 IR.syn: python.syn
 	@echo linking $@
-	$(synopsis) link --scopes='Synopsis.IR,Synopsis.QualifiedName,Synopsis.SourceFile,Synopsis.DocString' --output=$@ $^
+	$(synopsis) link --scopes='Synopsis.IR,Synopsis.SXR,Synopsis.QualifiedName,Synopsis.SourceFile,Synopsis.DocString' --output=$@ $^
 
 ASG.syn: python.syn
 	@echo linking $@

@@ -3,6 +3,33 @@ NEWS
 
 This file describes user-visible changes to Synopsis.
 
+Synopsis 0.10
+=============
+
+Synopsis' Internal Representation has been largely refactored, to better
+supper the new features:
+
+* More information is captured, for example relationships between primary
+class templates and their specializations / instantiations.
+
+* The storage of source-code cross-references has been simplified and integrated
+into the IR, leading to a much more intuitive and convenient user interface.
+
+The Python parser has been largely rewritten, adding support
+for parsing of dependent (imported) files.
+
+The DocBook formatter has been rewritten. It now supports Javadoc and ReST
+document markup.
+
+The HTML formatter has been enhanced in many respects. Many bugs have been fixed.
+
+The C and C++ parsers have been enhanced, and many bugs have been fixed.
+
+Some new ASG processors have been added (MacroFilter, TypedefFolder, et al.)
+
+Documentation has been enhanced.
+
+
 Synopsis 0.9
 ============
 
