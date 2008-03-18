@@ -252,8 +252,7 @@ void Builder::add(AST::Declaration* decl, bool is_template)
     const std::string& scope_type = scopeinfo->scope_decl->type();
     if (scope_type != "local" && scope_type != "function")
       decls->push_back(decl);
-    if (scope_type == "global")
-      decl->file()->declarations().push_back(decl);
+    decl->file()->declarations().push_back(decl);
 }
 
 void Builder::add(Types::Named* type)
