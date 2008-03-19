@@ -43,10 +43,8 @@ public:
       qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
-      declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
-      types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
-      files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       raw_filename_(filename),
+      files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       base_path_(base_path),
       primary_file_only_(primary_file_only),
       mask_counter_(0),
@@ -58,6 +56,9 @@ public:
   {
     Trace trace("IRGenerator::IRGenerator", Trace::TRANSLATION);
     file_stack_.push(lookup_source_file(raw_filename_, true));
+    bpl::object asg = ir.attr("asg");
+    declarations_ = bpl::extract<bpl::list>(asg.attr("declarations"))();
+    types_ = bpl::extract<bpl::dict>(asg.attr("types"))();
   }
 
   void expanding_function_like_macro(Token const &macrodef, 
@@ -197,7 +198,7 @@ void IRGenerator::rescanned_macro(Container const &result)
                   bpl::make_tuple(current_macro_call_start_.get_line(), current_macro_call_start_.get_column() - 1),
                   bpl::make_tuple(current_macro_call_end_.get_line(), current_macro_call_end_.get_column() - 1),
                   bpl::make_tuple(start.get_line(), start.get_column() - 1 + current_offset_),
-                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() - 1 + current_offset_)));
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() + current_offset_)));
     current_offset_ += start.get_column() + tmp.size() - 1 - current_macro_call_end_.get_column();
   }
 }
@@ -277,7 +278,7 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
     Token::string_type const &tmp = i->get_value();
     params.append(std::string(tmp.begin(), tmp.end()));
   }
-
+  
   bpl::object qname = qname_module_.attr("QualifiedCxxName")(bpl::make_tuple(macro_name));
   bpl::object macro = asg_module_.attr("Macro")(file_stack_.top(),
                                                 position.get_line(),
@@ -285,7 +286,7 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
                                                 qname,
                                                 params,
                                                 text);
-  bpl::object declared = asg_module_.attr("Declared")(language_, qname, macro);
+  bpl::object declared = asg_module_.attr("DeclaredTypeId")(language_, qname, macro);
   declarations_.append(macro);
   types_[qname] = declared;
 }

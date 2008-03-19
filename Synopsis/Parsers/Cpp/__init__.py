@@ -25,6 +25,8 @@ class Parser(Processor):
     def probe(self, **kwds):
 
         self.set_parameters(kwds)
+        if type(self.compiler_flags) != list:
+            raise InvalidArgument('compiler_flags=%s (expected list)'%repr(self.compiler_flags))
         return get_compiler_info(self.language,
                                  self.emulate_compiler,
                                  self.compiler_flags)

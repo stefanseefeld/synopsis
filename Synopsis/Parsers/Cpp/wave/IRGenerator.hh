@@ -50,11 +50,8 @@ public:
       qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
-      bpl::object asg = ir.attr("asg");
-      declarations_(bpl::extract<bpl::list>(asg.attr("declarations"))()),
-      types_(bpl::extract<bpl::dict>(asg.attr("types"))()),
-      files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       raw_filename_(filename),
+      files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       base_path_(base_path),
       primary_file_only_(primary_file_only),
       mask_counter_(0),
@@ -66,6 +63,9 @@ public:
   {
     Trace trace("IRGenerator::IRGenerator", Trace::TRANSLATION);
     file_stack_.push(lookup_source_file(raw_filename_, true));
+    bpl::object asg = ir.attr("asg");
+    declarations_ = bpl::extract<bpl::list>(asg.attr("declarations"))();
+    types_ = bpl::extract<bpl::dict>(asg.attr("types"))();
   }
 
 //   bool may_skip_whitespace (Token &, bool &) { return false;}
