@@ -7,7 +7,7 @@ Synopsis 0.10
 =============
 
 Synopsis' Internal Representation has been largely refactored, to better
-supper the new features:
+support the new features:
 
 * More information is captured, for example relationships between primary
 class templates and their specializations / instantiations.

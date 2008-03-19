@@ -51,7 +51,7 @@
         </imageobject>
 
         <imageobject>
-          <imagedata fileref="images/ir.png" format="PNG" />
+          <imagedata fileref="images/ir.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
       <para>For details about the ASG, see <xref linkend="asg" /></para>
@@ -138,7 +138,7 @@ greet()
         </imageobject>
 
         <imageobject>
-          <imagedata fileref="images/cross-reference.png" format="PNG" />
+          <imagedata fileref="images/cross-reference.png" format="PNG" scale="80" />
         </imageobject>
         <caption>
           <para>A typical processing-pipeline to generate API Documentation 
@@ -314,7 +314,7 @@ typedef std::vector&lt;std::string&gt; option_list;
           <imagedata fileref="images/asg.svg" format="SVG" scale="80" />
         </imageobject>
         <imageobject>
-          <imagedata fileref="images/asg.png" format="PNG" />
+          <imagedata fileref="images/asg.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
     </section>
@@ -334,7 +334,7 @@ typedef std::vector&lt;std::string&gt; option_list;
         </imageobject>
 
         <imageobject>
-          <imagedata fileref="images/processor.png" format="PNG" />
+          <imagedata fileref="images/processor.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
 
@@ -394,7 +394,7 @@ typedef std::vector&lt;std::string&gt; option_list;
         </imageobject>
 
         <imageobject>
-          <imagedata fileref="images/pipeline.png" format="PNG" />
+          <imagedata fileref="images/pipeline.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
 
@@ -423,7 +423,7 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
         </imageobject>
 
         <imageobject>
-          <imagedata fileref="images/pipelines.png" format="PNG" />
+          <imagedata fileref="images/pipelines.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
       <para>Parse <filename>source1.hh</filename> and write the IR to <filename>source1.syn</filename>:</para>
@@ -562,7 +562,7 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
       </para>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/Files.png" format="PNG" />
+          <imagedata fileref="images/Files.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
       <para>Whenever the code to be parsed includes <emphasis>system headers</emphasis>, the parser needs
@@ -778,14 +778,14 @@ float area(float radius);
         diagrams:</para>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/Classes3.png" format="PNG" />
+          <imagedata fileref="images/Classes3.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
       <para>But it can also be used to generate a graphical representation of file
         inclusions:</para>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/Files.png" format="PNG" />
+          <imagedata fileref="images/Files.png" format="PNG" scale="80" />
         </imageobject>
       </mediaobject>
     </section>
@@ -805,7 +805,7 @@ float area(float radius);
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/html-screenshot.png" format="PNG"
-                     align="center" scale="100" />
+                     align="center" scale="80" />
         </imageobject>
       </mediaobject>
       <para>When the <varname>index</varname> and <varname>detail</varname> arguments
@@ -884,7 +884,7 @@ float area(float radius);
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/sxr-screenshot.png" format="PNG" 
-                     align="center" scale="100" />
+                     align="center" scale="80" />
         </imageobject>
       </mediaobject>
       <para>It is to be used with an http server, either a default http server
@@ -1120,20 +1120,72 @@ float area(float radius);
     </xi:include>
   </appendix>
   <appendix id="markup">
-    <title>Supported documentation markup</title>
+    <title>Supported Documentation Markup</title>
     <para>Synopsis can handle a variety of documentation markup through
-      markup formatter plugins. The most frequently used markup types are
-      built into the framework, and are are available via the 
+      markup-formatter plugins. The most frequently used markup types are
+      built into the framework, and are available via the 
       <command>synopsis</command> applet. These are <varname>Javadoc</varname>
-      (available as <option>--translate=javadoc</option>), as well as
-      <varname>ReStructuredText</varname> (available as 
-      <option>--translate=rst</option>).</para>
+      (available as <option>--translate=javadoc</option>), and
+      <varname>ReStructuredText</varname> (available as either
+      <option>--translate=rst</option> or <option>--translate=reStructuredText</option>).</para>
     <section id="javadoc">
       <title>Javadoc</title>
       <para>Synopsis provides support for Javadoc-style markup (See
         <ulink url="http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javadoc.html"/>).
         However, as Javadoc is very HTML-centric, best results will only be achieved when
         HTML is the only output-medium.</para>
+      <para>Javadoc comments consist of a main description, followed by tag blocks. Tag blocks
+        are of the form <code>@tag</code>. The following block tags are recognized:</para>
+      <simplelist type="inline">
+        <member>author</member>
+        <member>date</member>
+        <member>deprecated</member>
+        <member>exception</member>
+        <member>invariant</member>
+        <member>keyword</member>
+        <member>param</member>
+        <member>postcondition</member>
+        <member>precondition</member>
+        <member>return</member>
+        <member>see</member>
+        <member>throws</member>
+        <member>version</member>
+      </simplelist>
+      <para>All blocks may contain any of the following inline tags, which are of the
+        form <code>{@inlinetag}</code>:</para>
+      <simplelist type="inline">
+        <member>link</member>
+        <member>code</member>
+        <member>literal</member>
+      </simplelist>
+      <para>Link targets may be text, or HTML anchor elements. In case of text Synopsis interprets
+        the it as a name-id and attempts to look it up in its symbol table.</para>
+      <para>All of the above tags are recognized and translated properly for both, the <type>HTML</type>
+        as well as the <type>DocBook</type> formatters. Javadoc recommends to use <code>HTML</code>
+        markup for additional document annotation. This is only supported with the <type>HTML</type>
+        formatter, however.</para>
+      <example><title>C++ code snippet using Javadoc-style comments.</title>
+      <programlisting>
+/**
+ * The Bezier class. It implements a Bezier curve
+ * for the given order. See {@link Nurbs} for an alternative
+ * curved path class. Example usage of the Bezier class:
+ * &lt;pre&gt;
+ *   Bezier&amp;lt;2&amp;gt; bezier;
+ *   bezier.add_control_point(Vertex(0., 0.));
+ *   bezier.add_control_point(Vertex(0., 1.));
+ *   ...
+ * &lt;/pre&gt;
+ *
+ * @param Order The order of the Bezier class.
+ * @see &lt;a href="http://en.wikipedia.org/wiki/Bezier"/&gt;
+ */
+template &lt;size_t Order&gt;
+class Bezier : public Path
+{
+...
+      </programlisting>
+      </example>
     </section>
     <section id="rest">
       <title>ReStructured Text</title>
@@ -1141,56 +1193,14 @@ float area(float radius);
         <ulink url="http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html"/>).
         In order to process ReST docstrings, docutils 0.4 or higher must be installed. 
         If Docutils is not installed, ReST docstrings will be rendered as plaintext.</para>
-      <para>Here are a couple of suggestions specifically targetted at documenting APIs:</para>
-      <variablelist>
-        <varlistentry>
-          <term>Field lists for compact documentation of parameters</term>
-          <listitem>
-            <para>A typical documentation of a C++ function:</para>
-            <programlisting>
-  //. Inserts a control point with the given weight.
-  //. The knot value determines the position in the sequence.
-  //.
-  //. Parameters:
-  //.   :knot: the parameter value at which to insert a new knot
-  //.   :vertex: the control point
-  //.   :weight: the weight of the control point
-  void insert_control_point(double knot, const Vertex &amp;vertex,
-                            double weight);
-            </programlisting>
-            <para>A possible documentation of a Python function:</para>
-            <programlisting>
-  def process(ir, **kwds):
-      """Run this processor.
-
-         Parameters:
-            :ir: the internal representation
-
-         Keyword Parameters:
-            :primary_only: True if only the primary file should be parsed.
-            :sxr_prefix: Name of the directory within which to store SXR data."""
-            </programlisting>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>Identifier Cross-References</term>
-          <listitem>
-            <para>Interpreted text is used to classify and mark up program identifiers,
-              such as the names of variables, functions, classes, and modules.</para>
-            <programlisting>
-//. The Nurbs class...
-//. ... you may prefer to use a `Bezier` curve.
-            </programlisting>
-            <para>The identifier (<varname>Bezier</varname>) is looked up starting from 
-              the scope of the current declaration. Qualified names such as 
-              <varname>Paths::Bezier</varname> in C++, or <varname>Synopsis.ASG</varname> in Python,
-              work as expected, too.</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
-      <para>ReStructuredText is a very powerful yet compact language, providing the means to 
-        include hyperlinks, tables, verbatim blocks, inlined images, and more:</para>
-            <programlisting>
+      <para>ReST provides a wide variety of markup that allows documentation strings to be
+        formatted in a wide variety of ways. Among the many features are different list styles,
+        tables, links, verbatim blocks, etc.</para>
+      <para><ulink url="http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html#interpreted-text">Interpreted text</ulink>
+        is used to mark up program identifiers, such as the names of variables, functions, classes, and modules. Synopsis will
+        attempt to look them up in its symbol table, and generate suitable cross-references.</para>
+      <example><title>C++ code snippet using ReST-style comments.</title>
+        <programlisting>
 //. The Nurbs class. It implements a nurbs curve
 //. for the given order. It is a very powerful
 //. and flexible curve representation. For simpler
@@ -1238,9 +1248,10 @@ float area(float radius);
 //.   circle.insert_control_point(0, Vertex(1., 1.), sqrt(2.)/2.);
 //.   ...
 //.
-            </programlisting>
-            <para>To see how this is formatted please refer to the
-              <ulink url="http://synopsis.fresco.org/docs/examples/index.html#docbook">DocBook example</ulink>.</para>
+        </programlisting>
+      </example>
+      <para>To see how this is formatted please refer to the
+        <ulink url="http://synopsis.fresco.org/docs/examples/index.html#docbook">DocBook example</ulink>.</para>
     </section>
   </appendix>
 </book>
