@@ -13,7 +13,6 @@ from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.DirectoryLayout import quote_name
-from Synopsis.Formatters.XRef import *
 import os, time
 
 class XRef(View):
