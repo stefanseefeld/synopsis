@@ -10,7 +10,7 @@ Name: %{name}
 Version: %{version}
 Release: %{release}%{?dist}
 Source0: %{url}/download/%{name}-%{version}.tar.gz
-License: LGPL
+License: LGPLv2+
 Group: Development/Tools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Url: %{url}
@@ -42,7 +42,7 @@ Synopsis documentation
 
 %package idl
 Summary: The Synopsis IDL Parser
-License: GPL
+License: GPLv2+
 Group: Development/Tools
 Requires: synopsis = %{version}-%{release}
 
@@ -99,6 +99,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/Synopsis
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/synopsis.pc
+%doc %{_docdir}/synopsis-%{version}/README 
+%doc %{_docdir}/synopsis-%{version}/COPYING
+%doc %{_docdir}/synopsis-%{version}/NEWS
 
 %files doc
 %defattr(-, root, root)
@@ -109,6 +112,9 @@ rm -rf $RPM_BUILD_ROOT
 %files idl
 %defattr(-, root, root)
 %{py_sitedir}/Synopsis/Parsers/IDL
+%doc %{_docdir}/synopsis-%{version}/README 
+%doc %{_docdir}/synopsis-%{version}/COPYING
+%doc %{_docdir}/synopsis-%{version}/NEWS
 
 %changelog
 * Thu Mar 20 2008 Stefan Seefeld <stefan@fresco.org> 0.10-1
