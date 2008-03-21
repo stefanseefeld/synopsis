@@ -23,7 +23,16 @@ AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LEX
+if test $LEX != flex
+then AC_MSG_ERROR(This package needs flex to build.)
+fi
 AC_PROG_YACC
+# Unfortunately, AC_PROG_YACC sets $YACC to 'yacc' if it couldn't
+# find anything (yacc itself doesn't appear to be checked for.)
+# Thus we take this as an indication that the test failed.
+if test $YACC = yacc
+then AC_MSG_ERROR(This package needs bison to build.)
+fi
 
 dnl ** Integer representation
 
