@@ -7,8 +7,10 @@
 
 """a DocBook formatter (producing Docbook 4.5 XML output"""
 
-from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util, DeclarationSorter
+from Synopsis.Processor import *
+from Synopsis import ASG, DeclarationSorter
+from Synopsis.Formatters import quote_name
+from Synopsis.Formatters.TOC import TOC
 from Syntax import *
 from Markup.Javadoc import Javadoc
 try:
@@ -16,13 +18,25 @@ try:
 except ImportError:
     from Markup import Formatter as RST
 
-import sys, getopt, os, os.path, re
+import os
 
 def escape(text):
 
     for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
         text = text.replace(*p)
     return text
+
+def reference(name):
+    """Generate an id suitable as a 'linkend' / 'id' attribute, i.e. for linking."""
+
+    return quote_name(str(name))
+
+class Linker:
+    """Helper class to be used to resolve references from doc-strings to declarations."""
+
+    def link(self, decl):
+
+        return reference(decl.name)
 
 
 class _BaseClasses(ASG.Visitor):
@@ -31,7 +45,7 @@ class _BaseClasses(ASG.Visitor):
         self.classes = [] # accumulated set of classes
         self.classes_once = [] # classes not to be included again
 
-    def visit_declared_type(self, declared):
+    def visit_declared_type_id(self, declared):
         declared.declaration.accept(self)
 
     def visit_class(self, class_):
@@ -51,24 +65,70 @@ class _BaseClasses(ASG.Visitor):
 
 
 _summary_syntax = {
-    'IDL': Syntax,
+    'IDL': CxxSummarySyntax,
     'C++': CxxSummarySyntax,
     'C': CxxSummarySyntax,
-    'Python': Syntax
+    'Python': PythonSummarySyntax
     }
 
 _detail_syntax = {
-    'IDL': Syntax,
+    'IDL': CxxDetailSyntax,
     'C++': CxxDetailSyntax,
     'C': CxxDetailSyntax,
-    'Python': Syntax
+    'Python': PythonDetailSyntax
     }
+
+class ModuleLister(ASG.Visitor):
+    """Maps a module-tree to a (flat) list of modules."""
+
+    def __init__(self):
+
+        self.modules = []
+
+    def visit_module(self, module):
+
+        self.modules.append(module)
+        for d in module.declarations:
+            d.accept(self)
+
+
+class InheritanceFormatter:
+
+    def __init__(self, base_dir, bgcolor):
+
+        self.base_dir = base_dir
+        self.bgcolor = bgcolor
+
+    def format_class(self, class_, format):
+
+        if not class_.parents:
+            return ''
+        
+        from Synopsis.Formatters import Dot
+        filename = os.path.join(self.base_dir, escape(str(class_.name)) + '.%s'%format)
+        dot = Dot.Formatter(bgcolor=self.bgcolor)
+        try:
+            dot.process(IR.IR(asg = ASG.ASG(declarations = [class_])),
+                        output=filename,
+                        format=format,
+                        type='single')
+            return filename
+        except InvalidCommand, e:
+            print 'Warning : %s'%str(e)
+            return ''
+
 
 class FormatterBase:
 
-    def __init__(self, processor, output):
+    def __init__(self, processor, output, base_dir,
+                 nested_modules, secondary_index, inheritance_graphs, graph_color):
         self.processor = processor
         self.output = output
+        self.base_dir = base_dir
+        self.nested_modules = nested_modules
+        self.secondary_index = secondary_index
+        self.inheritance_graphs = inheritance_graphs
+        self.graph_color = graph_color
         self.__scope = ()
         self.__scopestack = []
         self.__indent = 0
@@ -108,8 +168,9 @@ class FormatterBase:
         type = self.__elements.pop()
         self.__indent = self.__indent - 2
         self.write('\n</' + type + '>')
+        self.write('\n')
 
-    def write_element(self, element, body, **params):
+    def write_element(self, element, body, end = '\n', **params):
         """Write a single element on one line (though body may contain
         newlines)"""
 
@@ -119,7 +180,7 @@ class FormatterBase:
         self.__indent = self.__indent + 2
         self.write(body)
         self.__indent = self.__indent - 2
-        self.write('</' + element + '>')
+        self.write('</' + element + '>' + end)
 
     def element(self, element, body, **params):
         """Return but do not write the text for an element on one line"""
@@ -127,23 +188,6 @@ class FormatterBase:
         param_text = ''
         if params: param_text = ' ' + ' '.join(['%s="%s"'%(p[0].lower(), p[1]) for p in params.items()])
         return '<%s%s>%s</%s>'%(element, param_text, body, element)
-
-    def reference(self, ref, label):
-        """reference takes two strings, a reference (used to look up the symbol and generated the reference),
-        and the label (used to actually write it)"""
-
-        location = self.__toc.lookup(ref)
-        if location != '': return href('#' + location, label)
-        else: return span('type', str(label))
-
-
-    def label(self, ref):
-
-        location = self.__toc.lookup(Util.ccolonName(ref))
-        ref = Util.ccolonName(ref, self.scope())
-        if location != '': return name('"' + location + '"', ref)
-        else: return ref
-
 
 
 class SummaryFormatter(FormatterBase, ASG.Visitor):
@@ -178,9 +222,6 @@ class SummaryFormatter(FormatterBase, ASG.Visitor):
 
     visit_function = visit_declaration
 
-    def visit_enumerator(self, enumerator):
-        print "sorry, <enumerator> not implemented"
-
     def visit_enum(self, enum):
         print "sorry, <enum> not implemented"
 
@@ -190,28 +231,28 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     #################### Type Visitor ##########################################
 
-    def visit_base_type(self, type):
+    def visit_builtin_type_id(self, type):
 
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name)
+        self.__type_ref = str(type.name)
+        self.__type_label = str(type.name)
 
-    def visit_unknown_type(self, type):
+    def visit_unknown_type_id(self, type):
 
-        self.__type_ref = Util.ccolonName(type.name)
-        self.__type_label = Util.ccolonName(type.name, self.scope())
+        self.__type_ref = str(type.name)
+        self.__type_label = str(self.scope().prune(type.name))
         
-    def visit_declared_type(self, type):
+    def visit_declared_type_id(self, type):
 
-        self.__type_label = Util.ccolonName(type.name, self.scope())
-        self.__type_ref = Util.ccolonName(type.name)
+        self.__type_label = str(self.scope().prune(type.name))
+        self.__type_ref = str(type.name)
 
-    def visit_modifier_type(self, type):
+    def visit_modifier_type_id(self, type):
 
         type.alias.accept(self)
         self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
         self.__type_label = escape(''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod))
 
-    def visit_parametrized(self, type):
+    def visit_parametrized_type_id(self, type):
 
         type.template.accept(self)
         type_label = self.__type_label + '&lt;'
@@ -221,7 +262,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             parameters_label.append(self.__type_label)
         self.__type_label = type_label + ', '.join(parameters_label) + '&gt;'
 
-    def visit_function_type(self, type):
+    def visit_function_type_id(self, type):
 
         # TODO: this needs to be implemented
         self.__type_ref = 'function_type'
@@ -241,17 +282,18 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
     #################### ASG Visitor ###########################################
 
     def visit_declaration(self, declaration):
-
         if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
             return
-        self.start_element('section')
+        self.start_element('section', id=reference(declaration.name))
         self.write_element('title', escape(declaration.name[-1]))
-        if str(declaration.type) in ('function', 'function template', 'member function', 'member function template'):
-            # The primary index term is the unqualified name, the secondary the qualified name.
+        if isinstance(declaration, ASG.Function):
+            # The primary index term is the unqualified name,
+            # the secondary the qualified name.
             # This will result in index terms being grouped by name, with each
             # qualified name being listed within that group.
             indexterm = self.element('primary', escape(declaration.real_name[-1]))
-            indexterm += self.element('secondary', escape('::'.join(declaration.real_name)))
+            if self.secondary_index:
+                indexterm += self.element('secondary', escape(str(declaration.real_name)))
             self.write_element('indexterm', indexterm, type='functions')
 
         language = declaration.file.annotations['language']
@@ -261,45 +303,68 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
         self.process_doc(declaration)
         self.end_element()
 
-    def visit_module(self, module):
+    def generate_module_list(self, modules):
 
-        self.start_element('section')
-        title = module.name and '%s %s'%(module.type, module.name[-1]) or 'Global Module'
+        if modules:
+            modules.sort(cmp=lambda a,b:cmp(a.name, b.name))
+            self.start_element('section')
+            self.write_element('title', modules[0].type.capitalize() + 's')
+            self.start_element('itemizedlist')
+            for m in modules:
+                link = self.element('link', escape(str(m.name)), linkend=reference(m.name))
+                self.write_element('listitem', self.element('para', link))
+            self.end_element()
+            self.end_element()
+            
+
+    def format_module_or_group(self, module, title, sort):
+        self.start_element('section', id=reference(module.name))
         self.write_element('title', title)
-        self.write('\n')
 
-        sorter = DeclarationSorter.DeclarationSorter(module.declarations)
+        declarations = module.declarations
+        if not self.nested_modules:
+            modules = [d for d in declarations if isinstance(d, ASG.Module)]
+            declarations = [d for d in declarations if not isinstance(d, ASG.Module)]
+            self.generate_module_list(modules)
+
+        sorter = DeclarationSorter.DeclarationSorter(declarations,
+                                                     group_as_section=False)
         if self.processor.generate_summary:
             self.start_element('section')
             self.write_element('title', 'Summary')
-            self.write('\n')
             summary = SummaryFormatter(self.processor, self.output)
-            for s in sorter:
-                if s[-1] == 's': title = s + 'es Summary'
-                else: title = s + 's Summary'
-                self.start_element('section')
-                self.write_element('title', escape(title))
-                self.write('\n')
-                for d in sorter[s]:
+            if sort:
+                for s in sorter:
+                    #if s[-1] == 's': title = s + 'es Summary'
+                    #else: title = s + 's Summary'
+                    #self.start_element('section')
+                    #self.write_element('title', escape(title))
+                    for d in sorter[s]:
+                        if not self.processor.hide_undocumented or d.annotations.get('doc'):
+                            d.accept(summary)
+                    #self.end_element()
+            else:
+                for d in declarations:
                     if not self.processor.hide_undocumented or d.annotations.get('doc'):
                         d.accept(summary)
-                self.end_element()
             self.end_element()
             self.write('\n')
             self.start_element('section')
             self.write_element('title', 'Details')
-            self.write('\n')
         self.process_doc(module)
         self.push_scope(module.name)
         suffix = self.processor.generate_summary and ' Details' or ''
-        for section in sorter:
-            title = section + suffix
-            self.start_element('section')
-            self.write_element('title', escape(title))
-            self.write('\n')
-            for d in sorter[section]:
-                d.accept(self)
-            self.end_element()
+        if sort:
+            for section in sorter:
+                #title = section + suffix
+                #self.start_element('section')
+                #self.write_element('title', escape(title))
+                for d in sorter[section]:
+                    d.accept(self)
+                #self.end_element()
+        else:
+            for d in declarations:
+                d.accept(self)            
         self.pop_scope()
         self.end_element()
         self.write('\n')
@@ -307,19 +372,45 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
             self.end_element()
             self.write('\n')
 
+    def visit_module(self, module):
+        if module.name:
+            # Only print qualified names when modules are flattened.
+            name = self.nested_modules and module.name[-1] or str(module.name)
+            title = '%s %s'%(module.type.capitalize(), name)
+        else:
+            title = 'Global %s'%module.type.capitalize()
+            
+        self.format_module_or_group(module, title, True)
+        
+    def visit_group(self, group):
+        self.format_module_or_group(group, group.name[-1].capitalize(), False)
 
     def visit_class(self, class_):
 
         if self.processor.hide_undocumented and not class_.annotations.get('doc'):
             return
-        self.start_element('section')
+        self.start_element('section', id=reference(class_.name))
         title = '%s %s'%(class_.type, class_.name[-1])
         self.write_element('title', escape(title))
-        self.write('\n')
         indexterm = self.element('primary', escape(class_.name[-1]))
-        indexterm += self.element('secondary', escape('::'.join(class_.name)))
+        if self.secondary_index:
+            indexterm += self.element('secondary', escape(str(class_.name)))
         self.write_element('indexterm', indexterm, type='types')
-        self.write('\n')
+        
+        if self.inheritance_graphs:
+            formatter = InheritanceFormatter(os.path.join(self.base_dir, 'images'),
+                                             self.graph_color)
+            png = formatter.format_class(class_, 'png')
+            svg = formatter.format_class(class_, 'svg')
+            if png or svg:
+                self.start_element('mediaobject')
+                if png:
+                    imagedata = self.element('imagedata', '', fileref=png, format='PNG')
+                    self.write_element('imageobject', imagedata)
+                if svg:
+                    imagedata = self.element('imagedata', '', fileref=svg, format='SVG')
+                    self.write_element('imageobject', imagedata)
+                self.end_element()
 
         declarations = class_.declarations
         # If so desired, flatten inheritance tree
@@ -342,39 +433,36 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
                             continue
                     declarations.append(d)
 
-        sorter = DeclarationSorter.DeclarationSorter(declarations)
+        sorter = DeclarationSorter.DeclarationSorter(declarations,
+                                                     group_as_section=False)
 
         if self.processor.generate_summary:
             self.start_element('section')
             self.write_element('title', 'Summary')
-            self.write('\n')
             summary = SummaryFormatter(self.processor, self.output)
             summary.process_doc(class_)
             for section in sorter:
-                title = section + ' Summary'
-                self.start_element('section')
-                self.write_element('title', escape(title))
-                self.write('\n')
+                #title = section + ' Summary'
+                #self.start_element('section')
+                #self.write_element('title', escape(title))
                 for d in sorter[section]:
                     if not self.processor.hide_undocumented or d.annotations.get('doc'):
                         d.accept(summary)
-                self.end_element()
+                #self.end_element()
             self.end_element()
             self.write('\n')
             self.start_element('section')
             self.write_element('title', 'Details')
-            self.write('\n')
         self.process_doc(class_)
         self.push_scope(class_.name)
         suffix = self.processor.generate_summary and ' Details' or ''
         for section in sorter:
-            title = section + suffix
-            self.start_element('section')
-            self.write_element('title', escape(title))
-            self.write('\n')
+            #title = section + suffix
+            #self.start_element('section')
+            #self.write_element('title', escape(title))
             for d in sorter[section]:
                 d.accept(self)
-            self.end_element()
+            #self.end_element()
         self.pop_scope()
         self.end_element()
         self.write('\n')
@@ -386,7 +474,7 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
     def visit_inheritance(self, inheritance):
 
         for a in inheritance.attributes: self.element("modifier", a)
-        self.element("classname", Util.ccolonName(inheritance.parent.name, self.scope()))
+        self.element("classname", str(self.scope().prune((inheritance.parent.name))))
 
     def visit_parameter(self, parameter):
 
@@ -394,11 +482,24 @@ class DetailFormatter(FormatterBase, ASG.Visitor):
 
     visit_function = visit_declaration
 
-    def visit_enumerator(self, enumerator):
-        print "sorry, <enumerator> not implemented"
-
     def visit_enum(self, enum):
-        print "sorry, <enum> not implemented"
+
+        if self.processor.hide_undocumented and not declaration.annotations.get('doc'):
+            return
+
+        self.start_element('section', id=reference(enum.name))
+        self.write_element('title', escape(enum.name[-1]))
+        indexterm = self.element('primary', escape(enum.name[-1]))
+        if self.secondary_index:
+            indexterm += self.element('secondary', escape(str(enum.name)))
+        self.write_element('indexterm', indexterm, type='types')
+
+        language = enum.file.annotations['language']
+        syntax = _detail_syntax[language](self.output)
+        enum.accept(syntax)
+        syntax.finish()
+        self.process_doc(enum)
+        self.end_element()
 
    
 class DocCache:
@@ -452,28 +553,61 @@ class DocCache:
 class Formatter(Processor):
     """Generate a DocBook reference."""
 
-    markup_formatters = Parameter({'rst':RST(), 'javadoc':Javadoc()},
+    markup_formatters = Parameter({'rst':RST(),
+                                   'reStructuredText':RST(),
+                                   'javadoc':Javadoc()},
                                   'Markup-specific formatters.')
     title = Parameter(None, 'title to be used in top-level section')
+    nested_modules = Parameter(False, """Map the module tree to a tree of docbook sections.""")
     generate_summary = Parameter(False, 'generate scope summaries')
     hide_undocumented = Parameter(False, 'hide declarations without a doc-string')
     inline_inherited_members = Parameter(False, 'show inherited members')
+    secondary_index_terms = Parameter(True, 'add fully-qualified names to index')
+    with_inheritance_graphs = Parameter(True, 'whether inheritance graphs should be generated')
+    graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
    
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.output: raise MissingArgument('output')
         self.ir = self.merge_input(ir)
 
         self.documentation = DocCache(self, self.markup_formatters)
+        self.toc = TOC(Linker())
+        for d in self.ir.asg.declarations:
+            d.accept(self.toc)
 
         output = open(self.output, 'w')
         output.write('<section>\n')
         if self.title:
             output.write('<title>%s</title>\n'%self.title)
-        detail_formatter = DetailFormatter(self, output)
-        for d in self.ir.declarations:
-            d.accept(detail_formatter)
+        detail_formatter = DetailFormatter(self, output,
+                                           os.path.dirname(self.output),
+                                           self.nested_modules,
+                                           self.secondary_index_terms,
+                                           self.with_inheritance_graphs,
+                                           self.graph_color)
 
+        declarations = self.ir.asg.declarations
+
+        if not self.nested_modules:
+
+            modules = [d for d in declarations if isinstance(d, ASG.Module)]
+            detail_formatter.generate_module_list(modules)
+
+            module_lister = ModuleLister()
+            for d in self.ir.asg.declarations:
+                d.accept(module_lister)
+            modules = module_lister.modules
+            modules.sort(cmp=lambda a,b:cmp(a.name, b.name))
+            declarations = [d for d in self.ir.asg.declarations
+                            if not isinstance(d, ASG.Module)]
+            declarations.sort(cmp=lambda a,b:cmp(a.name, b.name))
+            declarations = modules + declarations
+
+        for d in declarations:
+            d.accept(detail_formatter)
+            
         output.write('</section>\n')
         output.close()
       

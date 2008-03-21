@@ -25,7 +25,7 @@ class Transformer(Processor, ASG.Visitor):
         self.set_parameters(kwds)
         self.ir = self.merge_input(ir)
 
-        for decl in ir.declarations:
+        for decl in ir.asg.declarations:
             decl.accept(self)
 
         self.finalize()
@@ -34,7 +34,7 @@ class Transformer(Processor, ASG.Visitor):
     def finalize(self):
         """replace the ASG with the newly created one"""
 
-        self.ir.declarations[:] = self.__current
+        self.ir.asg.declarations[:] = self.__current
 
     def push(self):
         """Pushes the current scope onto the stack and starts a new one"""

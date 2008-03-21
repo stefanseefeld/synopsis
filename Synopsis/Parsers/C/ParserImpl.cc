@@ -36,7 +36,7 @@ void unexpected()
 
 bpl::object parse(bpl::object ir,
                   char const *cpp_file, char const *input_file, char const *base_path,
-                  bool primary_file_only, char const *syntax_prefix, char const *xref_prefix,
+                  bool primary_file_only, char const *sxr_prefix,
                   bool verbose, bool debug, bool profile)
 {
   std::set_unexpected(unexpected);

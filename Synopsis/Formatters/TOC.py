@@ -8,7 +8,7 @@
 
 """Table of Contents classes"""
 
-from Synopsis import ASG, Util
+from Synopsis import ASG
 
 import re
 
@@ -44,6 +44,8 @@ class TOC(ASG.Visitor):
       self.linker = linker
       self.verbose = verbose
     
+   def keys(self): return self.__toc.keys()
+
    def lookup(self, name):
 
       name = tuple(name)
@@ -51,13 +53,6 @@ class TOC(ASG.Visitor):
       if self.verbose and len(name) > 1:
          print "Warning: TOC lookup of",name,"failed!"
       return None
-
-   # def referenceName(self, name, scope, label=None, **keys):
-   #     """Same as reference but takes a tuple name"""
-   #     if not label: label = Util.ccolonName(name, scope)
-   #     entry = self[name]
-   #     if entry: return apply(href, (entry.link, label), keys)
-   #     return label or ''
 
    def size(self): return len(self.__toc)
     

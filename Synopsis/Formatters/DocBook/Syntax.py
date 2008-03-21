@@ -25,45 +25,135 @@ class Syntax(ASG.Visitor):
 
     def finish(self): pass
 
+    def typeid(self, type):
+        
+        self._typeid = ''
+        type.accept(self)
+        return self._typeid
 
-class CxxSyntax(Syntax):
+
+class PythonSyntax(Syntax):
 
     def visit_function(self, node):
-        text = '%s(%s)\n'%(escape(node.real_name[-1]),
-                           ', '.join([self.visit_parameter(p)
-                                      for p in node.parameters]))
+        text = escape(str(node.return_type))
+        text += '%s(%s)\n'%(escape(node.real_name[-1]),
+                            ', '.join([self.visit_parameter(p)
+                                       for p in node.parameters]))
         self.output.write(text)
 
     def visit_parameter(self, parameter):
-        text = escape(str(parameter.type))
-        if parameter.name:
-            text += ' %s'%parameter.name
+        text = str(parameter.name)
         if parameter.value:
-            text += ' = %s'%parameter.value
+            text += ' = %s'%escape(parameter.value)
         return text
 
     def visit_variable(self, variable):
         variable.vtype.accept(self)
-        self.output.write('%s %s\n'%(self._typename, variable.name[-1]))
+        self.output.write(variable.name[-1])
 
     def visit_const(self, const):
         const.ctype.accept(self)
-        self.output.write('%s %s\n'%(self._typename, const.name[-1]))
+        self.output.write(const.name[-1])
 
-    def visit_base_type(self, type):
-        self._typename = type.name[-1]
-    def visit_unknown_type(self, type): self._typename = '&lt;unknown&gt;'
-    def visit_declared_type(self, type): self._typename = type.name[-1]
-    def visit_modifier_type(self, type):
-        type.alias.accept(self)
-        self._typename = '%s %s %s'%(escape(' '.join(type.premod)),
-                                   self._typename,
+
+class PythonSummarySyntax(PythonSyntax):
+    """Generate DocBook Synopsis for Python declarations."""
+    
+    def __init__(self, output):
+        super(PythonSummarySyntax, self).__init__(output)
+        self.output.write('<synopsis>')
+
+    def finish(self):
+        self.output.write('</synopsis>\n')
+
+    def visit_group(self, node):
+        for d in node.declarations:
+            d.accept(self)
+    def visit_module(self, module):
+        self.output.write('%s %s\n'%(module.type, module.name[-1]))
+        
+    def visit_class(self, class_):
+        self.output.write('class %s\n'%escape(class_.name[-1]))
+        
+    def visit_inheritance(self, node): pass
+
+
+class PythonDetailSyntax(PythonSyntax):
+    """Generate DocBook Synopsis for Python declarations."""
+    
+    def __init__(self, output):
+        super(PythonDetailSyntax, self).__init__(output)
+        self.output.write('<synopsis>')
+
+    def finish(self):
+        self.output.write('</synopsis>\n')
+
+    def visit_group(self, node):
+        for d in node.declarations:
+            d.accept(self)
+    def visit_module(self, module):
+        self.output.write('%s %s\n'%(module.type, module.name[-1]))
+        
+    def visit_class(self, class_):
+        self.output.write('class %s\n'%escape(class_.name[-1]))
+        
+    def visit_inheritance(self, node): pass
+
+
+class CxxSyntax(Syntax):
+
+    def visit_function(self, node):
+
+        text = node.return_type and self.typeid(node.return_type) or ''
+        text += ' %s(%s);\n'%(escape(node.real_name[-1]),
+                              ', '.join([self.visit_parameter(p)
+                                         for p in node.parameters]))
+        self.output.write(text)
+
+    def visit_parameter(self, parameter):
+
+        text = escape(str(parameter.type))
+        if parameter.name:
+            text += ' %s'%parameter.name
+        if parameter.value:
+            text += ' = %s'%escape(parameter.value)
+        return text
+
+    def visit_typedef(self, node):
+
+        self.output.write('typedef %s %s;\n'%(self.typeid(node.alias), node.name[-1]))
+
+    def visit_variable(self, variable):
+        self.output.write('%s %s;\n'%(self.typeid(variable.vtype), variable.name[-1]))
+
+    def visit_const(self, const):
+        self.output.write('%s %s;\n'%(self.typeid(const.ctype), const.name[-1]))
+
+    def visit_builtin_type_id(self, type): self._typeid = type.name[-1]
+    def visit_unknown_type_id(self, type): self._typeid = escape(str(type.name))
+    def visit_declared_type_id(self, type): self._typeid = escape(str(type.name))
+    def visit_modifier_type_id(self, type):
+
+        self._typeid = '%s %s %s'%(escape(' '.join(type.premod)),
+                                   self.typeid(type.alias),
                                    escape(' '.join(type.postmod)))
-    def visit_array(self, type): self._typename = 'array'
-    def visit_template(self, type): self._typename = 'A'
-    def visit_parametrized(self, type): self._typename = escape(str(type))
-    def visit_function_type(self, type): self._typename = 'C'
-    def visit_dependent(self, type): self._typename = 'D'
+    def visit_array_type_id(self, type):
+
+        self._typeid = '%s%s'%(escape(str(type.name)), ''.join(['[%s]'%s for s in type.sizes]))
+
+    def visit_template_id(self, type): self._typeid = escape(str(type.name))
+
+    def visit_parametrized_type_id(self, type):
+
+        self._typeid = '%s&lt;%s&gt;'%(self.typeid(type.template),
+                                       ', '.join([self.typeid(p) for p in type.parameters]))
+
+    def visit_function_type_id(self, type):
+
+        self._typeid = '%s(%s)'%(self.typeid(type.return_type),
+                                 ', '.join([self.typeid(p) for p in type.parameters]))
+                                   
+    def visit_dependent_type_id(self, type): self._typeid = type.name[-1]
 
 
 class CxxSummarySyntax(CxxSyntax):
@@ -87,18 +177,25 @@ class CxxSummarySyntax(CxxSyntax):
         for d in node.declarations:
             d.accept(self)
     def visit_module(self, module):
-        self.output.write('%s %s\n'%(module.type, module.name[-1]))
+        self.output.write('%s %s;\n'%(module.type, module.name[-1]))
         
     def visit_class(self, class_):
-        self.output.write('%s %s\n'%(class_.type, escape(class_.name[-1])))
+        self.output.write('%s %s;\n'%(class_.type, escape(class_.name[-1])))
         
     def visit_class_template(self, class_): self.visit_class(class_)
-    def visit_typedef(self, node): pass
-    def visit_enumerator(self, node): pass
+
+    def visit_enumerator(self, node):
+        if node.value:
+            return '%s=%s'%(node.name[-1], escape(node.value))
+        else:
+            return node.name[-1]
+        
     def visit_enum(self, node):
-        self.visit_declaration(node)
-        for e in node.enumerators:
-            e.accept(self)
+        self.output.write('%s %s { '%(node.type, node.name[-1])) 
+        self.output.write(', '.join([self.visit_enumerator(e)
+                                     for e in node.enumerators
+                                     if isinstance(e, ASG.Enumerator)]))
+        self.output.write('};\n')
 
     def visit_inheritance(self, node): pass
 
@@ -124,18 +221,25 @@ class CxxDetailSyntax(CxxSyntax):
         for d in node.declarations:
             d.accept(self)
     def visit_module(self, module):
-        self.output.write('%s %s\n'%(module.type, module.name[-1]))
+        self.output.write('%s %s;\n'%(module.type, module.name[-1]))
         
     def visit_class(self, class_):
-        self.output.write('%s %s\n'%(class_.type, escape(class_.name[-1])))
+        self.output.write('%s %s;\n'%(class_.type, escape(class_.name[-1])))
         
     def visit_class_template(self, node): pass
-    def visit_typedef(self, node): pass
-    def visit_enumerator(self, node): pass
+
+    def visit_enumerator(self, node):
+        if node.value:
+            return '%s=%s'%(node.name[-1], escape(node.value))
+        else:
+            return node.name[-1]
+        
     def visit_enum(self, node):
-        self.visit_declaration(node)
-        for e in node.enumerators:
-            e.accept(self)
+        self.output.write('%s %s { '%(node.type, node.name[-1])) 
+        self.output.write(', '.join([self.visit_enumerator(e)
+                                     for e in node.enumerators
+                                     if isinstance(e, ASG.Enumerator)]))
+        self.output.write('};\n')
 
     def visit_inheritance(self, node): pass
 

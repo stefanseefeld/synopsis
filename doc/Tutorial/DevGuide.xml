@@ -203,10 +203,10 @@
     </para>
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/cxx-parser.svg" format="SVG"/>
+        <imagedata fileref="images/c++-frontend.svg" format="SVG"/>
       </imageobject>
       <imageobject>
-        <imagedata fileref="images/cxx-parser.png" format="PNG"/>
+        <imagedata fileref="images/c++-frontend.png" format="PNG"/>
       </imageobject>
     </mediaobject>
     <section id="ptree">

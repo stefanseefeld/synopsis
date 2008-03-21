@@ -6,10 +6,12 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
 from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
+import time
 
 class NameIndex(View):
     """Creates an index of all names on one view in alphabetical order."""
@@ -79,8 +81,8 @@ class NameIndex(View):
             if dict.has_key(key): dict[key].append(type)
             else: dict[key] = [type]
         # Fill the dict
-        [hasher(t) for t in self.processor.ir.types.values()
-         if isinstance(t, ASG.Declared) and
+        [hasher(t) for t in self.processor.ir.asg.types.values()
+         if isinstance(t, ASG.DeclaredTypeId) and
          not isinstance(t.declaration, ASG.Builtin)]
 
         # Now sort the dict
@@ -104,7 +106,18 @@ class NameIndex(View):
         else:
             realname = escape(name[-1])
         self.write('\n')
-        title = escape('::'.join(name))
+        title = escape(str(name))
         type = decl.type
         name = self.reference(name, (), realname, title=title)+' '+type
         self.write(div('nameindex-item', name))
+
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
+
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

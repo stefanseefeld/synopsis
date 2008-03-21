@@ -19,16 +19,16 @@ class Joker(Processor):
     
     parameter = Parameter(':-)', 'a friendly parameter')
 
-    def process(self, ast, **keywords):
+    def process(self, ir, **keywords):
         # override default parameter values
         self.set_parameters(keywords)
-        # merge in ast from 'input' parameter if given
-        self.ast = self.merge_input(ast)
+        # merge in IR from 'input' parameter if given
+        self.ir = self.merge_input(ir)
 
         print 'this processor is harmless...', self.parameter
       
-        # write to output (if given) and return ast
-        return self.output_and_return_ast()
+        # write to output (if given) and return IR
+        return self.output_and_return_ir()
 
 cxx = Cxx.Parser(base_path='../src')
 

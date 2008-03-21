@@ -6,35 +6,45 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Parameter
-from Synopsis import Util
+from Synopsis import config
+from Synopsis.Processor import *
+from Synopsis.QualifiedName import *
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
-import os, urllib
-
-link = None
-try:
-    link = Util._import("Synopsis.Parsers.Cxx.link")
-except ImportError:
-    print "Warning: unable to import link module. Continuing..."
-
+import os, urllib, time
 
 class SXRTranslator:
     """Read in an sxr file, resolve references, and write it out as
     part of a Source view."""
 
-    def __init__(self, filename):
+    def __init__(self, filename, language, debug):
 
-        self.sxr = parse(filename)
+        try:
+            self.sxr = parse(filename)
+        except:
+            if debug:
+                print 'Error parsing', filename
+                raise
+            else:
+                raise InternalError('parsing %s'%filename)
+        if language == 'Python':
+            self.qname = lambda name: QualifiedPythonName(str(name).split('.'))
+        else:
+            self.qname = lambda name: QualifiedCxxName(str(name).split('::'))
 
     def link(self, linker):
 
         for a in self.sxr.getElementsByTagName('a'):
-            ref = a.getAttribute('href').split('.')
+            ref = self.qname(a.getAttribute('href'))
             target = linker(ref)
             a.setAttribute('href', target)
-
+            if a.hasAttribute('type'):
+                a.removeAttribute('type')
+            if a.hasAttribute('from'):
+                a.removeAttribute('from')
+            if a.hasAttribute('continuation'):
+                a.removeAttribute('continuation')
 
     def translate(self, writer):
 
@@ -53,9 +63,22 @@ class SXRTranslator:
 class Source(View):
     """A module for creating a view for each file with hyperlinked source"""
 
-    prefix = Parameter('', 'prefix to the syntax files')
     external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
    
+    def register(self, frame):
+
+        super(Source, self).register(frame)
+        self.icons = {}
+        if self.processor.sxr_prefix:
+            share = config.datadir
+            self.icons['C'] = 'src-c.png'
+            self.icons['C++'] = 'src-c++.png'
+            self.icons['Python'] = 'src-py.png'
+            for l in self.icons:
+                src = os.path.join(share, self.icons[l])
+                self.directory_layout.copy_file(src, self.icons[l])
+
+
     def filename(self):
 
         return self.__filename
@@ -69,6 +92,9 @@ class Source(View):
     def process(self):
         """Creates a view for every file"""
 
+        self.prefix = self.processor.sxr_prefix
+        if self.prefix is None: return
+        
         # Get the TOC
         self.__toc = self.processor.toc
         # create a view for each primary file
@@ -79,6 +105,8 @@ class Source(View):
 
     def register_filenames(self):
         """Registers a view for every source file"""
+
+        if self.processor.sxr_prefix is None: return
 
         for file in self.processor.ir.files.values():
             if file.annotations['primary']:
@@ -104,45 +132,30 @@ class Source(View):
 
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
-            translator = SXRTranslator(sxr)
+            translator = SXRTranslator(sxr, file.annotations['language'], self.processor.debug)
             linker = self.external_url and self.external_ref or self.lookup_symbol
             translator.link(linker)
             translator.translate(self)
-        elif not link:
-            # No link module..
-            self.write('link module for highlighting source unavailable')
-            try:
-                self.write(open(file.abs_name,'r').read())
-            except IOError, e:
-                self.write("An error occurred:"+ str(e))
-        else:
-            # Call link module
-            f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
-            f_in = file.abs_name
-            f_link = os.path.join(self.prefix, source)
-            try:
-                lookup = self.external_url and self.external_ref or self.lookup_symbol
-                link.link(lookup, f_in, f_out, f_link)
-
-            except link.error, msg:
-                print "An error occurred:",msg
-
-            try:
-                self.write(open(f_out,'r').read())
-                os.unlink(f_out)
-
-            except IOError, e:
-                self.write("An error occurred:"+ str(e))
-
         self.end_file()
 
 
     def lookup_symbol(self, name):
 
-        e = self.__toc.lookup(tuple(name))
+        e = self.__toc.lookup(name)
         return e and self.rel_url + e.link or ''
 
 
     def external_ref(self, name):
 
-        return self.external_url + urllib.quote('::'.join(name))
+        return self.external_url + urllib.quote(str(name))
+
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
+
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

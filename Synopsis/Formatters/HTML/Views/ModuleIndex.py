@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -19,8 +19,8 @@ class ModuleIndex(View):
    def register(self, frame):
 
       super(ModuleIndex, self).register(frame)
-      self.__filename = self.directory_layout.module_index(())
-      self.__title = 'Global Module Index'
+      self.__filename = self.directory_layout.module_index(self.processor.root.name)
+      self.__title = 'Global %s Index'%self.processor.root.type.capitalize()
 
    def filename(self):
 
@@ -32,10 +32,9 @@ class ModuleIndex(View):
 
    def process(self):
 
-      self.__modules = [d for d in self.processor.ir.declarations
-                        if isinstance(d, ASG.Module)]
-      while self.__modules:
-         m = self.__modules.pop(0)
+      self.module_queue = [self.processor.root]
+      while self.module_queue:
+         m = self.module_queue.pop(0)
          self.process_module_index(m)
     
    def make_view_heading(self, module):
@@ -51,7 +50,7 @@ class ModuleIndex(View):
          url = self.directory_layout.module_index(name[:depth+1])
          label = escape(name[depth])
          links.append(href(rel(self.__filename, url), label))
-      return element('b', '::'.join(links) + ' Index')
+      return element('b', name.sep.join(links) + ' Index')
 
    def process_module_index(self, module):
       "Index one module"
@@ -59,7 +58,7 @@ class ModuleIndex(View):
       sorter = self.processor.sorter.clone(module.declarations)
 
       self.__filename = self.directory_layout.module_index(module.name)
-      self.__title = Util.ccolonName(module.name) or 'Global Module'
+      self.__title = str(module.name) or 'Global Module'
       self.__title = self.__title + ' Index'
       # Create file
       self.start_file()
@@ -91,7 +90,7 @@ class ModuleIndex(View):
             if heading:
                self.write(heading)
                heading = None
-            label = Util.ccolonName(child.name, module.name)
+            label = str(module.name.prune(child.name))
             label = escape(label)
             label = replace_spaces(label)
             if isinstance(child, ASG.Module):
@@ -109,4 +108,4 @@ class ModuleIndex(View):
       self.end_file()
 
       children = [c for c in module.declarations if isinstance(c, ASG.Module)]
-      self.__modules.extend(children)
+      self.module_queue.extend(children)

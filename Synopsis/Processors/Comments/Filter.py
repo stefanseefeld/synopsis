@@ -18,7 +18,7 @@ class Filter(Processor, ASG.Visitor):
 
         self.ir = self.merge_input(ir)
 
-        for d in ir.declarations:
+        for d in ir.asg.declarations:
             d.accept(self)
 
         return self.output_and_return_ir()
@@ -50,7 +50,7 @@ class CFilter(Filter):
         """Compiles the regular expressions"""
 
         Filter.__init__(self, **kwds)
-        self.c = re.compile(CFilter.c)
+        self.comment = re.compile(CFilter.comment)
         self.line = re.compile(CFilter.line)
 
     def filter_comment(self, comment):
@@ -59,18 +59,18 @@ class CFilter(Filter):
         " */" and the one-line "/* ... */".
         """
 
-        text_list = []
-        mo = self.c.search(comment)
+        text = []
+        mo = self.comment.search(comment)
         while mo:
-            text_list.append(mo.group('text'))
+            text.append(mo.group('text'))
             lines = mo.group('lines')
             if lines:
-                mol = self.re_line.search(lines)
+                mol = self.line.search(lines)
                 while mol:
-                    text_list.append(mol.group('text'))
-                    mol = self.re_line.search(lines, mol.end())
-            mo = self.re_c.search(text, mo.end())
-        return '\n'.join(text_list)
+                    text.append(mol.group('text'))
+                    mol = self.line.search(lines, mol.end())
+            mo = self.comment.search(comment, mo.end())
+        return '\n'.join(text)
 
 
 class SSFilter(Filter):

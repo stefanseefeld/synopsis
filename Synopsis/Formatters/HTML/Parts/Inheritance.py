@@ -7,10 +7,14 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
+
+def short_name(decl):
+   return isinstance(decl, ASG.Function) and decl.real_name[-1] or decl.name[-1]
+    
 
 class Inheritance(Part):
 
@@ -25,26 +29,26 @@ class Inheritance(Part):
    def process(self, decl):
       "Walk the hierarchy to find inherited members to print."
 
-      if not isinstance(decl, ASG.Class): return
+      if not isinstance(decl, (ASG.Class, ASG.ClassTemplate)): return
       self.write_start()
-      names = [self._short_name(n) for n in decl.declarations]
+      names = [short_name(d) for d in decl.declarations]
       self._process_superclasses(decl, names)
       self.write_end()
 
-   def _process_class(self, clas, names):
+   def _process_class(self, class_, names):
       "Prints info for the given class, and calls _process_superclasses after"
 
-      sorter = self.processor.sorter.clone(clas.declarations)
+      sorter = self.processor.sorter.clone(class_.declarations)
       child_names = []
 
       # Iterate through the sections
       for section in sorter:
          # Write a heading
-         heading = section+' Inherited from '+ Util.ccolonName(clas.name, self.scope())
+         heading = section+' Inherited from '+ str(self.scope().prune(class_.name))
          started = 0 # Lazy section start incase no details for this section
          # Iterate through the children in this section
          for child in sorter[section]:
-            child_name = self._short_name(child)
+            child_name = short_name(child)
             if child_name in names:
                continue
             # FIXME: This doesn't account for the inheritance type
@@ -67,12 +71,7 @@ class Inheritance(Part):
          # Finish the section
          if started: self.write_section_end(heading)
 	
-      self._process_superclasses(clas, names + child_names)
-    
-   def _short_name(self, decl):
-      if isinstance(decl, ASG.Function):
-         return decl.real_name[-1]
-      return decl.name[-1]
+      self._process_superclasses(class_, names + child_names)
     
    def _process_superclasses(self, class_, names):
       """Iterates through the superclasses of clas and calls _process_clas for
@@ -80,7 +79,7 @@ class Inheritance(Part):
 
       for inheritance in class_.parents:
          parent = inheritance.parent
-         if isinstance(parent, ASG.Declared):
+         if isinstance(parent, ASG.DeclaredTypeId):
             parent = parent.declaration
             if isinstance(parent, ASG.Class):
                self._process_class(parent, names)

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<book xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Math Library Manual</title>
+
+    <releaseinfo>Version X.Y</releaseinfo>
+  </bookinfo>
+  <chapter id="concepts">
+    <title>Concepts</title>
+  </chapter>
+  <chapter id="reference">
+    <title>Reference</title>
+    <xi:include href="math.xml">
+      <xi:fallback>The generated reference...</xi:fallback>
+    </xi:include>
+  <index type="types">
+    <title>Types</title>
+  </index>
+  <index type="functions">
+    <title>Functions</title>
+  </index>
+  </chapter>
+</book>

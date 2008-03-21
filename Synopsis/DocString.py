@@ -6,10 +6,10 @@
 #
 
 class DocString:
-   """A doc-string for ASG nodes."""
+    """A doc-string for ASG nodes."""
    
-   def __init__(self, text, markup):
+    def __init__(self, text, markup):
 
-       self.text = text
-       self.markup = markup
+        self.text = text
+        self.markup = markup
 

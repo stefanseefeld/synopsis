@@ -8,7 +8,6 @@
 
 from Synopsis.Formatters.HTML.Tags import *
 from Default import Default
-from Synopsis import Util
 
 class InheritanceFormatter(Default):
    """Prints just the name of each declaration, with a link to its doc"""
@@ -16,8 +15,8 @@ class InheritanceFormatter(Default):
    def format_declaration(self, decl, label=None):
 
       if not label: label = decl.name[-1]
-      fullname = Util.ccolonName(decl.name, self.formatter.scope())
-      title = decl.type + " " + escape(fullname)
+      qname = self.formatter.scope().prune(decl.name)
+      title = decl.type + ' ' + escape(str(qname))
       return self.reference(decl.name, label=label, title=title) + ' '
 
    def format_function(self, decl):

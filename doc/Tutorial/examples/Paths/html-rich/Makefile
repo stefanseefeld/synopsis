@@ -6,15 +6,11 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 
 all: Paths
 
-Paths: Paths.syn Paths.xref
+Paths: Paths.syn
 	$(synopsis) html --output=$@ $<
 
 Paths.syn: $(syn)
 	$(synopsis) link --output=$@ $^
-
-Paths.xref: Paths.syn 
-	@echo generating $@
-	$(synopsis) xref --output=$@ $^
 
 Path.syn: ../src/Path.h
 	$(synopsis) cxx_ssd_prev --output=$@ $<
@@ -37,7 +33,7 @@ endif
 install-print:
 
 clean:
-	rm -rf *.syn Paths.xref links xref
+	rm -rf *.syn sxr
 
 distclean: clean
 	rm -rf Paths

@@ -7,8 +7,8 @@
 #
 
 from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters import quote_name
 from Default import Default
-from Synopsis import Util
 
 class XRefLinker(Default):
     """Adds an xref link to all declarations"""
@@ -16,15 +16,17 @@ class XRefLinker(Default):
     def register(self, formatter):
 
         Default.register(self, formatter)
-        self.xref = self.processor.xref
+        self.pager = self.processor.xref
+        self.sxr = self.processor.sxr_prefix and self.processor.ir.sxr
 
     def format_declaration(self, decl):
 
-        info = self.xref.get_info(decl.name)
-        if not info:
+        entry = self.sxr and self.sxr.get(decl.name)
+        if not entry:
             return ''
-        page = self.xref.get_page_for(decl.name)
-        filename = self.directory_layout.xref(page)
-        filename = filename + '#' + Util.quote('::'.join(decl.name))
-        return '(%s)'%href(rel(self.formatter.filename(), filename), 'xref')
+        page = self.pager.get(decl.name)
+        url = self.directory_layout.xref(page)
+        url += '#' + quote_name(str(decl.name))
+        label = img(src=rel(self.view.filename(), 'xref.png'), alt='references', border='0')
+        return href(rel(self.view.filename(), url), label)
 

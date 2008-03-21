@@ -6,10 +6,10 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-
 import os, stat, os.path, time, re
 
 def compile_glob(globstr):
@@ -167,3 +167,14 @@ class Directory(View):
         # recursively create all child directory views
         for dir in dirs:
             self.process_dir(dir)
+
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
+
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.Tags import *
 from Tree import Tree
 
@@ -35,11 +35,9 @@ class ModuleTree(Tree):
 
     def process(self):
 
-        # Creare the file
         self.start_file()
         self.write_navigation_bar()
-        # FIXME: see HTML.Formatter
-        module = self.processor.ir.declarations[0]
+        module = self.processor.root
         self.index_module(module, module.name)
         self.end_tree()
         self.end_file()
@@ -56,16 +54,18 @@ class ModuleTree(Tree):
         self._children_cache[decl] = children
         return children
 
-    def index_module(self, module, scope):
+    def index_module(self, module, qname):
         """Write a link for this module and recursively visit child modules."""
 
-        name = module.name
         # Find children, and sort so that compound children (packages) go first
         children = self.get_children(module)
         children.sort(lambda a,b,g=self.get_children:
                       cmp(len(g(b)),len(g(a))))
         # Print link to this module
-        label = Util.ccolonName(name, scope) or 'Global Module'
+        if module.name:
+            label = str(qname.prune(module.name))
+        else:
+            label = 'Global %s'%module.type.capitalize()
         link = self._link_href(module)
         text = href(link, label, target='detail')
         if not len(children):
@@ -74,6 +74,6 @@ class ModuleTree(Tree):
             self.write_node_start(text)
             # Add children
             for child in children:
-                self.index_module(child, name)
+                self.index_module(child, module.name)
             self.write_node_end()
 

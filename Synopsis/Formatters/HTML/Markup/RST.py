@@ -9,9 +9,9 @@ from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
 from docutils.nodes import *
 from docutils.core import *
-from docutils.readers import standalone
-from docutils.transforms import Transform
-import re
+from docutils.parsers.rst import roles
+import re, StringIO
+
 
 class SummaryExtractor(NodeVisitor):
     """A SummaryExtractor creates a document containing the first sentence of
@@ -63,74 +63,73 @@ class RST(Formatter):
 
         formatter = self
         
-        class Linker(Transform):
-            """Resolve references that don't have explicit targets
-            in the same doctree."""
+        def ref(name, rawtext, text, lineno, inliner,
+                options={}, content=[]):
 
-            default_priority = 1
-    
-            def apply(self):
-                for ref in self.document.traverse(reference):
-                    if ref.resolved or not ref.hasattr("refname"):
-                        return
-                    name = ref['name']
-                    uri = formatter.lookup_symbol(name, decl.name)
-                    if uri:
-                        ref.resolved = 1
-                        ref['refuri'] = rel(view.filename(), uri)
-                    else:
-                        ref.replace_self(Text(name))
+            name = utils.unescape(text)
+            uri = formatter.lookup_symbol(name, decl.name[:-1])
+            if uri:
+                ref = rel(view.filename(), uri)
+                node = reference(rawtext, name, refuri=ref, **options)
+            else:
+                node = emphasis(rawtext, name)
+            return [node], []
 
-        class Reader(standalone.Reader):
+        roles.register_local_role('', ref)
 
-            def get_transforms(self):
-                return [Linker] + standalone.Reader.get_transforms(self)
-
+        errstream = StringIO.StringIO()
+        settings = {}
+        settings['halt_level'] = 2
+        settings['warning_stream'] = errstream
+        settings['traceback'] = True
 
         doc = decl.annotations.get('doc')
         if doc:
-            doctree = publish_doctree(doc.text, reader=Reader(),
-                                      settings_overrides={'report_level':10000,
-                                                          'halt_level':10000,
-                                                          'warning_stream':None})
+            try:
+                doctree = publish_doctree(doc.text, settings_overrides=settings)
+                # Extract the summary.
+                extractor = SummaryExtractor(doctree)
+                doctree.walk(extractor)
 
-            # Extract the summary.
-            extractor = SummaryExtractor(doctree)
-            doctree.walk(extractor)
+                reader = docutils.readers.doctree.Reader(parser_name='null')
 
-            reader = docutils.readers.doctree.Reader(parser_name='null')
-
-            # Publish the summary.
-            if extractor.summary:
+                # Publish the summary.
+                if extractor.summary:
+                    pub = Publisher(reader, None, None,
+                                    source=io.DocTreeInput(extractor.summary),
+                                    destination_class=io.StringOutput)
+                    pub.set_writer('html')
+                    pub.process_programmatic_settings(None, None, None)
+                    dummy = pub.publish(enable_exit_status=None)
+                    summary = pub.writer.parts['html_body']
+                    # Hack to strip off some redundant blocks to make the output
+                    # more compact.
+                    if (summary.startswith('<div class="document">\n') and
+                        summary.endswith('</div>\n')):
+                        summary=summary[23:-7]
+                else:
+                    summary = ''
+                
+                # Publish the details.
                 pub = Publisher(reader, None, None,
-                                source=io.DocTreeInput(extractor.summary),
+                                source=io.DocTreeInput(doctree),
                                 destination_class=io.StringOutput)
                 pub.set_writer('html')
                 pub.process_programmatic_settings(None, None, None)
                 dummy = pub.publish(enable_exit_status=None)
-                summary = pub.writer.parts['html_body']
+                details = pub.writer.parts['html_body']
                 # Hack to strip off some redundant blocks to make the output
                 # more compact.
-                if (summary.startswith('<div class="document">\n') and
-                    summary.endswith('</div>\n')):
-                    summary=summary[23:-7]
-            else:
-                summary = ''
+                if (details.startswith('<div class="document">\n') and
+                    details.endswith('</div>\n')):
+                    details=details[23:-7]
                 
-            # Publish the details.
-            pub = Publisher(reader, None, None,
-                            source=io.DocTreeInput(doctree),
-                            destination_class=io.StringOutput)
-            pub.set_writer('html')
-            pub.process_programmatic_settings(None, None, None)
-            dummy = pub.publish(enable_exit_status=None)
-            details = pub.writer.parts['html_body']
-            # Hack to strip off some redundant blocks to make the output
-            # more compact.
-            if (details.startswith('<div class="document">\n') and
-                details.endswith('</div>\n')):
-                details=details[23:-7]
-                
-            return Struct(summary, details)
-        else:
-            return Struct('', '')
+                return Struct(summary, details)
+            
+            except docutils.utils.SystemMessage, error:
+                xx, line, message = str(error).split(':', 2)
+                print 'In DocString attached to declaration at %s:%d:'%(decl.file.name,
+                                                                        decl.line)
+                print '  line %s:%s'%(line, message)
+
+        return Struct('', '')

@@ -6,11 +6,14 @@
 # see the file COPYING for details.
 #
 
-from Synopsis import Util, ASG
+from Synopsis import config
+from Synopsis import ASG
 from Synopsis.Formatters import TOC
+from Synopsis.Formatters import quote_name, open_file, copy_file
 from Tags import *
+import os, sys
 
-import os, os.path, sys, stat
+
 
 class DirectoryLayout (TOC.Linker):
     """DirectoryLayout defines how the generated html files are organized.
@@ -37,29 +40,22 @@ class DirectoryLayout (TOC.Linker):
         else:
             print "ERROR: stylesheet %s doesn't exist"%processor.stylesheet
             sys.exit(1)
+        self.copy_file(os.path.join(config.datadir, 'logo-small.png'),
+                       'synopsis.png')
+
 
     def copy_file(self, src, dest):
         """Copy src to dest, if dest doesn't exist yet or is outdated."""
 
-        dest = os.path.join(self.base, dest)
-        try:
-            filetime = os.stat(src)[stat.ST_MTIME]
-            if (not os.path.exists(dest)
-                or filetime > os.stat(dest)[stat.ST_MTIME]):
-                Util.open(dest).write(open(src, 'r').read())
-        except EnvironmentError, reason:
-            import traceback
-            traceback.print_exc()
-            print "ERROR: ", reason
-            sys.exit(2)
+        copy_file(src, os.path.join(self.base, dest))
     
     def scope(self, scope = None):
         """Return the filename of a scoped name (class or module).
         The default implementation is to join the names with '-' and append
-        ".html" Additionally, special characters are Util.quoted in URL-style"""
+        ".html". Additionally, special characters are quoted."""
 
         if not scope: return self.special('global')
-        return Util.quote('.'.join(scope)) + '.html'
+        return quote_name('.'.join(scope)) + '.html'
 
     def _strip(self, filename):
 
@@ -104,7 +100,7 @@ class DirectoryLayout (TOC.Linker):
         """Return the name of a special type of scope file. Default is to join
         the scope with '.' and prepend '.'+name"""
         
-        return "_%s%s%s"%(name, Util.quote('.'.join(scope)), ext)
+        return "_%s%s%s"%(name, quote_name('.'.join(scope)), ext)
 
     def xref(self, page):
         """Return the name of the xref file for the given page"""
@@ -121,13 +117,16 @@ class DirectoryLayout (TOC.Linker):
         """Return the name of the index of the given module. Default is to
         join the name with '.', prepend '_module' and append '.html' """
         
-        return Util.quote('_module' + '.'.join(scope)) + '.html'
+        return quote_name('_module' + '.'.join(scope)) + '.html'
 	
     def link(self, decl):
         """Create a link to the named declaration. This method may have to
         deal with the directory layout."""
         
-        if isinstance(decl, ASG.Scope):
+        if (isinstance(decl, ASG.Scope) or
+            # If this is a forward-declared class template with known specializations,
+            # we want to treat it like an ASG.Class, as far as formatting is concerned.
+            (isinstance(decl, ASG.Forward) and decl.specializations)):
             # This is a class or module, so it has its own file
             return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it
@@ -141,7 +140,7 @@ class NestedDirectoryLayout(DirectoryLayout):
     def scope(self, scope = None):
 
         if not scope: return 'Scopes/global.html'
-        else: return Util.quote('Scopes/' + '/'.join(scope)) + '.html'
+        else: return quote_name('Scopes/' + '/'.join(scope)) + '.html'
 
     def file_index(self, filename):
 
@@ -161,7 +160,7 @@ class NestedDirectoryLayout(DirectoryLayout):
     
     def scoped_special(self, name, scope, ext='.html'):
 
-        return Util.quote(name + '/' + '/'.join(scope)) + ext
+        return quote_name(name + '/' + '/'.join(scope)) + ext
 
     def xref(self, page):
 
@@ -176,4 +175,4 @@ class NestedDirectoryLayout(DirectoryLayout):
         if not len(scope):
             return 'Modules/global.html'
         else:
-            return Util.quote('Modules/' + '/'.join(scope)) + '.html'
+            return quote_name('Modules/' + '/'.join(scope)) + '.html'

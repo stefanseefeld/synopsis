@@ -6,8 +6,8 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import ASG
 from Synopsis.Processor import Parameter
-from Synopsis import Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
@@ -23,13 +23,13 @@ class Summary(Part):
     def register(self, view):
 
         Part.register(self, view)
-        self.__link_detail = 0
+        self.__link_detail = False
 
-    def set_link_detail(self, boolean):
+    def set_link_detail(self, flag):
         """Sets link_detail flag to given value.
         @see label()"""
 
-        self.__link_detail = boolean
+        self.__link_detail = flag
 
     def label(self, ref, label=None):
         """Override to check link_detail flag. If it's set, returns a reference
@@ -38,7 +38,7 @@ class Summary(Part):
         if label is None: label = ref
         if self.__link_detail:
             # Insert a reference instead
-            return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
+            return span('name',self.reference(ref, str(self.scope().prune(label))))
         return Part.label(self, ref, label)
 	
     def write_section_start(self, heading):
@@ -59,6 +59,9 @@ class Summary(Part):
       
     def process(self, scope):
         "Print out the summaries from the given scope"
+
+        if type(scope) == ASG.Forward:
+            return
 
         doc = self.processor.documentation
         sorter = self.processor.sorter.clone(scope.declarations)

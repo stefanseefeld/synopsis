@@ -28,7 +28,7 @@ class Translator(Processor, ASG.Visitor):
         if self.processor:
             self.ir = self.processor.process(self.ir)
 
-        for decl in self.ir.declarations:
+        for decl in self.ir.asg.declarations:
             decl.accept(self)
 
         return self.output_and_return_ir()

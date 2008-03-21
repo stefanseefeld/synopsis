@@ -7,11 +7,10 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Source import *
-
 import os
 
 class FileDetails(View):
@@ -25,7 +24,8 @@ class FileDetails(View):
       super(FileDetails, self).register(frame)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = self.processor.has_view('Source')
+      self.link_source = self.processor.has_view('Source') and self.processor.sxr_prefix
+
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -67,18 +67,16 @@ class FileDetails(View):
 
       self.start_file()
       self.write_navigation_bar()
-      self.write(element('h1', os.sep.join(name))+'<br/>')
-      if self.__link_source:
+      self.write(element('h1', os.sep.join(name)))
+      if self.link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))
-         self.write('(' + href(link, 'Source', target='content')+')<br/>')
+         self.write(div('', href(link, 'source code', target='content')) + '\n')
 
       # Print list of includes
       try:
-         sourcefile = self.processor.ir.files[filename]
          # Only show files from the project
-         includes = [i for i in sourcefile.includes
-                     if i.target.annotations['primary']]
+         includes = [i for i in file.includes if i.target.annotations['primary']]
          self.write('<h2 class="heading">Includes from this file:</h2>')
          if not includes:
             self.write('No includes.<br/>')
@@ -114,15 +112,14 @@ class FileDetails(View):
             else: plural = 's'
             if len(curr_scope):
                self.write('<h3>%s%s in %s</h3>\n<div>'%(
-                  curr_type.capitalize(), plural,
-                  escape(Util.ccolonName(curr_scope))))
+                  curr_type.capitalize(), plural, escape(str(curr_scope))))
             else:
                self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
             br = 0
             
          # Format this declaration
          entry = self.processor.toc[name]
-         label = escape(Util.ccolonName(name, curr_scope))
+         label = escape(str(curr_scope.prune(name)))
          label = replace_spaces(label)
          if entry:
             link = rel(self.filename(), entry.link)

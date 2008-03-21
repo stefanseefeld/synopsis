@@ -20,7 +20,7 @@ class ASGTranslator : private PTree::Visitor
 {
 public:
   ASGTranslator(std::string const &filename,
-		std::string const &base_path, bool main_file_only,
+		std::string const &base_path, bool primary_file_only,
 		bpl::object ir, bool v, bool d);
 
   void translate(PTree::Node *, Buffer &);
@@ -47,7 +47,9 @@ private:
   //. it may create a modifier and return that.
   bpl::object lookup(PTree::Encoding const &name);
   bpl::object lookup_function_types(PTree::Encoding const &name, bpl::list types);
-  bpl::object declare(bpl::tuple qname, bpl::object declaration);
+  //. Declare the given type-id either as a `DeclaredTypeId` (if visible), or
+  //. an `UnknownTypeId` otherwise.
+  bpl::object declare_type(bpl::object id, bpl::object declaration, bool visible);
 
   void declare(bpl::object declaration);
 
@@ -58,6 +60,9 @@ private:
   PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
 					std::string &name);
 
+  bpl::object qname(std::string const &name) { return qname_(bpl::make_tuple(name));}
+
+  bpl::object         qname_;
   bpl::object         asg_module_;
   bpl::object         sf_module_;
   bpl::dict           files_;
@@ -74,6 +79,9 @@ private:
   Buffer             *buffer_;
   PTree::Declaration *declaration_;
   bpl::object         parameter_;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool                defines_class_or_enum_;
   PTree::Encoding     name_;
 };
 

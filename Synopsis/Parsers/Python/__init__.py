@@ -7,28 +7,64 @@
 
 from Synopsis.Processor import *
 from Synopsis import ASG
+from Synopsis.QualifiedName import QualifiedPythonName as QName
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
 from ASGTranslator import ASGTranslator
+from SXRGenerator import SXRGenerator
 import os
 
 __all__ = ['Parser']
+
+def find_imported(target, root, current, verbose = False):
+    """Lookup imported files, based on current file's location.
+
+      target: Pair of names.
+      root: root directory to which to confine the lookup.
+      current: file name of the module issuing the import."""
+
+    current = os.path.dirname(current)
+    if root:
+        locations = [current.rsplit(i, 1)[0] for i in current.count('.')]
+    else:
+        locations = [current]
+    modname, name = target
+    if name:
+        # name may be a module or a module's attribute.
+        # Only find the module.
+        files = ['%s/%s.py'%(modname, name), '%s.py'%modname]
+    else:
+        files = ['%s.py'%modname]
+    files.append(os.path.join(modname, '__init__.py'))
+
+    for l in locations:
+        for f in files:
+            target = os.path.join(l, f)
+            if verbose: print 'trying %s'%target
+            if os.path.exists(target):
+                return target, target[len(root):]
+    return None, None
+    
+
 
 class Parser(Processor):
     """Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
     info."""
 
+    primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'Path prefix to strip off of input file names.')
-    syntax_prefix = Parameter(None, 'Path prefix (directory) to contain syntax info.')
+    sxr_prefix = Parameter(None, 'Path prefix (directory) to contain sxr info.')
+    default_docformat = Parameter('', 'default documentation format')
     
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
         self.scopes = []
       
         # Create return type for Python functions:
-        self.return_type = ASG.BaseType('Python',('',))
+        self.return_type = ASG.BuiltinTypeId('Python',('',))
 
         # Validate base_path.
         if self.base_path:
@@ -38,7 +74,9 @@ class Parser(Processor):
             if self.base_path[-1] != os.sep:
                 self.base_path += os.sep
             
-        for file in self.input:
+        self.all_files = self.input[:]
+        while len(self.all_files):
+            file = self.all_files.pop()
             self.process_file(file)
 
         return self.output_and_return_ir()
@@ -47,15 +85,14 @@ class Parser(Processor):
     def process_file(self, filename):
         """Parse an individual python file."""
 
-        short_filename = filename
+        long_filename = filename
         if filename[:len(self.base_path)] != self.base_path:
             raise InvalidArguent('invalid input filename:\n'
                                  '"%" does not match base_path "%s"'
                                  %(filename, self.base_path))
 
         short_filename = filename[len(self.base_path):]
-        sourcefile = SourceFile(short_filename, filename, 'Python')
-        sourcefile.annotations['primary'] = True
+        sourcefile = SourceFile(short_filename, long_filename, 'Python', True)
         self.ir.files[short_filename] = sourcefile
 
         package = None
@@ -70,43 +107,38 @@ class Parser(Processor):
             for c in components[:-1]:
                 package_name.append(c)
                 package_path = os.path.join(package_path, c)
+                qname = QName(package_name)
                 if not os.path.isfile(os.path.join(package_path, '__init__.py')):
-                    raise InvalidArgument('"%s" is not a package'
-                                          %''.join(package_name))
-                module = ASG.Module(sourcefile, -1, 'package', package_name)
+                    raise InvalidArgument('"%s" is not a package'%qname)
+                module = ASG.Module(sourcefile, -1, 'package', qname)
+                self.ir.asg.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
                 if package:
                     package.declarations.append(module)
                 else:
-                    self.ir.declarations.append(module)
+                    self.ir.asg.declarations.append(module)
 
                 package = module
 
-        basename = os.path.basename(filename)
-        if basename == '__init__.py':
-            if package:
-                module = package
-            else:
-                dirname = os.path.dirname(filename)
-                module_name = os.path.splitext(os.path.basename(dirname))[0]
-                module = ASG.Module(sourcefile, -1, 'package', [module_name])
-                self.ir.declarations.append(module)
+        translator = ASGTranslator(package, self.ir.asg.types, self.default_docformat)
+        translator.process_file(sourcefile)
+        # At this point, sourcefile contains a single declaration: the module.
+        if package:
+            package.declarations.extend(sourcefile.declarations)
         else:
-            module_name = os.path.splitext(basename)[0]
-            if package:
-                module = ASG.Module(sourcefile, -1, 'module',
-                                    package_name + [module_name])
-                package.declarations.append(module)
-            else:
-                module = ASG.Module(sourcefile, -1, 'module', [module_name])
-                self.ir.declarations.append(module)
+            self.ir.asg.declarations.extend(sourcefile.declarations)
+        if not self.primary_file_only:
+            for i in translator.imports:
+                target = find_imported(i, self.base_path, sourcefile.name, self.verbose)
+                if target[0] and target[1] not in self.ir.files:
+                    # Only process if we have not visited it yet.
+                    self.all_files.append(target[0])
 
-        translator = ASGTranslator(module, self.ir.types)
-        if self.syntax_prefix is None:
-            xref = None
-        else:
-            xref = os.path.join(self.syntax_prefix, short_filename + '.sxr')
-            dirname = os.path.dirname(xref)
+        if self.sxr_prefix:
+            sxr = os.path.join(self.sxr_prefix, short_filename + '.sxr')
+            dirname = os.path.dirname(sxr)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, 0755)
-        translator.process_file(filename, xref)
-        sourcefile.declarations.extend(module.declarations)
+
+            sxr_generator = SXRGenerator()
+            module = sourcefile.declarations[0]
+            sxr_generator.process_file(module.name, sourcefile, sxr)

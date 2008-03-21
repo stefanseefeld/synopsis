@@ -7,6 +7,7 @@
 #
 
 from Synopsis import IR
+from Synopsis import ASG
 from Synopsis.Processor import InvalidCommand
 from ClassHierarchySimple import ClassHierarchySimple
 import os
@@ -27,8 +28,8 @@ class ClassHierarchyGraph(ClassHierarchySimple):
         #label = self.processor.files.scoped_special('inheritance', clas.name)
         label = self.formatter.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
-        ir = IR.IR({}, [class_], self.processor.ir.types)
-        dot = Dot.Formatter()
+        ir = IR.IR(files={}, asg=ASG.ASG([class_], self.processor.ir.asg.types))
+        dot = Dot.Formatter(bgcolor=self.processor.graph_color)
         dot.toc = self.processor.toc
         try:
             dot.process(ir,
