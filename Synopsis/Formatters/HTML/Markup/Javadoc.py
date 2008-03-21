@@ -20,9 +20,10 @@ class Javadoc(Formatter):
             
 
     summary = r'(\s*[\w\W]*?\.)(\s|$)'
-    block_tags = r'(^\s*\@\w+[\s$])'
-    link_split = r'({@link(?:plain)?\s[^}]+})'
-    link = r'{@link(?:plain)?\s+([\w#.]+)(?:\([^\)]*\))?(\s+.*)?}'
+    block_tag = r'(^\s*\@\w+[\s$])'
+    inline_tag = r'{@(?P<tag>\w+)\s+(?P<content>[^}]+)}'
+    inline_tag_split = r'({@\w+\s+[^}]+})'
+    xref = r'([\w#.]+)(?:\([^\)]*\))?\s*(.*)'
 
     tag_name = {
     'author': ['Author', 'Authors'],
@@ -45,15 +46,16 @@ class Javadoc(Formatter):
         """Create regex objects for regexps"""
 
         self.summary = re.compile(Javadoc.summary)
-        self.block_tags = re.compile(Javadoc.block_tags, re.M)
-        self.link_split = re.compile(Javadoc.link_split)
-        self.link = re.compile(Javadoc.link)
+        self.block_tag = re.compile(Javadoc.block_tag, re.M)
+        self.inline_tag = re.compile(Javadoc.inline_tag)
+        self.inline_tag_split = re.compile(Javadoc.inline_tag_split)
+        self.xref = re.compile(Javadoc.xref)
 
 
     def split(self, doc):
         """Split a javadoc comment into description and blocks."""
 
-        chunks = self.block_tags.split(doc)
+        chunks = self.block_tag.split(doc)
         description = chunks[0]
         blocks = []
         for i in range(1, len(chunks)):
@@ -72,6 +74,8 @@ class Javadoc(Formatter):
                     elif body[0] == '<':
                         pass
                     else:
+                        # @link tags are interpreted as cross-references
+                        #       and resolved later (see format_inline_tag)
                         body = '{@link %s}'%body
                 blocks.append(Javadoc.Block(tag, arg, body))
         
@@ -108,6 +112,7 @@ class Javadoc(Formatter):
         details += self.format_tag('author', blocks, view, decl)
         details += self.format_tag('date', blocks, view, decl)
         details += self.format_tag('version', blocks, view, decl)
+        details += self.format_tag('deprecated', blocks, view, decl)
         details += self.format_tag('see', blocks, view, decl)
 
         return Struct(summary, details)
@@ -115,37 +120,25 @@ class Javadoc(Formatter):
 
     def format_description(self, text, view, decl):
 
-        return self.format_link(view, decl, text)
+        return self.format_inlines(view, decl, text)
 
 
-    def format_link(self, view, decl, text):
-        """Formats inline @see tags in the text"""
+    def format_inlines(self, view, decl, text):
+        """Formats inline tags in the text."""
 
-        chunks = self.link_split.split(text)
+        chunks = self.inline_tag_split.split(text)
         text = ''
+        # Every other chunk is now an inlined tag, which we process
+        # in this loop.
         for i in range(len(chunks)):
             if i % 2 == 0:
                 text += chunks[i]
             else:
-                m = self.link.match(chunks[i])
-                if m is None:
-                    continue
-                target, name = m.groups()
-                if target[0] == '#':
-                    target = target[1:]
-                target = target.replace('#', '.')
-                target = re.sub(r'\(.*\)', '', target)
-
-                if name is None:
-                    name = target
-                else:
-                    name = name.strip()
-                target = self.lookup_symbol(name, decl.name)
-                if target:
-                    url = rel(view.filename(), target)
-                    text += href(url, name)
-                else:
-                    text += name
+                m = self.inline_tag.match(chunks[i])
+                if m:
+                    text += self.format_inline_tag(m.group('tag'),
+                                                   m.group('content'),
+                                                   view, decl)
         return text
 
 
@@ -190,6 +183,35 @@ class Javadoc(Formatter):
         if items:
             content += div('tag-heading', self.tag_name[tag][1])
             content += div('tag-section',
-                           '<br/>'.join([i.body for i in items]))
+                           '<br/>'.join([self.format_inlines(view, decl, i.body)
+                                         for i in items]))
         return content
 
+    def format_inline_tag(self, tag, content, view, decl):
+
+        text = ''
+        if tag == 'link':
+            xref = self.xref.match(content)
+            name, label = xref.groups()
+            if not label:
+                label = name
+            # javadoc uses '{@link  package.class#member  label}'
+            # Here we simply replace '#' by either '::' or '.' to match
+            # language-specific qualification rules.
+            if '#' in name:
+                if '::' in name:
+                    name = name.replace('#', '::')
+                else:
+                    name = name.replace('#', '.')
+            target = self.lookup_symbol(name, decl.name[:-1])
+            if target:
+                url = rel(view.filename(), target)
+                text += href(url, label)
+            else:
+                text += label
+        elif tag == 'code':
+            text += '<code>%s</code>'%escape(content)
+        elif tag == 'literal':
+            text += '<code>%s</code>'%escape(content)
+
+        return text

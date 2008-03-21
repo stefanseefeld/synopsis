@@ -35,9 +35,9 @@ class Scope(View):
         super(Scope, self).register(frame)
         for part in self.parts: part.register(self)
 
-        self.__scopes = []
+        self.scope_queue = []
         self.__toc = TOC(self.directory_layout)
-        for d in self.processor.ir.declarations:
+        for d in self.processor.ir.asg.declarations:
             d.accept(self.__toc)
       
     def toc(self):
@@ -57,8 +57,9 @@ class Scope(View):
         if self.main:
             url = self.directory_layout.index()
         else:
-            url = self.directory_layout.scope()
-        return url, 'Global Module'
+            url = self.directory_layout.scope(self.processor.root.name)
+        title = 'Global %s'%(self.processor.root.type.capitalize())
+        return url, title
 
     def scope(self):
         """return the current scope processed by this object"""
@@ -68,22 +69,27 @@ class Scope(View):
     def process(self):
         """Creates a view for every Scope."""
 
-        # FIXME: see HTML.Formatter
-        module = self.processor.ir.declarations[0]
-        self.__scopes = [module]
-        while self.__scopes:
-            scope = self.__scopes.pop(0)
+        module = self.processor.root
+        self.scopes_queue = [module]
+        while self.scopes_queue:
+            scope = self.scopes_queue.pop(0)
             self.process_scope(scope)
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Scope)]
-            self.__scopes.extend(scopes)
+            self.scopes_queue.extend(scopes)
+            forwards = [c for c in scope.declarations
+                        if isinstance(c, ASG.Forward) and c.specializations]
+            # Treat forward-declared class template like a scope if it has
+            # specializations, since these are only listed in a Scope view.
+            # Process them directly as they don't have child declarations.
+            for f in forwards:
+                self.process_scope(f)
 
     def register_filenames(self):
         """Registers a view for every Scope."""
 
-        # FIXME: see HTML.Formatter
-        self.__scopes = [self.processor.ir.declarations[0]]
-        while self.__scopes:
-            scope = self.__scopes.pop(0)
+        self.scopes_queue = [self.processor.root]
+        while self.scopes_queue:
+            scope = self.scopes_queue.pop(0)
             if scope.name:
                 filename = self.directory_layout.scope(scope.name)
             else:
@@ -91,7 +97,7 @@ class Scope(View):
             self.processor.register_filename(filename, self, scope)
 
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
-            self.__scopes.extend(scopes)
+            self.scopes_queue.extend(scopes)
      
     def process_scope(self, scope):
         """Creates a view for the given scope"""
@@ -100,9 +106,9 @@ class Scope(View):
         self.__scope = scope.name
         if self.__scope:
             self.__filename = self.directory_layout.scope(self.__scope)
+            self.__title = escape(str(self.__scope))
         else:
-            self.__filename = self.root()[0]
-        self.__title = escape(' '.join(self.__scope))
+            self.__filename, self.__title = self.root()
         self.start_file()
         self.write_navigation_bar()
         # Loop throught all the view Parts
@@ -115,6 +121,8 @@ class Scope(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = href('http://synopsis.fresco.org', 'synopsis') + ' (version %s)'%config.version
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
         self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
         View.end_file(self)

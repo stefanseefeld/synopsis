@@ -79,7 +79,10 @@ bpl::object parse(bpl::object ir,
   IRGenerator::Context ctx(input.begin(), input.end(), input_file, generator);
   if (std::string(language) == "C")
   {
-    ctx.set_language(wave::support_c99);
+    ctx.set_language(wave::language_support(wave::support_c99|
+                                            wave::support_option_convert_trigraphs|
+                                            wave::support_option_emit_line_directives|
+                                            wave::support_option_insert_whitespace));
     // Remove the '__STDC_HOSTED__' macro as wave predefines it.
     system_flags.erase(std::remove(system_flags.begin(), system_flags.end(),
                                    std::string("-D__STDC_HOSTED__=1")),
@@ -101,9 +104,12 @@ bpl::object parse(bpl::object ir,
   }
   else if (std::string(language) == "IDL")
   {
+    ctx.set_language(wave::language_support(wave::support_c99|
+                                            wave::support_option_convert_trigraphs|
+                                            wave::support_option_emit_line_directives|
+                                            wave::support_option_insert_whitespace));
   }
   ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
-
   if (verbose)
   {
     std::cout << "system flags :" << std::endl;

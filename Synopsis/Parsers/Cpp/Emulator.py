@@ -5,6 +5,8 @@
 # see the file COPYING for details.
 #
 
+__docformat__ = 'reStructuredText'
+
 import sys, os, os.path, re, string, stat, tempfile
 from Synopsis.config import version
 
@@ -24,13 +26,15 @@ class TempFile:
 
 
 def find_ms_compiler_info():
-    """Try to find a (C++) MSVC compiler.
+    """
+    Try to find a (C++) MSVC compiler.
     Return tuple of include path list and macro dictionary."""
 
     vc6 = ('SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products\\Microsoft Visual C++', 'ProductDir')
     vc7 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.0', 'InstallDir')
     vc71 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.1', 'InstallDir')
     vc8 = ('SOFTWARE\\Microsoft\\VisualStudio\\8.0', 'InstallDir')
+    vc9e = ('SOFTWARE\\Microsoft\\VCExpress\\9.0\\Setup\\VC', 'ProductDir')
 
     vc6_macros =  [('__uuidof(x)', 'IID()'),
                    ('__int64', 'long long'),
@@ -102,36 +106,61 @@ def find_ms_compiler_info():
     vc8_paths = ['..\\..\\Vc\\Include',
                  '..\\..\\Vc\\PlatformSDK\\Include']
 
-    compilers = [(vc8, vc8_macros, vc8_paths),
+    vc9e_macros = [('__cplusplus', '1'),
+                  ('__forceinline', '__inline'),
+                  ('__uuidof(x)', 'IID()'),
+                  ('__w64', ''),
+                  ('__int8', 'char'),
+                  ('__int16', 'short'),
+                  ('__int32', 'int'),
+                  ('__int64', 'long long'),
+                  ('__ptr64', ''),
+                  ('_MSC_VER', '1400'),
+                  ('_MSC_EXTENSIONS', ''),
+                  ('_WIN32', ''),
+                  ('_M_IX86', ''),
+                  ('_WCHAR_T_DEFINED', ''),
+                  ('_INTEGRAL_MAX_BITS', '64'),
+                  ('PASCAL', ''),
+                  ('RPC_ENTRY', ''),
+                  ('SHSTDAPI', 'HRESULT'),
+                  ('SHSTDAPI_(x)', 'x')]
+    vc9e_paths = ['..\\..\\Vc\\Include',
+                 '..\\..\\Vc\\PlatformSDK\\Include']
+
+    compilers = [(vc9e, vc9e_macros, vc9e_paths),
+                 (vc8, vc8_macros, vc8_paths),
                  (vc71, vc71_macros, vc71_paths),
                  (vc7, vc7_macros, vc7_paths),
                  (vc6, vc6_macros, vc6_paths)]
 
-    paths, macros = [], []
+    found, paths, macros = False, [], []
 
     import _winreg
     for c in compilers:
         try:
             key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, c[0][0])
             path, type = _winreg.QueryValueEx(key, c[0][1])
+	    found = True
             paths.extend([os.path.join(str(path), p) for p in c[2]])
             macros.extend(c[1])
             break
         except:
             continue
 
-    return paths, macros
+    return found, paths, macros
 
-def find_gcc_compiler_info(language, compiler, arguments):
-    """Try to find a GCC-based C or C++ compiler.
+def find_gcc_compiler_info(language, compiler, flags):
+    """
+    Try to find a GCC-based C or C++ compiler.
     Return tuple of include path list and macro dictionary."""
 
-    paths, macros = [], []
-    arguments = ' '.join(arguments)
+    found, paths, macros = False, [], []
+    flags = ' '.join(flags)
     temp = TempFile(language == 'C++' and '.cc' or '.c')
-    # The output below the en_US locale, so make sure we use that.
-    command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, arguments, temp.name)
-    cin, out,err = os.popen3(command)
+    # The output below assumes the en_US locale, so make sure we use that.
+    command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, flags, temp.name)
+    cin, out, err = os.popen3(command)
     lines = err.readlines()
     cin.close()
     err.close()
@@ -174,22 +203,22 @@ def find_gcc_compiler_info(language, compiler, arguments):
             # gcc 2.x needs this or it uses nonstandard syntax in the headers
             macros.append(('__STRICT_ANSI__', ''))
 
-    return paths, macros
+    return True, paths, macros
 
 
-def find_compiler_info(language, compiler, arguments):
+def find_compiler_info(language, compiler, flags):
 
-    paths, macros = [], []
+    found, paths, macros = False, [], []
 
     if compiler == 'cl' and os.name == 'nt':
-        if arguments:
-            sys.stderr.write('Warning: ignoring unknown arguments for MSVC compiler\n')
-        paths, macros = find_ms_compiler_info()
+        if flags:
+            sys.stderr.write('Warning: ignoring unknown flags for MSVC compiler\n')
+        found, paths, macros = find_ms_compiler_info()
 
     else:
-        paths, macros = find_gcc_compiler_info(language, compiler, arguments)
+        found, paths, macros = find_gcc_compiler_info(language, compiler, flags)
         
-    return paths, macros
+    return found, paths, macros
 
 
 def get_compiler_timestamp(compiler):
@@ -209,27 +238,32 @@ def get_compiler_timestamp(compiler):
 
 
 class CompilerInfo:
-    """Info about one compiler.
+    """Info about one compiler."""
 
-    @attr compiler The name of the compiler, typically the executable name,
-    which must either be in the path or given as an absolute pathname.
-    @attr language The language the compiler is used for.
-    @attr kind A string indicating the type of this info: one of 'system', 'custom', ''.
-    'custom' compilers will never be automatically updated, and an empty string indicates
-    a failure to look up the given compiler.
-    @attr timestamp The timestamp of the compiler binary
-    @attr include_paths A list of strings indicating the include paths
-    @attr macros A list of string 2-tuples indicating key=value pairs for
-    macros. A value of '' (empty string) indicates an empty definition. A
-    value of None (not a string) indicates that the macro should be undefined.
-    """
     compiler = ''
-    arguments = []
+    """
+    The name of the compiler, typically the executable name,
+    which must either be in the path or given as an absolute,
+    pathname."""
+    flags = []
+    "Compiler flags that impact its characteristics."
     language = ''
+    "The programming language the compiler is used for."
     kind = ''
+    """
+    A string indicating the type of this info:
+    one of 'system', 'custom', ''.
+    'custom' compilers will never be automatically updated,
+    and an empty string indicates a failure to look up the 
+    given compiler."""
     timestamp = ''
+    "The timestamp of the compiler binary."
     include_paths = []
+    "A list of strings indicating the include paths."
     macros = []
+    """
+    A list of (name,value) pairs. Values may be empty, or None.
+    The latter ase indicates that the macro is to be undefined."""
 
     def _write(self, os):
         item = id(self) >= 0 and id(self) or -id(self)
@@ -243,8 +277,11 @@ class CompilerInfo:
 class CompilerList(object):
 
     user_emulations_file = '~/.synopsis/parsers/cpp/emulator'
+    "The cache file."
     default_cc_compilers = ['cc', 'gcc']
+    "List of default C compilers to be queried."
     default_cxx_compilers = ['c++', 'g++', 'cl']
+    "List of default C++ compilers to be queried."
 
     def __init__(self, filename = ''):
 
@@ -256,19 +293,20 @@ class CompilerList(object):
         return [c.compiler for c in self.compilers]
 
 
-    def _query(self, language, compiler, arguments):
+    def _query(self, language, compiler, flags):
         """Construct and return a CompilerInfo object for the given compiler."""
 
         ci = CompilerInfo()
         ci.compiler = compiler
-        ci.arguments = arguments
+        ci.flags = flags
         ci.language = language
         try:
-            paths, macros = find_compiler_info(language, compiler, arguments)
-            ci.kind = 'system'
-            ci.timestamp = get_compiler_timestamp(compiler)
-            ci.include_paths = paths
-            ci.macros = macros
+            found, paths, macros = find_compiler_info(language, compiler, flags)
+            if found:
+                ci.kind = 'system'
+                ci.timestamp = get_compiler_timestamp(compiler)
+                ci.include_paths = paths
+                ci.macros = macros
         except:
             ci.kind = '' # failure
             ci.timestamp = 0
@@ -278,7 +316,7 @@ class CompilerList(object):
     
 
     def load(self, filename = ''):
-        """Loads the compiler infos from a file"""
+        """Loads the compiler infos from a file."""
 
         compilers = []
 
@@ -345,22 +383,22 @@ class CompilerList(object):
         for ci in self.compilers:
             if ci.is_custom:
                 compilers.append(ci)
-            ci = _query(ci.language, ci.compiler, ci.arguments)
+            ci = _query(ci.language, ci.compiler, ci.flags)
             if ci:
                 compilers.append(ci)
                 
         self.compilers = compilers
         self.save()
 
-    def find(self, language, compiler, arguments):
+    def find(self, language, compiler, flags):
 
-        if not arguments:
-            arguments = []
+        if not flags:
+            flags = []
         for ci in self.compilers:
             if (not compiler and language == ci.language
-                or (compiler == ci.compiler and arguments == ci.arguments)):
+                or (compiler == ci.compiler and flags == ci.flags)):
                 return ci
-        ci = self._query(language, compiler, arguments)
+        ci = self._query(language, compiler, flags)
         self.compilers.append(ci)
         self.save()
         return ci
@@ -370,8 +408,9 @@ class CompilerList(object):
 compiler_list = None
 
 
-def get_compiler_info(language, compiler = '', arguments = None):
-    """Returns the compiler info for the given compiler. If none is
+def get_compiler_info(language, compiler = '', flags = None):
+    """
+    Returns the compiler info for the given compiler. If none is
     specified (''), return the first available one for the given language.
     The info is returned as a CompilerInfo object, or None if the compiler
     isn't found. 
@@ -381,5 +420,5 @@ def get_compiler_info(language, compiler = '', arguments = None):
     if not compiler_list:
         compiler_list = CompilerList()
 
-    ci = compiler_list.find(language, compiler, arguments)
+    ci = compiler_list.find(language, compiler, flags)
     return ci

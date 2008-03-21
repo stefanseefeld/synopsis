@@ -15,10 +15,12 @@ _access_specs = {ASG.DEFAULT: '',
                  ASG.PRIVATE: 'Private '}
 
 # The predefined order for section names
-_section_order = ('Namespaces',
+_section_order = ('Packages',
                   'Modules',
+                  'Namespaces',
                   'Class templates',
                   'Classes',
+                  'Interfaces',
                   'Typedefs',
                   'Structs',
                   'Enums',
@@ -57,7 +59,8 @@ def _compare(a, b):
 class DeclarationSorter(Parametrized, ASG.Visitor):
     """Sort declarations by type and accessibility."""
 
-    struct_as_class = Parameter(False, '') 
+    struct_as_class = Parameter(False, 'Fuse structs and classes into the same section.') 
+    group_as_section = Parameter(True, 'Map group to section, instead of keeping it as a single declaration.')
 
     def __init__(self, declarations = None, **args):
 
@@ -111,10 +114,12 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
         else:
             self.visit_declaration(decl)
     def visit_group(self, group):
-        # Just map a group to its own section.
-        section = group.name[-1]
-        for d in group.declarations:
-            self._add_declaration(d, section)
+        if self.group_as_section:
+            section = group.name[-1]
+            for d in group.declarations:
+                self._add_declaration(d, section)
+        else:
+            self.visit_declaration(group)
     def visit_scope(self, decl):
         self.visit_declaration(decl)
     def visit_class_template(self, decl):

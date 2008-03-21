@@ -8,106 +8,83 @@
 
 import os.path
 
-class FileTree:
-   """Maintains a tree of directories and files.
+class Node:
+    """Base class for directories and files in the tree.
+    @attr path the path of this node as a string.
+    @attr filename the name of the node, i.e. the last element of the
+    path string
+    """
+    def __init__(self, path, filename):
+        self.path = path
+        self.filename = filename
+            
+class Directory(Node):
+    """FileTree node for directories.
+    @attr path the path of this node as a string.
+    @attr filename the name of the directory, i.e. the last element of the
+    path string
+    @attr children the children of this directory, each Directory or File
+    objects.
+    """
+    def __init__(self, path, filename):
+        Node.__init__(self, path, filename)
+        self.children = []
     
-   The FileTree is constructed using the SourceFiles in the ASG. Each
-   SourceFile has a list of declarations in it already. The FileTree object
-   organises these lists into a tree structure, where each node is a
-   directory or a source file."""
+class File(Node):
+    """FileTree node for files.
+    @attr path the path of this node as a string.
+    @attr filename the name of the file, i.e. the last element of the
+    path string
+    @attr decls the list of declarations in this file.
+    """
+    def __init__(self, path, filename, declarations):
+        Node.__init__(self, path, filename)
+        self.declarations = declarations
 
-   class Node:
-      """Base class for directories and files in the tree.
-      @attr path the path of this node as a string.
-      @attr filename the name of the node, i.e. the last element of the
-      path string
-      """
-      def __init__(self, path, filename):
-         self.path = path
-         self.filename = filename
-    
-   class Directory(Node):
-      """FileTree node for directories.
-      @attr path the path of this node as a string.
-      @attr filename the name of the directory, i.e. the last element of the
-      path string
-      @attr children the children of this directory, each Directory or File
-      objects.
-      """
-      def __init__(self, path, filename):
-         FileTree.Node.__init__(self, path, filename)
-         self.children = []
-    
-   class File(Node):
-      """FileTree node for files.
-      @attr path the path of this node as a string.
-      @attr filename the name of the file, i.e. the last element of the
-      path string
-      @attr decls the list of declarations in this file.
-      """
-      def __init__(self, path, filename, decls):
-         FileTree.Node.__init__(self, path, filename)
-         self.decls = decls
-    
-   def __init__(self):
-      self.__dirs = None
-      self.__root = None
-      self.__ir = None
-      
-   def __add_dir(self, path):
-      """Recursively add a directory to the tree"""
-      parent_dir, filename = os.path.split(path)
-      if parent_dir == path:
-         # The root directory is added below the root node
-         # This is in case absolute filenames are mixed with relative ones
-         parent = self.__root
-         filename = '/'
-      else:
-         parent_dir, filename = os.path.split(path)
-         if parent_dir:
-            if self.__dirs.has_key(parent_dir):
-               parent = self.__dirs[parent_dir]
+def make_file_tree(files):
+
+    tmp_dirs = {}
+    root = Directory('', '')
+
+    def insert_dir(path):
+        """Recursively add a directory to the tree"""
+        parent_dir, filename = os.path.split(path)
+        if parent_dir == path:
+            # The root directory is added below the root node
+            # This is in case absolute filenames are mixed with relative ones
+            parent = root
+            filename = '/'
+        else:
+            parent_dir, filename = os.path.split(path)
+            if parent_dir:
+                if tmp_dirs.has_key(parent_dir):
+                    parent = tmp_dirs[parent_dir]
+                else:
+                    parent = insert_dir(parent_dir)
             else:
-               parent = self.__add_dir(parent_dir)
-         else:
+             # No parent means a relative name like 'home/foo/bar'
+             parent = root
+        new_dir = Directory(path, filename)
+        tmp_dirs[path] = new_dir
+        parent.children.append(new_dir)
+        return new_dir
+
+    def insert_file(file, declarations):
+        parent_dir, filename = os.path.split(file)
+        if parent_dir:
+            if tmp_dirs.has_key(parent_dir):
+                parent = tmp_dirs[parent_dir]
+            else:
+                parent = insert_dir(parent_dir)
+        else:
             # No parent means an relative name like 'home/foo/bar'
-            parent = self.__root
-      new_dir = FileTree.Directory(path, filename)
-      self.__dirs[path] = new_dir
-      parent.children.append(new_dir)
-      return new_dir
-
-   def __add_file(self, file, decls):
-      """Recursively add a file to the tree"""
-      # Find the parent Directory object
-      parent_dir, filename = os.path.split(file)
-      if self.__dirs.has_key(parent_dir):
-         parent = self.__dirs[parent_dir]
-      else:
-         parent = self.__add_dir(parent_dir)
-      new_file = FileTree.File(file, filename, decls)
-      parent.children.append(new_file)
+            parent = root
+        new_file = File(file, filename, declarations)
+        parent.children.append(new_file)
     
-   def set_ir(self, ir):
-      """Sets the ASG to use and builds the tree of Nodes"""
-      self.__ir = ir
-      if ir is None:
-         self.__dirs = None
-         self.__root = None
-         return
-      # Initialise dictionary and root node
-      self.__dirs = {}
-      self.__root = FileTree.Directory('', '')
-      # Add each file to the hierarchy
-      for filename, file in ir.files.items():
-         if file.annotations['primary']:
-            self.__add_file(filename, file.declarations)
-      # Clean up dict
-      self.__dirs = None
-	    
-   def root(self):
-      """Returns the root node in the file tree, which is a Directory
-      object. The root node is created by set_ir()."""
-      return self.__root
- 
 
+    for f in files:
+        if f.annotations['primary']:
+            insert_file(f.name, f.declarations)
+
+    return root

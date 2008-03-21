@@ -1,517 +1,421 @@
 #
-# Copyright (C) 2006 Stefan Seefeld
+# Copyright (C) 2008 Stefan Seefeld
 # All rights reserved.
 # Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
 
 from Synopsis import ASG
-from Synopsis.SourceFile import SourceFile
+from Synopsis.QualifiedName import QualifiedPythonName as QName
+from Synopsis.SourceFile import *
 from Synopsis.DocString import DocString
-import pattern
-import parser
-import token
-import tokenize
-import symbol
-import keyword
+import sys, os.path
+import compiler, tokenize, token
+from compiler.consts import OP_ASSIGN
+from compiler.visitor import ASTVisitor
 
-HAVE_ENCODING_DECL = hasattr(symbol, "encoding_decl") # python 2.3
-HAVE_IMPORT_NAME = hasattr(symbol, "import_name") # python 2.4
-HAVE_DECORATOR = hasattr(symbol,"decorator") # python 2.4
+class TokenParser:
 
-def stringify(ptree):
-    """Convert the given ptree to a string."""
+    def __init__(self, text):
+        self.text = text + '\n\n'
+        self.lines = self.text.splitlines(1)
+        self.generator = tokenize.generate_tokens(iter(self.lines).next)
+        self.next()
 
-    if type(ptree) == int: return ''
-    elif type(ptree) != tuple: return str(ptree)
-    else: return ''.join([stringify(i) for i in ptree])
-
-
-def num_tokens(ptree):
-    """Count the number of leaf tokens in the given ptree."""
-
-    if type(ptree) == str: return 1
-    else: return sum([num_tokens(n) for n in ptree[1:]])
-
-
-class _DummyFile:
-
-    def write(self, data): pass
-
-
-class LexerDebugger:
-
-    def __init__(self, lexer):
-
-        self.lexer = lexer
+    def __iter__(self):
+        return self
 
     def next(self):
+        self.token = self.generator.next()
+        self.type, self.string, self.start, self.end, self.line = self.token
+        return self.token
 
-        n = self.lexer.next()
-        print 'next is "%s" (%s)'%(n[1], n[0])
-        return n
+    def goto_line(self, lineno):
+        while self.start[0] < lineno:
+            self.next()
+        return token
 
-header="""<sxr filename="%(filename)s">
-<line>"""
-
-trailer="""</line>
-</sxr>
-"""
-
-def escape(text):
-
-    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
-        text = text.replace(*p)
-    return text
-
-
-class ASGTranslator:
-    """Translate a Python parse tree into the Synopsis ASG.
-    Unfortunately using the Python parser module alone is not enough
-    as it doesn't preserve all the necessary information, such as token
-    positions. Therefor we travers the parse tree and the token stream
-    in parallel."""
-
-    def __init__(self, scope, types):
-        """Create an ASGTranslator.
-        :Parameters:
-          :'scope': scope to place all toplevel declarations into.
-          :'types': type dictionary into which to inject newly declared types."""
-
-        self.handlers = {}
-        self.handlers[token.ENDMARKER] = self.handle_end_marker
-        self.handlers[token.NEWLINE] = self.handle_newline
-        self.handlers[token.INDENT] = self.handle_indent
-        self.handlers[token.DEDENT] = self.handle_dedent
-        self.handlers[token.STRING] = self.handle_string
-        self.handlers[symbol.funcdef]= self.handle_function
-        self.handlers[symbol.parameters] = self.handle_parameters
-        self.handlers[symbol.classdef] = self.handle_class
-        self.handlers[token.NAME] = self.handle_name
-        self.handlers[symbol.expr_stmt] = self.handle_expr_stmt
-        #self.handlers[token.OP] = self.handle_op
-        self.handlers[symbol.power] = self.handle_power
-        if HAVE_ENCODING_DECL:
-            self.handlers[symbol.encoding_decl] = self.handle_encoding_decl
-        if HAVE_IMPORT_NAME:
-            self.handlers[symbol.import_as_names] = self.handle_import_as_names
-            self.handlers[symbol.dotted_as_names] = self.handle_dotted_as_names
-            self.handlers[symbol.import_from] = self.handle_import_from
-            self.handlers[symbol.import_name] = self.handle_import_name
-        else:
-            self.handlers[symbol.import_stmt] = self.handle_import
-        if HAVE_DECORATOR:
-            self.handlers[symbol.decorator] = self.handle_decorator
-
-        self._any_type = ASG.BaseType('Python',('',))
-        self._sourcefile = scope.file
-        self._col = 0
-        self._lineno = 1
-        self._parameters = []
-        self._scopes = [scope]
-        self._types = types
-        self._imported_modules = []
-        self._docformat = ''
-
-
-    def imported_modules(self):
-
-        return self._imported_modules
-
-    
-    def process_file(self, filename, xref):
-
-        input = open(filename, 'r+')
-        src = input.readlines()
-        self._lines = len(`len(src) + 1`)
-        ptree = parser.ast2tuple(parser.suite(''.join(src)))
-        input.seek(0)
-        self.lexer = tokenize.generate_tokens(input.readline)
-        #self.lexer = LexerDebugger(tokenize.generate_tokens(input.readline))
-        if xref:
-            self.xref = open(xref, 'w+')
-            lineno_template = '%%%ds' % self._lines
-            lineno = lineno_template % self._lineno
-            self.xref.write(header % {'filename': self._sourcefile.name})
-        else:
-            self.xref = _DummyFile()
-        try:
-            self.handle(ptree)
-        except StopIteration:
-            raise
-        self.xref.write(trailer)
-
-
-    def handle(self, ptree):
-
-        if type(ptree) == tuple:
-            kind = ptree[0]
-            value = ptree[1:]
-            handler = self.handlers.get(kind, self.default_handler)
-            #print 'handle', kind, handler, value
-            handler(value)
-        else:
-            raise Exception("Process error: Type is not a tuple %s" % str(ptree))
-
-
-    def default_handler(self, ptree):
-
-        for node in ptree:
-            if type(node) == tuple: self.handle(node)
-            elif type(node) == str: self.handle_token(node)
-            else: raise Exception("Invalid ptree node")
-
-
-    def next_token(self):
-        """Return the next visible token.
-        Process tokens that are not part of the parse tree silently."""
-
-        t = self.lexer.next()
-        while t[0] in [tokenize.NL, tokenize.COMMENT]:
-            if t[0] is tokenize.NL:
-                self.print_newline()
-            elif t[0] is tokenize.COMMENT:
-                self.print_token(t)
-                if t[1][-1] == '\n': self.print_newline()
-            t = self.lexer.next()
-        return t
-    
-
-    def handle_token(self, item = None):
-
-        t = self.next_token()
-        if item is not None and t[1] != item:
-            raise 'Internal error in line %d: expected "%s", got "%s" (%d)'%(self._lineno, item, t[1], t[0])
-        else:
-            self.print_token(t)
-  
-
-    def handle_name_as_xref(self, xref, name):
-
-        kind, value, (srow, scol), (erow, ecol), line = self.next_token()
-        if (kind, value) != (token.NAME, name):
-            raise 'Internal error in line %d: expected name "%s", got "%s" (%d)'%(name, self._lineno, item, t[1], t[0])
-
-        if self._col != scol:
-            self.xref.write(' ' * (scol - self._col))
-        format = '<a href="%s">%s</a>'
-        self.xref.write(format %('.'.join(xref), value))
-        self._col = ecol
-  
-
-    def handle_tokens(self, ptree):
-
-        tokens = num_tokens(ptree)
-        for i in xrange(tokens):
-            self.handle_token()
-  
-
-    def handle_end_marker(self, nodes): pass
-    def handle_newline(self, nodes):
-
-        self.handle_token()
-
-
-    def handle_indent(self, indent):
-
-        self.handle_token()
-        
-        
-    def handle_dedent(self, dedent):
-
-        self.handle_token()
-        
-        
-    def handle_string(self, content):
-
-        self.handle_token()
-
-        
-    def handle_function(self, nodes):
-
-        if HAVE_DECORATOR:
-            if nodes[0][0] == symbol.decorators:
-                offset = 1
-                # FIXME
-                self.handle(nodes[0])
+    def rhs(self, lineno):
+        """
+        Return a whitespace-normalized expression string from the right-hand
+        side of an assignment at line `lineno`.
+        """
+        self.goto_line(lineno)
+        while self.string != '=':
+            self.next()
+        self.stack = None
+        while self.type != token.NEWLINE and self.string != ';':
+            if self.string == '=' and not self.stack:
+                self.tokens = []
+                self.stack = []
+                self._type = None
+                self._string = None
+                self._backquote = 0
             else:
-                offset = 0
-        else:
-            offset = 0
-            
-        def_token = nodes[0 + offset]
-        self.handle_token(def_token[1])
-        name_token = nodes[1 + offset]
-        name = tuple(self._scopes[-1].name + (name_token[1],))
-        self.handle_name_as_xref(name, name_token[1])
-        # Handle the parameters.
-        self.handle(nodes[2 + offset])
+                self.note_token()
+            self.next()
+        self.next()
+        text = ''.join(self.tokens)
+        return text.strip()
 
-        if type(self._scopes[-1]) == ASG.Class:
-            function = ASG.Operation(self._sourcefile, self._lineno, 'operation', '',
-                                     self._any_type, '', name, name[-1])
-        else:
-            function = ASG.Function(self._sourcefile, self._lineno, 'function', '',
-                                    self._any_type, '', name, name[-1])
-        function.parameters.extend(self._parameters)
+    closers = {')': '(', ']': '[', '}': '{'}
+    openers = {'(': 1, '[': 1, '{': 1}
+    del_ws_prefix = {'.': 1, '=': 1, ')': 1, ']': 1, '}': 1, ':': 1, ',': 1}
+    no_ws_suffix = {'.': 1, '=': 1, '(': 1, '[': 1, '{': 1}
 
-        colon_token = nodes[3 + offset]
-        self.handle_token(colon_token[1])
-        body = nodes[4 + offset]
-        self.handle_tokens(body)
-        docstring = self.extract_docstring(body)
-        if docstring:
-            function.annotations['doc'] = docstring
+    def note_token(self):
+        if self.type == tokenize.NL:
+            return
+        del_ws = self.del_ws_prefix.has_key(self.string)
+        append_ws = not self.no_ws_suffix.has_key(self.string)
+        if self.openers.has_key(self.string):
+            self.stack.append(self.string)
+            if (self._type == token.NAME
+                or self.closers.has_key(self._string)):
+                del_ws = 1
+        elif self.closers.has_key(self.string):
+            assert self.stack[-1] == self.closers[self.string]
+            self.stack.pop()
+        elif self.string == '`':
+            if self._backquote:
+                del_ws = 1
+                assert self.stack[-1] == '`'
+                self.stack.pop()
+            else:
+                append_ws = 0
+                self.stack.append('`')
+            self._backquote = not self._backquote
+        if del_ws and self.tokens and self.tokens[-1] == ' ':
+            del self.tokens[-1]
+        self.tokens.append(self.string)
+        self._type = self.type
+        self._string = self.string
+        if append_ws:
+            self.tokens.append(' ')
 
-        self._scopes[-1].declarations.append(function)
-
-        # Don't traverse the function body, since the ASG doesn't handle
-        # local declarations anyways.
-
-
-    def handle_parameters(self, nodes):
-
-        self.handle_token(nodes[0][1])
-	self._parameters = []
-        if nodes[1][0] == symbol.varargslist:
-            args = list(nodes[1][1:])
-            while args:
-                if args[0][0] == token.COMMA:
-                    self.handle_token(args[0][1])
-                    pass
-                elif args[0][0] == symbol.fpdef:
-                    self.handle_tokens(args[0])
-                    parameter = ASG.Parameter('', self._any_type, '',
-                                              stringify(args[0]),
-                                              '')
-                    self._parameters.append(parameter)
-                elif args[0][0] == token.EQUAL:
-                    self.handle_token(args[0][1])
-                    del args[0]
-                    self.handle_tokens(args[0])
-                    # HACK: replace the parameter as the current API doesn't allow
-                    #       to set its value.
-                    old = self._parameters[-1]
-                    parameter = ASG.Parameter('', self._any_type, '',
-                                              old.name,
-                                              stringify(args[0]))
-                    self._parameters[-1] = parameter
-                elif args[0][0] == token.DOUBLESTAR:
-                    self.handle_token(args[0][1])
-                    del args[0]
-                    self.handle_token(args[0][1])
-                    parameter = ASG.Parameter('', self._any_type, '',
-                                              '**'+stringify(args[0]),
-                                              stringify(args[0]))
-                    self._parameters.append(parameter)
-                elif args[0][0] == token.STAR:
-                    self.handle_token(args[0][1])
-                    del args[0]
-                    self.handle_token(args[0][1])
-                    parameter = ASG.Parameter('', self._any_type, '',
-                                              '*'+stringify(args[0]),
-                                              stringify(args[0]))
-                    self._parameters.append(parameter)
-                else:
-                    print "Unknown symbol:",args[0]
-                del args[0]
-        self.handle_token(nodes[-1][1])
-
-
-    def handle_class(self, nodes):
-
-        class_token = nodes[0]
-        self.handle_token(class_token[1])
-        name_token = nodes[1]
-        name = tuple(self._scopes[-1].name + (name_token[1],))        
-        self.handle_name_as_xref(name, name_token[1])
-        base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
-        self.handle_tokens(nodes[2])
-        bases = []
-        if base_clause:
-            for test in base_clause[1:]:
-                found, vars = pattern.match(pattern.TEST_NAME_PATTERN, test)
-                if found and vars.has_key('power'):
-                    power = vars['power']
-                    if power[0] != symbol.power: continue
-                    atom = power[1]
-                    if atom[0] != symbol.atom or atom[1][0] != token.NAME: continue
-                    base = [atom[1][1]]
-                    for trailer in power[2:]:
-                        if trailer[2][0] == token.NAME: base.append(trailer[2][1])
-
-                    # FIXME: This logic is broken !
-                    #        It assumes that names are either local or fully qualified.
-                    if len(base) == 1:
-                        # Name is unqualified. Qualify it.
-                        base = self._scopes[-1].name + tuple(base)
-                    if self._types.has_key(base):
-                        base = self._types[base]
+    def function_parameters(self, lineno):
+        """
+        Return a dictionary mapping parameters to defaults
+        (whitespace-normalized strings).
+        """
+        self.goto_line(lineno)
+        while self.string != 'def':
+            self.next()
+        while self.string != '(':
+            self.next()
+        name = None
+        default = False
+        parameter_tuple = False
+        self.tokens = []
+        parameters = {}
+        self.stack = [self.string]
+        self.next()
+        while 1:
+            if len(self.stack) == 1:
+                if parameter_tuple:
+                    name = ''.join(self.tokens).strip()
+                    self.tokens = []
+                    parameter_tuple = False
+                if self.string in (')', ','):
+                    if name:
+                        if self.tokens:
+                            default_text = ''.join(self.tokens).strip()
+                        else:
+                            default_text = ''
+                        parameters[name] = default_text
+                        self.tokens = []
+                        name = None
+                        default = False
+                    if self.string == ')':
+                        break
+                elif self.type == token.NAME:
+                    if name and default:
+                        self.note_token()
                     else:
-                        base = ASG.UnknownType('Python', base)
-                    bases.append(ASG.Inheritance('', base, ''))
-            self.handle_tokens(base_clause)
-            self.handle_token(')')
-            self.handle_token(':')
-
-            body = nodes[6]
-        else:
-            body = nodes[3]
-
-        class_ = ASG.Class(self._sourcefile, self._lineno, 'class', name)
-        class_.parents.extend(bases)
-        docstring = self.extract_docstring(nodes[-1])
-        if docstring:
-            class_.annotations['doc'] = docstring
-        self._scopes[-1].declarations.append(class_)
-        self._types[class_.name] = ASG.Declared('Python', class_.name, class_)
-
-        self._scopes.append(class_)
-        self.handle(body)
-        self._scopes.pop()
-        
-
-    def handle_name(self, content):
-
-        self.handle_token(content[0])
-
-
-    def handle_expr_stmt(self, nodes):
-
-        if len(nodes) > 2 and nodes[1] == (token.EQUAL, '='):
-
-            # TODO: This needs a lot more work.
-            #       For now only handle some special global variables.
-            if type(self._scopes[-1]) == ASG.Module:
-                self.process_special_variable(nodes)
-
-        for n in nodes: self.handle_tokens(n)
-
-
-    def handle_dotted_name(self, dname, rest):
-
-        self.handle_token(dname[0])    
-        for name in dname[1:]:
-            self.handle_token('.')
-            self.handle_token(name)
-        map(self.handle, rest)
-        
-
-    def handle_op(self, nodes): pass
-
-
-    def handle_power(self, content):
-
-        def get_dotted_name(content):
-            if content[0][0] != symbol.atom or content[0][1][0] != token.NAME:
-                return None
-            dotted_name = [content[0][1][1]]
-            i = 1
-            for param in content[1:]:
-                if param[0] != symbol.trailer: break
-                if param[1][0] != token.DOT: break
-                if param[2][0] != token.NAME: break
-                dotted_name.append(param[2][1])
-                i += 1
-            if i < len(content): return dotted_name, content[i:]
-            else: return dotted_name, []
-
-        name = get_dotted_name(content)
-        if name: self.handle_dotted_name(*name)
-        else: map(self.handle, content)
-
-
-    def handle_encoding_decl(self, nodes): pass
-    def handle_import_as_names(self, nodes):
-
-        for n in nodes: self.handle(n)
-
-        
-    def handle_dotted_as_names(self, nodes):
-
-        for n in nodes: self.handle(n)
-
-
-    def handle_import_from(self, nodes):
-
-        self.handle_token('from')
-        self.handle(nodes[1])
-        self.handle_token('import')
-        self.handle(nodes[3])
-
-
-    def handle_import_name(self, nodes):
-
-        self.handle_token('import')
-        self.handle_dotted_as_names(nodes[1][1:])
-
-        
-    def handle_import(self, nodes):
-
-        #self.handle_token('import')
-        for n in nodes: self.handle(n)
-
-        
-    def handle_decorator(self, nodes): pass
-
-
-    def extract_docstring(self, ptree):
-
-        if len(ptree) == 2:
-            found, vars = pattern.match(pattern.DOCSTRING_STMT_PATTERN[1], ptree[1])
-        else:
-            found, vars = pattern.match(pattern.DOCSTRING_STMT_PATTERN, ptree[3])
-        if found:
-            return DocString(eval(vars['docstring']), self._docformat)
-
-
-    def print_token(self, t):
-
-        kind, value, (srow, scol), (erow, ecol), line = t
-        if kind == token.NEWLINE:
-            self.print_newline()
-        else:
-            if self._col != scol:
-                self.xref.write(' ' * (scol - self._col))
-            if keyword.iskeyword(value):
-                format = '<span class="py-keyword">%s</span>'
-            elif kind == token.STRING:
-                format = '<span class="py-string">%s</span>'
-                chunks = value.split('\n')
-                for c in chunks[:-1]:
-                    self.xref.write(format % escape(c))
-                    self.print_newline()
-                value = chunks[-1]
-                    
-            elif kind == tokenize.COMMENT:
-                format = '<span class="py-comment">%s</span>'
-                if value[-1] == '\n': value = value[:-1]
+                        assert name is None, (
+                            'token=%r name=%r parameters=%r stack=%r'
+                            % (self.token, name, parameters, self.stack))
+                        name = self.string
+                elif self.string == '=':
+                    assert name is not None, 'token=%r' % (self.token,)
+                    assert default is False, 'token=%r' % (self.token,)
+                    assert self.tokens == [], 'token=%r' % (self.token,)
+                    default = True
+                    self._type = None
+                    self._string = None
+                    self._backquote = 0
+                elif name:
+                    self.note_token()
+                elif self.string == '(':
+                    parameter_tuple = True
+                    self._type = None
+                    self._string = None
+                    self._backquote = 0
+                    self.note_token()
+                else:                   # ignore these tokens:
+                    assert (self.string in ('*', '**', '\n') 
+                            or self.type == tokenize.COMMENT), (
+                        'token=%r' % (self.token,))
             else:
-                format = '%s'
+                self.note_token()
+            self.next()
+        return parameters
 
-            self.xref.write(format % escape(value))
-            self._col = ecol
+class ASGTranslator(ASTVisitor):
+
+    def __init__(self, package, types, docformat):
+        """Create an ASGTranslator.
+
+        package: enclosing package the generated modules are to be part of."""
+
+        ASTVisitor.__init__(self)
+        self.scope = package and [package] or []
+        self.file = None
+        self.types = types
+        self.attributes = []
+        self.any_type = ASG.BuiltinTypeId('Python',QName('',))
+        self.docformat = docformat
+        self.documentable = None
+        self.name = QName()
+        self.imports = []
 
 
-    def print_newline(self):
+    def process_file(self, file):
 
-        self._col = 0
-        self._lineno += 1
-        self.xref.write('</line>\n')
-        self.xref.write('<line>')
+        self.file = file
+        source = open(self.file.abs_name).read()
+        self.token_parser = TokenParser(source)
+        ast = compiler.parse(source)
+        compiler.walk(ast, self, walker=self)
 
+    def scope_name(self):
+        return len(self.scope) and self.scope[-1].name or ()
 
-    def process_special_variable(self, assignment):
+    def default(self, node, *args):
+        self.documentable = None
 
-        # Look for simple string assignments of the form "var = 'value'" 
-        found, vars = pattern.match(pattern.ATOM_PATTERN, assignment[0])
-        if found and vars['atom'][0] == token.NAME:
-            name = vars['atom'][1]
-            found, vars = pattern.match(pattern.ATOM_PATTERN, assignment[2])
-            if found and vars['atom'][0] == token.STRING:
-                value = eval(vars['atom'][1])
+    def default_visit(self, node, *args):
+        ASTVisitor.default(self, node, *args)
 
-                if name == '__docformat__':
-                    self._docformat = value
-                    self._sourcefile.annotations[name] = value
+    def visitDiscard(self, node):
+        if self.documentable:
+            self.visit(node.expr)
+
+    def visitConst(self, node):
+        if self.documentable:
+            if type(node.value) in (str, unicode):
+                self.documentable.annotations['doc'] = DocString(node.value, self.docformat)
+            else:
+                self.documentable = None
+
+    def visitStmt(self, node):
+        self.default_visit(node)
+
+    def visitAssign(self, node):
+
+        save_attributes = self.attributes
+        self.attributes = []
+        self.in_ass_tuple = False
+        for child in node.nodes:
+            self.dispatch(child)
+        if self.attributes:
+            if type(self.scope[-1]) == ASG.Operation:
+                # Inject the attributes into the class.
+                self.scope[-2].declarations.extend(self.attributes)
+            else:
+                self.scope[-1].declarations.extend(self.attributes)
+        if len(self.attributes) == 1:
+            self.documentable = self.attributes[0]
+        else:
+            self.documentable = None
+        self.attributes = save_attributes
+
+    def visitModule(self, node):
+
+        name = os.path.basename(os.path.splitext(self.file.name)[0])
+        if name == '__init__':
+            name = os.path.basename(os.path.dirname(self.file.name))
+            qname = QName(self.scope_name() + (name,))
+            module = ASG.Module(self.file, node.lineno, 'package', qname)
+        else:
+            qname = QName(self.scope_name() + (name,))
+            module = ASG.Module(self.file, node.lineno, 'module', qname)            
+        self.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
+
+        self.scope.append(module)
+        self.documentable = module
+        self.visit(node.node)
+        self.scope.pop()
+        self.file.declarations.append(module)
+
+    def visitImport(self, node):
+
+        self.imports.extend([(n[0], None) for n in node.names])
+        self.documentable = None
+
+    def visitFrom(self, node):
+
+        self.imports.extend([(node.modname, n[0]) for n in node.names])
+        self.documentable = None
+
+    def visitAssName(self, node):
+
+        if not self.in_ass_tuple:
+            meta_tags = ['__docformat__']
+            if len(self.scope) == 1 and node.name in meta_tags:
+                expression_text = eval(self.token_parser.rhs(node.lineno))
+                self.file.annotations[node.name] = expression_text
+                self.docformat = expression_text
+
+        qname = QName(self.scope_name() + (node.name,))
+        if type(self.scope[-1]) in (ASG.Function, ASG.Operation):
+            return
+        elif type(self.scope[-1]) == ASG.Class:
+            attribute = ASG.Variable(self.file, node.lineno, 'class attribute',
+                                     qname, self.any_type, False)
+        else:
+            attribute = ASG.Variable(self.file, node.lineno, 'attribute',
+                                     qname, self.any_type, False)
+        if node.name.startswith('__'):
+            attribute.accessibility = ASG.PRIVATE
+        elif node.name.startswith('_'):
+            attribute.accessibility = ASG.PROTECTED
+        self.attributes.append(attribute)
+        self.types[qname] = ASG.DeclaredTypeId('Python', attribute.name, attribute)
+
+    def visitAssTuple(self, node):
+
+        self.in_ass_tuple = True
+        for a in node.nodes:
+            self.visit(a)
+        self.in_ass_tuple = False
+
+    def visitAssAttr(self, node):
+        self.default_visit(node, node.attrname)
+        if type(self.scope[-1]) == ASG.Operation:
+            # We only parse constructors, so look out for
+            # self attributes defined here.
+            # FIXME: There is no reason the 'self' argument actually has to be spelled 'self'.
+            if self.name[0] == 'self':
+                # FIXME: qualifying variables is ambiguous, since we don't distinguish
+                #        class attributes and object attributes.
+                qname = self.scope[-2].name + self.name[1:]
+                self.attributes.append(ASG.Variable(self.file, node.lineno,
+                                                    'attribute', qname, self.any_type, False))
+
+    def visitGetattr(self, node, suffix):
+        self.default_visit(node, node.attrname + '.' + suffix)
+
+    def visitName(self, node, suffix=None):
+
+        if suffix:
+            self.name = QName((node.name,) + (suffix,))
+        else:
+            self.name = QName((node.name,))
+
+    def visitFunction(self, node):
+
+        if isinstance(self.scope[-1], ASG.Function):
+            # Skip local functions.
+            return
+        qname = QName(self.scope_name() + (node.name,))
+        if type(self.scope[-1]) == ASG.Class:
+            function = ASG.Operation(self.file, node.lineno, 'method',
+                                     [], self.any_type, [], qname, node.name)
+        else:
+            function = ASG.Function(self.file, node.lineno, 'function',
+                                    [], self.any_type, [], qname, node.name)
+
+        # The following attributes are special in that even though they are private they
+        # match publicly accessible operations, so we exclude them from being
+        # marked as private.
+        special_attributes = ('__init__', '__str__', '__repr__', '__iter__', '__getitem__')
+
+        if node.name.startswith('__'):
+            if node.name not in special_attributes:
+                function.accessibility = ASG.PRIVATE
+        elif node.name.startswith('_'):
+            function.accessibility = ASG.PROTECTED
+
+        function.annotations['doc'] = DocString(node.doc or '', self.docformat)
+        # Given that functions in Python are first-class citizens, should they be
+        # treated like (named) types ?
+        self.types[qname] = ASG.DeclaredTypeId('Python', function.name, function)
+
+        self.scope.append(function)
+        self.documentable = function
+        function.parameters = self.parse_parameter_list(node)
+        if node.name == '__init__':
+            # Only parse constructors, to find member variables
+            self.visit(node.code)
+        self.scope.pop()
+        self.scope[-1].declarations.append(function)
+
+    def parse_parameter_list(self, node):
+        parameters = []
+        special = []
+        argnames = list(node.argnames)
+        if node.kwargs:
+            special.append(ASG.Parameter('**', self.any_type, '', argnames[-1]))
+            argnames.pop()
+        if node.varargs:
+            special.append(ASG.Parameter('*', self.any_type, '', argnames[-1]))
+            argnames.pop()
+        defaults = list(node.defaults)
+        defaults = [None] * (len(argnames) - len(defaults)) + defaults
+        values = self.token_parser.function_parameters(node.lineno)
+        for argname, default in zip(node.argnames, defaults):
+            if type(argname) is tuple:
+                for a in argname:
+                    # FIXME: It is generally impossible to match tuple parameters
+                    # to defaults individually, we ignore default values for now.
+                    # (We may try to match them, and only leave out those resulting
+                    # from tuple-returning call expressions. But that's for another day.)
+                    parameters.append(ASG.Parameter('', self.any_type, '', a))
+            else:
+                parameters.append(ASG.Parameter('', self.any_type, '', argname,
+                                                values[argname]))
+        if parameters or special:
+            special.reverse()
+            parameters.extend(special)
+        return parameters
+
+    def visitClass(self, node):
+
+        if isinstance(self.scope[-1], ASG.Function):
+            # Skip local classes.
+            return
+        bases = []
+        for base in node.bases:
+            self.visit(base)
+            # FIXME: This logic is broken !
+            #        It assumes that names are either local or fully qualified.
+            if len(self.name) == 1 and self.scope:
+                # Name is unqualified. Qualify it.
+                base = QName(list(self.scope[-1].name) + list(self.name))
+            else:
+                base = self.name
+            if self.types.has_key(base):
+                base = self.types[base]
+            else:
+                base = ASG.UnknownTypeId('Python', base)
+            bases.append(base)
+        qname = QName(self.scope_name() + (node.name,))
+        class_ = ASG.Class(self.file, node.lineno, 'class', qname)
+        class_.parents = [ASG.Inheritance('', b, '') for b in bases]
+        class_.annotations['doc'] = DocString(node.doc or '', self.docformat)
+        self.types[qname] = ASG.DeclaredTypeId('Python', class_.name, class_)
+        self.scope.append(class_)
+        self.documentable = class_
+        self.visit(node.code)
+        self.scope.pop()
+        self.scope[-1].declarations.append(class_)
+
+    def visitGetattr(self, node, suffix=None):
+        if suffix:
+            name = node.attrname + '.' + suffix
+        else:
+            name = node.attrname
+        self.default_visit(node, name)
+
 

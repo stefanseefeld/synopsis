@@ -121,12 +121,11 @@ to query and browse cross-referenced source code."""
             copy_file(src, dest)
          else:
             print 'not copying', src
-      for d in ['links', 'xref']:
-         src, dest = os.path.join(tmpdir, d), os.path.join(tmp_man_dir, d)
-         if os.path.exists(src) and newer(src, dest):
-            copy_tree(src, dest)
-         else:
-            print 'not copying', src
+      src, dest = os.path.join(tmpdir, 'sxr'), os.path.join(tmp_man_dir, 'sxr')
+      if os.path.exists(src) and newer(src, dest):
+         copy_tree(src, dest)
+      else:
+         print 'not copying', src
          
       # now run make inside doc/Manual to do the rest
 

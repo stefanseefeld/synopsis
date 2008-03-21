@@ -16,7 +16,7 @@ class TypeMapper(Processor, ASG.Visitor):
       self.set_parameters(kwds)
       self.ir = self.merge_input(ir)
 
-      for type in self.ir.types.values():
+      for type in self.ir.asg.types.values():
          type.accept(self)
 
       return self.output_and_return_ir()

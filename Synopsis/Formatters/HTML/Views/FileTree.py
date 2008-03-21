@@ -38,21 +38,21 @@ class FileTree(Tree):
         self.start_file()
         self.write_navigation_bar()
         # recursively visit all nodes
-        self.process_node(self.processor.file_tree.root())
+        self.process_node(self.processor.file_tree)
         self.end_tree()
         self.end_file()
 
     def process_node(self, node):
 
         def node_cmp(a, b):
-            a_leaf = hasattr(a, 'decls')
-            b_leaf = hasattr(b, 'decls')
+            a_leaf = hasattr(a, 'declarations')
+            b_leaf = hasattr(b, 'declarations')
             if a_leaf != b_leaf:
                 return cmp(b_leaf, a_leaf)
             return cmp(a.path[-1].upper(), b.path[-1].upper())
 
         dirname, filename = os.path.split(node.path)
-        if hasattr(node, 'decls'):
+        if hasattr(node, 'declarations'):
             # Leaf node
             text = href(self.directory_layout.file_index(node.path),
                         filename, target='detail')

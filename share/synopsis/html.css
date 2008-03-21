@@ -1,3 +1,4 @@
+/* This is the default stylesheet used by the HTML formatter */
 body
 {
   margin-left: 5%;
@@ -100,14 +101,17 @@ div.desc {
     color: #003030;
 }
 
-.summary .heading,
-.detail .heading
+.heading
 {
   font-size: 1.5em;
   font-weight: bold;
   padding: 0.1em;
   border: 1px solid #aaaaaa;
   background: #f2f5f7;
+}
+.FileIndex .heading
+{
+  font-size: 0.8em;
 }
 
 .links .file,
@@ -121,7 +125,9 @@ div.desc {
 .summary .item .xref,
 .summary .item .source,
 .detail .item .xref,
-.detail .item .source
+.detail .item .source,
+.primary-template,
+.specializations
 {
   float: right;
 }
@@ -158,16 +164,6 @@ div.files
 div.filepage-scope 
 {
   margin-left: 1em;
-}
-
-h2.heading,
-td.heading
-{
-  font-size: 1.5em;
-  font-weight: bold;
-  padding: 0.1em;
-  border: 1px solid #aaaaaa;
-  background: #f2f5f7;
 }
 
 div.section
@@ -233,3 +229,5 @@ pre.sxr .keyword { font-weight: bold;}
 pre.sxr .comment { color: green;}
 pre.sxr .string { color: green;}
 pre.sxr .literal { color: blue;}
+
+.docutils dt { font-weight: bold;}

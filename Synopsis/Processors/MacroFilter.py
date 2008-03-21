@@ -10,7 +10,9 @@ from Synopsis import ASG
 import re
 
 class MacroFilter(Processor, ASG.Visitor):
-    """A MacroFilter allows macros to be filtered, based on pattern matching"""
+    """A MacroFilter allows macros to be filtered, based on pattern matching.
+
+    Macros with matching names will be removed."""
 
     pattern = Parameter('', 'Regular expression to match macro names with.')
 
@@ -20,7 +22,7 @@ class MacroFilter(Processor, ASG.Visitor):
         self._pattern = re.compile(self.pattern)
         self.ir = self.merge_input(ir)
 
-        for decl in self.ir.declarations[:]:
+        for decl in self.ir.asg.declarations[:]:
             decl.accept(self)
 
         return self.output_and_return_ir()
@@ -29,4 +31,4 @@ class MacroFilter(Processor, ASG.Visitor):
 
         if self._pattern.match(node.name[-1]):
             # Macros always live in the top-most scope.
-            self.ir.declarations.remove(node)
+            self.ir.asg.declarations.remove(node)

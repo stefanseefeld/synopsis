@@ -6,6 +6,7 @@
 #
 
 from Synopsis import ASG
+from Synopsis.QualifiedName import QualifiedName
 from Synopsis.Processors.Transformer import Transformer
 import re
 
@@ -98,11 +99,12 @@ class Grouper(Transformer):
 
                 # Open the group. <name> is remainder of line.
                 label = tag.group('name') or 'unnamed'
+                label = label.strip()
                 # The comment before the open marker becomes the group comment.
                 if tag.start('open') > 0:
                     c = c[:tag.start('open')]
                     comments.append(c)
-                group = ASG.Group(decl.file, decl.line, 'group', [label])
+                group = ASG.Group(decl.file, decl.line, 'group', QualifiedName((label,)))
                 group.annotations['comments'] = comments
                 comments = []
                 self.push_group(group)

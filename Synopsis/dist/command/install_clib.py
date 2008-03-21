@@ -12,7 +12,7 @@ from distutils.file_util import copy_file
 from distutils.util import change_root
 from distutils import sysconfig
 import os
-from Synopsis.dist.command import copy_shared_library
+from Synopsis.dist.command import shared_library_outputs, copy_shared_library
 
 def header_collector(prefix):
 
@@ -112,12 +112,10 @@ class install_clib(Command):
         else:
             prefix = self.prefix
 
-        if os.name == 'nt':
-            LIBEXT = '.dll'
-        else:
-            LIBEXT = sysconfig.get_config_var('SO')
-        library = os.path.join(prefix, 'lib', 'libSynopsis%s'%LIBEXT)
-        pkgconf = os.path.join(prefix, 'lib', 'pkgconfig', 'synopsis.pc')
+        version = self.distribution.get_version()
+        libdir = os.path.join(prefix, 'lib')
+        libs = shared_library_outputs('Synopsis', version, libdir)
+        pkgconfig = os.path.join(prefix, 'lib', 'pkgconfig', 'synopsis.pc')
         headers = []
         os.path.walk(os.path.join('src', 'Synopsis'),
                      header_collector('src'),
@@ -127,6 +125,6 @@ class install_clib(Command):
                      headers)
         include_dir = os.path.join(prefix, 'include')
         headers = [os.path.join(include_dir, dest) for (src, dest) in headers]
-        return [library, pkgconf] + headers
+        return libs + [pkgconfig] + headers
         
 

@@ -40,21 +40,25 @@ public:
               std::string const &base_path, bool primary_file_only,
               bpl::object ir, bool v, bool d)
     : language_(language),
+      qname_module_(bpl::import("Synopsis.QualifiedName")),
       asg_module_(bpl::import("Synopsis.ASG")),
       sf_module_(bpl::import("Synopsis.SourceFile")),
-      declarations_(bpl::extract<bpl::list>(ir.attr("declarations"))()),
-      types_(bpl::extract<bpl::dict>(ir.attr("types"))()),
       files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
       raw_filename_(filename),
       base_path_(base_path),
       primary_file_only_(primary_file_only),
       mask_counter_(0),
       macro_level_counter_(0),
+      current_line_(1),
+      current_offset_(0),
       verbose_(v),
       debug_(d)
   {
     Trace trace("IRGenerator::IRGenerator", Trace::TRANSLATION);
     file_stack_.push(lookup_source_file(raw_filename_, true));
+    bpl::object asg = ir.attr("asg");
+    declarations_ = bpl::extract<bpl::list>(asg.attr("declarations"))();
+    types_ = bpl::extract<bpl::dict>(asg.attr("types"))();
   }
 
   void expanding_function_like_macro(Token const &macrodef, 
@@ -95,6 +99,7 @@ private:
   bpl::object lookup_source_file(std::string const &filename, bool primary);
 
   std::string          language_;
+  bpl::object          qname_module_;
   bpl::object          asg_module_;
   bpl::object          sf_module_;
   bpl::list            declarations_;
@@ -102,7 +107,6 @@ private:
   bpl::dict            files_;
   bpl::object          file_;
   std::string          raw_filename_;
-  Token::position_type position_;
   std::string          base_path_;
   FileStack            file_stack_;
   std::string          include_dir_;
@@ -112,8 +116,11 @@ private:
   unsigned int         macro_level_counter_;
   //. The name of the macro currently being expanded.
   std::string          current_macro_name_;
-  //. The length of the character sequence representing the current macro call.
-  unsigned int         current_macro_call_length_;
+  Token::position_type current_macro_call_start_;
+  Token::position_type current_macro_call_end_;
+  unsigned int         current_line_;
+  //. Offset induced by macro expansion.
+  int                  current_offset_;
   bool                 verbose_;
   bool                 debug_;
 };
@@ -126,24 +133,23 @@ void IRGenerator::expanding_function_like_macro(Token const &macrodef,
                                                 std::vector<Container> const &arguments)
 {
   Trace trace("IRGenerator::expand_function_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
   if (mask_counter_) return;
-
-  position_ = macrocall.get_position();
-  Token::string_type tmp = macrocall.get_value();
-  current_macro_name_.assign(tmp.begin(), tmp.end());
-  if (arguments.size())
+  if (!macro_level_counter_)
   {
-    current_macro_call_length_ =
-      arguments.back().back().get_position().get_column() +
-      // hack to take into account the following closing paren
-      arguments.back().back().get_value().size() + 1 -
-      position_.get_column();
+    current_macro_call_start_ = current_macro_call_end_ = macrocall.get_position();
+    Token::string_type tmp = macrocall.get_value();
+    current_macro_name_.assign(tmp.begin(), tmp.end());
+    if (arguments.size())
+      current_macro_call_end_.set_column(arguments.back().back().get_position().get_column() +
+                                         // hack to take into account the following closing paren
+                                         arguments.back().back().get_value().size() + 1);
+    else
+      // HACK: let's assume there is no space. See the newer
+      //       (non-depreciated) IRGenerator for a propere implementation.
+      current_macro_call_end_.set_column(current_macro_call_start_.get_column() +
+                                         current_macro_name_.size() + 2);
   }
-  else
-    // HACK: let's assume there is no space. See the newer
-    //       (non-depreciated) IRGenerator for a propere implementation.
-    current_macro_call_length_ = current_macro_name_.size() + 2;
+  ++macro_level_counter_;
 }
 
 inline
@@ -152,13 +158,15 @@ void IRGenerator::expanding_object_like_macro(Token const &macro,
                                               Token const &macrocall)
 {
   Trace trace("IRGenerator::expand_object_like_macro", Trace::TRANSLATION);
-  ++macro_level_counter_;
   if (mask_counter_) return;
-  
-  position_ = macrocall.get_position();
-  Token::string_type tmp = macrocall.get_value();
-  current_macro_name_.assign(tmp.begin(), tmp.end());
-  current_macro_call_length_ = current_macro_name_.size();
+  if (!macro_level_counter_)
+  {
+    current_macro_call_start_ = current_macro_call_end_ = macrocall.get_position();
+    Token::string_type tmp = macrocall.get_value();
+    current_macro_name_.assign(tmp.begin(), tmp.end());
+    current_macro_call_end_.set_column(current_macro_call_start_.get_column() + current_macro_name_.size());
+  }
+  ++macro_level_counter_;
 }
 
 inline
@@ -171,31 +179,27 @@ inline
 void IRGenerator::rescanned_macro(Container const &result)
 {
   Trace trace("IRGenerator::rescanned_macro", Trace::TRANSLATION);
-  if (!--macro_level_counter_)
+  if (!mask_counter_ && !--macro_level_counter_)
   {
     // All (potentially recursive) scanning is finished at this point, so we
     // can create the MacroCall object.
-    //
-    // The positions of the tokens in the result vector are the ones from
-    // the macro definition, so we only extract the expanded length, and
-    // then calculate the new positions in the (yet to be written) preprocessed
-    // file.
-    unsigned int begin = result.front().get_position().get_column() - 1;
-    unsigned int end = 
-      result.back().get_position().get_column() + 
-      result.back().get_value().size();
-    unsigned int length = end - begin;
-    // We assume the expansion happens at the point where the macro call occured,
-    // i.e. any whitespace or comments are unaltered.
-    // Wave starts to count columns at index 1, synopsis at 0.
-    begin = position_.get_column() - 1;
-    end = begin + length;
-    bpl::dict mmap = bpl::extract<bpl::dict>(file_stack_.top().attr("macro_calls"));
-    bpl::list line = bpl::extract<bpl::list>(mmap.get(position_.get_line(), bpl::list()));
-    line.append(sf_module_.attr("MacroCall")(current_macro_name_,
-                                             begin, end,
-                                             current_macro_call_length_ - length));
-    mmap[position_.get_line()] = line;
+    Token::position_type start = current_macro_call_start_;
+    if (start.get_line() != current_line_)
+    {
+      // This is the first macro expansion in this line.
+      current_line_ = start.get_line();
+      current_offset_ = 0;
+    }
+    Token::string_type tmp = wave::util::impl::as_string(result);
+
+    bpl::list calls = bpl::extract<bpl::list>(file_stack_.top().attr("macro_calls"));
+    calls.append(sf_module_.attr("MacroCall")
+                 (current_macro_name_,
+                  bpl::make_tuple(current_macro_call_start_.get_line(), current_macro_call_start_.get_column() - 1),
+                  bpl::make_tuple(current_macro_call_end_.get_line(), current_macro_call_end_.get_column() - 1),
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + current_offset_),
+                  bpl::make_tuple(start.get_line(), start.get_column() - 1 + tmp.size() + current_offset_)));
+    current_offset_ += start.get_column() + tmp.size() - 1 - current_macro_call_end_.get_column();
   }
 }
 
@@ -274,15 +278,15 @@ void IRGenerator::defined_macro(Token const &name, bool is_functionlike,
     Token::string_type const &tmp = i->get_value();
     params.append(std::string(tmp.begin(), tmp.end()));
   }
-
-  bpl::tuple qname = bpl::make_tuple(macro_name);
+  
+  bpl::object qname = qname_module_.attr("QualifiedCxxName")(bpl::make_tuple(macro_name));
   bpl::object macro = asg_module_.attr("Macro")(file_stack_.top(),
                                                 position.get_line(),
                                                 "macro",
                                                 qname,
                                                 params,
                                                 text);
-  bpl::object declared = asg_module_.attr("Declared")(language_, qname, macro);
+  bpl::object declared = asg_module_.attr("DeclaredTypeId")(language_, qname, macro);
   declarations_.append(macro);
   types_[qname] = declared;
 }
@@ -306,11 +310,10 @@ bpl::object IRGenerator::lookup_source_file(std::string const &filename,
   bpl::object source_file = files_.get(short_name);
   if (!source_file)
   {
-    source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_);
-    std::cout << "adding " << short_name << ' ' << long_name << ' ' << base_path_ << std::endl;
+    source_file = sf_module_.attr("SourceFile")(short_name, long_name, language_, primary);
     files_[short_name] = source_file;
   }
-  if (source_file && primary)
+  else if (primary)
   {
     bpl::dict annotations = bpl::extract<bpl::dict>(source_file.attr("annotations"));
     annotations["primary"] = true;

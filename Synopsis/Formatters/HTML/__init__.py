@@ -6,14 +6,15 @@
 #
 
 from Synopsis import config
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import IR, ASG
+from Synopsis.QualifiedName import *
 from Synopsis.DocString import DocString
-from Synopsis.FileTree import FileTree as SourceFileTree
+from Synopsis.FileTree import make_file_tree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
-from Synopsis.Formatters.XRef import CrossReferencer
 from DirectoryLayout import *
+from XRefPager import XRefPager
 from Views import *
 from Frame import Frame
 from FrameSet import FrameSet
@@ -54,6 +55,7 @@ class DocCache:
                 doc = formatter.format(decl, view)
             else:
                 doc = Markup.Struct()
+
             # FIXME: Unfortunately we can't easily cache these, as they may
             #        contain relative URLs that aren't valid across views.
             # self._doc_cache[key] = doc
@@ -83,44 +85,54 @@ class Formatter(Processor):
     directory_layout = Parameter(NestedDirectoryLayout(), 'how to lay out the output files')
     toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
     toc_out = Parameter('', 'name of file into which to store the TOC')
+    sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info')
 
     index = Parameter([ModuleTree(), FileTree()], '')
     detail = Parameter([ModuleIndex(), FileIndex()], '')
     content = Parameter([Scope(),
+                         Source(),
+                         XRef(),
                          FileDetails(),
                          InheritanceTree(),
                          InheritanceGraph(),
                          NameIndex()],
                         '')
    
-    markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
+    markup_formatters = Parameter({'javadoc':Javadoc(),
+                                   'rst':RST(),
+                                   'reStructuredText':RST()},
                                   'Markup-specific formatters.')
+    graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
 
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.output: raise MissingArgument('output')
 
-        # FIXME: wrap the declarations into a single ASG.Module
-        #        during processing, but put the original ir back at the end.
-        ir = self.merge_input(ir)
-        root = ASG.Module(None, -1, 'Global', ())
-        root.declarations = ir.declarations
-        self.ir = IR.IR(ir.files, [root], ir.types)
+        self.ir = self.merge_input(ir)
+        # Make sure we operate on a single top-level node.
+        # (Python package, C++ global namespace, etc.)
+        if (len(self.ir.asg.declarations) != 1 or
+            not isinstance(self.ir.asg.declarations[0], ASG.Module)):
+            # Assume this is C++ in this case.
+            self.root = ASG.Module(None, -1, 'namespace', QualifiedName())
+            self.root.declarations = ir.asg.declarations
+        else:
+            self.root = self.ir.asg.declarations[0]
 
         self.directory_layout.init(self)
         self.documentation = DocCache(self, self.markup_formatters)
 
         # Create the class tree (shared by inheritance graph / tree views).
         self.class_tree = ClassTree()
-        for d in root.declarations:
+        for d in self.root.declarations:
             d.accept(self.class_tree)
 
         # Create the file tree (shared by file listing / tree views).
-        self.file_tree = SourceFileTree()
-        self.file_tree.set_ir(self.ir)
+        self.file_tree = make_file_tree(self.ir.files.values())
 
         # Create the cross reference table (shared by XRef / Scope views)
-        self.xref = CrossReferencer()
+        self.xref = XRefPager(self.ir)
 
         from Synopsis.DeclarationSorter import DeclarationSorter
         self.sorter = DeclarationSorter()
@@ -161,10 +173,8 @@ class Formatter(Processor):
                              self.index[0].root()[0] or self.index[0].filename(),
                              self.detail[0].root()[0] or self.detail[0].filename(),
                              self.content[0].root()[0] or self.content[0].filename())
-
         for frame in frames: frame.process()
-        # Return original IR, not the synthetic ASG.Module created above.
-        return ir
+        return self.ir
 
     def has_view(self, name):
         """test whether the given view is part of the views list."""

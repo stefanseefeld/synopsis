@@ -120,13 +120,13 @@ private:
     if (encoding_.is_simple_name() || encoding_.is_qualified())
     {
       ST::Symbol const *a = s->aliased();
-      a->accept(this);
+      if (a) a->accept(this);
     }
     else if (encoding_.is_template_id())
     {
       encoding_ = encoding_.get_template_name();
       ST::Symbol const *a = s->aliased();
-      a->accept(this);      
+      if (a) a->accept(this);      
     }
     else
     {

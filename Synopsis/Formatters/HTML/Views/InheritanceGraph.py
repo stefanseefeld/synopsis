@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import *
-from Synopsis import IR, ASG, Util
+from Synopsis import IR, ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -32,14 +32,14 @@ class DeclarationFinder(ASG.Visitor):
       #    return None
       return self.__decl
 	    
-   def visit_base_type(self, type): return
-   def visit_unknown_type(self, type): return
-   def visit_declared_type(self, type): self.__decl = type.declaration
-   def visit_modifier_type(self, type): type.alias.accept(self)
-   def visit_array(self, type): type.alias.accept(self)
-   def visit_template(self, type): self.__decl = type.declaration
-   def visit_parametrized(self, type): type.template.accept(self)
-   def visit_function_type(self, type): return
+   def visit_buitin_type_id(self, type): return
+   def visit_unknown_type_id(self, type): return
+   def visit_declared_type_id(self, type): self.__decl = type.declaration
+   def visit_modifier_type_id(self, type): type.alias.accept(self)
+   def visit_array_type_id(self, type): type.alias.accept(self)
+   def visit_template_id(self, type): self.__decl = type.declaration
+   def visit_parametrized_type_id(self, type): type.template.accept(self)
+   def visit_function_type_id(self, type): return
 	
 def find_common_name(graph):
    common_name = list(graph[0])
@@ -61,7 +61,7 @@ class InheritanceGraph(View):
    def register(self, frame):
 
       super(InheritanceGraph, self).register(frame)
-      self.decl_finder = DeclarationFinder(self.processor.ir.types,
+      self.decl_finder = DeclarationFinder(self.processor.ir.asg.types,
                                            self.processor.verbose)
 
    def filename(self):
@@ -138,11 +138,10 @@ class InheritanceGraph(View):
          graphs.sort(lensorter)
          if name:
             self.write('<div class="inheritance-group">')
-            scoped_name = name.split('::')
             type_str = ''
-            types = self.processor.ir.types
-            type = types.get(scoped_name, None)
-            if isinstance(type, ASG.Declared):
+            types = self.processor.ir.asg.types
+            type = types.get(name, None)
+            if isinstance(type, ASG.DeclaredTypeId):
                type_str = type.declaration.type + ' '
             self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:
@@ -153,8 +152,8 @@ class InheritanceGraph(View):
             #output = os.path.join(self.processor.output, 'InheritanceGraph', str(count))
             output = os.path.join(self.processor.output,
                                   os.path.splitext(self.filename())[0]) + '-%s'%count
-            dot = Dot.Formatter()
-            ir = IR.IR({}, declarations, self.processor.ir.types)
+            dot = Dot.Formatter(bgcolor=self.processor.graph_color)
+            ir = IR.IR(files={}, asg=ASG.ASG(declarations, self.processor.ir.asg.types))
             try:
                dot.process(ir,
                            output=output,

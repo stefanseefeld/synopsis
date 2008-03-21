@@ -16,9 +16,9 @@ class TemplateSpecializations(Fragment):
         if not forward.template:
             return ''
         if forward.specializations:
-            spec = '<br/>'.join([self.reference(s.name)
-                                 for s in forward.specializations])
-            return div('specializations', 'Specializations: ' + spec)
+            spec = '\n'.join([div(None, self.reference(s.name))
+                              for s in forward.specializations])
+            return div('specializations', 'Specializations: ' + div(None, spec))
         elif forward.primary_template:
             return div('primary-template',
                        'Primary template: ' + self.reference(forward.primary_template.name))
@@ -36,8 +36,8 @@ class TemplateSpecializations(Fragment):
     def format_class_template(self, template_):
 
         if template_.specializations:
-            spec = '<br/>'.join([self.reference(s.name)
-                                 for s in template_.specializations])
+            spec = ' '.join([div(None, self.reference(s.name))
+                             for s in template_.specializations])
             return div('specializations', 'Specializations: ' + spec)
         elif template_.primary_template:
             return div('primary-template',

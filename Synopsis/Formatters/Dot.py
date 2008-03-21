@@ -11,10 +11,11 @@ Uses 'dot' from graphviz to generate various graphs.
 """
 
 from Synopsis.Processor import *
-from Synopsis import ASG, Util
+from Synopsis.QualifiedName import *
+from Synopsis import ASG
 from Synopsis.Formatters import TOC
-
-import sys, tempfile, getopt, os, os.path, types, errno, re
+from Synopsis.Formatters import quote_name, open_file
+import sys, os
 
 verbose = False
 debug = False
@@ -31,7 +32,7 @@ class SystemError:
 
    def __repr__(self):
 
-      return "SystemError: %(retval)x\"%(command)s\" failed."%self.__dict__
+      return 'SystemError: %(retval)x"%(command)s" failed.'%self.__dict__
 
 def system(command):
    """Run the command. If the command fails, an exception SystemError is
@@ -41,19 +42,31 @@ def system(command):
    if (ret>>8) != 0:
       raise SystemError(ret, command)
 
+
+def normalize(color):
+   """Generate a color triplet from a color string."""
+
+   if type(color) is str and color[0] == '#':
+      return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
+   elif type(color) is tuple:
+      return (color[0] * 255, color[1] * 255, color[2] * 255)
+
+
+def light(color):
+
+   import colorsys
+   hsv = colorsys.rgb_to_hsv(*color)
+   return colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2]/2)
+
+
 class DotFileGenerator:
    """A class that encapsulates the dot file generation"""
    def __init__(self, os, direction, bgcolor):
 
       self.__os = os
       self.direction = direction
-      self.bgcolor = bgcolor
-      # bgcolor is either a named color, or a hex value starting with '#', or a hsv triple
-      if self.bgcolor:
-         if type(self.bgcolor) is str:
-            if self.bgcolor[0] == '#': self.bgcolor = '"%s"'%self.bgcolor
-         if type(self.bgcolor) is tuple:
-            self.bgcolor = '"%f,%f,%f"'%(self.bgcolor[0], self.bgcolor[1], self.bgcolor[2])
+      self.bgcolor = bgcolor and '"#%X%X%X"'%bgcolor
+      self.light_color = bgcolor and '"#%X%X%X"'%light(bgcolor) or 'gray75'
       self.nodes = {}
 
    def write(self, text): self.__os.write(text)
@@ -66,17 +79,15 @@ class DotFileGenerator:
       number = self.nodes[name]
 
       # Quote to remove characters that dot can't handle
-      label = re.sub('<',r'\<',label)
-      label = re.sub('>',r'\>',label)
-      label = re.sub('{',r'\{',label)
-      label = re.sub('}',r'\}',label)
+      for p in [('<', '\<'), ('>', '\>'), ('{','\{'), ('}','\}')]:
+         label = label.replace(*p)
 
       if self.bgcolor:
          attr['fillcolor'] = self.bgcolor
          attr['style'] = 'filled'
 
       self.write("Node" + str(number) + " [shape=\"record\", label=\"{" + label + "}\"")
-      self.write(", fontSize = 10, height = 0.2, width = 0.4")
+      #self.write(", fontSize = 10, height = 0.2, width = 0.4")
       self.write(''.join([', %s=%s'%item for item in attr.items()]))
       if ref: self.write(', URL="' + ref + '"')
       self.write('];\n')
@@ -101,14 +112,19 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       else: self.__attributes = None
       self.aggregation = aggregation
       self.toc = toc
-      self.__scope = []
-      if prefix: self.__scope = prefix.split('::')
+      self.scope = QualifiedName()
+      if prefix:
+         if prefix.contains('::'):
+            self.scope = QualifiedCxxName(prefix.split('::'))
+         elif prefix.contains('.'):
+            self.scope = QualifiedPythonName(prefix.split('.'))
+         else:
+            self.scope = QualifiedName((prefix,))
       self.__type_ref = None
       self.__type_label = ''
       self.__no_descend = no_descend
       self.nodes = {}
 
-   def scope(self): return self.__scope
    def type_ref(self): return self.__type_ref
    def type_label(self): return self.__type_label
    def parameter(self): return self.__parameter
@@ -141,8 +157,8 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
                   break
          except: pass # typedefs etc may cause errors here.. ignore
       if not node.parents:
-         base = self.scope()
-      return Util.ccolonName(node.name, base)
+         base = self.scope
+      return str(self.scope.prune(node.name))
 
    #################### Type Visitor ##########################################
 
@@ -155,31 +171,31 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
    def visit_unknown_type(self, type):
 
       self.__type_ref = self.toc and self.toc[type.link] or None
-      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_label = str(self.scope.prune(type.name))
         
-   def visit_base_type(self, type):
+   def visit_builtin_type_id(self, type):
 
       self.__type_ref = None
       self.__type_label = type.name[-1]
 
-   def visit_dependent(self, type):
+   def visit_dependent_type_id(self, type):
 
       self.__type_ref = None
       self.__type_label = type.name[-1]
         
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
 
       self.__type_ref = self.toc and self.toc[type.declaration.name] or None
       if isinstance(type.declaration, ASG.Class):
          self.__type_label = self.get_class_name(type.declaration)
       else:
-         self.__type_label = Util.ccolonName(type.declaration.name, self.scope())
+         self.__type_label = str(self.scope.prune(type.declaration.name))
 
-   def visit_parametrized(self, type):
+   def visit_parametrized_type_id(self, type):
 
       if type.template:
          type_ref = self.toc and self.toc[type.template.name] or None
-         type_label = Util.ccolonName(type.template.name, self.scope())
+         type_label = str(self.scope.prune(type.template.name))
       else:
          type_ref = None
          type_label = "(unknown)"
@@ -189,7 +205,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       self.__type_ref = type_ref
       self.__type_label = type_label + "<" + ','.join(parameters_label) + ">"
 
-   def visit_template(self, type):
+   def visit_template_id(self, type):
       self.__type_ref = None
       def clip(x, max=20):
          if len(x) > max: return '...'
@@ -204,7 +220,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if self.type_ref():
          self.write_node(self.type_ref().link, self.type_label(), self.type_label())
       elif self.toc:
-         self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+         self.write_node('', self.type_label(), self.type_label(), color=self.light_color, fontcolor=self.light_color)
       else:
          self.write_node('', self.type_label(), self.type_label())
         
@@ -231,7 +247,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
       if ref:
          self.write_node(ref.link, name, label)
       elif self.toc:
-         self.write_node('', name, label, color='gray75', fontcolor='gray75')
+         self.write_node('', name, label, color=self.light_color, fontcolor=self.light_color)
       else:
          self.write_node('', name, label)
 
@@ -241,7 +257,7 @@ class InheritanceGenerator(DotFileGenerator, ASG.Visitor):
          #
          # find attributes of type 'Class' so we can link to it
          for a in filter(lambda a:isinstance(a, ASG.Variable), node.declarations):
-            if isinstance(a.vtype, ASG.Declared):
+            if isinstance(a.vtype, ASG.DeclaredTypeId):
                d = a.vtype.declaration
                if isinstance(d, ASG.Class) and self.nodes.has_key(self.get_class_name(d)):
                   self.write_edge(self.get_class_name(node), self.get_class_name(d),
@@ -280,13 +296,13 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
    #################### Type Visitor ##########################################
 
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
       if self.__current < self.__levels or self.__levels == -1:
          self.__current = self.__current + 1
          type.declaration.accept(self)
          self.__current = self.__current - 1
       # to restore the ref/label...
-      InheritanceGenerator.visit_declared_type(self, type)
+      InheritanceGenerator.visit_declared_type_id(self, type)
 
    #################### ASG Visitor ###########################################
         
@@ -297,7 +313,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          if self.type_ref():
             self.write_node(self.type_ref().link, self.type_label(), self.type_label())
          elif self.toc:
-            self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+            self.write_node('', self.type_label(), self.type_label(), color=self.light_color, fontcolor=self.light_color)
          else:
             self.write_node('', self.type_label(), self.type_label())
         
@@ -309,13 +325,13 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
       name = self.get_class_name(node)
       if self.__current == 1:
-         self.write_node('', name, name, style='filled', color='lightgrey')
+         self.write_node('', name, name, style='filled', color=self.light_color, fontcolor=self.light_color)
       else:
          ref = self.toc and self.toc[node.name] or None
          if ref:
             self.write_node(ref.link, name, name)
          elif self.toc:
-            self.write_node('', name, name, color='gray75', fontcolor='gray75')
+            self.write_node('', name, name, color=self.light_color, fontcolor=self.light_color)
          else:
             self.write_node('', name, name)
 
@@ -328,10 +344,10 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
       # if this is the main class
       if self.__current == 1 and self.__types:
-         # fool the visitDeclared method to stop walking upwards
+         # fool the visit_declared_type_id method to stop walking upwards
          self.__levels = 0
          for t in self.__types.values():
-            if isinstance(t, ASG.Declared):
+            if isinstance(t, ASG.DeclaredTypeId):
                child = t.declaration
                if isinstance(child, ASG.Class):
                   for i in child.parents:
@@ -344,7 +360,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
                            if ref:
                               self.write_node(ref.link, child_label, child_label)
                            elif self.toc:
-                              self.write_node('', child_label, child_label, color='gray75', fontcolor='gray75')
+                              self.write_node('', child_label, child_label, color=self.light_color, fontcolor=self.light_color)
                            else:
                               self.write_node('', child_label, child_label)
 
@@ -413,7 +429,7 @@ def _format_html(input, output, base_url):
    _format(input, output + ".map", "imap")
    prefix, name = os.path.split(output)
    reference = name + ".png"
-   html = Util.open(output + ".html")
+   html = open_file(output + ".html")
    html.write('<img alt="'+name+'" src="' + reference + '" hspace="8" vspace="8" border="0" usemap="#')
    html.write(name + "_map\" />\n")
    html.write("<map name=\"" + name + "_map\">")
@@ -428,12 +444,12 @@ class Formatter(Processor):
    the various InheritanceGenerators"""
 
    title = Parameter('Inheritance Graph', 'the title of the graph')
-   type = Parameter('class', 'type of graph (one of \'file\', \'class\', \'single\'')
+   type = Parameter('class', 'type of graph (one of "file", "class", "single"')
    hide_operations = Parameter(True, 'hide operations')
    hide_attributes = Parameter(True, 'hide attributes')
    show_aggregation = Parameter(False, 'show aggregation')
    bgcolor = Parameter(None, 'background color for nodes')
-   format = Parameter('ps', "Generate output in format 'dot', 'ps', 'png', 'gif', 'map', 'html'")
+   format = Parameter('ps', 'Generate output in format "dot", "ps", "png", "svg", "gif", "map", "html"')
    layout = Parameter('vertical', 'Direction of graph')
    prefix = Parameter(None, 'Prefix to strip from all class names')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
@@ -443,6 +459,13 @@ class Formatter(Processor):
       global verbose, debug
       
       self.set_parameters(kwds)
+      if self.bgcolor:
+         bgcolor = normalize(self.bgcolor)
+         if not bgcolor:
+            raise InvalidArgument('bgcolor=%s'%repr(self.bgcolor))
+         else:
+            self.bgcolor = bgcolor
+
       self.ir = self.merge_input(ir)
       verbose = self.verbose
       debug = self.debug
@@ -451,6 +474,7 @@ class Formatter(Processor):
                  'ps' : 'ps',
                  'png' : 'png',
                  'gif' : 'gif',
+                 'svg' : 'svg',
                  'map' : 'imap',
                  'html' : 'html'}
 
@@ -469,9 +493,9 @@ class Formatter(Processor):
          toc = None
 
       head, tail = os.path.split(self.output)
-      tmpfile = os.path.join(head, Util.quote(tail)) + ".dot"
+      tmpfile = os.path.join(head, quote_name(tail)) + ".dot"
       if self.verbose: print "Dot Formatter: Writing dot file..."
-      dotfile = Util.open(tmpfile)
+      dotfile = open_file(tmpfile)
       dotfile.write("digraph \"%s\" {\n"%(self.title))
       if self.layout == 'horizontal':
          dotfile.write('rankdir="LR";\n')
@@ -481,7 +505,7 @@ class Formatter(Processor):
          generator = SingleInheritanceGenerator(dotfile, self.layout,
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
-                                                -1, self.ir.types,
+                                                -1, self.ir.asg.types,
                                                 toc, self.prefix, False,
                                                 self.bgcolor)
       elif self.type == 'class':
@@ -501,7 +525,7 @@ class Formatter(Processor):
          for f in self.ir.files.values():
             generator.visit_file(f)
       else:
-         for d in self.ir.declarations:
+         for d in self.ir.asg.declarations:
             d.accept(generator)
       dotfile.write("}\n")
       dotfile.close()

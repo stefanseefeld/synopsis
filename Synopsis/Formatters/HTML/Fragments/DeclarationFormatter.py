@@ -57,7 +57,11 @@ class DeclarationFormatter(Fragment):
         else:
             type = decl.type
 
-        name = self.label(decl.name)
+        if decl.specializations:
+            # Treat it like a (non-forward declared) class template.
+            name  = self.format_scope(decl)
+        else:
+            name = self.label(decl.name)
         chunk = div('synopsis', type + ' ' + name)
         if self.xref: chunk += ' %s'%div('xref', self.xref.format_forward(decl))
         if self.source: chunk += ' %s'%div('source', self.source.format_forward(decl))
@@ -232,7 +236,7 @@ class DeclarationFormatter(Fragment):
         # Param Type
         id_holder = [parameter.name]
         typestr = self.format_type(parameter.type, id_holder)
-        if typestr: text.append(' %s '%typestr)
+        if typestr: text.append(typestr)
         # Postmodifiers
         text.extend([span('keyword', m) for m in parameter.postmodifier])
         # Param name

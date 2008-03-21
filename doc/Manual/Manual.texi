@@ -6,7 +6,7 @@
 @ifinfo
 Synopsis Reference Manual
 
-Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+Copyright @copyright{} 2001-2008 Stefan Seefeld
 All rights reserved.
 Licensed to the public under the terms of the GNU LGPL (>= 2),
 see the file COPYING for details.
@@ -16,15 +16,15 @@ see the file COPYING for details.
 @c title page for the printed version
 @titlepage
 @title Synopsis
-@subtitle Version: 0.9
-@author Stefan Seefeld, Stephen Davies
+@subtitle Version: 0.10
+@author Stefan Seefeld
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+Copyright @copyright{} 2001-2008 Stefan Seefeld
 
 @sp 2
-This is Version: 0.9 of the Synopsis Reference Manual
+This is Version: 0.10 of the Synopsis Reference Manual
 @sp 2
 
 All rights reserved.
@@ -36,7 +36,7 @@ see the file COPYING for details.
 @headings off
 @evenheading @thispage @|  @| @thischapter
 @oddheading  @thissection @|  @| @thispage
-@everyfooting @| Synopsis Manual @| Version: 0.4
+@everyfooting @| Synopsis Manual @| Version: 0.10
 @end iftex
 
 @c top level menu
@@ -51,10 +51,12 @@ some intro here
 * Copying::                     This manual is freely redistributable.
 * Acknowledgments::             Thanks!
 * Overview::                    How does it work
-* IR::                          The backbone of the synopsis tool
-* Parsers::                     Parser plugins
-* Processors::                  Processor plugins
-* Formatters::                  Formatter plugins
+* Internal Representation::     The Internal Representation
+* ASG::                         The Abstract Semantic Graph
+* Processor::                   The Processor Framework
+* Parsers::                     The Parsers Package
+* Processors::                  The Processors Package
+* Formatters::                  The Formatters Package
 @end menu
 
 @node Copying, Acknowledgments, Top, Top
@@ -62,7 +64,7 @@ some intro here
 @cindex copyright notice
 @cindex Copyright
 
-Copyright (C) 2001 Stefan Seefeld, Stephen Davies
+Copyright (C) 2001-2008 Stefan Seefeld
 
 All rights reserved.
 Licensed to the public under the terms of the GNU LGPL (>= 2),
@@ -72,118 +74,57 @@ see the file COPYING for details.@refill
 @unnumbered Acknowledgments
 @cindex acknowledgments
 
-@node Overview, IR, Acknowledgments, Top
+@node Overview, Internal Representation, Acknowledgments, Top
 @chapter Overview
 To be written...
 
-@node IR, Parsers, Overview, Top
+@node Internal Representation, ASG, Overview, Top
 @chapter The Internal Representation
-The backbone of synopsis is an Abstract Syntax Tree, together with a
-Type dictionary. Both are designed to be sufficiently abstract to support
-a variety of languges, without giving up the necessary details to retain
-language specific information. The AST module contains the type that are
-used to generate all the nodes of a syntax tree, such as 'Class', 'Module',
-or 'Variable', while the Type module contains the associated meta types,
-i.e. for example 'Parametrized', 'BaseType', 'Declared'. Both modules
-define a Visitor which you can use for introspection of the AST/Type dictionary,
-to manipulate the data and or to generate some output from it.
+
+@include IR.texi
 @page
 
-@menu
-* AST::    AST type hierarchy                    
-* Type::   Type type hierarchy                
-* Util::   Common utils
-@end menu
-
-@node AST, Type, IR, IR
-@section The AST Module
-@include ast.texi
+@node ASG, Processor, Internal Representation, Top
+@chapter The ASG Module
+@include ASG.texi
 @page
-@node Type, Util, AST, IR
-@section The Type Module
-@include type.texi
-@page
-@node Util,  , Type, IR
-@section The Util Module
-@include util.texi
 
-@node Parsers, Processors, IR, Top
+@node Processor, Parsers, ASG, Top
+@chapter The Processor Module
+@include Processor.texi
+@page
+
+@node Parsers, Processors, Processor, Top
 @chapter The Parsers Module
-Synopsis provides a set of parsers that generate an Abstract Syntax Tree
-from various programming languages. They are usually part of third party
-projects, such that we only need to provide a thin wrapper to bind them
-to the synopsis core.
+@include Parsers.texi
 @page
-@section The Cxx Module
-@include parsers-cxx.texi
-@page
-@section The IDL Module
-@include parsers-idl.texi
-@page
-@section The Python Module
-@include parsers-py.texi
 
 @node Processors, Formatters, Parsers, Top
 @chapter The Processors Module
-The linker performs some first modifications to the AST/Type dictionary
-as to resolve cross references (even across languages !), strip off
-unwanted scopes, parse the comments that are associated with the declarations
-for cross references, etc.
-@include processors.texi
+@include Processors.texi
+@page
 
-@node Formatters,  , Processors, Top
-
+@node Formatters, , Processors, Top
 @chapter The Formatters Module
-The backbone of synopsis is an Abstract Syntax Tree, which can be
-traversed using the Visitor Pattern. One of the main uses of Visitors
-is to provide different Formatters, which traverse the AST to generate
-formatted output. This module contains a range of formatters for various
-purposes, ranging from online browsing, over graph generation, to generating
-hardcopies.
 
 @menu
-* Formatters.ASCII::             ASCII formatter            
 * Formatters.HTML::              HTML formatter
-* Formatters.Dump::              Dump formatter (for debugging)
-* Formatters.Dia::               Dia formatter    
 * Formatters.DocBook::           DocBook formatter
-* Formatters.Dot::               Dot formatter
-* Formatters.HTML_Simple::       small HTML formatter
-* Formatters.TexInfo::           TexInfo formatter
+* Formatters.SXR::               SXR formatter
 @end menu
 
 @page
-@node Formatters.ASCII, Formatters.HTML, Formatters, Formatters
-@section The ASCII Module
-@include formatters-ascii.texi
-@page
-@node Formatters.HTML, Formatters.Dump, Formatters.ASCII, Formatters
-@section The HTML Module
-@include formatters-html.texi
-@page
-@node Formatters.Dump, Formatters.Dia, Formatters.HTML, Formatters
-@section The Dump Module
-@include formatters-dump.texi
-@page
-@node Formatters.Dia, Formatters.DocBook, Formatters.Dump, Formatters
-@section The Dia Module
-@include formatters-dia.texi
-@page
-@node Formatters.DocBook, Formatters.Dot, Formatters.Dia, Formatters
-@section The DocBook Module
-@include formatters-db.texi
-@page
-@node Formatters.Dot, Formatters.HTML_Simple, Formatters.DocBook, Formatters
-@section The Dot Module
-@include formatters-dot.texi
-@page
-@node Formatters.HTML_Simple, Formatters.TexInfo, Formatters.Dot, Formatters
-@section The HTML_Simple Module
-@include formatters-html-simple.texi
-@page
-@node Formatters.TexInfo,  , Formatters.HTML_Simple, Formatters
-@section The TexInfo Module
-@include formatters-texi.texi
+@node Formatters.HTML, Formatters.DocBook, , Formatters
+@chapter The Formatters.HTML Module
+@include Formatters-HTML.texi
+
+@node Formatters.DocBook, Formatters.SXR, Formatters.HTML, Formatters
+@chapter The Formatters.DocBook Module
+@include Formatters-DocBook.texi
+
+@node Formatters.SXR, , Formatters.DocBook, Formatters
+@chapter The Formatters.SXR Module
+@include Formatters-SXR.texi
 
 @unnumbered Type Index
 @printindex tp

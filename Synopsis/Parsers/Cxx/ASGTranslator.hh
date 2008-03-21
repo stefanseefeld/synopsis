@@ -62,16 +62,17 @@ private:
   //. it may create a modifier and return that.
   bpl::object lookup(PTree::Encoding const &name);
   bpl::object lookup_function_types(PTree::Encoding const &name, bpl::list);
-  bpl::object declare(bpl::tuple qname,
-                      bpl::object declaration);
-  bpl::object declare(bpl::tuple qname,
-                      bpl::object declaration,
-                      bpl::list parameters);
-  bpl::object create_dependent(bpl::tuple qname);
+  bpl::object declare_type(bpl::object name,
+                           bpl::object declaration,
+                           bool visible);
+  bpl::object declare_template(bpl::object name,
+                               bpl::object declaration,
+                               bpl::list parameters);
+  bpl::object create_dependent(bpl::object name);
 
   void declare(bpl::object);
 
-  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, bpl::object);
+  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, bpl::object &);
   PTree::Encoding::iterator decode_qtype(PTree::Encoding::iterator, bpl::object);
   PTree::Encoding::iterator decode_template(PTree::Encoding::iterator, bpl::object);
 
@@ -81,7 +82,9 @@ private:
   PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
 					std::string &name);
 
+  bpl::object qname(std::string const &name) { return qname_(bpl::make_tuple(name));}
 
+  bpl::object         qname_;
   bpl::object         asg_module_;
   bpl::object         sf_module_;
   bpl::dict           files_;
@@ -100,6 +103,9 @@ private:
   Buffer             *buffer_;
   PTree::Declaration *declaration_;
   bpl::object         parameter_;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool                defines_class_or_enum_;
   PTree::Encoding     name_;
 };
 

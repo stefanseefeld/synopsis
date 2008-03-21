@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -42,7 +42,7 @@ class ModuleListing(View):
       self.write_navigation_bar()
       self.write('<ul class="tree">')
       # FIXME: see HTML.Formatter
-      module = self.processor.ir.declarations[0]
+      module = self.processor.ir.asg.declarations[0]
       self.index_module(module, module.name)
       self.write('</ul>')
       self.end_file()
@@ -73,7 +73,7 @@ class ModuleListing(View):
       children.sort(lambda a,b,g=self.get_children:
                     cmp(len(g(b)),len(g(a))))
       # Print link to this module
-      name = Util.ccolonName(my_scope, rel_scope) or 'Global Module'
+      name = str(rel_scope.prune(my_scope)) or 'Global %s'%module.type.capitalize()
       link = self._link_href(module)
       text = href(link, name, target='detail')
       if not len(children):

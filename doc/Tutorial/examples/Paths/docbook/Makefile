@@ -9,8 +9,10 @@ all: Paths
 
 Paths: Paths.xml Reference.xml
 	mkdir -p $@
+	mkdir -p $@/images
 	cp synopsis.css $@
 	$(xsltproc) -o $@/ html.xsl Reference.xml
+	cp images/*.png $@/images
 
 Paths.pdf: Paths.fo
 	$(fop) -o $@ $<
@@ -40,6 +42,7 @@ install-html: all
 ifdef prefix
 	mkdir -p $(prefix)
 	cp -r Paths/* $(prefix)
+	cp Paths.xml $(prefix)
 	if test -f Paths.pdf; then cp Paths.pdf $(prefix); fi
 endif
 

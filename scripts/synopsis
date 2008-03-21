@@ -41,28 +41,32 @@ def usage():
     print 'Usage : %s [options] <input files>'%'synopsis'
     print """
 List of options:
-  -h, --help                 Display usage summary.
-  -V, --version              Display version information.
-  -v  --verbose              Operate verbosely.
-  -d  --debug                Operate in debug mode.
-  -o <file>, --output=<file> Write output to <file>.
-  -p <lang>, --parser=<lang> Select a parser for <lang>.
-  -Wp,<arg>[,<arg>...]       Send <args> to the parser.
-  --translate[=<markup>]     Translate comments to doc-strings, processing it as
-                             <markup> (typical values are 'javadoc' or 'rst').
-  --cfilter=<filter>         Specify a comment filter.
-  --cprocessor=<processor>   Specify a comment processor.
-  -Wc,<arg>[,<arg>...]       Send <args> to the comment translator.
+  -h, --help                  Display usage summary.
+  -V, --version               Display version information.
+  -v  --verbose               Operate verbosely.
+  -d  --debug                 Operate in debug mode.
+  -o <file>, --output=<file>  Write output to <file>.
+  -p <lang>, --parser=<lang>  Select a parser for <lang>.
+  -Wp,<arg>[,<arg>...]        Send <args> to the parser.
+  -t [<markup>]
+    --translate[=<markup>]    Translate comments to doc-strings, processing it as
+                                <markup> (typical values are 'javadoc' or 'rst').
+  --cfilter=<filter>          Specify a comment filter.
+  --cprocessor=<processor>    Specify a comment processor.
+  -Wc,<arg>[,<arg>...]        Send <args> to the comment translator.
   -l <processor>,
-    --linker=<processor>     Link, processing all declarations with <processor>.
-  -Wl,<arg>[,<arg>...]       Send <args> to the linker.
+    --linker=<processor>      Link, processing all declarations with <processor>.
+  -Wl,<arg>[,<arg>...]        Send <args> to the linker.
   -f <type>,
-    --formatter=<type>       Select a formatter for <type>.
-  -Wf,<arg>[,<arg>...]       Send <args> to the formatter.
-  -I <path>                  Add <path> to list of include paths.
-  --include=<file>           Preinclude <file>.
-  -D <macro>                 Add <macro> to list of predefined macros.
-  -U <macro>                 Remove <macro> from list of predefined macros.
+    --formatter=<type>        Select a formatter for <type>.
+  -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
+  -I <path>                   Add <path> to list of include paths.
+  --include=<file>            Preinclude <file>.
+  -D <macro>                  Add <macro> to list of predefined macros.
+  -U <macro>                  Remove <macro> from list of predefined macros.
+  -s <directory>,
+    --sxr=<directory>         Specify sxr directory. If given, process source cross-references.
+  --probe                     Probe the specified processor.
 """
    
 def make_processor(argv):
@@ -85,19 +89,20 @@ def make_processor(argv):
     formatter_opts = {}
     options = {}
     help = False
+    probe = False
 
     opts, args = getopt.getopt(argv,
-                               'o:p:l:f:I:D:U:W:jvhVdP',
+                               'o:p:t:l:f:s:I:D:U:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
-                                'linker=', 'formatter=',
+                                'linker=', 'formatter=', 'sxr=',
                                 'version', 'help', 'verbose', 'debug', 'profile',
-                                'include='])
+                                'include=', 'probe'])
     for o, a in opts:
         if o in ['-V', '--version']:
             print 'synopsis version %s (revision %s)'%(config.version, config.revision)
             sys.exit(0)
-
+         
         if o in ['-v', '--verbose']: options['verbose'] = True
         elif o in ['-d', '--debug']: options['debug'] = True
         elif o in ['-P', '--profile']: options['profile'] = True
@@ -109,7 +114,7 @@ def make_processor(argv):
             parser = __import__('Synopsis.Parsers.%s.Parser'%a,
                                 'verbose' in options)
 
-        elif o == '--translate':
+        elif o in ['-t', '--translate']:
             if 'markup' in translator_opts:
                 error('Multiple translators specified.')
             translator_opts['markup'] = a or ''
@@ -162,16 +167,23 @@ def make_processor(argv):
         elif o == '-W':
             if a[0] == "p":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    parser_opts[o] = a
+                    parser_opts[o.replace('-', '_')] = a
             elif a[0] == "l":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    linker_opts[o] = a
+                    linker_opts[o.replace('-', '_')] = a
             elif a[0] == "f":
                 for o,a in get_options(a[2:].split(','), expect_non_options = False):
-                    formatter_opts[o] = a
+                    formatter_opts[o.replace('-', '_')] = a
+
+        elif o in ['-s', '--sxr']:
+            parser_opts['sxr_prefix'] = a
+            linker_opts['sxr_prefix'] = a
+            formatter_opts['sxr_prefix'] = a
 
         elif o in ['-h', '--help']:
             help = True
+        elif o == '--probe':
+            probe = True
 
     if help:
         for p in parser, linker, formatter:
@@ -185,9 +197,6 @@ def make_processor(argv):
         if not (parser or linker or formatter):
             usage()
         sys.exit(0)
-    if not args:
-        usage()
-	sys.exit(0)
 
     # quick hack: if the parser is Cpp, rename the 'cppflags'
     # options to just 'flags'
@@ -195,6 +204,28 @@ def make_processor(argv):
         if parser_opts.has_key('cppflags'):
             parser_opts['flags'] = parser_opts['cppflags']
             del parser_opts['cppflags']
+
+    if probe:
+	if parser and parser.__module__ == 'Synopsis.Parsers.Cpp':
+            cpp = parser(**parser_opts)
+            info = cpp.probe()
+            if not info:
+                print 'Error: no compiler found'
+            else:
+                print 'Compiler:', info.compiler
+                print 'Flags:', ', '.join(info.flags)
+                print 'Language:', info.language
+                print 'Header search path:\n  %s\n'%'\n  '.join(info.include_paths)
+	        macros = [k + (v and '=%s'%v or '') for (k,v) in info.macros]
+
+                print 'Macro definitions:\n  %s\n'%'\n  '.join(macros)
+	else:
+            print 'Only the Cpp processor supports probing at this time.'
+	sys.exit(0)
+
+    if not args:
+        usage()
+	sys.exit(0)
 
     if translator_opts.has_key('processor'):
 	processor = translator_opts['processor']

@@ -6,158 +6,176 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
-from Synopsis import ASG, Util
+from Synopsis import ASG
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-from Synopsis.Formatters.XRef import *
+from Synopsis.Formatters.HTML.DirectoryLayout import quote_name
+import os, time
 
 class XRef(View):
-   """A module for creating views full of xref infos"""
+    """A module for creating views full of xref infos"""
 
-   xref_file = Parameter('', '')
-   link_to_scope = Parameter(True, '')
+    link_to_scope = Parameter(True, '')
 
-   def register(self, frame):
+    def register(self, frame):
 
-      super(XRef, self).register(frame)
-      self.__filename = None
-      self.__title = None
-      if self.xref_file:
-         self.processor.xref.load(self.xref_file)
-      self.__toc = TOC(None)
-      # Add an entry for every xref
-      xref = self.processor.xref
-      for name in xref.get_all_names():
-         view = xref.get_page_for(name)
-         file = self.directory_layout.special('xref%d'%view)
-         file = file + '#' + Util.quote('::'.join(name))
-         self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
+        super(XRef, self).register(frame)
+        self.__filename = None
+        self.__title = None
+        self.__toc = TOC(None)
 
-   def toc(self, start):
+        if self.processor.sxr_prefix is None: return
 
-      return self.__toc
+        self.icon = 'xref.png'
+        share = config.datadir
+        src = os.path.join(share, 'xref.png')
+        self.directory_layout.copy_file(src, self.icon)
 
-   def filename(self):
+        # Add an entry for every xref
+        for name in self.processor.ir.sxr.keys():
+            page = self.processor.xref.get(name)
+            file = self.directory_layout.special('xref%d'%page)
+            file += '#' + quote_name(str(name))
+            self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
 
-      return self.__filename
+    def toc(self, start):
 
-   def title(self):
+        return self.__toc
 
-      return self.__title
+    def filename(self):
 
-   def process(self):
+        return self.__filename
 
-      page_info = self.processor.xref.get_page_info()
-      if not page_info: return
-      for i in range(len(page_info)):
-         self.__filename = self.directory_layout.xref(i)
-         self.__title = 'Cross Reference page #%d'%i
+    def title(self):
 
-         self.start_file()
-         self.write_navigation_bar()
-         self.write(element('h1', self.title()))
-         for name in page_info[i]:
-            self.write('<div class="xref-name">')
-            self.process_name(name)
-            self.write('</div>')
-         self.end_file()
+        return self.__title
 
-   def register_filenames(self):
-      """Registers each view"""
+    def process(self):
 
-      page_info = self.processor.xref.get_page_info()
-      if not page_info: return
-      for i in range(len(page_info)):
-         filename = self.directory_layout.special('xref%d'%i)
-         self.processor.register_filename(filename, self, i)
+        if self.processor.sxr_prefix is None: return
+
+        pages = self.processor.xref.pages()
+        if not pages: return
+        for p in range(len(pages)):
+            self.__filename = self.directory_layout.xref(p)
+
+            first, last = pages[p][0], pages[p][-1]
+            self.__title = 'Cross Reference : %s - %s'%(first, last)
+
+            self.start_file()
+            self.write_navigation_bar()
+            self.write(element('h1', self.title()))
+            for name in pages[p]:
+                self.write('<div class="xref-name">')
+                self.process_name(name)
+                self.write('</div>')
+            self.end_file()
+
+    def register_filenames(self):
+        """Registers each view"""
+
+        if self.processor.sxr_prefix is None: return
+
+        pages = self.processor.xref.pages()
+        if not pages: return
+        for p in range(len(pages)):
+            filename = self.directory_layout.special('xref%d'%p)
+            self.processor.register_filename(filename, self, p)
     
-   def process_link(self, file, line, scope):
-      """Outputs the info for one link"""
+    def process_link(self, file, line, scope):
+        """Outputs the info for one link"""
 
-      # Make a link to the highlighted source
-      file_link = self.directory_layout.file_source(file)
-      file_link = rel(self.filename(), file_link) + "#%d"%line
-      # Try and make a descriptive
-      desc = ''
-      type = self.processor.ir.types.get(scope)
-      if isinstance(type, ASG.Declared):
-         desc = ' ' + type.declaration.type
-      # Try and find a link to the scope
-      scope_text = '::'.join(scope)
-      entry = self.processor.toc[scope]
-      if entry:
-         scope_text = href(rel(self.filename(), entry.link), escape(scope_text))
-      else:
-         scope_text = escape(scope_text)
-      # Output list element
-      self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
-         file_link, file, line, desc, scope_text))
+        file_link = self.directory_layout.file_source(file)
+        file_link = rel(self.filename(), file_link) + "#%d"%line
+        desc = ''
+        type = self.processor.ir.asg.types.get(scope)
+        if isinstance(type, ASG.DeclaredTypeId):
+            desc = ' ' + type.declaration.type
+        entry = self.processor.toc[scope]
+        if entry:
+            label = href(rel(self.filename(), entry.link), escape(str(scope)))
+        else:
+            label = escape(str(scope))
+        self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
+            file_link, file, line, desc, label))
     
-   def describe_decl(self, decl):
-      """Returns a description of the declaration. Detects constructors and
-      destructors"""
+    def describe_declaration(self, decl):
+        """Returns a description of the declaration. Detects constructors and
+        destructors"""
 
-      name = decl.name
-      if isinstance(decl, ASG.Function) and len(name) > 1:
-         real = decl.real_name[-1]
-         if name[-2] == real:
-            return 'Constructor '
-         elif real[0] == '~' and name[-2] == real[1:]:
-            return 'Destructor '
-      return decl.type.capitalize() + ' '
+        name = decl.name
+        if isinstance(decl, ASG.Function) and len(name) > 1:
+            real = decl.real_name[-1]
+            if name[-2] == real:
+                return 'Constructor '
+            elif real[0] == '~' and name[-2] == real[1:]:
+                return 'Destructor '
+        return decl.type.capitalize() + ' '
 
-   def process_name(self, name):
-      """Outputs the info for a given name"""
+    def process_name(self, name):
+        """Outputs the info for a given name"""
       
-      target_data = self.processor.xref.get_info(name)
-      if not target_data: return
-
-      jname = '::'.join(name)
-      self.write(element('a', '', name=Util.quote(escape(jname))))
-      desc = ''
-      decl = None
-      type = self.processor.ir.types.get(name)
-      if isinstance(type, ASG.Declared):
-         decl = type.declaration
-         desc = self.describe_decl(decl)
-      self.write(element('h2', desc + escape(jname)) + '<ul>\n')
+        entry = self.processor.ir.sxr.get(name)
+        if not entry: return
+        self.write(element('a', '', name=quote_name(escape(str(name)))))
+        desc = ''
+        decl = None
+        type = self.processor.ir.asg.types.get(name)
+        if isinstance(type, ASG.DeclaredTypeId):
+            decl = type.declaration
+            desc = self.describe_declaration(decl)
+        self.write(element('h2', desc + escape(str(name))) + '<ul>\n')
 	
-      if self.link_to_scope:
-         type = self.processor.ir.types.get(name, None)
-         if isinstance(type, ASG.Declared):
-            link = self.directory_layout.link(type.declaration)
-            self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
-      if target_data[0]:
-         self.write('<li>Defined at:<ul>\n')
-         for file, line, scope in target_data[0]:
-            self.process_link(file, line, scope)
-         self.write('</ul></li>\n')
-      if target_data[1]:
-         self.write('<li>Called from:<ul>\n')
-         for file, line, scope in target_data[1]:
-            self.process_link(file, line, scope)
-         self.write('</ul></li>\n')
-      if target_data[2]:
-         self.write('<li>Referenced from:<ul>\n')
-         for file, line, scope in target_data[2]:
-            self.process_link(file, line, scope)
-         self.write('</ul></li>\n')
-      if isinstance(decl, ASG.Scope):
-         self.write('<li>Declarations:<ul>\n')
-         for child in decl.declarations:
-            file, line = child.file.name, child.line
-            file_link = self.directory_layout.file_source(file)
-            file_link = rel(self.filename(),file_link) + '#%d'%line
-            file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
-            cname = child.name
-            entry = self.processor.toc[cname]
-            type = self.describe_decl(child)
-            if entry:
-               link = href(rel(self.filename(), entry.link), escape(Util.ccolonName(cname, name)))
-               self.write(element('li', file_href + type + link))
-            else:
-               self.write(element('li', file_href + type + Util.ccolonName(cname, name)))
-         self.write('</ul></li>\n')
-      self.write('</ul>\n')
+        if self.link_to_scope:
+            type = self.processor.ir.asg.types.get(name, None)
+            if isinstance(type, ASG.DeclaredTypeId):
+                link = self.directory_layout.link(type.declaration)
+                self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
+        if entry.definitions:
+            self.write('<li>Defined at:\n<ul>\n')
+            for file, line, scope in entry.definitions:
+                self.process_link(file, line, scope)
+            self.write('</ul></li>\n')
+        if entry.calls:
+            self.write('<li>Called from:\n<ul>\n')
+            for file, line, scope in entry.calls:
+                self.process_link(file, line, scope)
+            self.write('</ul></li>\n')
+        if entry.references:
+            self.write('<li>Referenced from:\n<ul>\n')
+            for file, line, scope in entry.references:
+                self.process_link(file, line, scope)
+            self.write('</ul></li>\n')
+        if isinstance(decl, ASG.Scope):
+            self.write('<li>Declarations:\n<ul>\n')
+            for child in decl.declarations:
+                if isinstance(child, ASG.Builtin) and child.type == 'EOS':
+                    continue
+                file, line = child.file.name, child.line
+                file_link = self.directory_layout.file_source(file)
+                file_link = rel(self.filename(),file_link) + '#%d'%line
+                file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
+                cname = child.name
+                entry = self.processor.toc[cname]
+                type = self.describe_declaration(child)
+                if entry:
+                    link = href(rel(self.filename(), entry.link), escape(str(name.prune(cname))))
+                    self.write(element('li', file_href + type + link))
+                else:
+                    self.write(element('li', file_href + type + str(name.prune(cname))))
+            self.write('</ul>\n</li>\n')
+        self.write('</ul>\n')
+
+    def end_file(self):
+        """Overrides end_file to provide synopsis logo"""
+
+        self.write('\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
+        logo += ' (version %s)'%config.version
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        View.end_file(self)

@@ -18,11 +18,10 @@ class install_lib(base):
         config_file = os.path.join(self.install_dir, 'Synopsis', 'config.py')
         self.announce("adjusting config parameters")
         i = self.distribution.get_command_obj('install')
-        prefix = i.root or i.prefix
         version = self.distribution.get_version()
-        datadir=os.path.join(prefix, 'share', 'synopsis-%s'%version)
+        datadir=os.path.join(i.prefix, 'share', 'synopsis-%s'%version)
         reset_config_variables(config_file,
-                               prefix=prefix,
+                               prefix=i.prefix,
                                version=version,
                                revision=self.distribution.revision,
                                datadir=datadir)

@@ -10,8 +10,8 @@ from Synopsis.Formatters.DocBook.Markup import *
 from docutils import writers, nodes, languages
 from docutils.nodes import *
 from docutils.core import *
-import string, re
-from types import ListType
+from docutils.parsers.rst import roles
+import string, re, StringIO
 
 class Writer(writers.Writer):
 
@@ -32,7 +32,7 @@ class Writer(writers.Writer):
     )
 
 
-    """DocBook does it's own section numbering"""
+    """DocBook does its own section numbering"""
     settings_default_overrides = {'enable_section_numbering': 0}
 
     output = None
@@ -133,7 +133,7 @@ class DocBookTranslator(nodes.NodeVisitor):
                 # apply here, as an element with no attribute
                 # isn't well-formed XML.
                 parts.append(name.lower())
-            elif isinstance(value, ListType):
+            elif isinstance(value, list):
                 values = [str(v) for v in value]
                 parts.append('%s="%s"' % (name.lower(),
                                           self.attval(' '.join(values))))
@@ -351,10 +351,10 @@ class DocBookTranslator(nodes.NodeVisitor):
         #     which don't map nicely to docbook elements and 
         #     reST allows one to insert arbitrary fields into
         #     the header, We need to be able to handle fields
-        #     which either don't map or nicely or are unexpected.
+        #     which either don't map nicely or are unexpected.
         #     I'm thinking of just using DocBook to display these
         #     elements in some sort of tabular format -- but
-        #     to collecting them is not straight-forward.  
+        #     to collect them is not straight-forward.  
         #     Paragraphs, links, lists, etc... can all live within
         #     the values so we either need a separate visitor
         #     to translate these elements, or to maintain state
@@ -1112,42 +1112,62 @@ class RST(Formatter):
 
     def format(self, decl):
 
-        formatter = self
+        def ref(name, rawtext, text, lineno, inliner,
+                options={}, content=[]):
+
+            name = utils.unescape(text)
+            uri = self.lookup_symbol(name, decl.name[:-1])
+            if uri:
+                node = reference(rawtext, name, refid=uri, **options)
+            else:
+                node = emphasis(rawtext, name)
+            return [node], []
+
+        roles.register_local_role('', ref)
+
+        errstream = StringIO.StringIO()
+        settings = {}
+        settings['halt_level'] = 2
+        settings['warning_stream'] = errstream
+        settings['traceback'] = True
 
         doc = decl.annotations.get('doc')
         if doc:
-            doctree = publish_doctree(doc.text,
-                                      settings_overrides={'report_level':10000,
-                                                          'halt_level':10000,
-                                                          'warning_stream':None})
+            try:
+                doctree = publish_doctree(doc.text, settings_overrides=settings)
+                # Extract the summary.
+                extractor = SummaryExtractor(doctree)
+                doctree.walk(extractor)
 
-            # Extract the summary.
-            extractor = SummaryExtractor(doctree)
-            doctree.walk(extractor)
+                reader = docutils.readers.doctree.Reader(parser_name='null')
 
-            reader = docutils.readers.doctree.Reader(parser_name='null')
-
-            # Publish the summary.
-            if extractor.summary:
+                # Publish the summary.
+                if extractor.summary:
+                    pub = Publisher(reader, None, None,
+                                    source=io.DocTreeInput(extractor.summary),
+                                    destination_class=io.StringOutput)
+                    pub.writer = Writer()
+                    pub.process_programmatic_settings(None, None, None)
+                    dummy = pub.publish(enable_exit_status=None)
+                    summary = pub.writer.output
+                else:
+                    summary = ''
+                
+                # Publish the details.
                 pub = Publisher(reader, None, None,
-                                source=io.DocTreeInput(extractor.summary),
+                                source=io.DocTreeInput(doctree),
                                 destination_class=io.StringOutput)
                 pub.writer = Writer()
                 pub.process_programmatic_settings(None, None, None)
                 dummy = pub.publish(enable_exit_status=None)
-                summary = pub.writer.output
-            else:
-                summary = ''
+                details = pub.writer.output
                 
-            # Publish the details.
-            pub = Publisher(reader, None, None,
-                            source=io.DocTreeInput(doctree),
-                            destination_class=io.StringOutput)
-            pub.writer = Writer()
-            pub.process_programmatic_settings(None, None, None)
-            dummy = pub.publish(enable_exit_status=None)
-            details = pub.writer.output
-                
-            return Struct(summary, details)
-        else:
-            return Struct('', '')
+                return Struct(summary, details)
+
+            except docutils.utils.SystemMessage, error:
+                xx, line, message = str(error).split(':', 2)
+                print 'In DocString attached to declaration at %s:%d:'%(decl.file.name,
+                                                                        decl.line)
+                print '  line %s:%s'%(line, message)
+
+        return Struct('', '')

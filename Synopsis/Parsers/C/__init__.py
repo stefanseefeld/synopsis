@@ -16,15 +16,16 @@ class Parser(Processor):
 
     preprocess = Parameter(True, 'whether or not to preprocess the input')
     emulate_compiler = Parameter('cc', 'a compiler to emulate')
+    compiler_flags = Parameter([], 'list of flags for the emulated compiler')
     cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
-    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
-    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
+    sxr_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
 
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
 
         if self.preprocess:
@@ -33,9 +34,8 @@ class Parser(Processor):
             cpp = Cpp.Parser(base_path = self.base_path,
                              language = 'C',
                              flags = self.cppflags,
-                             emulate_compiler = self.emulate_compiler)
-
-        base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
+                             emulate_compiler = self.emulate_compiler,
+                             compiler_flags = self.compiler_flags)
 
         for file in self.input:
 
@@ -51,17 +51,15 @@ class Parser(Processor):
                                       cpp_output = i_file,
                                       input = [file],
                                       primary_file_only = self.primary_file_only,
-                                      base_path = base_path,
                                       verbose = self.verbose,
                                       debug = self.debug,
                                       profile = self.profile)
 
             self.ir = ParserImpl.parse(self.ir, i_file,
                                        os.path.abspath(file),
-                                       base_path,
+                                       os.path.abspath(self.base_path),
                                        self.primary_file_only,
-                                       self.syntax_prefix,
-                                       self.xref_prefix,
+                                       self.sxr_prefix,
                                        self.verbose,
                                        self.debug,
                                        self.profile)

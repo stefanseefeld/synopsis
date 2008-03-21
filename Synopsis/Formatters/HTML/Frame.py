@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Formatters.HTML.html import *
+from Synopsis.Formatters.HTML.Tags import *
 import sys, time
 
 class Frame:

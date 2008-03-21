@@ -8,7 +8,7 @@ namespace Paths
 {
 
 /**
- * The Bezier class. It implements a bezier curve
+ * The Bezier class. It implements a Bezier curve
  * for the given order.
  */
 template <size_t Order>

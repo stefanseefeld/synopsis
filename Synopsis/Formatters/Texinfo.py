@@ -8,10 +8,10 @@
 
 """a TexInfo formatter """
 
-from Synopsis.Processor import Processor, Parameter
-from Synopsis import ASG, Util
+from Synopsis.Processor import *
+from Synopsis import ASG
 from Synopsis.DocString import DocString
-import sys, getopt, os, os.path, re
+import sys, os, re
 
 
 _tags = re.compile(r'@(?!(table|item|samp|end))')
@@ -25,15 +25,15 @@ class MenuMaker(ASG.Visitor):
 
    def __init__(self, scope, os):
 
-      self.__scope = scope
-      self.__os = os
+      self.scope = scope
+      self.os = os
 
-   def write(self, text): self.__os.write(text)
+   def write(self, text): self.os.write(text)
    def start(self): self.write('@menu\n')
    def end(self): self.write('@end menu\n')
    def visit_declaration(self, node):
 
-      name = escape(Util.dotName(node.name, self.__scope))
+      name = escape(str(self.scope.prune(node.name)))
       self.write('* ' + name + '::\t' + node.type + '\n')
 
    visit_group = visit_declaration
@@ -46,19 +46,17 @@ class Formatter(Processor, ASG.Visitor):
    def process(self, ir, **kwds):
 
       self.set_parameters(kwds)
+      if not self.output: raise MissingArgument('output')
       self.ir = self.merge_input(ir)
 
-      self.__os = open(self.output, 'w+')
-      self.__scope = []
-      self.__indent = 0
-
-      for d in self.ir.declarations:
+      self.os = open(self.output, 'w+')
+      self.scope = ()
+      for d in self.ir.asg.declarations:
          d.accept(self)
 
       return self.ir
 
-   def scope(self): return self.__scope
-   def write(self, text): self.__os.write(text)
+   def write(self, text): self.os.write(text)
 
    def type_label(self): return escape(self.__type_label)
 
@@ -79,28 +77,28 @@ class Formatter(Processor, ASG.Visitor):
 
    #################### Type Visitor ###########################################
 
-   def visit_base_type(self, type):
+   def visit_builtin_type_id(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name)
+      self.__type_ref = str(type.name)
+      self.__type_label = str(type.name)
         
-   def visit_unknown_type(self, type):
+   def visit_unknown_type_id(self, type):
 
-      self.__type_ref = Util.ccolonName(type.name)
-      self.__type_label = Util.ccolonName(type.name, self.scope())
+      self.__type_ref = str(type.name)
+      self.__type_label = str(self.scope.prune(type.name))
         
-   def visit_declared_type(self, type):
+   def visit_declared_type_id(self, type):
 
-      self.__type_label = Util.ccolonName(type.name, self.scope())
-      self.__type_ref = Util.ccolonName(type.name)
+      self.__type_label = str(self.scope.prune(type.name))
+      self.__type_ref = str(type.name)
         
-   def visit_modifier_type(self, type):
+   def visit_modifier_type_id(self, type):
 
       type.alias.accept(self)
       self.__type_ref = ''.join(type.premod) + ' ' + self.__type_ref + ' ' + ''.join(type.postmod)
       self.__type_label = ''.join(type.premod) + ' ' + self.__type_label + ' ' + ''.join(type.postmod)
             
-   def visit_parametrized(self, type):
+   def visit_parametrized_type_id(self, type):
 
       if type.template:
          type.template.accept(self)
@@ -112,7 +110,7 @@ class Formatter(Processor, ASG.Visitor):
          parameters_label.append(self.__type_label)
       self.__type_label = type_label + ', '.join(parameters_label) + '>'
 
-   def visit_function_type(self, type):
+   def visit_function_type_id(self, type):
 
       # TODO: this needs to be implemented
       self.__type_ref = 'function_type'
@@ -150,13 +148,14 @@ class Formatter(Processor, ASG.Visitor):
       #self.write('@node ' + self.decl_label(module.name) + '\n')
       self.write('@deftp ' + module.type + ' ' + self.decl_label(module.name) + '\n')
       self.format_comments(module)
-      self.scope().append(module.name[-1])
-      #menu = MenuMaker(self.scope(), self.__os)
+      old_scope = self.scope
+      self.scope = module.name
+      #menu = MenuMaker(str(self.scope), self.os)
       #menu.start()
       #for declaration in module.declarations: declaration.accept(menu)
       #menu.end()
       for declaration in module.declarations: declaration.accept(self)
-      self.scope().pop()
+      self.scope = old_scope
       self.write('@end deftp\n')
 
    def visit_class(self, class_):
@@ -172,29 +171,26 @@ class Formatter(Processor, ASG.Visitor):
             parent.accept(self)
          self.write('\n')
       self.format_comments(class_)
-      self.scope().append(class_.name[-1])
-      #menu = MenuMaker(self.scope(), self.__os)
+      old_scope = self.scope
+      self.scope = class_.name
+      #menu = MenuMaker(str(self.scope), self.os)
       #menu.start()
       #for d in class_.declarations: d.accept(menu)
       #menu.end()
       for d in class_.declarations:
          d.accept(self)
-      self.scope().pop()
+      self.scope = old_scope
       self.write('@end deftp\n')
 
    def visit_inheritance(self, inheritance):
 
-      #map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
-      #self.entity("classname", Util.ccolonName(inheritance.parent().name, self.scope()))
       self.write('parent class')
 
    def visit_parameter(self, parameter):
 
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier)
       parameter.type.accept(self)
       label = self.write('{' + self.type_label() + '}')
       label = self.write(' @var{' + parameter.name + '}')
-      #map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier)
 
    def visit_function(self, function):
 
@@ -204,7 +200,6 @@ class Formatter(Processor, ASG.Visitor):
          ret_label = '{' + self.type_label() + '}'
       else:
          ret_label = '{}'
-      #self.write('@node ' + self.decl_label(function.real_name) + '\n')
       self.write('@deftypefn ' + function.type + ' ' + ret_label + ' ' + self.decl_label(function.real_name) + ' (')
       first = 1
       for parameter in function.parameters:
@@ -227,7 +222,7 @@ class Formatter(Processor, ASG.Visitor):
          ret_label = '{}'
       try:
          #self.write('@node ' + self.decl_label(operation.name) + '\n')
-         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
+         self.write('@deftypeop ' + operation.type + ' ' + self.decl_label(self.scope) + ' ' + ret_label + ' ' + self.decl_label(operation.real_name) + ' (')
       except:
          print operation.real_name
          sys.exit(0)
