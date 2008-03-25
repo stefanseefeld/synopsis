@@ -47,13 +47,13 @@ endef
 ifneq ($(findstring $(PLATFORM), nt cygwin),)
 define link_dso
 @echo linking $@
-$(LDSHARED) $(LDFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 endef
 else
 define link_dso
 @echo linking $@
 rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
-$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) $(LDFLAGS) \
+$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) \
   -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
@@ -62,7 +62,7 @@ endif
 
 define link_app
 @echo linking $@
-$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
+$(CXX) -Llib $(LDFLAGS) -o $@ $< -lSynopsis $(LIBS)
 endef
 
 SRC	:= Trace Buffer Lexer process_pragma
