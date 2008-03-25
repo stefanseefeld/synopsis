@@ -21,7 +21,13 @@ else
   AC_PATH_PROG(PYTHON, python2 python, python)
 fi
 PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix" | tr -d "\r"`
+AC_MSG_CHECKING(for Python development environment)
 PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_inc()" | tr -d "\r"`
+PYTHON_H=`$PYTHON -c "from os.path import *; h = join('$PYTHON_INCLUDE', 'Python.h'); print exists(h) and h or ''"`
+if test $PYTHON_H
+then AC_MSG_RESULT(yes)
+else AC_MSG_ERROR([Python.h not found.])
+fi
 
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)

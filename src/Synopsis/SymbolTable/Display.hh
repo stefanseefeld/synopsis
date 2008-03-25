@@ -14,15 +14,40 @@ namespace Synopsis
 namespace SymbolTable
 {
 
+class SymbolType : private SymbolVisitor
+{
+public:
+  std::string name(SymbolTable::Symbol const *s)
+  {
+    s->accept(this);
+    return type_;
+  }
+private:
+  virtual void visit(SymbolTable::Symbol const *) { type_ = "unknown";}
+  virtual void visit(SymbolTable::VariableName const *) { type_ = "variable";}
+  virtual void visit(SymbolTable::ConstName const *) { type_ = "constant";}
+  virtual void visit(SymbolTable::TypeName const *) { type_ = "type-name";}
+  virtual void visit(SymbolTable::TypedefName const *) { type_ = "typedef";}
+  virtual void visit(SymbolTable::ClassName const *) { type_ = "class-name";}
+  virtual void visit(SymbolTable::EnumName const *) { type_ = "enum-name";}
+  virtual void visit(SymbolTable::DependentName const *) { type_ = "dependent";}
+  virtual void visit(SymbolTable::ClassTemplateName const *) { type_ = "class template";}
+  virtual void visit(SymbolTable::FunctionName const *) { type_ = "function";}
+  virtual void visit(SymbolTable::FunctionTemplateName const *) { type_ = "function template";}
+  virtual void visit(SymbolTable::NamespaceName const *) { type_ = "namespace";}
+
+  std::string   type_;
+};
+
 class SymbolDisplay : private SymbolVisitor
 {
 public:
   SymbolDisplay(std::ostream &os, size_t indent)
-    : my_os(os), my_indent(indent, ' ') {}
+    : os_(os), indent_(indent, ' ') {}
   void display(PTree::Encoding const &, SymbolTable::Symbol const *);
 private:
   std::ostream &prefix(std::string const &type)
-  { return my_os << my_indent << type;}
+  { return os_ << indent_ << type;}
   virtual void visit(SymbolTable::Symbol const *);
   virtual void visit(SymbolTable::VariableName const *);
   virtual void visit(SymbolTable::ConstName const *);
@@ -36,9 +61,9 @@ private:
   virtual void visit(SymbolTable::FunctionTemplateName const *);
   virtual void visit(SymbolTable::NamespaceName const *);
 
-  std::ostream &my_os;
-  std::string   my_indent;
-  std::string   my_name;
+  std::ostream &os_;
+  std::string   indent_;
+  std::string   name_;
 };
 
 //. The ScopeDisplay class provides an annotated view of the symbol table,
@@ -46,7 +71,7 @@ private:
 class ScopeDisplay : private SymbolTable::ScopeVisitor
 {
 public:
-  ScopeDisplay(std::ostream &os) : my_os(os), my_indent(0) {}
+  ScopeDisplay(std::ostream &os) : os_(os), indent_(0) {}
   virtual ~ScopeDisplay() {}
   void display(SymbolTable::Scope const *s) 
   { const_cast<SymbolTable::Scope *>(s)->accept(this);}
@@ -61,8 +86,8 @@ private:
   void dump(SymbolTable::Scope const *);
   std::ostream &indent();
 
-  std::ostream &my_os;
-  size_t        my_indent;
+  std::ostream &os_;
+  size_t        indent_;
 };
 
 //. Display a Scope recursively with all its symbols and nested scopes
@@ -79,6 +104,13 @@ inline void display(SymbolTable::SymbolSet const &s, std::ostream &os)
   SymbolDisplay sd(os, 0);
   for (SymbolTable::SymbolSet::const_iterator i = s.begin(); i != s.end(); ++i)
     sd.display(PTree::Encoding(), *i);
+}
+
+//. Display the name of the symbol type.
+inline std::string type_name(SymbolTable::Symbol const *s)
+{
+  SymbolType st;
+  return st.name(s);
 }
 
 }

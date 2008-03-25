@@ -533,7 +533,8 @@ bool ASGTranslator::update_position(PT::Node *node)
   Trace trace("ASGTranslator::update_position", Trace::TRANSLATION);
 
   std::string filename;
-  lineno_ = buffer_->origin(node->begin(), filename);
+  unsigned long column;
+  buffer_->origin(node->begin(), filename, lineno_, column);
 
   if (filename != raw_filename_)
   {

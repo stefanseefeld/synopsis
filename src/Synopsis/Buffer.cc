@@ -76,13 +76,22 @@ bool Buffer::is_replaced(char const *ptr)
   else return false;
 }
 
-unsigned long Buffer::origin(char const *ptr, std::string &filename) const
+void Buffer::origin(char const *ptr, std::string &filename,
+                    unsigned long &line, unsigned long &column) const
 {
-  // Determine pos in file
+  // Determine position in file
   unsigned long cursor = ptr - buffer_.data();
   if(cursor > buffer_.size())
     throw std::invalid_argument("pointer out of bound");
 
+  column = 0;
+  while (cursor && at(cursor - 1) != '\n')
+  {
+    --cursor;
+    ++column;
+  }
+
+  cursor = ptr - buffer_.data();
   long lines = 0;
 
   while(cursor)
@@ -100,9 +109,10 @@ unsigned long Buffer::origin(char const *ptr, std::string &filename) const
 	long l = read_line_directive(cursor, -1, begin, end);
  	if(l >= 0)
  	{
- 	  unsigned long line = static_cast<unsigned long>(l) + lines;
+ 	  unsigned long line_no = static_cast<unsigned long>(l) + lines;
 	  filename = std::string(buffer_.data() + begin, end - begin);
-	  return line;
+	  line = line_no;
+          return;
  	}
  	break;
       }
@@ -112,7 +122,7 @@ unsigned long Buffer::origin(char const *ptr, std::string &filename) const
   // if we are here the input file wasn't preprocessed and
   // thus the first line doesn't start with a line directive
   filename = filename_;
-  return 1 + lines;
+  line = 1 + lines;
 }
 
 void Buffer::write(std::streambuf *sb, std::string const &/* filename */) const

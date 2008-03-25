@@ -212,14 +212,18 @@ void SXRGenerator::link(PT::Node *node, PT::Encoding const &name)
   if (symbols.empty())
   {
     std::string filename;
-    unsigned long lineno = buffer_.origin(node->position(), filename);
+    unsigned long lineno;
+    unsigned long column;
+    buffer_.origin(node->position(), filename, lineno, column);
     std::cerr << "Warning: '" << name.unmangled() 
 	      << "' unknown at " << filename << ':' << lineno << std::endl;
   }
   else if (symbols.size() > 1)
   {
     std::string filename;
-    unsigned long lineno = buffer_.origin(node->position(), filename);
+    unsigned long lineno;
+    unsigned long column;
+    buffer_.origin(node->position(), filename, lineno, column);
     std::cerr << "Warning: '" << name.unmangled() 
 	      << "' ambiguous at " << filename << ':' << lineno << std::endl;
   }
