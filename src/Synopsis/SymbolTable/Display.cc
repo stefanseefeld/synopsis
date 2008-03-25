@@ -12,67 +12,67 @@ using namespace SymbolTable;
 void SymbolDisplay::display(PTree::Encoding const &name,
 			    SymbolTable::Symbol const *symbol)
 {
-  my_name = name.unmangled();
+  name_ = name.unmangled();
   symbol->accept(this);
-  my_os << std::endl;
+  os_ << std::endl;
 }
 
 void SymbolDisplay::visit(SymbolTable::Symbol const *) {}
 
 void SymbolDisplay::visit(SymbolTable::VariableName const *name)
 {
-  prefix("Variable:          ") << my_name << ' ' << name->type().unmangled();
+  prefix("Variable:          ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::ConstName const *name)
 {
-  prefix("Const:             ") << my_name << ' ' << name->type().unmangled();
-  if (name->defined()) my_os << " (" << name->value() << ')';
+  prefix("Const:             ") << name_ << ' ' << name->type().unmangled();
+  if (name->defined()) os_ << " (" << name->value() << ')';
 }
 
 void SymbolDisplay::visit(SymbolTable::TypeName const *name)
 {
-  prefix("Type:              ") << my_name << ' ' << name->type().unmangled();
+  prefix("Type:              ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::TypedefName const *name)
 {
-  prefix("Typedef:           ") << my_name << ' ' << name->type().unmangled();
+  prefix("Typedef:           ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::ClassName const *name)
 {
-  prefix("Class:             ") << my_name << ' ' << name->type().unmangled();
+  prefix("Class:             ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::EnumName const *name)
 {
-  prefix("Enum:              ") << my_name << ' ' << name->type().unmangled();
+  prefix("Enum:              ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::DependentName const *name)
 {
-  prefix("Dependent Type:    ") << my_name << ' ' << name->type().unmangled();
+  prefix("Dependent Type:    ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::ClassTemplateName const *name)
 {
-  prefix("Class template:    ") << my_name << ' ' << name->type().unmangled();
+  prefix("Class template:    ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::FunctionName const *name)
 {
-  prefix("Function:          ") << my_name << ' ' << name->type().unmangled();
+  prefix("Function:          ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::FunctionTemplateName const *name)
 {
-  prefix("Function template: ") << my_name << ' ' << name->type().unmangled();
+  prefix("Function template: ") << name_ << ' ' << name->type().unmangled();
 }
 
 void SymbolDisplay::visit(SymbolTable::NamespaceName const *name)
 {
-  prefix("Namespace:         ") << my_name << ' ' << name->type().unmangled();
+  prefix("Namespace:         ") << name_ << ' ' << name->type().unmangled();
 }
 
 void ScopeDisplay::visit(SymbolTable::TemplateParameterScope *s)
@@ -113,24 +113,24 @@ void ScopeDisplay::visit(SymbolTable::Namespace *s)
 
 void ScopeDisplay::dump(SymbolTable::Scope const *s)
 {
-  ++my_indent;
+  ++indent_;
   for (SymbolTable::Scope::symbol_iterator i = s->symbols_begin();
        i != s->symbols_end();
        ++i)
   {
-    SymbolDisplay display(my_os, my_indent);
+    SymbolDisplay display(os_, indent_);
     display.display(i->first, i->second);
   }
   for (SymbolTable::Scope::scope_iterator i = s->scopes_begin();
        i != s->scopes_end();
        ++i)
     i->second->accept(this);
-  --my_indent;
+  --indent_;
 }
 
 std::ostream &ScopeDisplay::indent()
 {
-  size_t i = my_indent;
-  while (i--) my_os.put(' ');
-  return my_os;
+  size_t i = indent_;
+  while (i--) os_.put(' ');
+  return os_;
 }

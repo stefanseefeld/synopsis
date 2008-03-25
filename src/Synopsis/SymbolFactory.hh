@@ -10,6 +10,7 @@
 #include <Synopsis/SymbolTable/Scope.hh>
 #include <Synopsis/TypeAnalysis/TemplateRepository.hh>
 #include <stack>
+#include <map>
 
 namespace Synopsis
 {
@@ -17,6 +18,8 @@ namespace SymbolTable
 {
 class PrototypeScope;
 class TemplateParameterScope;
+
+typedef std::map<PTree::Node const *, Symbol const *> References;
 }
 
 //. SymbolFactory populates a symbol table.
@@ -68,6 +71,9 @@ public:
   void declare(SymbolTable::Scope *, PTree::ParameterDeclaration const *);
   void declare(SymbolTable::Scope *, PTree::UsingDeclaration const *);
 
+  void refer(PTree::Node const *id, SymbolTable::Symbol const *s);
+  SymbolTable::References const &references() const { return references_;}
+
   //. During the parsing of a template declaration
   //. (specifically, a partial template specialization), we need to lookup
   //. symbols in the template parameter scope, before it got integrated
@@ -95,6 +101,8 @@ private:
   Language                      language_;
   //. The current scope stack.
   Scopes                        scopes_;
+  //. The global map of symbol references.
+  SymbolTable::References       references_;
   //. When parsing a function definition the declarator is seen first,
   //. and thus a prototype is created to hold the parameters.
   //. Later, when the function definition proper is seen, the symbols

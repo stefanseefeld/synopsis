@@ -167,7 +167,9 @@ void Lexer::restore(const char *pos)
 
 unsigned long Lexer::origin(const char *ptr, std::string &filename) const
 {
-  return buffer_->origin(ptr, filename);
+  unsigned long line, column;
+  buffer_->origin(ptr, filename, line, column);
+  return line;
 }
 
 void Lexer::rewind(const char *p)

@@ -804,6 +804,11 @@ void SymbolFactory::declare(ST::Scope *, PT::UsingDeclaration const *udecl)
   }
 }
 
+void SymbolFactory::refer(PT::Node const *id, ST::Symbol const *s)
+{
+  references_.insert(std::make_pair(id, s));
+}
+
 ST::SymbolSet SymbolFactory::lookup_template_parameter(PT::Encoding const &name)
 {
   Trace trace("SymbolFactory::lookup_template_parameter", Trace::SYMBOLLOOKUP);

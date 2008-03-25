@@ -52,8 +52,8 @@ public:
   //. Return true if ptr points into a region that has been replaced.
   bool is_replaced(char const *ptr);
 
-  //. Return the origin of the given pointer (filename and line number)
-  unsigned long origin(char const *, std::string &) const;
+  //. Return the origin of the given pointer (filename, line number, column)
+  void origin(char const *, std::string &, unsigned long &, unsigned long &) const;
   //. Write the buffer into the given output stream
   //. The first line contains a line directive issuing the input file name;
   //. if filename is non-empty, use this to fake another one.
