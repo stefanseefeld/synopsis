@@ -70,4 +70,4 @@ class Parser(Processor):
             finally:
                 if self.preprocess: os.remove(ii_file)
 
-            return self.output_and_return_ir()
+        return self.output_and_return_ir()
