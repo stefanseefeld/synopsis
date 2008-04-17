@@ -53,7 +53,7 @@ clean:
 	rm -rf $(OBJ) $(DEP)
 
 y.tab.h y.tab.cc: $(YYSRC)
-	@-rm $@
+	@rm -f $@
 	$(YACC) $<
 	mv -f y.tab.c y.tab.cc
 

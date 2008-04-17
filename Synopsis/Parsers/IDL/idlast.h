@@ -108,7 +108,7 @@
 
 #include <stdio.h>
 
-extern "C" int yyparse();
+int yyparse();
 class Decl;
 
 // Pragma class stores a list of pragmas:
