@@ -1,29 +1,13 @@
-// Synopsis C++ Parser: lookup.hh header file
-// The Lookup class, which uses Builder's state (including search
-// dictionaries) to find names using the proper lookup rules.
+//
+// Copyright (C) 2001 Stephen Davies
+// Copyright (C) 2001 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
-// $Id: lookup.hh,v 1.4 2002/11/17 12:11:44 chalky Exp $
-//
-// This file is a part of Synopsis.
-// Copyright (C) 2002 Stephen Davies
-//
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
-
-#ifndef H_SYNOPSIS_CPP_LOOKUP
-#define H_SYNOPSIS_CPP_LOOKUP
+#ifndef lookup_hh_
+#define lookup_hh_
 
 #include "ast.hh"
 

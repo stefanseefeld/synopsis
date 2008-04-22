@@ -1,28 +1,13 @@
-// Synopsis C++ Parser: typeinfo.hh header file
-// The TypeInfo class determines information about a type
-
-// $Id: typeinfo.hh,v 1.3 2002/11/17 12:11:44 chalky Exp $
 //
-// This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
+// Copyright (C) 2002 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
 //
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
 
-#ifndef H_SYNOPSIS_CPP_TYPEINFO
-#define H_SYNOPSIS_CPP_TYPEINFO
+#ifndef typeinfo_hh_
+#define typeinfo_hh_
 
 #include "type.hh"
 

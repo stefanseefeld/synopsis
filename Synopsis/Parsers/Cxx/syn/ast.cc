@@ -1,49 +1,9 @@
-// Synopsis C++ Parser: ast.cc source file
-// Implementation of the AST classes
-
-// $Id: ast.cc,v 1.20 2003/12/02 05:45:51 stefan Exp $
 //
-// This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
-//
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
-
-// $Log: ast.cc,v $
-// Revision 1.20  2003/12/02 05:45:51  stefan
-// generate Builtin 'end of scope' instead of Declaration 'dummy'
-//
-// Revision 1.19  2003/01/27 06:53:36  chalky
-// Added macro support for C++.
-//
-// Revision 1.18  2003/01/16 17:14:10  chalky
-// Increase AST version number. SourceFiles store full filename. Executor/Project
-// uses it to check timestamp for all included files when deciding whether to
-// reparse input files.
-//
-// Revision 1.17  2002/12/12 17:25:33  chalky
-// Implemented Include support for C++ parser. A few other minor fixes.
-//
-// Revision 1.16  2002/12/09 04:00:59  chalky
-// Added multiple file support to parsers, changed AST datastructure to handle
-// new information, added a demo to demo/C++. AST Declarations now have a
-// reference to a SourceFile (which includes a filename) instead of a filename.
-//
-// Revision 1.15  2002/11/17 12:11:43  chalky
-// Reformatted all files with astyle --style=ansi, renamed fakegc.hh
-//
+// Copyright (C) 2002 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
 //
 
 #include "strace.hh"

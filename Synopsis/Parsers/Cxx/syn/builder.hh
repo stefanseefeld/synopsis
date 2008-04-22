@@ -1,29 +1,13 @@
-// Synopsis C++ Parser: builder.hh header file
-// The Builder class, which builds an AST. Used by the SWalker which calls the
-// appropriate Builder member functions
-
-// $Id: builder.hh,v 1.33 2003/12/02 05:45:51 stefan Exp $
 //
-// This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
+// Copyright (C) 2002 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
 //
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
 
-#ifndef H_SYNOPSIS_CPP_BUILDER
-#define H_SYNOPSIS_CPP_BUILDER
+#ifndef builder_hh_
+#define builder_hh_
 
 #include <map>
 #include "ast.hh"
