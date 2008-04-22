@@ -529,7 +529,6 @@ AST::Function* Builder::add_function(int line, const std::string& name,
                                      const std::string& realname,
 				     AST::Parameter::vector* templ_params)
 {
-  std::cout << "add function " << name << ' ' << templ_params << std::endl;
     // Find the parent scope, depending on whether this is a template or not
     AST::Scope* parent_scope;
     if (templ_params)
