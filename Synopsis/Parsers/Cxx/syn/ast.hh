@@ -549,26 +549,21 @@ private:
 class Forward : public Declaration
 {
 public:
-    //. Constructor
-    Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
-            Declaration *primary_template = 0);
-    //. Constructor that copies an existing declaration
-    Forward(AST::Declaration* decl);
+  //. Constructor
+  Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+          bool is_template_specialization);
 
-    //. Accepts the given AST::Visitor
-    virtual void accept(Visitor*);
+  //. Accepts the given AST::Visitor
+  virtual void accept(Visitor*);
 
-    Types::Template* template_type() { return m_template;}
-    void set_template_type(Types::Template* type) { m_template = type;}
-    bool is_primary_template() const { return m_primary_template == 0;}
-    Declaration *primary_template() { return m_primary_template;}
-    Declaration::vector &specializations() { return m_specializations;}
+  Types::Template* template_id() { return template_;}
+  void set_template_id(Types::Template* id) { template_ = id;}
+  bool is_template_specialization() const { return is_template_specialization_;}
 
 private:
-    //. The Template Type for this forward if it's a template
-    Types::Template*     m_template;
-    Declaration *m_primary_template;
-    Declaration::vector m_specializations;
+  //. The Template Type for this forward if it's a template
+  Types::Template* template_;
+  bool is_template_specialization_;
 };
 
 
@@ -578,68 +573,43 @@ class ClassTemplate;
 class Class : public Scope
 {
 public:
-    //. Constructor
-    Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
-          Declaration *primary_template = 0);
+  Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+        bool is_specialization);
 
-    //. Destructor. Recursively destroys Inheritance objects
-    virtual ~Class();
+  virtual ~Class();
 
-    //. Accepts the given AST::Visitor
-    virtual void accept(Visitor*);
+  virtual void accept(Visitor*);
 
-    //
-    // Attribute Methods
-    //
+  //. Returns the vector of parent Inheritance objects. The vector
+  //. returned is the private member vector of this Class, so
+  //. modifications will affect the Class.
+  const Inheritance::vector& parents() const { return parents_;}
+  Inheritance::vector& parents() { return parents_;}
 
-    //. Constant version of parents()
-    const Inheritance::vector& parents() const
-    {
-        return m_parents;
-    }
-
-    //. Returns the vector of parent Inheritance objects. The vector
-    //. returned is the private member vector of this Class, so
-    //. modifications will affect the Class.
-    Inheritance::vector& parents()
-    {
-        return m_parents;
-    }
-
-    Declaration *primary_template() { return m_primary_template;}
+  bool is_template_specialization() const { return is_template_specialization_;}
 
 private:
-    //. The vector of parent Inheritance objects
-    Inheritance::vector m_parents;
-    Declaration *m_primary_template;
+  //. The vector of parent Inheritance objects
+  Inheritance::vector parents_;
+  bool is_template_specialization_;
 };
 
 //. Class class
 class ClassTemplate : public Class
 {
 public:
-    //. Constructor
-    ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name, Declaration *primary_template);
+  ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+                bool is_specialization);
 
-    //. Destructor. Recursively destroys Inheritance objects
-    virtual ~ClassTemplate();
+  virtual ~ClassTemplate();
 
-    //. Accepts the given AST::Visitor
-    virtual void accept(Visitor*);
+  virtual void accept(Visitor*);
 
-    //
-    // Attribute Methods
-    //
-
-    Types::Template* template_type() { return m_template;}
-    void set_template_type(Types::Template* type) { m_template = type;}
-    bool is_primary_template() const { return m_is_primary_template;}
-    Declaration::vector &specializations() { return m_specializations;}
+  Types::Template* template_id() { return template_;}
+  void set_template_id(Types::Template* type) { template_ = type;}
 
 private:
-    Types::Template*     m_template;
-    bool m_is_primary_template;
-    Declaration::vector m_specializations;
+  Types::Template* template_;
 };
 
 
@@ -958,13 +928,13 @@ public:
     }
 
     //. Returns the Template object if this is a template
-    Types::Template* template_type()
+    Types::Template* template_id()
     {
         return m_template;
     }
 
     //. Sets the Template object for this class. 0 means not a template
-    void set_template_type(Types::Template* type)
+    void set_template_id(Types::Template* type)
     {
         m_template = type;
     }

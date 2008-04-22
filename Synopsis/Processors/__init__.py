@@ -14,4 +14,5 @@ from SXRCompiler import *
 from AccessRestrictor import *
 from TypedefFolder import *
 from TypeMapper import *
+from TemplateLinker import TemplateLinker
 import Comments

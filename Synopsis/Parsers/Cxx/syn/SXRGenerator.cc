@@ -13,7 +13,7 @@
 #include "SXRBuffer.hh"
 #include "ast.hh"
 #include "type.hh"
-#include "dumper.hh"
+#include "TypeIdFormatter.hh"
 #include "builder.hh"
 #include "strace.hh"
 #include "filter.hh"
@@ -188,7 +188,7 @@ public:
       else
         node = PTree::third(node);
     // Do template
-    sxr_->xref(PTree::first(node), param->template_type());
+    sxr_->xref(PTree::first(node), param->template_id());
     // Do params
     node = PTree::second(node);
     typedef Types::Type::vector::iterator iterator;

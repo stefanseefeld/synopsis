@@ -41,7 +41,7 @@
 #include "typeinfo.hh"
 
 // for debugging
-#include "dumper.hh"
+#include "TypeIdFormatter.hh"
 #include "strace.hh"
 
 //. Simplify names. Typically only used for accessing vectors and iterators
@@ -131,7 +131,7 @@ std::string join(const ScopedName& strs, const std::string& sep)
 //. Output operator for debugging
 std::ostream& operator << (std::ostream& o, TypeInfo& i)
 {
-    TypeFormatter tf;
+    TypeIdFormatter tf;
     o << "[" << tf.format(i.type);
     if (i.is_const)
         o << " (const)";
@@ -291,7 +291,7 @@ public:
     FunctionHeuristic(const v_Type& v)
             : m_args(v), trace("FunctionHeuristic")
     {
-        TypeFormatter tf;
+        TypeIdFormatter tf;
         std::ostringstream buf;
         for (size_t index = 0; index < v.size(); index++)
         {
@@ -375,7 +375,7 @@ private:
     //. accumulated on the 'cost' member variable.
     void calcCost(Types::Type* arg_t, Types::Type* param_t)
     {
-        TypeFormatter tf;
+        TypeIdFormatter tf;
         if (!arg_t)
             return;
         TypeInfo arg(arg_t), param(param_t);
@@ -402,7 +402,7 @@ private:
 AST::Function* Lookup::lookupFunc(const std::string& name, AST::Scope* decl, const std::vector<Types::Type*>& args)
 {
     STrace trace("Lookup::lookupFunc");
-    TypeFormatter tf;
+    TypeIdFormatter tf;
     // Now loop over the search scopes
     const ScopeSearch& search = find_info(decl)->search;
     ScopeSearch::const_iterator s_iter = search.begin();
@@ -989,7 +989,7 @@ Types::Type* Lookup::arrayOperator(Types::Type* object, Types::Type* arg, AST::F
     }
     catch (const Types::wrong_type_cast&)
     {
-        TypeFormatter tf;
+        TypeIdFormatter tf;
         throw ERROR("Not deref and not class type for array operator! " << tf.format(info.type) << " <-- " << tf.format(object));
     }
 

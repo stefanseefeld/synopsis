@@ -28,7 +28,7 @@ OCC_FILES := HashTable Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
-SYN_FILES := swalker ast builder type dict  dumper decoder lookup filter \
+SYN_FILES := swalker ast builder type dict TypeIdFormatter decoder lookup filter \
              Translator SXRGenerator ParserImpl
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))

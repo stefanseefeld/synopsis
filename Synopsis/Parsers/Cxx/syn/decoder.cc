@@ -31,7 +31,7 @@
 #include "type.hh"
 #include "builder.hh"
 #include "strace.hh"
-#include "dumper.hh"
+#include "TypeIdFormatter.hh"
 #include "lookup.hh"
 #include <iostream>
 #include <sstream>
@@ -87,7 +87,7 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
         {
             // Template :(
             ++m_iter;
-            TypeFormatter f;
+            TypeIdFormatter f;
             std::ostringstream name;
             name << decodeName();
             char sep = '<';
@@ -293,7 +293,7 @@ Types::Type* Decoder::decodeQualType()
     {
         Types::Declared* declared = dynamic_cast<Types::Declared*>(baseType);
         AST::ClassTemplate* tempclas = declared ? dynamic_cast<AST::ClassTemplate*>(declared->declaration()) : 0;
-        Types::Template* templType = tempclas ? tempclas->template_type() : 0;
+        Types::Template* templType = tempclas ? tempclas->template_id() : 0;
         if (templType && types.size())
         {
             return new Types::Parameterized(templType, types);
@@ -349,10 +349,10 @@ Types::Parameterized* Decoder::decodeTemplate()
     if (declared)
     {
       if (AST::ClassTemplate* t_class = dynamic_cast<AST::ClassTemplate*>(declared->declaration()))
-        templ = t_class->template_type();
+        templ = t_class->template_id();
       else if (AST::Forward* t_forward = dynamic_cast<AST::Forward*>
                (declared->declaration()))
-        templ = t_forward->template_type();
+        templ = t_forward->template_id();
     }
     else if (Types::Dependent* d = dynamic_cast<Types::Dependent*>(type))
       templ = d;

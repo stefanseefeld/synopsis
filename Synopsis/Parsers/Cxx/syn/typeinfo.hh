@@ -25,7 +25,6 @@
 #define H_SYNOPSIS_CPP_TYPEINFO
 
 #include "type.hh"
-#include "dumper.hh"
 
 
 // The TypeInfo class determines information about a type

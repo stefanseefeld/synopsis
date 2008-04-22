@@ -135,13 +135,12 @@ class TemplateId(DeclaredTypeId):
 
         super(TemplateId, self).__init__(language, name, declaration)
         self.parameters = parameters
-
     def accept(self, visitor): visitor.visit_template_id(self)
     def __cmp__(self, other):
         "Comparison operator"
         return ccmp(self,other) or cmp(self.parameters,other.parameters)
     def __str__(self):
-        return "template<%s>%s"%(','.join(str(self.parameters)), str(self.name))
+        return "template<%s>%s"%(','.join([str(p) for p in self.parameters]), str(self.name))
 
 class ModifierTypeId(TypeId):
     """Class for alias types with modifiers (such as 'const', '&', etc.)"""
@@ -307,10 +306,11 @@ class Macro(Declaration):
 class Forward(Declaration):
    """Forward declaration"""
 
-   def __init__(self, file, line, type, name):
+   def __init__(self, file, line, type, name, is_template_specialization = False):
 
       Declaration.__init__(self, file, line, type, name)
       self.template = None
+      self.is_template_specialization = is_template_specialization
       self.primary_template = None
       self.specializations = []
 
@@ -381,10 +381,11 @@ class Inheritance(object):
 
 class Class(Scope):
 
-   def __init__(self, file, line, type, name):
+   def __init__(self, file, line, type, name, is_template_specialization = False):
 
       Scope.__init__(self, file, line, type, name)
       self.parents = []
+      self.is_template_specialization = is_template_specialization
       self.primary_template = None
 
    def accept(self, visitor): visitor.visit_class(self)
@@ -392,11 +393,13 @@ class Class(Scope):
 
 class ClassTemplate(Scope):
 
-   def __init__(self, file, line, type, name, template = None):
+   def __init__(self, file, line, type, name,
+                template = None, is_template_specialization = False):
 
       Scope.__init__(self, file, line, type, name)
       self.parents = []
       self.template = template
+      self.is_template_specialization = is_template_specialization
       self.primary_template = None
       self.specializations = []
 

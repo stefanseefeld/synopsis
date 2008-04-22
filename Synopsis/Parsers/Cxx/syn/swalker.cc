@@ -24,7 +24,7 @@
 #include "ast.hh"
 #include "builder.hh"
 #include "decoder.hh"
-#include "dumper.hh"
+#include "TypeIdFormatter.hh"
 #include "SXRGenerator.hh"
 #include "lookup.hh"
 #include "filter.hh"
@@ -61,11 +61,12 @@ SWalker::SWalker(FileFilter* filter, Builder* builder, Buffer* buffer)
     my_file(0),
     sxr_(0),
     my_store_decl(false),
-    my_type_formatter(new TypeFormatter()),
+    my_type_formatter(new TypeIdFormatter()),
     my_function(0),
     my_type(0),
     my_scope(0),
-    my_postfix_flag(Postfix_Var)
+    my_postfix_flag(Postfix_Var),
+    my_in_template_decl(false)
 {
   g_swalker = this; // FIXME: is this needed?
   my_builder->set_swalker(this);
@@ -643,6 +644,8 @@ void SWalker::visit(PTree::ClassSpec *node)
   my_func_impl_stack.push_back(FuncImplVec());
   my_defines_class_or_enum = false;
   // Translate the body of the class
+  bool in_template_decl = my_in_template_decl;
+  my_in_template_decl = false;
   translate(pBody);
 
   // Translate any func impls inlined in the class
@@ -652,6 +655,7 @@ void SWalker::visit(PTree::ClassSpec *node)
   my_func_impl_stack.pop_back();
 
   my_builder->end_class();
+  my_in_template_decl = in_template_decl;
   my_defines_class_or_enum = true;
 }
 
@@ -842,8 +846,15 @@ void SWalker::visit(PTree::Brace *node)
 void SWalker::visit(PTree::TemplateDecl *node)
 {
   STrace trace("SWalker::visit(PTree::TemplateDecl*)");
+  my_in_template_decl = true;
   PTree::Node *body = PTree::nth(node, 4);
   PTree::ClassSpec *class_spec = get_class_template_spec(body);
+
+  // FIXME: We skip the template handling if the template argument list is empty.
+  //        For classes we can discover it being a specialization since the class name
+  //        reveals it (a template-id).
+  //        Not so for functions. Thus, we need to find a way to remember that a given
+  //        function is a specialization.
   if (PTree::third(node))
   {
     if (class_spec) translate_class_template(node, class_spec);
@@ -854,6 +865,7 @@ void SWalker::visit(PTree::TemplateDecl *node)
     if (class_spec) visit(class_spec);
     else visit(static_cast<PTree::Declaration *>(body));
   }
+  my_in_template_decl = false;
 }
 
 //. A typeof(expr) expression evaluates to the type of 'expr'. This is a GNU
@@ -1398,7 +1410,13 @@ SWalker::translate_function_implementation(PTree::Node *node)
 
   if (dynamic_cast<AST::Class*>(my_builder->scope()))
     my_func_impl_stack.back().push_back(cache);
-  else translate_func_impl_cache(cache);
+  else
+  {
+    bool in_template_decl = my_in_template_decl;
+    my_in_template_decl = false;
+    translate_func_impl_cache(cache);
+    my_in_template_decl = in_template_decl;
+  }
   return 0;
 }
 
@@ -1648,7 +1666,7 @@ void SWalker::visit(PTree::InfixExpr *node)
   translate(PTree::third(node));
   Types::Type* right_type = my_type;
   std::string oper = parse_name(PTree::second(node));
-  TypeFormatter tf;
+  TypeIdFormatter tf;
   LOG("BINARY-OPER: " << tf.format(left_type) << " " << oper << " " << tf.format(right_type));
   nodeLOG(node);
   if (!left_type || !right_type)
@@ -1925,7 +1943,7 @@ public:
   //. Processes the template type
   void visit_parameterized(Types::Parameterized* t)
   {
-    if (t->template_type()) t->template_type()->accept(this);
+    if (t->template_id()) t->template_id()->accept(this);
   }
 
 protected:
@@ -2186,7 +2204,7 @@ void SWalker::visit(PTree::ArrayExpr *node)
   // Resolve final type
   try
   {
-    TypeFormatter tf;
+    TypeIdFormatter tf;
     LOG("ARRAY-OPER: " << tf.format(object) << " [] " << tf.format(arg));
     AST::Function* func;
     my_type = my_lookup->arrayOperator(object, arg, func);

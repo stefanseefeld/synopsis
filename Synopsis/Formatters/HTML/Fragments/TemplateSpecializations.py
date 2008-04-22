@@ -16,30 +16,28 @@ class TemplateSpecializations(Fragment):
         if not forward.template:
             return ''
         if forward.specializations:
-            spec = '\n'.join([div(None, self.reference(s.name))
+            spec = '\n'.join([div(None, self.reference(s))
                               for s in forward.specializations])
             return div('specializations', 'Specializations: ' + div(None, spec))
         elif forward.primary_template:
             return div('primary-template',
-                       'Primary template: ' + self.reference(forward.primary_template.name))
+                       'Primary template: ' + self.reference(forward.primary_template))
         return ''
 
     def format_class(self, class_):
 
         if class_.name[-1].endswith('>'):
-            if not class_.primary_template:
-                print class_.name, class_.file.name, class_.line
             return div('primary-template',
-                       'Primary template: ' + self.reference(class_.primary_template.name))
+                       'Primary template: ' + self.reference(class_.primary_template))
         return ''
 
     def format_class_template(self, template_):
 
         if template_.specializations:
-            spec = ' '.join([div(None, self.reference(s.name))
+            spec = ' '.join([div(None, self.reference(s))
                              for s in template_.specializations])
             return div('specializations', 'Specializations: ' + spec)
         elif template_.primary_template:
             return div('primary-template',
-                       'Primary template: ' + self.reference(template_.primary_template.name))
+                       'Primary template: ' + self.reference(template_.primary_template))
         return ''

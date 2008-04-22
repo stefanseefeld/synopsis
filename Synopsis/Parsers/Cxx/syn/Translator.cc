@@ -508,7 +508,7 @@ PyObject *Translator::Parameterized(Types::Parameterized* type)
   Trace trace("Translator::Parametrized", Trace::TRANSLATION);
   PyObject *parametrized, *templ, *params;
   parametrized = PyObject_CallMethod(m_asg_module, "ParametrizedTypeId", "OOO",
-                                     m->cxx(), templ = m->py(type->template_type()), 
+                                     m->cxx(), templ = m->py(type->template_id()), 
                                      params = m->List(type->parameters()));
   Py_DECREF(templ);
   Py_DECREF(params);
@@ -658,25 +658,16 @@ PyObject *Translator::Forward(AST::Forward* decl)
                                 type = m->py(decl->type()), name = m->QName(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, forward);
-  if (decl->template_type())
+  if (decl->template_id())
   {
-    PyObject* ttype = m->py(decl->template_type());
+    PyObject* ttype = m->py(decl->template_id());
     PyObject_SetAttrString(forward, "template", ttype);
     Py_DECREF(ttype);
-  }
-  if (decl->is_primary_template()) // look for specializations
-  {
-    PyObject *specs = PyObject_GetAttrString(forward, "specializations");
-    PyObject *tmp = m->List(decl->specializations());
-    PyObject_CallMethod(specs, "extend", "O", tmp);
-    Py_DECREF(tmp);
-    Py_DECREF(specs);
-  }
-  else
-  {
-    PyObject *pt = m->py(decl->primary_template());
-    PyObject_SetAttrString(forward, "primary_template", pt);
-    Py_DECREF(pt);
+
+    if (decl->is_template_specialization())
+    {
+      PyObject_SetAttrString(forward, "is_template_specialization", Py_True);
+    }
   }
   addComments(forward, decl);
   Py_DECREF(file);
@@ -748,14 +739,11 @@ PyObject *Translator::Class(AST::Class* decl)
   PyObject *decls = PyObject_GetAttrString(clas, "declarations");
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
   PyObject *parents = PyObject_GetAttrString(clas, "parents");
-  if (decl->primary_template())
-  {
-    PyObject *pt = m->py(decl->primary_template());
-    PyObject_SetAttrString(clas, "primary_template", pt);
-    Py_DECREF(pt);
-  }
-
   PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
+  if (decl->is_template_specialization())
+  {
+    PyObject_SetAttrString(clas, "is_template_specialization", Py_True);
+  }
   addComments(clas, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -778,30 +766,20 @@ PyObject *Translator::ClassTemplate(AST::ClassTemplate *decl)
                              name = m->QName(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
-  if (decl->is_primary_template()) // look for specializations
-  {
-    PyObject *specs = PyObject_GetAttrString(clas, "specializations");
-    PyObject *tmp = m->List(decl->specializations());
-    PyObject_CallMethod(specs, "extend", "O", tmp);
-    Py_DECREF(tmp);
-    Py_DECREF(specs);
-  }
-  else
-  {
-    PyObject *pt = m->py(decl->primary_template());
-    PyObject_SetAttrString(clas, "primary_template", pt);
-    Py_DECREF(pt);
-  }
   PyObject *new_decls, *new_parents;
   PyObject *decls = PyObject_GetAttrString(clas, "declarations");
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
 
-  PyObject* ttype = m->py(decl->template_type());
+  PyObject* ttype = m->py(decl->template_id());
   PyObject_SetAttrString(clas, "template", ttype);
   Py_DECREF(ttype);
 
   PyObject *parents = PyObject_GetAttrString(clas, "parents");
   PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
+  if (decl->is_template_specialization())
+  {
+    PyObject_SetAttrString(clas, "is_template_specialization", Py_True);
+  }
   addComments(clas, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -919,7 +897,7 @@ PyObject *Translator::Function(AST::Function* decl)
 {
   Trace trace("Translator::Function", Trace::TRANSLATION);
   PyObject *func, *file, *type, *name, *pre, *ret, *post, *realname;
-  char const *class_ = decl->template_type() ? "FunctionTemplate" : "Function";
+  char const *class_ = decl->template_id() ? "FunctionTemplate" : "Function";
   func = PyObject_CallMethod(m_asg_module, const_cast<char *>(class_), "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
@@ -927,9 +905,9 @@ PyObject *Translator::Function(AST::Function* decl)
                              name = m->QName(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
-  if (decl->template_type())
+  if (decl->template_id())
   {
-    PyObject* ttype = m->py(decl->template_type());
+    PyObject* ttype = m->py(decl->template_id());
     PyObject_SetAttrString(func, "template", ttype);
     Py_DECREF(ttype);
   }
@@ -953,7 +931,7 @@ PyObject *Translator::Operation(AST::Operation* decl)
 {
   Trace trace("Translator::Operation", Trace::TRANSLATION);
   PyObject *oper, *file, *type, *name, *pre, *ret, *post, *realname;
-  char const *class_ = decl->template_type() ? "OperationTemplate" : "Operation";
+  char const *class_ = decl->template_id() ? "OperationTemplate" : "Operation";
   oper = PyObject_CallMethod(m_asg_module, const_cast<char *>(class_), "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
@@ -961,9 +939,9 @@ PyObject *Translator::Operation(AST::Operation* decl)
                              name = m->QName(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
-  if (decl->template_type())
+  if (decl->template_id())
   {
-    PyObject* ttype = m->py(decl->template_type());
+    PyObject* ttype = m->py(decl->template_id());
     PyObject_SetAttrString(oper, "template", ttype);
     Py_DECREF(ttype);
   }

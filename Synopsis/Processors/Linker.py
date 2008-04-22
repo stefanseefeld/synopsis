@@ -9,6 +9,7 @@
 from Synopsis.Processor import Composite, Parameter
 from Synopsis import ASG
 from Synopsis.QualifiedName import *
+from Synopsis.Processors import TemplateLinker
 
 class Linker(Composite, ASG.Visitor):
    """Visitor that removes duplicate declarations"""
@@ -41,6 +42,8 @@ class Linker(Composite, ASG.Visitor):
 
       for file in self.ir.files.values():
          self.visit_source_file(file)
+
+      self.ir = TemplateLinker.TemplateLinker().process(self.ir)
 
       if self.remove_empty_modules:
          import ModuleFilter

@@ -13,7 +13,6 @@
 #include "SXRGenerator.hh"
 #include "swalker.hh"
 #include "builder.hh"
-#include "dumper.hh"
 #include "filter.hh"
 
 #include <Synopsis/PTree.hh>

@@ -61,7 +61,6 @@
 #include "typeinfo.hh"
 
 // for debugging
-#include "dumper.hh"
 #include "strace.hh"
 
 //. Simplify names. Typically only used for accessing vectors and iterators
@@ -410,53 +409,21 @@ AST::Class* Builder::start_class(int lineno, const std::string& type, const std:
     // Generate the name
     AST::Class* class_ = 0;
     bool is_template = templ_params && templ_params->size();
-    bool is_primary = name == primary_name;
     bool is_specialization = *name.rbegin() == '>';
-    // If this is a specialization, we want to interlink
-    // it with its primary template.
-    AST::Declaration *primary_template = 0;
-    if (is_specialization)
-    {
-      // look up primary template and link the two
-      // Find the appropriate scope. (See builder::add())
-      AST::Declaration::vector* decls;
-      if (is_template)
-        decls = &m_scopes[m_scopes.size()-2]->scope_decl->declarations();
-      else
-        decls = &m_scope->declarations();
-      Declaration::vector::iterator i = decls->begin();
-      for (; i != decls->end(); ++i)
-        if (*(*i)->name().rbegin() == primary_name)
-        {
-          primary_template = *i;
-          break;
-        }
-    }
     if (is_template)
     {
       ScopedName class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
-      AST::ClassTemplate *ct = new AST::ClassTemplate(m_file, lineno, type, class_name, primary_template);
+      AST::ClassTemplate *ct = new AST::ClassTemplate(m_file, lineno, type, class_name, is_specialization);
       Types::Template* templ = new Types::Template(class_name, ct, *templ_params);
-      ct->set_template_type(templ);
+      ct->set_template_id(templ);
       add(ct, true);
       class_ = ct;
     }
     else
     {
       ScopedName class_name = extend(m_scope->name(), name);
-      class_ = new AST::Class(m_file, lineno, type, class_name, primary_template);
+      class_ = new AST::Class(m_file, lineno, type, class_name, is_specialization);
       add(class_);
-    }
-    if (is_specialization)
-    {
-      // Add it if the primary template is actually defined.
-      AST::ClassTemplate *ct = dynamic_cast<AST::ClassTemplate *>(primary_template);
-      if (ct) ct->specializations().push_back(class_);
-      else
-      {
-        AST::Forward *f = dynamic_cast<AST::Forward *>(primary_template);
-        if (f) f->specializations().push_back(class_);
-      }
     }
     // Push stack. Search is this Class plus base Classes plus enclosing NS's search
     ScopeInfo* class_info = find_info(class_);
@@ -493,7 +460,7 @@ AST::Class* Builder::start_class(int lineno, const std::string& type, const Scop
         }
     }
     // Create the Class
-    AST::Class* ns = new AST::Class(m_file, lineno, type, named->name());
+    AST::Class* ns = new AST::Class(m_file, lineno, type, named->name(), false);
     // Add to container scope
     ScopedName scope_name = names;
     scope_name.pop_back();
@@ -603,6 +570,7 @@ AST::Function* Builder::add_function(int line, const std::string& name,
                                      const std::string& realname,
 				     AST::Parameter::vector* templ_params)
 {
+  std::cout << "add function " << name << ' ' << templ_params << std::endl;
     // Find the parent scope, depending on whether this is a template or not
     AST::Scope* parent_scope;
     if (templ_params)
@@ -630,7 +598,7 @@ AST::Function* Builder::add_function(int line, const std::string& name,
     if (templ_params)
     {
         Types::Template* templ = new Types::Template(func_name, func, *templ_params);
-        func->set_template_type(templ);
+        func->set_template_id(templ);
         add(func, true);
     }
     else
@@ -836,11 +804,12 @@ AST::Forward* Builder::add_forward(int lineno, const std::string& name, const st
   // The type is already known.
   if (parent_scope->dict->has_key(name) == true)
     return 0;
-  AST::Forward* forward = new AST::Forward(m_file, lineno, type, scoped_name);
+  // FIXME: is this a specialization ?
+  AST::Forward* forward = new AST::Forward(m_file, lineno, type, scoped_name, false);
   if (templ_params)
   {
     Types::Template* templ = new Types::Template(scoped_name, forward, *templ_params);
-    forward->set_template_type(templ);
+    forward->set_template_id(templ);
   }
   add(forward, templ_params != 0);
   return forward;

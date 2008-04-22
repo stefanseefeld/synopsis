@@ -21,7 +21,7 @@
 class Builder;
 namespace Synopsis {class Buffer;}
 class Decoder;
-class TypeFormatter;
+class TypeIdFormatter;
 class SXRGenerator;
 class Lookup;
 class FileFilter;
@@ -62,7 +62,7 @@ public:
   //. Get the Builder object
   Builder* builder() { return my_builder;}
   //. Get the TypeFormatter object
-  TypeFormatter* type_formatter(){ return my_type_formatter;}
+  TypeIdFormatter* type_formatter(){ return my_type_formatter;}
 #if 0
   //. Returns true if the current filename from the last getLine or
   //. updateLineNumber call is equal to the main source filename
@@ -227,7 +227,7 @@ private:
   std::vector<std::string> my_dummyname;
   
   //. An instance of TypeFormatter for formatting types
-  TypeFormatter* my_type_formatter;
+  TypeIdFormatter* my_type_formatter;
   
   //. The current function, if in a function block
   AST::Function* my_function;
@@ -277,6 +277,8 @@ private:
   //. from the current file before returning,
   //. so -1 may be returned to indicate "inside macro".
   int find_col(const char* start, const char* find);
+
+  bool my_in_template_decl;
 };
 
 #endif // header guard

@@ -327,7 +327,7 @@ public:
     //
 
     //. Returns the Template type this is an instance of
-    Named* template_type()
+    Named* template_id()
     {
         return m_template;
     }

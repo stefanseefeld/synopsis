@@ -188,39 +188,25 @@ Namespace::accept(Visitor* visitor)
 //
 
 Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
-             Declaration *primary_template)
-  : Scope(file, line, type, name),
-    m_primary_template(primary_template)
+             bool is_template_specialization)
+  : Scope(file, line, type, name), is_template_specialization_(is_template_specialization)
 {}
 
-Class::~Class()
-{}
-
-void
-Class::accept(Visitor* visitor)
-{
-    visitor->visit_class(this);
-}
+Class::~Class() {}
+void Class::accept(Visitor* visitor) { visitor->visit_class(this);}
 
 //
 // AST::ClassTemplate
 //
 
 ClassTemplate::ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name,
-                             Declaration *primary_template)
-  : Class(file, line, type, name, primary_template),
-    m_template(0),
-    m_is_primary_template(primary_template == 0)
+                             bool is_specialization)
+  : Class(file, line, type, name, is_specialization),
+    template_(0)
 {}
 
-ClassTemplate::~ClassTemplate()
-{}
-
-void
-ClassTemplate::accept(Visitor* visitor)
-{
-    visitor->visit_class_template(this);
-}
+ClassTemplate::~ClassTemplate() {}
+void ClassTemplate::accept(Visitor* visitor) { visitor->visit_class_template(this);}
 
 //
 // AST::Inheritance
@@ -242,20 +228,15 @@ Inheritance::accept(Visitor* visitor)
 //
 
 Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
-                 Declaration *primary_template)
-  : Declaration(file, line, type, name), m_template(0),
-    m_primary_template(primary_template)
-
-{ }
-
-Forward::Forward(AST::Declaration* decl)
-        : Declaration(decl->file(), decl->line(), decl->type(), decl->name()), m_template(0)
-{ }
+                 bool is_template_specialization)
+  : Declaration(file, line, type, name), template_(0),
+    is_template_specialization_(is_template_specialization)
+{}
 
 void
 Forward::accept(Visitor* visitor)
 {
-    visitor->visit_forward(this);
+  visitor->visit_forward(this);
 }
 
 
