@@ -88,6 +88,7 @@ case `uname -s` in
 CYGWIN*)
     LIBEXT=".dll"
     LDSHARED="$CXX -shared"
+    LDSONAME="-Wl,--soname,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     if test "$PLATFORM" == "nt"; then
       if test "$CXX" == "g++"; then
@@ -103,11 +104,13 @@ CYGWIN*)
 Darwin)
     LIBEXT=".dylib"
     LDSHARED="$CXX -dynamiclib"
+    LDSONAME="-Wl,-install_name,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
     ;;
 *)
     LIBEXT=".so"
     LDSHARED="$CXX -shared"
+    LDSONAME="-Wl,--soname,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
     ;;
 esac
@@ -115,6 +118,7 @@ esac
 AC_SUBST(PLATFORM)
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
+AC_SUBST(LDSONAME)
 
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh
                  Makefile 

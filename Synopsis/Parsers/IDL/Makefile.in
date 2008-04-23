@@ -14,6 +14,7 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 LEX 	:= @LEX@
 YACC 	:= @YACC@ -d
 MAKEDEP	:= $(CXX) -M
@@ -46,7 +47,7 @@ vpath %.cc  $(srcdir)
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	rm -f $(CTOOL_SO)
@@ -58,7 +59,7 @@ y.tab.h y.tab.cc: $(YYSRC)
 	mv -f y.tab.c y.tab.cc
 
 lex.yy.cc: $(LLSRC) y.tab.h
-	$(LEX) -o $@ $<
+	$(LEX) -o$@ $<
 	echo '#ifdef __VMS' >> $@
 	echo '// Some versions of DEC C++ for OpenVMS set the module name used by the' >> $@
 	echo '// librarian based on the last #line encountered.' >> $@

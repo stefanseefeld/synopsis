@@ -2850,7 +2850,7 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
 
   if(my_lexer.get_token(tk) != Token::ENUM) return false;
 
-  spec = new PTree::EnumSpec(new PTree::Atom(tk));
+  spec = new PTree::EnumSpec(new PTree::Kwd::Enum(tk));
   int t = my_lexer.get_token(tk);
   if(t == Token::Identifier)
   {
@@ -4236,7 +4236,7 @@ bool Parser::typeof_expr(PTree::Node *&node)
   type = PTree::snoc(type, node);
   if ((t = my_lexer.get_token(tk2)) != ')') return false;
   type = PTree::snoc(type, new PTree::Atom(tk2));
-  node = new PTree::TypeofExpr(new PTree::Atom(tk), type);
+  node = new PTree::TypeofExpr(new PTree::Kwd::Typeof(tk), type);
   return true;
 }
 

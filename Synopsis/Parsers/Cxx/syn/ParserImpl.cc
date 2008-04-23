@@ -140,56 +140,9 @@ void error()
             << std::endl;
 }
 
-void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ir)
-{
-  Trace trace("RunOpencxx", Trace::TRANSLATION);
-  std::set_unexpected(unexpected);
-
-  ErrorHandler error_handler(error);
-
-  std::ifstream ifs(file);
-  if(!ifs)
-  {
-    perror(file);
-    exit(1);
-  }
-  Buffer buffer(ifs.rdbuf(), sourcefile->abs_name());
-  Lexer lexer(&buffer, tokenset);
-  SymbolFactory symbols(SymbolFactory::NONE);
-  Parser parser(lexer, symbols, ruleset);
-
-  PTree::Node *ptree = parser.parse();
-  const Parser::ErrorList &errors = parser.errors();
-  if (!errors.empty())
-  {
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
-    throw std::runtime_error("The input contains errors.");
-  }
-  else if (ptree)
-  {
-    FileFilter* filter = FileFilter::instance();
-
-    Builder builder(sourcefile);
-    SWalker swalker(filter, &builder, &buffer);
-    SXRGenerator *sxr_generator = 0;
-    if (filter->should_xref(sourcefile))
-    {
-      sxr_generator = new SXRGenerator(filter, &swalker);
-      swalker.set_store_links(sxr_generator);
-    }
-
-    swalker.translate(ptree);
-      
-    Translator translator(filter, ir);
-    translator.set_builtin_decls(builder.builtin_decls());
-    translator.translate(builder.scope());
-    delete sxr_generator;
-  }
-}
-
 PyObject *parse(PyObject * /* self */, PyObject *args)
 {
+  PTree::init_gc();
   Class::do_init_static();
   Metaclass::do_init_static();
   Environment::do_init_static();
@@ -220,6 +173,15 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     PyErr_SetString(PyExc_RuntimeError, "no input file");
     return 0;
   }
+  std::ifstream ifs(cppfile);
+  if(!ifs)
+  {
+    PyErr_SetString(PyExc_RuntimeError, "unable to open output file");
+    return 0;
+  }
+
+  std::set_unexpected(unexpected);
+  ErrorHandler error_handler(error);
 
   // Setup the filter
   FileFilter filter(ir, src, syn_base_path, syn_primary_only);
@@ -229,7 +191,36 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   // Run OCC to generate the IR
   try
   {
-    RunOpencxx(source_file, cppfile, ir);
+    Buffer buffer(ifs.rdbuf(), source_file->abs_name());
+    Lexer lexer(&buffer, tokenset);
+    SymbolFactory symbols(SymbolFactory::NONE);
+    Parser parser(lexer, symbols, ruleset);
+
+    PTree::Node *ptree = parser.parse();
+    Parser::ErrorList const &errors = parser.errors();
+    if (!errors.empty())
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+        (*i)->write(std::cerr);
+      throw std::runtime_error("The input contains errors.");
+    }
+    else if (ptree)
+    {
+      FileFilter* filter = FileFilter::instance();
+      Builder builder(source_file);
+      SWalker swalker(filter, &builder, &buffer);
+      SXRGenerator *sxr_generator = 0;
+      if (filter->should_xref(source_file))
+      {
+        sxr_generator = new SXRGenerator(filter, &swalker);
+        swalker.set_store_links(sxr_generator);
+      }
+      swalker.translate(ptree);
+      Translator translator(filter, ir);
+      translator.set_builtin_decls(builder.builtin_decls());
+      translator.translate(builder.scope());
+      delete sxr_generator;
+    }
   }
   catch (const std::exception &e)
   {

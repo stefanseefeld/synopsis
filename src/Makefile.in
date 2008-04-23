@@ -14,6 +14,7 @@ PLATFORM:= @PLATFORM@
 SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
+LDSONAME:= @LDSONAME@
 MAKEDEP	:= $(CXX) -M
 AR	:= @AR@
 RANLIB	:= @RANLIB@
@@ -53,7 +54,7 @@ else
 define link_dso
 @echo linking $@
 rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
-$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) \
+$(LDSHARED) $(LDFLAGS) $(LDSONAME)$(@F).$(MAJOR).$(MINOR) \
   -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))

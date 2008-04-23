@@ -227,9 +227,9 @@ void SWalker::add_comments(AST::Declaration* decl, PTree::NamespaceSpec* node)
 }
 void SWalker::find_comments(PTree::Node *node)
 {
-  PTree::Node *leaf, *parent;
-  leaf = FindLeftLeaf(node, parent);
-  if (leaf) add_comments(0, static_cast<PTree::CommentedAtom *>(leaf));
+  PTree::Node *parent;
+  PTree::Node *leaf = FindLeftLeaf(node, parent);
+  if (leaf) add_comments(0, dynamic_cast<PTree::CommentedAtom *>(leaf));
 }
 
 PTree::Node *SWalker::translate_arg_decl_list(bool, PTree::Node *, PTree::Node *)
@@ -550,10 +550,7 @@ void SWalker::visit(PTree::ClassSpec *node)
   PTree::Node *pName = 0, *pInheritance = 0;
   PTree::ClassBody *pBody = 0;
 
-  // FIXME: this is a forward declaration even in
-  //        'typedef struct Foo foo_type;', if Foo
-  //        isn't yet known.
-  if (size == 2 && !my_in_typedef)
+  if (size == 2)
   {
     // Forward declaration
     // [ class|struct <name> ]
@@ -927,6 +924,8 @@ void SWalker::visit(PTree::Declaration *node)
   // Link any comments added because we are inside a function body
   if (sxr_) find_comments(node);
   my_declaration = node;
+  bool in_typedef = my_in_typedef;
+  my_in_typedef = false;
   my_store_decl = true;
   PTree::Node *decls = PTree::third(node);
 
@@ -960,6 +959,7 @@ void SWalker::visit(PTree::Declaration *node)
     // if it is a function prototype or a variable declaration.
     if (!decls->is_atom())        // if it is not ";"
       translate_declarators(decls);
+  my_in_typedef = in_typedef;
   my_declaration = 0;
 }
 
