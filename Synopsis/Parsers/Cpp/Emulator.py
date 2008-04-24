@@ -278,14 +278,11 @@ class CompilerList(object):
 
     user_emulations_file = '~/.synopsis/parsers/cpp/emulator'
     "The cache file."
-    default_cc_compilers = ['cc', 'gcc']
-    "List of default C compilers to be queried."
-    default_cxx_compilers = ['c++', 'g++', 'cl']
-    "List of default C++ compilers to be queried."
 
     def __init__(self, filename = ''):
 
         self.compilers = []
+        self.no_cache = os.environ.has_key('SYNOPSIS_NO_CACHE')
         self.load(filename)
 
     def list(self):
@@ -314,9 +311,20 @@ class CompilerList(object):
             ci.macros = []
         return ci
     
+    def add_default_compilers(self):
 
+        self.compilers.append(self._query('C++', 'c++', []))
+        self.compilers.append(self._query('C++', 'g++', []))
+        self.compilers.append(self._query('C', 'cc', []))
+        self.compilers.append(self._query('C', 'gcc', []))
+
+        
     def load(self, filename = ''):
         """Loads the compiler infos from a file."""
+
+        if self.no_cache:
+            self.add_default_compilers()
+            return
 
         compilers = []
 
@@ -335,6 +343,7 @@ class CompilerList(object):
                             setattr(compiler, name, dict.get(name, value))
                     compilers.append(compiler)
 
+
         if not filename:
             filename = CompilerList.user_emulations_file
         filename = os.path.expanduser(filename)
@@ -344,18 +353,17 @@ class CompilerList(object):
         try:
             execfile(filename, glob, glob)
         except IOError:
-            # start with some default compilers
-            compilers.append(self._query('C++', 'c++', []))
-            compilers.append(self._query('C++', 'g++', []))
-            compilers.append(self._query('C', 'cc', []))
-            compilers.append(self._query('C', 'gcc', []))
-            self.compilers = compilers
+
+            self.add_default_compilers()
             self.save()
         else:
             self.compilers = compilers
 
     def save(self, filename = ''):
         
+        if self.no_cache:
+            return
+
         if not filename:
             filename = CompilerList.user_emulations_file
         filename = os.path.expanduser(filename)
