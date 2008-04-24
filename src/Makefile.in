@@ -28,7 +28,7 @@ MAJOR	:= @MAJOR@
 MINOR	:= @MINOR@
 
 ifneq ($(findstring -fPIC, $(CXXFLAGS)),)
-GC_CFLAGS := -fPIC
+GC_CFLAGS := CFLAGS="@CFLAGS@ -fPIC"
 endif
 GC_LIB	:= @GC_LIB@
 ifdef GC_LIB
@@ -151,7 +151,7 @@ $(CC_SYN): %.cc.sxr.syn: %.cc
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):
-	$(MAKE) -C Synopsis/gc GC_CFLAGS=$(GC_CFLAGS)
+	$(MAKE) -C Synopsis/gc $(GC_CFLAGS)
 
 clean :
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \

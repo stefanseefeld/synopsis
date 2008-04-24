@@ -23,6 +23,7 @@ conf_with_header()
 svn info | awk '/Revision:/ {print $2}' > revision
 conf src
 conf src/Synopsis/gc
+conf src/Synopsis/gc/libatomic_ops-1.2
 conf Synopsis/Parsers/Cpp/ucpp
 conf Synopsis/Parsers/Cpp/wave
 conf_with_header Synopsis/Parsers/IDL

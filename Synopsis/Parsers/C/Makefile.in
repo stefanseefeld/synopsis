@@ -14,6 +14,7 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I . 
 CPPFLAGS+= -I $(srcdir)
@@ -35,7 +36,7 @@ vpath %.cc  $(srcdir)
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	rm -f $(CTOOL_SO)

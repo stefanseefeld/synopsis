@@ -14,6 +14,7 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 
 CC	:= @CC@
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)
 CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
@@ -85,7 +86,7 @@ $(CC_SYN): %.syn: %
 	$(SYNOPSIS) cxx --output=$@ $?
 
 $(TARGET): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
 	rm -f *~ *.o $(TARGET) *.syn *.d *.pyc *.pyo base_lib
