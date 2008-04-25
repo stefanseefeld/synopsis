@@ -35,7 +35,6 @@ void unexpected()
 
 PyObject *parse(PyObject * /* self */, PyObject *args)
 {
-  PTree::init_gc();
   PyObject *py_ir;
   const char *src, *cppfile;
   char const * base_path = "";

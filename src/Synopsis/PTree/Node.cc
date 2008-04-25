@@ -23,6 +23,16 @@
 using namespace Synopsis;
 using namespace PTree;
 
+namespace
+{
+  //. Make sure the garbage collector is properly initialized.
+  struct Initializer
+  {
+    Initializer() { init_gc();}
+  } initializer;
+}
+
+
 Node::Node(const char *ptr, size_t len)
 {
   my_data.leaf.position = ptr;

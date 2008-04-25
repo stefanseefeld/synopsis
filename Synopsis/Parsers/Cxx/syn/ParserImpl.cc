@@ -142,7 +142,6 @@ void error()
 
 PyObject *parse(PyObject * /* self */, PyObject *args)
 {
-  PTree::init_gc();
   Class::do_init_static();
   Metaclass::do_init_static();
   Environment::do_init_static();
