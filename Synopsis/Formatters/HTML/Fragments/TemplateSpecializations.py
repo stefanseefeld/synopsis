@@ -26,7 +26,7 @@ class TemplateSpecializations(Fragment):
 
     def format_class(self, class_):
 
-        if class_.name[-1].endswith('>'):
+        if class_.primary_template:
             return div('primary-template',
                        'Primary template: ' + self.reference(class_.primary_template))
         return ''

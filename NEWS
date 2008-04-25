@@ -3,6 +3,13 @@ NEWS
 
 This file describes user-visible changes to Synopsis.
 
+Synopsis 0.11
+=============
+
+* Enhance the build system to support OSX.
+* Upgrade to libgc 7.0.
+* Fix the way template specializations are handled in the ASG.
+
 Synopsis 0.10
 =============
 

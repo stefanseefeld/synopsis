@@ -760,11 +760,11 @@ AST::Forward* Builder::add_forward(int lineno, const std::string& name, const st
     m_scopes[m_scopes.size() - 1];
   ScopedName scoped_name = extend(parent_scope->scope_decl->name(), name);
   // The type is already known.
-  if (parent_scope->dict->has_key(name) == true)
-    return 0;
-  // FIXME: is this a specialization ?
-  AST::Forward* forward = new AST::Forward(m_file, lineno, type, scoped_name, false);
-  if (templ_params)
+  if (parent_scope->dict->has_key(name) == true) return 0;
+  bool is_template = templ_params && templ_params->size();
+  bool is_specialization = *name.rbegin() == '>';
+  AST::Forward* forward = new AST::Forward(m_file, lineno, type, scoped_name, is_specialization);
+  if (is_template)
   {
     Types::Template* templ = new Types::Template(scoped_name, forward, *templ_params);
     forward->set_template_id(templ);

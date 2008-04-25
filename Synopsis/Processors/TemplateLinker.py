@@ -23,8 +23,8 @@ class TemplateLinker(Processor, ASG.Visitor):
     def link(self, d):
 
         if d.is_template_specialization:
-            primary_name = d.name[:-1] + (d.name[-1].split('<')[0],)
-            primary = self.ir.asg.types[primary_name]
+            primary_name = d.name[:-1] + (d.name[-1].split('<')[0].strip(),)
+            primary = self.ir.asg.types.get(primary_name)
             d.primary_template = primary_name
             if (type(primary) is ASG.DeclaredTypeId and
                 d.name not in primary.declaration.specializations):

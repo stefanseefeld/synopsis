@@ -663,11 +663,10 @@ PyObject *Translator::Forward(AST::Forward* decl)
     PyObject* ttype = m->py(decl->template_id());
     PyObject_SetAttrString(forward, "template", ttype);
     Py_DECREF(ttype);
-
-    if (decl->is_template_specialization())
-    {
-      PyObject_SetAttrString(forward, "is_template_specialization", Py_True);
-    }
+  }
+  if (decl->is_template_specialization())
+  {
+    PyObject_SetAttrString(forward, "is_template_specialization", Py_True);
   }
   addComments(forward, decl);
   Py_DECREF(file);
