@@ -3,6 +3,7 @@
 #
 
 include COPYING README NEWS MANIFEST.in setup.py autogen.sh revision synopsis.spec
+include             config/*
 exclude setup.cfg
 
 # python modules
