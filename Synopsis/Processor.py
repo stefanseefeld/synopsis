@@ -109,7 +109,10 @@ class Processor(Parametrized):
       """Join the given IR with a set of IRs to be read from 'input' parameter"""
       input = getattr(self, 'input', [])
       for file in input:
-         ir.merge(IR.load(file))
+         try:
+            ir.merge(IR.load(file))
+         except:
+            raise InvalidArgument('unable to load IR from %s'%file)
       return ir
 
    def output_and_return_ir(self):
