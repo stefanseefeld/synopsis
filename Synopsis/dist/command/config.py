@@ -22,6 +22,8 @@ class config(build_ext):
                     if o[0] in ['inplace', 'build-lib=', 'build-temp=']] + [
         ('prefix=', None,
          "installation prefix"),
+        ('libdir=', None,
+         "library installation directory"),
         ('disable-gc', None,
          "whether or not to build the C++ parser with the garbage collector"),
         ('with-gc-prefix=', None,
@@ -37,6 +39,7 @@ class config(build_ext):
     def initialize_options(self):
 
         self.prefix = None
+        self.libdir = None
         build_ext.initialize_options(self)
         self.disable_gc = 0
         self.with_gc_prefix = ''
@@ -76,8 +79,9 @@ class config(build_ext):
     def run(self):
 
         version = self.distribution.get_version()
+        libdir_option = self.libdir and ' --libdir=%s'%self.libdir or ''
         self.config('src', self.build_ctemp, self.build_clib,
-                    '--enable-version=%s'%version)
+                    '--enable-version=%s%s'%(version, libdir_option))
         if not self.disable_gc and not self.with_gc_prefix:
             if os.name == 'nt':
                 # for the gc configuration on the win32 native platform

@@ -2,7 +2,7 @@
 %define version 0.11
 %define release 1
 %define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
-%define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
+%define py_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
 %define url http://synopsis.fresco.org
 
 Summary: Source-code Introspection Tool
@@ -16,6 +16,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Url: %{url}
 BuildRequires: python-devel
 BuildRequires: pkgconfig
+BuildRequires: libgc libgc-devel
+BuildRequires: flex
+BuildRequires: bison
 
 %description
 Synopsis is a multi-language source code introspection tool that
@@ -53,6 +56,8 @@ Synopsis IDL Parser module to parse CORBA IDL.
 %prep
 
 %setup -q
+env CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" \
+python setup.py config --with-gc-prefix=%{prefix} --libdir=%{_libdir}
 
 %build
 env CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" python setup.py build
@@ -74,20 +79,21 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %{_bindir}/*
 %{_libdir}/*.so.*
-%dir %{py_sitedir}/Synopsis/
-%{py_sitedir}/Synopsis/*.py
-%{py_sitedir}/Synopsis/*.pyc
-%{py_sitedir}/Synopsis/*.pyo
-%dir %{py_sitedir}/Synopsis/Parsers/
-%{py_sitedir}/Synopsis/Parsers/*.py
-%{py_sitedir}/Synopsis/Parsers/*.pyc
-%{py_sitedir}/Synopsis/Parsers/*.pyo
-%{py_sitedir}/Synopsis/Parsers/Cpp
-%{py_sitedir}/Synopsis/Parsers/C
-%{py_sitedir}/Synopsis/Parsers/Cxx
-%{py_sitedir}/Synopsis/Parsers/Python
-%{py_sitedir}/Synopsis/Processors
-%{py_sitedir}/Synopsis/Formatters
+%{py_sitearch}/*.egg-info
+%dir %{py_sitearch}/Synopsis/
+%{py_sitearch}/Synopsis/*.py
+%{py_sitearch}/Synopsis/*.pyc
+%{py_sitearch}/Synopsis/*.pyo
+%dir %{py_sitearch}/Synopsis/Parsers/
+%{py_sitearch}/Synopsis/Parsers/*.py
+%{py_sitearch}/Synopsis/Parsers/*.pyc
+%{py_sitearch}/Synopsis/Parsers/*.pyo
+%{py_sitearch}/Synopsis/Parsers/Cpp
+%{py_sitearch}/Synopsis/Parsers/C
+%{py_sitearch}/Synopsis/Parsers/Cxx
+%{py_sitearch}/Synopsis/Parsers/Python
+%{py_sitearch}/Synopsis/Processors
+%{py_sitearch}/Synopsis/Formatters
 %{_datadir}/synopsis-%{version}
 %doc %{_docdir}/synopsis-%{version}/README 
 %doc %{_docdir}/synopsis-%{version}/COPYING
@@ -111,7 +117,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files idl
 %defattr(-, root, root)
-%{py_sitedir}/Synopsis/Parsers/IDL
+%{py_sitearch}/Synopsis/Parsers/IDL
 %doc %{_docdir}/synopsis-%{version}/README 
 %doc %{_docdir}/synopsis-%{version}/COPYING
 %doc %{_docdir}/synopsis-%{version}/NEWS

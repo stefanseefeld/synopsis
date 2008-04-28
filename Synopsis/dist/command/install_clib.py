@@ -9,6 +9,8 @@ from distutils.core import Command
 from distutils.errors import DistutilsOptionError
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
+from distutils.util import get_platform
+from distutils.spawn import spawn
 from distutils.util import change_root
 from distutils import sysconfig
 import os
@@ -59,51 +61,23 @@ class install_clib(Command):
     def run(self):
 
         version = self.distribution.get_version()
+        build_ctemp = os.path.join('build', 'ctemp.' + get_platform())
         if os.name == 'nt':
+            # same as in config.py here: even on 'nt' we have to
+            # use posix paths because we run in a cygwin shell at this point
+            path = build_ctemp.replace('\\', '/') + '/src'
             LIBEXT = '.dll'
         else:
+            path = os.path.join(build_ctemp, 'src')
             LIBEXT = sysconfig.get_config_var('SO')
         target = 'libSynopsis%s'%LIBEXT
         if not os.path.isfile(os.path.join(self.build_dir, 'lib', target)):
             self.run_command('build_clib')
-            
-        if self.root:
-            if os.name == 'nt':
-                prefix = 'Synopsis'
-            else:
-                prefix = self.prefix
-            prefix = change_root(self.root, prefix)
-        else:
-            # FIXME: Find a better way to set the prefix !
-            if os.name == 'nt':
-                prefix = 'c:\\Synopsis'
-            else:
-                prefix = self.prefix
 
-        libdir = os.path.join(prefix, 'lib')
-        copy_shared_library('Synopsis', version,
-                            self.build_dir, libdir,
-                            self.verbose, self.dry_run)
-
-        headers = []
-        os.path.walk(os.path.join('src', 'Synopsis'),
-                     header_collector('src'),
-                     headers)
-        os.path.walk(os.path.join(self.build_dir, 'include', 'Synopsis'),
-                     header_collector(os.path.join(self.build_dir, 'include')),
-                     headers)
-        incdir = os.path.join(prefix, 'include')
-        for src, dest in headers:
-            target = os.path.join(incdir, dest)
-            mkpath (os.path.dirname(target), 0777, self.verbose, self.dry_run)
-            copy_file(src, target,
-                      1, 1, 0, None, self.verbose, self.dry_run)
+        make = os.environ.get('MAKE', 'make')
+        command = '%s -C "%s" %s DESTDIR=%s'%(make, path, 'install', self.root)
+        spawn(['sh', '-c', command], self.verbose, self.dry_run)
             
-        pkgdir = os.path.join(libdir, 'pkgconfig')
-        mkpath (pkgdir, 0777, self.verbose, self.dry_run)
-        copy_file(os.path.join(self.build_dir, 'synopsis.pc'),
-                  os.path.join(pkgdir, 'synopsis.pc'),
-                  1, 1, 0, None, self.verbose, self.dry_run)
 
     def get_outputs(self):
 

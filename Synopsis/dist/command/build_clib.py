@@ -11,7 +11,7 @@ from distutils import sysconfig
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.util import get_platform
-from distutils.spawn import spawn, find_executable
+from distutils.spawn import spawn
 from shutil import *
 from Synopsis.dist.command import copy_shared_library
 

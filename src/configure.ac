@@ -44,6 +44,7 @@ AC_CHECK_PROGS(LD, ld xild, ld)
 AC_SUBST(AR)
 AC_SUBST(LD)
 AC_PROG_LN_S
+AC_PROG_INSTALL
 
 # Determine major, minor, and bugfix version
 if echo "$version" | grep -q '\.'; then

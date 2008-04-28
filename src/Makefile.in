@@ -23,9 +23,21 @@ CPPFLAGS:= @CPPFLAGS@ -D SYNOPSIS_SRC -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@
-DSO_EXT := @LIBEXT@
+LIBEXT  := @LIBEXT@
+INSTALL := @INSTALL@
+INSTALL_DATA := @INSTALL_DATA@
+INSTALL_SCRIPT := @INSTALL_SCRIPT@
 MAJOR	:= @MAJOR@
 MINOR	:= @MINOR@
+
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+datarootdir := @datarootdir@
+datadir := @datadir@
+includedir := @includedir@
+libdir := @libdir@
+sbindir := @sbindir@
+bindir := @bindir@
 
 ifneq ($(findstring -fPIC, $(CXXFLAGS)),)
 GC_CFLAGS := CFLAGS="@CFLAGS@ -fPIC"
@@ -50,7 +62,15 @@ define link_dso
 @echo linking $@
 $(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 endef
+
+define install_dso
+@echo installing $@
+$(INSTALL_DATA) lib/libSynopsis$(LIBEXT) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT)
+endef
+
 else
+
 define link_dso
 @echo linking $@
 rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
@@ -58,6 +78,17 @@ $(LDSHARED) $(LDFLAGS) $(LDSONAME)$(@F).$(MAJOR).$(MINOR) \
   -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
+endef
+
+define install_dso
+@echo installing libSynopsis$(LIBEXT)
+rm -f $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
+$(INSTALL_DATA) lib/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
+(cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) libSynopsis$(LIBEXT).$(MAJOR))
+(cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR) libSynopsis$(LIBEXT))
 endef
 endif
 
@@ -93,7 +124,7 @@ HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 HDR_SXR_SYN:= $(patsubst %, %.sxr.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/display-symbols.cc)
 
-LIBRARY	:= lib/libSynopsis$(DSO_EXT)
+LIBRARY	:= lib/libSynopsis$(LIBEXT)
 SUPPORT := lib/libSupport.a
 TOOLS	:= bin/display-ptree bin/display-symbols
 TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
@@ -153,7 +184,22 @@ $(CC_SYN): %.cc.sxr.syn: %.cc
 $(GC_LIB):
 	$(MAKE) -C Synopsis/gc $(GC_CFLAGS)
 
-clean :
+install:
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(install_dso)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/PTree
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/SymbolLookup
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/TypeAnalysis
+	for header in $(HDR); do \
+          $(INSTALL_DATA) $(srcdir)/$$header \
+            $(DESTDIR)$(includedir)/`dirname $$header`; \
+	done
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL_DATA) synopsis.pc \
+          $(DESTDIR)$(libdir)/pkgconfig/synopsis.pc
+
+clean:
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
         Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d Synopsis/PTree/*.syn \
         Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d Synopsis/SymbolLookup/*.syn \
