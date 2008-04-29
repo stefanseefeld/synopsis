@@ -461,7 +461,7 @@ EXTRA_DIST = gc_cpp.cpp README.QUICK BCC_MAKEFILE NT_MAKEFILE \
 
 # C Library
 # ---------
-lib_LTLIBRARIES = libgc.la $(am__append_4) libcord.la
+lib_LTLIBRARIES = libgc.la $(am__append_4)# libcord.la
 include_HEADERS = 
 
 # installed headers

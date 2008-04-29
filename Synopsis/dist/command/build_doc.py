@@ -44,9 +44,12 @@ class build_doc(build.build):
 
    def finalize_options(self):
 
-      # If no option was given, do all media.
+      # If no media option was given, do all media.
       if not (self.html or self.printable or self.sxr):
          self.html = self.printable = True
+      # If no kind option is given, do them all.
+      if not (self.man_page or self.ref_manual or self.tutorial or self.examples):
+         self.man_page = self.ref_manual = self.tutorial = True
       build.build.finalize_options(self)
 
    def run(self):
