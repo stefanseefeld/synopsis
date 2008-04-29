@@ -89,6 +89,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   if (tokenset & GCC)
   {
     keywords_["__alignof__"] = Token::SIZEOF;
+    keywords_["__asm"] = Token::ATTRIBUTE;
     keywords_["__asm__"] = Token::ATTRIBUTE;
     keywords_["__attribute__"] = Token::ATTRIBUTE;
     keywords_["__builtin_offsetof"] = Token::OFFSETOF;

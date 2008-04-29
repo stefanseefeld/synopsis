@@ -27,7 +27,7 @@ int usage(const char *command)
 
 int main(int argc, char **argv)
 {
-  bool display_references = false;
+  bool display_references = true;
   char const *input = argv[1];
   if (argc == 1) return usage(argv[0]);
   for (int i = 1; i < argc - 1; ++i)

@@ -1,6 +1,16 @@
 #!/bin/sh
 #
 
+record_revision()
+{
+  if test -n "`svn info 2> /dev/null`"
+  then
+    echo "Recording current revision..."
+    rev=`svn info | awk '/Revision:/ {print $2}'`
+    echo $rev > revision
+  fi
+}
+
 conf() 
 {
   (cd $1
@@ -20,9 +30,10 @@ conf_with_header()
   )
 }
 
-svn info | awk '/Revision:/ {print $2}' > revision
+record_revision
 conf src
 conf src/Synopsis/gc
+conf src/Synopsis/gc/libatomic_ops-1.2
 conf Synopsis/Parsers/Cpp
 conf_with_header Synopsis/Parsers/IDL
 conf Synopsis/Parsers/C

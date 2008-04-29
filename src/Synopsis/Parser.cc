@@ -7,6 +7,7 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable.hh>
+#include <Synopsis/SymbolTable/Display.hh>
 #include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include "Synopsis/Parser.hh"
@@ -233,7 +234,7 @@ struct Parser::Tentative
       //. (That could have happened from within another Tentative on the stack.)
       if (!keep) parser_.is_tentative_ = was_tentative_;
       parser_.reference_cache_.resize(reference_cache_size_);
-      parser_.symbol_ = symbol_,
+      parser_.symbol_ = symbol_;
       parser_.qualifying_scope_ = qualifying_scope_;
       lexer_.restore(token_mark_);
       if (restore_encoding_)
@@ -567,24 +568,27 @@ unsigned long Parser::origin(const char *ptr,
 PT::Node *Parser::parse()
 {
   Trace trace("Parser::parse", Trace::PARSING);
-  try {
-  PT::List *declarations = opt_declaration_seq();
-  // TODO: Retrieve trailing comments
-  //       We first need to figure out all the right places to
-  //       retrieve comments at (declarators, ...), or else
-  //       they will just accumulate.
-  return declarations;
-
-  PT::List *comments = wrap_comments(lexer_.get_comments());
-  if (comments)
+  try
   {
-    // Use zero-length CommentedAtom as special marker.
-    // Should we define a 'PT::Comment' atom for those comments that
-    // don't clash with the grammar ? At least that seems less hackish than this:
-    PT::Node *c = new PT::CommentedAtom(comments->begin(), 0, comments);
-    declarations = PT::snoc(declarations, c);
-  }
-  return declarations;
+    PT::List *declarations = opt_declaration_seq();
+    // Flush any caches, at this point there are no more tentatives.
+    commit();
+    // TODO: Retrieve trailing comments
+    //       We first need to figure out all the right places to
+    //       retrieve comments at (declarators, ...), or else
+    //       they will just accumulate.
+    return declarations;
+
+    PT::List *comments = wrap_comments(lexer_.get_comments());
+    if (comments)
+    {
+      // Use zero-length CommentedAtom as special marker.
+      // Should we define a 'PT::Comment' atom for those comments that
+      // don't clash with the grammar ? At least that seems less hackish than this:
+      PT::Node *c = new PT::CommentedAtom(comments->begin(), 0, comments);
+      declarations = PT::snoc(declarations, c);
+    }
+    return declarations;
   }
   catch (ST::Undefined const &e)
   {
@@ -623,6 +627,13 @@ PT::Identifier *Parser::identifier(PT::Encoding &encoding)
     return 0;
   }
   PT::Identifier *identifier = new PT::Identifier(token);
+  if (qualifying_scope_)
+  {
+    PT::Encoding name(identifier);
+    ST::SymbolSet symbols = qualifying_scope_->qualified_lookup(name, ST::Scope::DEFAULT);
+    if (symbols.empty()) return 0;
+    symbol_ = *symbols.begin();
+  }
   encoding.simple_name(identifier);
   return identifier;
 }
@@ -663,7 +674,6 @@ PT::Node *Parser::class_name(PT::Encoding &encoding,
     // the base class, we attempt a lookup anyways.
     if (is_typename || lookup_class_name(name) || in_base_clause)
     {
-      refer(id, symbol_);
       encoding.simple_name(id);
       return id;
     }
@@ -908,7 +918,12 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
     qname = PT::snoc(qname, new PT::Kwd::Template(lexer_.get_token()));
     PT::Node *id = template_id(encoding, true);
     if (!require(id, "template-id")) return 0;
-    else return new PT::Name(PT::snoc(qname, id), encoding);
+    else
+    {
+      PT::Name *name = new PT::Name(PT::snoc(qname, id), encoding);
+      refer(name, symbol_);
+      return name;
+    }
   }
   else if (!qname) tentative.rollback();
   
@@ -916,7 +931,9 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
   if (!require(type_name_, "type-name")) return 0;
   qname = PT::snoc(qname, type_name_);
   if (scope) qname = PT::cons(scope, qname);
-  return new PT::Name(qname, encoding);
+  PT::Name *name = new PT::Name(qname, encoding);
+  refer(name, symbol_);
+  return name;
 }
 
 // enum-specifier:
@@ -1198,6 +1215,7 @@ PTree::List *Parser::base_clause(std::vector<SymbolTable::Symbol const *> &symbo
       if (scope) tmp = PT::cons(scope, tmp);
       base = new PT::Name(tmp, encoding);
     }
+    refer(base, symbol_);
     bases = PT::snoc(bases, PT::snoc(super, base));
     if(lexer_.look_ahead() != ',') break;
     else bases = PT::snoc(bases, new PT::Atom(lexer_.get_token()));
@@ -4308,19 +4326,24 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding, bool is_template)
   Trace trace("Parser::id_expression", Trace::PARSING);
   PT::Atom *scope = opt_scope(encoding);
   Tentative tentative(*this, encoding);
-  PT::List *name = nested_name_specifier(encoding, is_template);
-  if (name)
+  PT::List *qname = nested_name_specifier(encoding, is_template);
+  if (qname)
   {
     bool is_template = false;
     if (lexer_.look_ahead() == Token::TEMPLATE)
     {
       Token token = lexer_.get_token();
-      name = PT::snoc(name, new PT::Kwd::Template(token));
+      qname = PT::snoc(qname, new PT::Kwd::Template(token));
       is_template = true;
     }
-    PT::Node *rest = unqualified_id(encoding, is_template);
-    if (!require(rest, "unqualified-id")) return 0;
-    else return new PT::Name(PT::snoc(name, rest), encoding);
+    PT::Node *id = unqualified_id(encoding, is_template);
+    if (!require(id, "unqualified-id")) return 0;
+    else
+    {
+      PT::Name *name = new PT::Name(PT::snoc(qname, id), encoding);
+      refer(name, symbol_);
+      return name;
+    }
   }
   tentative.rollback(true);
 
@@ -4332,12 +4355,13 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding, bool is_template)
   if (lexer_.look_ahead() == Token::Identifier)
   {
     PT::List *id = PT::cons(scope, PT::cons(identifier(encoding)));
+    // FIXME: need to look up symbol here, if only to validate code.
     return new PT::Name(id, encoding);
   }
-  name = operator_function_id(encoding);
-  if (name) return name;
+  PTree::List *id = operator_function_id(encoding);
+  if (id) return id;
   tentative.rollback();
-  PT::List *id = template_id(encoding, is_template);
+  id = template_id(encoding, is_template);
   return id ? new PT::Name(id, encoding) : 0;
 }
 
@@ -4357,7 +4381,7 @@ PT::Node *Parser::typeof_expression(PT::Encoding &encoding)
     Token op = lexer_.get_token();
     PT::Node *type = type_id(encoding);
     if (type && require(')')) 
-      return new PT::TypeofExpr(new PT::Atom(typeof_), 
+      return new PT::TypeofExpr(new PT::Kwd::Typeof(typeof_), 
 				PT::list(new PT::Atom(op),
 					 type, 
 					 new PT::Atom(lexer_.get_token())));

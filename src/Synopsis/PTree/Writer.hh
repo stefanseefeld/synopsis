@@ -44,11 +44,11 @@ inline std::string reify(Node const *p)
 {
   if (!p) return "";
   else if (p->is_atom()) return string(static_cast<Atom const *>(p));
-
-  std::ostringstream oss;
-  Writer writer(oss);
-  writer.write(p);
-  return oss.str();
+  else return string(static_cast<List const *>(p));
+//   std::ostringstream oss;
+//   Writer writer(oss);
+//   writer.write(p);
+//   return oss.str();
 }
 
 }

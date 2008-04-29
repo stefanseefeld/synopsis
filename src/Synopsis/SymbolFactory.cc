@@ -327,7 +327,7 @@ void SymbolFactory::declare(ST::Scope *s, PT::SimpleDeclaration *d)
   trace << "template parameters " << tparameters_;
   if (s) scopes_.push(s);
   ST::Scope *scope = scopes_.top();
-
+  bool const in_class = dynamic_cast<ST::Class*>(scope);
   PT::DeclSpec *spec = d->decl_specifier_seq();
   PT::List *decls = d->declarators();
   // The implicit type declaration by means of elaborated type specs is handled
@@ -363,9 +363,18 @@ void SymbolFactory::declare(ST::Scope *s, PT::SimpleDeclaration *d)
       }
     }
   }
+  bool defined = true;
   // For special functions (constructor, destructor, type conversions) there
   // may be no decl-specifier-seq.
-  bool defined = spec ? spec->storage_class() != PT::DeclSpec::EXTERN : true;
+  if (spec)
+  {
+    // [3.1.2: basic.def]
+    if (in_class and spec->storage_class() == PT::DeclSpec::STATIC)
+      defined = false;
+    else if (spec->storage_class() == PT::DeclSpec::EXTERN)
+      defined = false;
+  }
+
   for (; decls; decls = decls->cdr())
   {
     PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
@@ -376,20 +385,29 @@ void SymbolFactory::declare(ST::Scope *s, PT::SimpleDeclaration *d)
     
     if (name.is_qualified())
     {
+      // If the name is qualified, it must already have been declared inside
+      // its scope.
       ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
       if (symbols.empty())
-      {
-	std::cout << "!1" << std::endl;
 	throw ST::Undefined(name, scope, decl);
-      }
+
+      // This can only be a definition of an already declared symbol.
+      // For now, skip it.
+      // TODO: Decide what to do here, i.e. whether to replace the declaration
+      //       by a definition, or merely add the (then duplicate) symbol, etc.
+      return;
+
+
       // FIXME: We need type analysis / overload resolution
       //        here to take the right symbol.
-      ST::Symbol const *forward = *symbols.begin();
-      while (name.is_qualified()) name = name.get_symbol();
-      scope = forward->scope();
+//       ST::Symbol const *old = *symbols.begin();
+      // FIXME: Figure out whether this is a forward declaration, declaration, or definition.
+//       std::cout << typeid(*old).name() << ' ' << old->is_definition() << std::endl;
+//       while (name.is_qualified()) name = name.get_symbol();
+//       scope = old->scope();
       // TODO: check whether this is the definition of a previously
       //       declared variable, according to 3.1/2 [basic.def]
-      scope->remove(forward);
+//       scope->remove(old);
     }
       
     ST::Symbol const *symbol = 0;

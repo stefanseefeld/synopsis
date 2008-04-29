@@ -14,20 +14,33 @@ PLATFORM:= @PLATFORM@
 SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
+LDSONAME:= @LDSONAME@
 MAKEDEP	:= $(CXX) -M
 AR	:= @AR@
 RANLIB	:= @RANLIB@
 LN_S	:= @LN_S@
-CPPFLAGS:= @BOOST_CPPFLAGS@ @CPPFLAGS@ -I $(builddir) -I $(srcdir)
+CPPFLAGS:= @BOOST_CPPFLAGS@ @CPPFLAGS@ -D SYNOPSIS_SRC -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @BOOST_LDFLAGS@ @LDFLAGS@
 LIBS	:= @BOOST_LIBS@ @LIBS@
-DSO_EXT := @LIBEXT@
+LIBEXT  := @LIBEXT@
+INSTALL := @INSTALL@
+INSTALL_DATA := @INSTALL_DATA@
+INSTALL_SCRIPT := @INSTALL_SCRIPT@
 MAJOR	:= @MAJOR@
 MINOR	:= @MINOR@
 
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+datarootdir := @datarootdir@
+datadir := @datadir@
+includedir := @includedir@
+libdir := @libdir@
+sbindir := @sbindir@
+bindir := @bindir@
+
 ifneq ($(findstring -fPIC, $(CXXFLAGS)),)
-GC_CFLAGS := -fPIC
+GC_CFLAGS := CFLAGS="@CFLAGS@ -fPIC"
 endif
 GC_LIB	:= @GC_LIB@
 ifdef GC_LIB
@@ -49,14 +62,33 @@ define link_dso
 @echo linking $@
 $(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 endef
+
+define install_dso
+@echo installing $@
+$(INSTALL_DATA) lib/libSynopsis$(LIBEXT) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT)
+endef
+
 else
+
 define link_dso
 @echo linking $@
 rm -f $@ $@.$(MAJOR) $@.$(MAJOR).$(MINOR)
-$(LDSHARED) $(LDFLAGS) -Wl,--soname,$(@F).$(MAJOR).$(MINOR) \
+$(LDSHARED) $(LDFLAGS) $(LDSONAME)$(@F).$(MAJOR).$(MINOR) \
   -o $@.$(MAJOR).$(MINOR) $^ $(LIBS)
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR).$(MINOR) $(@F).$(MAJOR))
 (cd $(@D) && $(LN_S) $(@F).$(MAJOR) $(@F))
+endef
+
+define install_dso
+@echo installing libSynopsis$(LIBEXT)
+rm -f $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
+$(INSTALL_DATA) lib/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) \
+  $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
+(cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) libSynopsis$(LIBEXT).$(MAJOR))
+(cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR) libSynopsis$(LIBEXT))
 endef
 endif
 
@@ -94,7 +126,7 @@ HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 HDR_SXR_SYN:= $(patsubst %, %.sxr.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/display-symbols.cc)
 
-LIBRARY	:= lib/libSynopsis$(DSO_EXT)
+LIBRARY	:= lib/libSynopsis$(LIBEXT)
 SUPPORT := lib/libSupport.a
 TOOLS	:= $(patsubst %, bin/%, $(TOOLS))
 TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
@@ -121,14 +153,10 @@ doc: cxx.syn cxx-sxr.syn
 cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
 	$(SYNOPSIS) link --output=$@ $^
-	touch 'links'
-	touch 'xref'
 
 cxx-sxr.syn: $(HDR_SXR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(SYNOPSIS) link --output=$@ $^
-	touch 'links'
-	touch 'xref'
 
 %.d: %.cc
 	$(make_dep)
@@ -156,9 +184,24 @@ $(CC_SYN): %.cc.sxr.syn: %.cc
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):
-	$(MAKE) -C Synopsis/gc GC_CFLAGS=$(GC_CFLAGS)
+	$(MAKE) -C Synopsis/gc $(GC_CFLAGS)
 
-clean :
+install:
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(install_dso)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/PTree
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/SymbolTable
+	$(INSTALL) -d $(DESTDIR)$(includedir)/Synopsis/TypeAnalysis
+	for header in $(HDR); do \
+          $(INSTALL_DATA) $(srcdir)/$$header \
+            $(DESTDIR)$(includedir)/`dirname $$header`; \
+	done
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL_DATA) synopsis.pc \
+          $(DESTDIR)$(libdir)/pkgconfig/synopsis.pc
+
+clean:
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
         Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d Synopsis/PTree/*.syn \
         Synopsis/SymbolTable/*.~ Synopsis/SymbolTable/*.o Synopsis/SymbolTable/*.d Synopsis/SymbolTable/*.syn \
