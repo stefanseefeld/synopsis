@@ -65,7 +65,7 @@ public:
   PTree::Node const * ptree() const { return ptree_;}
   bool is_definition() const { return definition_;}
   Scope * scope() const { return scope_;}
-private:
+protected:
   PTree::Encoding     type_;
   PTree::Node const * ptree_;
   bool                definition_;
@@ -125,8 +125,15 @@ class ClassName : public TypeName
 public:
   ClassName(PTree::Encoding const &type, PTree::Node const *ptree, bool def, Scope *s)
     : TypeName(type, ptree, def, s) {}
+
+  //. Rather than create a new symbol once a class definition is seen, this
+  //. method allows to morph a class forward declaration into a class definition.
+  void define(PTree::Node const *ptree) { ptree_ = ptree; definition_ = true;}
+
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 
+  //. True if `is_definition()` is false.
+  bool is_forward() const { return !is_definition();}
   //. Return the class scope associated with this symbol.
   //. This will return 0 if the class definition hasn't been seen yet.
   Class *as_scope() const;
@@ -137,7 +144,15 @@ class EnumName : public TypeName
 public:
   EnumName(PTree::Node const *ptree, Scope *scope)
     : TypeName(PTree::Encoding(), ptree, true, scope) {}
+
+  //. Rather than create a new symbol once an enum definition is seen, this
+  //. method allows to morph an enum forward declaration into an enum definition.
+  void define(PTree::Node const *ptree) { ptree_ = ptree; definition_ = true;}
+
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. True if `is_definition()` is false.
+  bool is_forward() const { return !is_definition();}
 };
 
 class DependentName : public TypeName

@@ -15,6 +15,15 @@ namespace Synopsis
 namespace PTree
 {
 
+namespace
+{
+  //. Make sure the garbage collector is properly initialized.
+  struct Initializer
+  {
+    Initializer() { init_gc();}
+  } initializer;
+}
+
 DeclSpec::DeclSpec(List *l, Encoding const &type,
 		   StorageClass storage, unsigned int flags, bool decl, bool def)
   : List(l->car(), l->cdr()),

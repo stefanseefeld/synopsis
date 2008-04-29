@@ -21,6 +21,12 @@ inline std::string string(Atom const *atom)
   return std::string(atom->position(), atom->length());
 }
 
+inline std::string string(List const *list) 
+{
+  char const *ptr = list->begin();
+  return std::string(ptr, list->end() - ptr);
+}
+
 bool operator == (Node const &p, char c);
 inline bool operator != (Node const &p, char c) { return !operator == (p, c);}
 bool operator == (Node const &p, char const *str);

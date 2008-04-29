@@ -39,9 +39,12 @@ AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
-AC_CHECK_PROGS(AR, ar aal, ar)
+AC_CHECK_PROGS(AR, ar aal xiar, ar)
+AC_CHECK_PROGS(LD, ld xild, ld)
 AC_SUBST(AR)
+AC_SUBST(LD)
 AC_PROG_LN_S
+AC_PROG_INSTALL
 
 # Determine major, minor, and bugfix version
 if echo "$version" | grep -q '\.'; then
@@ -86,6 +89,7 @@ case `uname -s` in
 CYGWIN*)
     LIBEXT=".dll"
     LDSHARED="$CXX -shared"
+    LDSONAME="-Wl,--soname,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     if test "$PLATFORM" == "nt"; then
       if test "$CXX" == "g++"; then
@@ -101,11 +105,13 @@ CYGWIN*)
 Darwin)
     LIBEXT=".dylib"
     LDSHARED="$CXX -dynamiclib"
+    LDSONAME="-Wl,-install_name,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
     ;;
 *)
     LIBEXT=".so"
     LDSHARED="$CXX -shared"
+    LDSONAME="-Wl,--soname,"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS -fPIC"
     ;;
 esac
@@ -113,9 +119,10 @@ esac
 AC_SUBST(PLATFORM)
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
+AC_SUBST(LDSONAME)
 
 AC_LANG(C++)
-AC_BOOST([1.33])
+AC_BOOST([1.35])
 SYN_BOOST_LIB_FILESYSTEM
 
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh

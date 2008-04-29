@@ -19,6 +19,7 @@ using ::NoGC;
 
 typedef gc LightObject;
 typedef gc_cleanup Object;
+inline void init_gc() { GC_INIT();}
 inline void cleanup_gc() { GC_gcollect();}
 
 }

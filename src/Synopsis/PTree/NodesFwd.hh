@@ -71,6 +71,7 @@ typedef KeywordT<Token::THROW> Throw;
 typedef KeywordT<Token::TRY> Try;
 typedef KeywordT<Token::TYPEDEF> Typedef;
 typedef KeywordT<Token::TYPENAME> Typename;
+typedef KeywordT<Token::TYPEOF> Typeof;
 typedef KeywordT<Token::UNION> Union;
 typedef KeywordT<Token::UNSIGNED> Unsigned;
 typedef KeywordT<Token::USING> Using;
