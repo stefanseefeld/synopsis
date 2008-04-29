@@ -26,6 +26,7 @@ LIBS	:= @LIBS@
 LIBEXT  := @LIBEXT@
 INSTALL := @INSTALL@
 INSTALL_DATA := @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT := @INSTALL_SCRIPT@
 MAJOR	:= @MAJOR@
 MINOR	:= @MINOR@
@@ -65,7 +66,7 @@ endef
 
 define install_dso
 @echo installing $@
-$(INSTALL_DATA) lib/libSynopsis$(LIBEXT) \
+$(INSTALL_PROGRAM) lib/libSynopsis$(LIBEXT) \
   $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT)
 endef
 
@@ -85,7 +86,7 @@ define install_dso
 rm -f $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT) \
   $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR) \
   $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
-$(INSTALL_DATA) lib/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) \
+$(INSTALL_PROGRAM) lib/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) \
   $(DESTDIR)$(libdir)/libSynopsis$(LIBEXT).$(MAJOR).$(MINOR)
 (cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR).$(MINOR) libSynopsis$(LIBEXT).$(MAJOR))
 (cd $(DESTDIR)$(libdir) && $(LN_S) libSynopsis$(LIBEXT).$(MAJOR) libSynopsis$(LIBEXT))

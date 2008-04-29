@@ -1,6 +1,6 @@
 %define name synopsis
 %define version 0.11
-%define release 1
+%define release 2
 %define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
 %define py_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
 %define url http://synopsis.fresco.org
@@ -16,9 +16,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Url: %{url}
 BuildRequires: python-devel
 BuildRequires: pkgconfig
-BuildRequires: libgc libgc-devel
+BuildRequires: libgc-devel
 BuildRequires: flex
 BuildRequires: bison
+Requires: python-docutils
+Requires: graphviz
 
 %description
 Synopsis is a multi-language source code introspection tool that
@@ -57,7 +59,7 @@ Synopsis IDL Parser module to parse CORBA IDL.
 
 %setup -q
 env CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" \
-python setup.py config --with-gc-prefix=%{prefix} --libdir=%{_libdir}
+python setup.py config --with-gc-prefix=%{_prefix} --libdir=%{_libdir}
 
 %build
 env CFLAGS="$RPM_OPT_FLAGS" CXXFLAGS="$RPM_OPT_FLAGS" python setup.py build
@@ -69,14 +71,12 @@ python setup.py install --root=$RPM_BUILD_ROOT
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
-/sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun
-/sbin/ldconfig 
+%postun -p /sbin/ldconfig 
 
 %files
-%defattr(-, root, root)
+%defattr(-, root, root, -)
 %{_bindir}/*
 %{_libdir}/*.so.*
 %{py_sitearch}/*.egg-info
@@ -95,34 +95,39 @@ rm -rf $RPM_BUILD_ROOT
 %{py_sitearch}/Synopsis/Processors
 %{py_sitearch}/Synopsis/Formatters
 %{_datadir}/synopsis-%{version}
-%doc %{_docdir}/synopsis-%{version}/README 
-%doc %{_docdir}/synopsis-%{version}/COPYING
-%doc %{_docdir}/synopsis-%{version}/NEWS
-%doc %_mandir/man1/*
+%dir %{_docdir}/synopsis-%{version}
+%{_docdir}/synopsis-%{version}/README 
+%{_docdir}/synopsis-%{version}/COPYING
+%{_docdir}/synopsis-%{version}/NEWS
+%{_mandir}/man1/*
 
 %files devel
-%defattr(-, root, root)
+%defattr(-, root, root, -)
 %{_includedir}/Synopsis
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/synopsis.pc
-%doc %{_docdir}/synopsis-%{version}/README 
-%doc %{_docdir}/synopsis-%{version}/COPYING
-%doc %{_docdir}/synopsis-%{version}/NEWS
+%{_docdir}/synopsis-%{version}/README 
+%{_docdir}/synopsis-%{version}/COPYING
+%{_docdir}/synopsis-%{version}/NEWS
 
 %files doc
-%defattr(-, root, root)
+%defattr(-, root, root, -)
+%{_docdir}/synopsis-%{version}/README 
+%{_docdir}/synopsis-%{version}/COPYING
+%{_docdir}/synopsis-%{version}/NEWS
 %{_docdir}/synopsis-%{version}/html
 %{_docdir}/synopsis-%{version}/print
 %{_docdir}/synopsis-%{version}/examples
 
 %files idl
-%defattr(-, root, root)
+%defattr(-, root, root, -)
 %{py_sitearch}/Synopsis/Parsers/IDL
-%doc %{_docdir}/synopsis-%{version}/README 
-%doc %{_docdir}/synopsis-%{version}/COPYING
-%doc %{_docdir}/synopsis-%{version}/NEWS
+%{_docdir}/synopsis-%{version}/README 
+%{_docdir}/synopsis-%{version}/COPYING
+%{_docdir}/synopsis-%{version}/NEWS
 
 %changelog
+* Thu Apr 29 2008 Stefan Seefeld <stefan@fresco.org> 0.11-2
 * Thu Apr 24 2008 Stefan Seefeld <stefan@fresco.org> 0.11-1
 * Thu Mar 20 2008 Stefan Seefeld <stefan@fresco.org> 0.10-1
 * Wed Dec 20 2006 Stefan Seefeld <stefan@fresco.org> 0.9-1
