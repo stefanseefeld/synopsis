@@ -31,7 +31,7 @@ class DocumentHandler(saxlib.DocumentHandler):
 
     def get_urefs(self):
         
-        urefs = map(lambda (u, l): Reference(self.locator.getSystemId(), l, u), self.urefs.items())
+        urefs = [Reference(self.locator.getSystemId(), l, u) for (u, l) in self.urefs.items()]
         self.urefs = {}
         self.locator = None
         return urefs
@@ -106,7 +106,7 @@ def main():
 
    done = []
    urefs = [Reference('.', 0, args[0])]
-   while urefs and max == -1 or len(done) < max:
+   while urefs and (max == -1 or len(done) < max):
 
        uref = urefs.pop(0)
        url = urlparse.urljoin(uref.orig, uref.ref)
