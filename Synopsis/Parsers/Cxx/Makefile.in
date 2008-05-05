@@ -25,24 +25,10 @@ LIBRARY_EXT := @LIBEXT@
 
 TARGET	:= ParserImpl$(LIBRARY_EXT)
 
-OCC_FILES := HashTable Environment TypeInfo TypeInfoVisitor \
-             Walker Class ClassWalker \
-             MetaClass QuoteClass Member ClassBodyWalker
-
-SYN_FILES := swalker ast builder type dict TypeIdFormatter decoder lookup filter \
-             Translator SXRGenerator ParserImpl
-
-HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))
-HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
-
-# Generate sources, objs and debug-objs from the FILES
-SRC 	:= $(patsubst %, occ/%.cc, $(OCC_FILES))
-SRC	+= $(patsubst %, syn/%.cc, $(SYN_FILES))
-OCC_OBJ := $(patsubst %, occ/%.o, $(OCC_FILES))
-SYN_OBJ	:= $(patsubst %, syn/%.o, $(SYN_FILES))
+SRC := ASG.cc Types.cc Walker.cc Builder.cc Dictionary.cc TypeIdFormatter.cc \
+       Decoder.cc Lookup.cc Filter.cc Translator.cc SXRGenerator.cc ParserImpl.cc
+HDR := $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.hh))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
-CC_SYN	:= $(patsubst %, %.syn, $(SRC))
-HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
 vpath %.cc $(srcdir)
@@ -56,39 +42,20 @@ doc:
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)
-	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
 
 %.o: %.cc
 	@echo compiling $(@F)
-	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 Makefile: $(srcdir)/Makefile.in
 	./config.status --file Makefile
 
-# Compile C++ .hh files
-$(HDR_SYN): %.syn: %
-	@echo parsing $^
-	mkdir -p $(dir $@)
-	$(SYNOPSIS) cxx --output=$@ $?
-
-# Compile C++ .cc files
-$(CC_SYN): %.cc.syn: %.cc
-	@echo parsing $^
-	mkdir -p $(dir $@)
-	$(SYNOPSIS) cxx --output=$@ $?
-
-# This creates the final occ python module
-$(TARGET): $(SYN_OBJ) opencxx.a
+$(TARGET): $(OBJ)
 	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# Compile an archive of the OCC files
-opencxx.a : $(OCC_OBJ)
-	ar rcs $@ $(OCC_OBJ)
-
 clean :
-	rm -f *~ syn/*.o occ/*.o syn/*.d occ/*.d \
-        *.dll *.so *core opencxx.a \
-	*.pyc *.pyo base_lib
+	rm -f *~ *.o *.d *.dll *.so *core *.pyc *.pyo base_lib
 
 ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
 -include $(DEP)
