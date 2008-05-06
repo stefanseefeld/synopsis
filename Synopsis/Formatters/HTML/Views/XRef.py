@@ -63,7 +63,7 @@ class XRef(View):
             self.__filename = self.directory_layout.xref(p)
 
             first, last = pages[p][0], pages[p][-1]
-            self.__title = 'Cross Reference : %s - %s'%(first, last)
+            self.__title = 'Cross Reference : %s - %s'%(escape(str(first)), escape(str(last)))
 
             self.start_file()
             self.write_navigation_bar()
