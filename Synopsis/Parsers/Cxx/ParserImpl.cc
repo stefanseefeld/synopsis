@@ -15,7 +15,7 @@
 #include "Builder.hh"
 #include "Filter.hh"
 #include "FakeGC.hh"
-
+#include "exception.hh"
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolLookup.hh>
@@ -186,6 +186,10 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   {
     Python::Object py_e((*error_type)(Python::Tuple(e.what())));
     PyErr_SetObject(py_error, py_e.ref());
+    return 0;
+  }
+  catch (py_error_already_set const &)
+  {
     return 0;
   }
   catch (...)

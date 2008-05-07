@@ -10,23 +10,12 @@
 #include <Synopsis/Trace.hh>
 #include "Translator.hh"
 #include "Filter.hh"
-
+#include "exception.hh"
 #include <map>
 #include <set>
 #include <iostream>
-#include <stdexcept>
 
 using namespace Synopsis;
-
-#define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
-
-// This func is called so you can breakpoint on it
-void nullObj()
-{
-  std::cout << "Null ptr." << std::endl;
-  if (PyErr_Occurred()) PyErr_Print();
-  throw std::runtime_error("internal error");
-}
 
 // The compiler firewalled private stuff
 struct Translator::Private
@@ -35,9 +24,9 @@ struct Translator::Private
   Private(Translator* s) : m_syn(s)
   {
     PyObject *qname_module  = PyImport_ImportModule("Synopsis.QualifiedName");
-    assertObject(qname_module);
+    if (!qname_module) throw py_error_already_set();
     m_qname_factory = PyObject_GetAttrString(qname_module, "QualifiedCxxName");
-    assertObject(m_qname_factory);
+    if (!m_qname_factory) throw py_error_already_set();
     Py_DECREF(qname_module);
     m_cxx = PyString_InternFromString("C++");
     Py_INCREF(Py_None);
@@ -87,7 +76,7 @@ struct Translator::Private
   //. Add the given pair
   void add(void* cobj, PyObject* pyobj)
   {
-    if (!pyobj) { nullObj();}
+    if (!pyobj) throw py_error_already_set();
     obj_map.insert(ObjMap::value_type(cobj, pyobj));
   }
 
@@ -303,14 +292,14 @@ Translator::Translator(FileFilter* filter, PyObject *ir)
 {
   Trace trace("Translator::Translator", Trace::TRANSLATION);
   m_asg_module  = PyImport_ImportModule("Synopsis.ASG");
-  assertObject(m_asg_module);
+  if (!m_asg_module) throw py_error_already_set();
   m_sf_module  = PyImport_ImportModule("Synopsis.SourceFile");
-  assertObject(m_sf_module);
+  if (!m_sf_module) throw py_error_already_set();
   PyObject *asg = PyObject_GetAttrString(m_ir, "asg");
   m_declarations = PyObject_GetAttrString(asg, "declarations");
-  assertObject(m_declarations);
+  if (!m_declarations) throw py_error_already_set();
   m_dictionary = PyObject_GetAttrString(asg, "types");
-  assertObject(m_dictionary);
+  if (!m_dictionary) throw py_error_already_set();
   Py_DECREF(asg);
   
   m = new Private(this);
@@ -368,7 +357,7 @@ void Translator::translate(ASG::Scope* scope)//, PyObject* asg)
   // Translate the sourcefiles, making sure the declarations list is done
   // for each
   PyObject* pyfiles = PyObject_GetAttrString(m_ir, "files");
-  assertObject(pyfiles);
+  if (!pyfiles) throw py_error_already_set();
   assert(PyDict_Check(pyfiles));
   
   ASG::SourceFile::vector files;
@@ -384,7 +373,7 @@ void Translator::translate(ASG::Scope* scope)//, PyObject* asg)
     if (file->is_primary())
     {
       decls = PyObject_GetAttrString(pyfile, "declarations");
-      assertObject(decls);
+      if (!decls) throw py_error_already_set();
       PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
       // TODO: add the includes
       Py_DECREF(new_decls);
@@ -393,7 +382,7 @@ void Translator::translate(ASG::Scope* scope)//, PyObject* asg)
     
     // Add the includes
     incls = PyObject_GetAttrString(pyfile, "includes");
-    assertObject(incls);
+    if (!incls) throw py_error_already_set();
     PyObject_CallMethod(incls, "extend", "O", new_incls = m->List(file->includes()));
     Py_DECREF(new_incls);
     Py_DECREF(incls);
@@ -555,7 +544,7 @@ PyObject *Translator::SourceFile(ASG::SourceFile* file)
   // don't construct, but instead find existing python object !
   Trace trace("Translator::SourceFile", Trace::TRANSLATION);
   PyObject *files = PyObject_GetAttrString(m_ir, "files");
-  assertObject(files);
+  if (!files) throw py_error_already_set();
   PyObject *pyfile = PyDict_GetItemString(files, const_cast<char *>(file->name().c_str()));
   if (!pyfile) // the file wasn't found, create it now
   {
@@ -564,7 +553,7 @@ PyObject *Translator::SourceFile(ASG::SourceFile* file)
 				 name = m->py(file->name()),
 				 abs_name = m->py(file->abs_name()),
 				 m->cxx());
-    assertObject(pyfile);
+    if (!pyfile) throw py_error_already_set();
     Py_DECREF(name);
     Py_DECREF(abs_name);
   }
@@ -590,7 +579,7 @@ PyObject *Translator::Include(ASG::Include* include)
                                   target = m->py(include->target()),
                                   include->is_macro() ? 1 : 0,
                                   include->is_next() ? 1 : 0);
-  assertObject(pyinclude);
+  if (!pyinclude) throw py_error_already_set();
   Py_DECREF(target);
   return pyinclude;
 }
@@ -602,7 +591,7 @@ PyObject *Translator::Declaration(ASG::Declaration* decl)
   pydecl = PyObject_CallMethod(m_asg_module, "Declaration", "OiOO",
                                file = m->py(decl->file()), decl->line(),
                                type = m->py(decl->type()), name = m->QName(decl->name()));
-  assertObject(pydecl);
+  if (!pydecl) throw py_error_already_set();
   addComments(pydecl, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -617,7 +606,7 @@ PyObject *Translator::Builtin(ASG::Builtin* decl)
   pybuiltin = PyObject_CallMethod(m_asg_module, "Builtin", "OiOO",
                                   file = m->py(decl->file()), decl->line(),
                                   type = m->py(decl->type()), name = m->QName(decl->name()));
-  assertObject(pybuiltin);
+  if (!pybuiltin) throw py_error_already_set();
   addComments(pybuiltin, decl);
   Py_DECREF(file);
   Py_DECREF(type);
@@ -639,7 +628,7 @@ PyObject *Translator::Macro(ASG::Macro* decl)
                                 file = m->py(decl->file()), decl->line(),
                                 type = m->py(decl->type()), name = m->QName(decl->name()),
                                 params, text = m->py(decl->text()));
-  assertObject(pymacro);
+  if (!pymacro) throw py_error_already_set();
   addComments(pymacro, decl);
   Py_DECREF(file);
   Py_DECREF(type);
