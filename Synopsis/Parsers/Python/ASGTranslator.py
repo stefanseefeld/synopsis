@@ -162,6 +162,7 @@ class TokenParser:
         return parameters
 
 class ASGTranslator(ASTVisitor):
+    """Translate the Python AST into a Synopsis ASG."""
 
     def __init__(self, package, types, docformat):
         """Create an ASGTranslator.
