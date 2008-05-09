@@ -54,9 +54,9 @@ List of options:
   --cfilter=<filter>          Specify a comment filter.
   --cprocessor=<processor>    Specify a comment processor.
   -Wc,<arg>[,<arg>...]        Send <args> to the comment translator.
-  -l <processor>,
-    --linker=<processor>      Link, processing all declarations with <processor>.
+  -l                          Run the linker.
   -Wl,<arg>[,<arg>...]        Send <args> to the linker.
+  --linker=<processor>        Link, and invoke <processor>.
   -f <type>,
     --formatter=<type>        Select a formatter for <type>.
   -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
@@ -90,7 +90,7 @@ def make_processor(argv):
     probe = False
 
     opts, args = getopt.getopt(argv,
-                               'o:p:t:l:f:s:I:D:W:jvhVdP',
+                               'o:p:t:lf:s:I:D:W:jvhVdP',
                                ['output=',
                                 'parser=', 'translate=', 'cfilter=', 'cprocessor=',
                                 'linker=', 'formatter=', 'sxr=',
@@ -133,7 +133,12 @@ def make_processor(argv):
             if not translator_opts.get('processor'): translator_opts['processor'] = []
             translator_opts['processor'].append(cprocessors[a]())
 
-        elif o in ['-l', '--linker']:
+        elif o == '-l':
+            if not linker:
+                linker = __import__('Synopsis.Processors.Linker',
+                                    'verbose' in options)
+
+        elif o == '--linker':
             if not linker:
                 linker = __import__('Synopsis.Processors.Linker',
                                     'verbose' in options)
