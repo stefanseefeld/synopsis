@@ -1,7 +1,7 @@
 #
 # Copyright (C) 2006 Stefan Seefeld
 # All rights reserved.
-# Licensed to the public under the terms of the GNU GPL (>= 2),
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
 
@@ -16,43 +16,62 @@ import os
 
 __all__ = ['Parser']
 
-def find_imported(target, root, current, verbose = False):
-    """Lookup imported files, based on current file's location.
+def expand_package(root, verbose = False):
+    """Find all modules in a given package."""
 
-      target: Pair of names.
-      root: root directory to which to confine the lookup.
-      current: file name of the module issuing the import."""
+    modules = []
+    if not os.path.isdir(root) or not os.path.isfile(os.path.join(root, '__init__.py')):
+        return modules
+    if verbose: print 'expanding %s'%root
+    files = os.listdir(root)
+    modules += [os.path.join(root, file)
+                for file in files if os.path.splitext(file)[1] == '.py']
+    for d in [dir for dir in files if os.path.isdir(os.path.join(root, dir))]:
+        modules.extend(expand_package(os.path.join(root, d), verbose))
+    return modules
 
-    current = os.path.dirname(current)
-    if root:
-        locations = [current.rsplit(i, 1)[0] for i in current.count('.')]
+
+def find_imported(target, base_path, origin, verbose = False):
+    """
+    Lookup imported files, based on current file's location.
+
+    target: (module, name) pair.
+    base_path: root directory to which to confine the lookup.
+    origin: file name of the module issuing the import."""
+
+    module, name = target[0].replace('.', os.sep), target[1]
+    origin = os.path.dirname(origin)
+    if base_path:
+        locations = [base_path + origin.rsplit(os.sep, i)[0]
+                     for i in range(origin.count(os.sep) + 1)] + [base_path]
     else:
-        locations = [current]
-    modname, name = target
-    if name:
+        locations = [origin]
+
+    # '*' is only valid in a module scope
+    if name and name != '*':
         # name may be a module or a module's attribute.
         # Only find the module.
-        files = ['%s/%s.py'%(modname, name), '%s.py'%modname]
+        files = ['%s/%s.py'%(module, name), '%s.py'%module]
     else:
-        files = ['%s.py'%modname]
-    files.append(os.path.join(modname, '__init__.py'))
-
+        files = ['%s.py'%module]
+    files.append(os.path.join(module, '__init__.py'))
     for l in locations:
         for f in files:
             target = os.path.join(l, f)
             if verbose: print 'trying %s'%target
             if os.path.exists(target):
-                return target, target[len(root):]
+                return target, target[len(base_path):]
     return None, None
     
 
 
 class Parser(Processor):
-    """Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
+    """
+    Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
     info."""
 
     primary_file_only = Parameter(True, 'should only primary file be processed')
-    base_path = Parameter('', 'Path prefix to strip off of input file names.')
+    base_path = Parameter(None, 'Path prefix to strip off of input file names.')
     sxr_prefix = Parameter(None, 'Path prefix (directory) to contain sxr info.')
     default_docformat = Parameter('', 'default documentation format')
     
@@ -73,33 +92,52 @@ class Parser(Processor):
                                       %self.base_path)
             if self.base_path[-1] != os.sep:
                 self.base_path += os.sep
-            
-        self.all_files = self.input[:]
+
+        # all_files is a list of (filename, base_path) pairs.
+        # we have to record the base_path per file, since it defaults to the
+        # filename itself, for files coming directly from user input.
+        # For files that are the result of expanded packages it defaults to the
+        # package directory itself.
+        self.all_files = []
+        for i in self.input:
+            base_path = self.base_path or os.path.dirname(i)
+            if base_path and base_path[-1] != os.sep:
+                base_path += os.sep
+            # expand packages into modules
+            if os.path.isdir(i):
+                if os.path.exists(os.path.join(i, '__init__.py')):
+                    self.all_files.extend([(p,base_path)
+                                           for p in expand_package(i, self.verbose)])
+                else:
+                    raise InvalidArgument('"%s" is not a Python package'%i)
+            else:
+                self.all_files.append((i,base_path))
+        # process modules
         while len(self.all_files):
-            file = self.all_files.pop()
-            self.process_file(file)
+            file, base_path = self.all_files.pop()
+            self.process_file(file, base_path)
 
         return self.output_and_return_ir()
 
 
-    def process_file(self, filename):
+    def process_file(self, filename, base_path):
         """Parse an individual python file."""
 
         long_filename = filename
-        if filename[:len(self.base_path)] != self.base_path:
-            raise InvalidArguent('invalid input filename:\n'
-                                 '"%" does not match base_path "%s"'
-                                 %(filename, self.base_path))
-
-        short_filename = filename[len(self.base_path):]
+        if filename[:len(base_path)] != base_path:
+            raise InvalidArgument('invalid input filename:\n'
+                                  '"%s" does not match base_path "%s"'
+                                  %(filename, base_path))
+        if self.verbose: print 'parsing %s'%filename
+        short_filename = filename[len(base_path):]
         sourcefile = SourceFile(short_filename, long_filename, 'Python', True)
         self.ir.files[short_filename] = sourcefile
 
         package = None
         package_name = []
-        package_path = self.base_path
+        package_path = base_path
         # Only attempt to set up enclosing packages if a base_path was given.
-        if package_path:
+        if package_path != filename:
             components = short_filename.split(os.sep)
             if components[0] == '':
                 package_path += os.sep
@@ -110,12 +148,17 @@ class Parser(Processor):
                 qname = QName(package_name)
                 if not os.path.isfile(os.path.join(package_path, '__init__.py')):
                     raise InvalidArgument('"%s" is not a package'%qname)
-                module = ASG.Module(sourcefile, -1, 'package', qname)
-                self.ir.asg.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
-                if package:
-                    package.declarations.append(module)
+                # Try to locate the package
+                type_id = self.ir.asg.types.get(qname)
+                if (type_id):
+                    module = type_id.declaration
                 else:
-                    self.ir.asg.declarations.append(module)
+                    module = ASG.Module(sourcefile, -1, 'package', qname)
+                    self.ir.asg.types[qname] = ASG.DeclaredTypeId('Python', qname, module)
+                    if package:
+                        package.declarations.append(module)
+                    else:
+                        self.ir.asg.declarations.append(module)
 
                 package = module
 
@@ -131,7 +174,7 @@ class Parser(Processor):
                 target = find_imported(i, self.base_path, sourcefile.name, self.verbose)
                 if target[0] and target[1] not in self.ir.files:
                     # Only process if we have not visited it yet.
-                    self.all_files.append(target[0])
+                    self.all_files.append((target[0], base_path))
 
         if self.sxr_prefix:
             sxr = os.path.join(self.sxr_prefix, short_filename + '.sxr')

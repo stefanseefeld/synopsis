@@ -493,7 +493,9 @@ ir = formatter.process(ir, output=&#39;html&#39;)</programlisting>
     <section id="python-parser">
       <title>The Python Parser</title>
       <para>The Python parser expects Python source files as input, and compiles them into
-        an Abstract Semantic Graph. At this time, this compilation is based purely on static
+        an Abstract Semantic Graph. Note that directory names are valid input, too, if they
+        correspond to Python packages, i.e. have an <filename>__init__.py</filename> file in them.
+        At this time, this compilation is based purely on static
         analysis (parsing), and no runtime-inspection of the code is involved.</para>
       <para>This obviously is obviously only of limitted use if objects change at runtime.</para>
       <para>The found docstrings are identified and attached to their corresponding objects.

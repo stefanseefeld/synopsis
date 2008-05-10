@@ -179,7 +179,7 @@ class ASGTranslator(ASTVisitor):
         self.documentable = None
         self.name = QName()
         self.imports = []
-
+        "Tuple with (module, names) pairs."
 
     def process_file(self, file):
 
