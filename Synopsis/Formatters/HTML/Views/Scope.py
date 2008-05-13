@@ -121,7 +121,7 @@ class Scope(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
         self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))

@@ -1,6 +1,6 @@
 %define name synopsis
 %define version 0.11
-%define release 2
+%define release 3
 %define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
 %define py_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
 %define url http://synopsis.fresco.org

@@ -59,7 +59,7 @@ def validate(url):
     """validate (x)html conformance using 'tidy'."""
 
     if verbose: print 'validating', url
-    status = os.system('tidy -errors -quiet %s'%url)
+    status = os.system('tidy -errors -quiet "%s"'%url)
     if os.WIFSIGNALED(status):
         print 'internal error:', os.WTERMSIG(status)
     elif os.WIFEXITED(status):

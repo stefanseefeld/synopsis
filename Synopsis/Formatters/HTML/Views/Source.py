@@ -52,11 +52,12 @@ class SXRTranslator:
         lines = self.sxr.getElementsByTagName('line')
         lineno_template = '%%%ds' % len(`len(lines)`)
         for lineno, line in enumerate(lines):
-            writer.write('<a name="%d"></a>'%(lineno + 1))
+            writer.write('<a id="line%d"></a>'%(lineno + 1))
             text = lineno_template % (lineno + 1)
             writer.write('<span class="lineno">%s</span>'%text)
             text = ''.join([n.toxml() for n in line.childNodes])
-            writer.write('<span class="line">%s</span>\n'%text)
+            if text:
+                writer.write('<span class="line">%s</span>\n'%text)
         writer.write('</pre>')
 
 
@@ -154,7 +155,7 @@ class Source(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
         self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))

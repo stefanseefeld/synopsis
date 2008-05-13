@@ -178,6 +178,7 @@ div.logo
   text-align: center;
   color: #dddddd;
 }
+img {  border: 0; }
 div.class-module
 {
   font-size: 1.5em;

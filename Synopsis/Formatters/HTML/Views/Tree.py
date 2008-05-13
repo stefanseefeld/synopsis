@@ -48,7 +48,7 @@ class Tree(View):
       
     def write_leaf(self, text):
         """Write a leaf node to the output at the current tree level."""
-        i = img(src=self.tree_leaf, alt='leaf', border='0')
+        i = img(src=self.tree_leaf, alt='leaf')
         self.write(div('module-section', i + text) + '\n')
 
     def write_node_start(self, text):

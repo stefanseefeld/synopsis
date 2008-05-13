@@ -49,8 +49,8 @@ def img(**attrs):
 
 def name(ref, label):
     "Return a name anchor with given reference and label"
-
-    return '<a class="name" name="%s">%s</a>'%(ref,label)
+    if '(' in ref: raise error
+    return '<a class="name" id="%s">%s</a>'%(ref,label)
 
 def span(class_, body):
     "Wrap the body in a span of the given class"
@@ -84,7 +84,17 @@ def desc(text):
 
 def escape(text):
 
-    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
+    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),
+              ('(', '&#40;'), (')', '&#41;'), (',', '&#44;'), (',', '&#59;')]:
+        text = text.replace(*p)
+    return text
+
+def quote_as_id(text):
+
+    for p in [(' ', '.'),
+              ('<', '_L'), ('>', '_R'), ('(', '_l'), (')', '_r'), ('::', '-'), ('~', '_t'),
+              (':', '.'), ('&', '_A'), ('*', '_S'), (' ', '_s'), (',', '_c'), (';', '_C'),
+              ('!', '_n'), ('[', '_b'), (']', '_B'), ('=', '_e'), ('+', '_p'), ('-', '_m')]:
         text = text.replace(*p)
     return text
 

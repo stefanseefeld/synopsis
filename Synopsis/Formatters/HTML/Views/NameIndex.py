@@ -43,12 +43,12 @@ class NameIndex(View):
         dict = self.make_dictionary()
         keys = dict.keys()
         keys.sort()
-        linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
+        linker = lambda key: '<a href="#key%d">%s</a>'%(ord(key),key)
         self.write(div('nameindex-index', ''.join([linker(k) for k in keys])) + '\n')
         for key in keys:
-            self.write('<a name="%s">'%ord(key)+'</a>')
+            self.write('<a id="key%d">'%ord(key)+'</a>')
             self.write(element('h2', key) + '\n')
-            self.write('<table border="0" width="100%" summary="table of names">\n')
+            self.write('<table summary="table of names">\n')
             self.write('<col width="*"/>'*self.columns + '\n')
             self.write('<tr>\n')
             items = dict[key]
@@ -116,7 +116,7 @@ class NameIndex(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
         self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))

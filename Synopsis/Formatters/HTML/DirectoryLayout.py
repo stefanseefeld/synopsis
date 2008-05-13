@@ -14,7 +14,6 @@ from Tags import *
 import os, sys
 
 
-
 class DirectoryLayout (TOC.Linker):
     """DirectoryLayout defines how the generated html files are organized.
     The default implementation uses a flat layout with all files being part
@@ -131,8 +130,8 @@ class DirectoryLayout (TOC.Linker):
             return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it
         filename = self.scope(decl.name[:-1])
-        anchor = escape(decl.name[-1].replace(' ','.'))
-        return filename + '#' + anchor
+        fragment = quote_as_id(decl.name[-1])
+        return filename + '#' + fragment
 
 class NestedDirectoryLayout(DirectoryLayout):
     """Organizes files in a directory tree."""
