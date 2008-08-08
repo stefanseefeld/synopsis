@@ -19,7 +19,7 @@ from Synopsis.QualifiedName import *
 import sys, getopt, os, os.path, string, types
 from xml.dom.minidom import getDOMImplementation
 
-dom = getDOMImplementation().createDocument(None, "dump", None)
+dom = getDOMImplementation().createDocument(None, 'dump', None)
 
 class Formatter(Processor):
 
@@ -35,43 +35,43 @@ class Formatter(Processor):
         if not self.output: raise MissingArgument('output')
         self.ir = self.merge_input(ir)
 
-        self.handlers = {types.NoneType : self.visit_none,
-                         types.TypeType : self.visit_type,
-                         types.IntType : self.visit_string,
-                         types.LongType : self.visit_string,
-                         types.FloatType : self.visit_string,
-                         types.StringType : self.visit_string,
-                         types.BooleanType : self.visit_string,
-                         types.TupleType : self.visit_tuple,
-                         types.ListType : self.visit_list,
-                         types.DictType : self.visit_dict,
+        self.handlers = {type(None) : self.visit_none,
+                         type : self.visit_type,
+                         int : self.visit_string,
+                         long : self.visit_string,
+                         float : self.visit_string,
+                         str : self.visit_string,
+                         bool : self.visit_string,
+                         tuple : self.visit_tuple,
+                         list : self.visit_list,
+                         dict : self.visit_dict,
                          types.InstanceType : self.visit_instance,
                          QualifiedName : self.visit_string,
                          QualifiedCxxName : self.visit_string,
                          QualifiedPythonName : self.visit_string,
                          SourceFile : self.visit_sourcefile,
                          DocString : self.visit_docstring}
-        self.visited = {}
+        self.visited = []
 
-        self.os = open(self.output, "w")
-        self.os.write("<?xml version='1.0' encoding='ISO-8859-1'?>\n")
+        self.os = open(self.output, 'w')
+        self.os.write('<?xml version="1.0" encoding="ISO-8859-1"?>\n')
         if self.stylesheet:
-            self.os.write("<?xml-stylesheet href='%s' type='text/css'?>\n"%self.stylesheet)
+            self.os.write('<?xml-stylesheet href="%s" type="text/css"?>\n'%self.stylesheet)
 
-        self.os.write("<ir>\n")
-        self.os.write("<asg>\n")
+        self.os.write('<ir>\n')
+        self.os.write('<asg>\n')
 
         if self.show_declarations:
             self.write_declarations(self.ir.asg.declarations)
          
         if self.show_types:
             self.write_types(self.ir.asg.types)
-        self.os.write("</asg>\n")
+        self.os.write('</asg>\n')
 
         if self.show_files:
             self.write_files(self.ir.files)
 
-        self.os.write("</ir>\n")
+        self.os.write('</ir>\n')
 
         return self.ir
 
@@ -91,9 +91,8 @@ class Formatter(Processor):
         self.node.appendChild(node)
       
     def visit(self, obj):
-
         i,t = id(obj), type(obj)
-        if self.visited.has_key(i):
+        if i in self.visited:
             if self.show_ids:
                 self.node.setAttribute('xref', str(i))
             return
@@ -102,7 +101,7 @@ class Formatter(Processor):
         elif issubclass(t, object):
             self.visit_instance(obj)
         else:
-            print "Unknown type %s for object: '%s'"%(t,obj)
+            print 'Unknown type %s for object: "%s"'%(t,obj)
 
     def visit_none(self, obj): pass
     def visit_string(self, obj): self.add_text(str(obj))
@@ -130,10 +129,10 @@ class Formatter(Processor):
         if len(items) == 0: return
         items.sort()
         for i in items:
-            self.push("key")
+            self.push('key')
             self.visit(i[0])
             self.pop()
-            self.push("value")
+            self.push('value')
             self.visit(i[1])
             self.pop()
 
@@ -165,10 +164,9 @@ class Formatter(Processor):
 
 
     def visit_instance(self, obj):
-
-        self.visited[id(obj)] = None
-        self.push("instance")
-        self.node.setAttribute('class', "%s.%s"%(obj.__class__.__module__,obj.__class__.__name__))
+        self.visited.append(id(obj))
+        self.push('instance')
+        self.node.setAttribute('class', '%s.%s'%(obj.__class__.__module__,obj.__class__.__name__))
         if self.show_ids:
             self.node.setAttribute('id', str(id(obj)))
         if self.handlers.has_key(obj.__class__):
@@ -196,27 +194,30 @@ class Formatter(Processor):
 
     def write_declarations(self, declarations):
 
-        self.node = dom.createElement("declarations")
-        for d in declarations: self.visit(d)
-        self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
+        self.node = dom.createElement('declarations')
+        for d in declarations:
+            self.push('item')
+            self.visit(d)
+            self.pop()
+        self.node.writexml(self.os, indent=' ', addindent=' ', newl='\n')
         self.node.unlink()
         del self.node
 
     def write_types(self, types):
 
-        self.node = dom.createElement("types")
+        self.node = dom.createElement('types')
         values = types.values()
         values.sort()
         for t in values: self.visit(t)
-        self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
+        self.node.writexml(self.os, indent=' ', addindent=' ', newl='\n')
         self.node.unlink()
         del self.node
 
     def write_files(self, files):
 
-        self.node = dom.createElement("files")
+        self.node = dom.createElement('files')
         for f in files: self.visit(files[f])
-        self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
+        self.node.writexml(self.os, indent=' ', addindent=' ', newl='\n')
         self.node.unlink()
         del self.node
 
