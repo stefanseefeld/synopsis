@@ -475,6 +475,9 @@ bool Parser::typedef_(PTree::Typedef *&def)
   if(my_lexer.get_token(tk) != Token::TYPEDEF) return false;
 
   def = new PTree::Typedef(new PTree::Kwd::Typedef(tk));
+  PTree::Node *comments = wrap_comments(my_lexer.get_comments());
+  def->set_comments(comments);
+
   if(!type_specifier(type_name, false, type_encode)) return false;
 
   def = PTree::snoc(def, type_name);

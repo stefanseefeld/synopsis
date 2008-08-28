@@ -40,14 +40,6 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class Typedef : public List
-{
-public:
-  Typedef(Node *p) : List(p, 0) {}
-  Typedef(Node *p, Node *q) : List(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
 class TemplateDecl : public List
 {
 public:
@@ -107,6 +99,14 @@ public:
 
 private:
   Node *my_comments;
+};
+
+class Typedef : public Declaration
+{
+public:
+  Typedef(Node *p) : Declaration(p, 0) {}
+  Typedef(Node *p, Node *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class UsingDirective : public Declaration

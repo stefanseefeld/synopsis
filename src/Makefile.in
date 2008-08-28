@@ -100,7 +100,7 @@ endef
 
 SRC	:= Trace \
            PTree/Node PTree/Encoding PTree/operations \
-           PTree/Atoms PTree/Lists PTree/generation \
+           PTree/Atoms PTree/Lists \
            PTree/Visitor PTree/Display PTree/Writer \
            SymbolLookup/Symbol SymbolLookup/Scope SymbolLookup/Scopes \
            SymbolLookup/Display SymbolLookup/Walker \
