@@ -89,6 +89,24 @@ void ASGTranslator::translate(PTree::Node *ptree, Buffer &buffer)
   ptree->accept(this);
 }
 
+void ASGTranslator::visit(PTree::CommentedAtom *node)
+{
+  // The only purpose of this method is to filter
+  // out those atoms that are used as end markers.
+  // They can be recognized by having length() == 0.
+  if (node->length() == 0)
+  {
+    bool visible = update_position(node);
+    ASG::Builtin eos = asg_kit_.create_builtin(file_, lineno_,
+                                               "EOS", sname(std::string("EOS")));
+    add_comments(eos, node->get_comments());
+    if (visible) declare(eos);
+
+  }
+//   else
+//     visit(static_cast<PTree::Atom *>(node));
+}
+
 void ASGTranslator::visit(PTree::List *node)
 {
   if (node->car()) node->car()->accept(this);
@@ -290,10 +308,6 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   }
   catch (UnknownSymbol const &e) {}
 
-
-
-
-
   ASG::Enumerator enumerator;
   while (enode)
   {
@@ -315,7 +329,7 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
       if (PTree::length(penumor) == 3)
         value = PTree::reify(PTree::third(penumor));
       enumerator = asg_kit_.create_enumerator(file_, lineno_, sname, value);
-      add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
+      add_comments(enumerator, static_cast<PTree::CommentedAtom *>(PTree::first(penumor))->get_comments());
     }
     enumerators.append(enumerator);
     enode = PTree::rest(enode);
@@ -326,12 +340,11 @@ void ASGTranslator::visit(PTree::EnumSpec *enum_spec)
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
   ASG::Builtin eos = asg_kit_.create_builtin(file_, lineno_,
                                              "EOS", sname(std::string("EOS")));
-  add_comments(eos, static_cast<PTree::CommentedAtom *>(close));
+  add_comments(eos, static_cast<PTree::CommentedAtom *>(close)->get_comments());
   enumerators.append(eos);
   
   // Create ASG.Enum object
   ASG::Enum enum_ = asg_kit_.create_enum(file_, lineno_, name, enumerators);
-  add_comments(enum_, enum_spec);
 
   if (visible)
   {

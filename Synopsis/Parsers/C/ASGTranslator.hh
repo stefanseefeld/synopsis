@@ -27,6 +27,7 @@ public:
 private:
   typedef std::stack<ASG::Scope> ScopeStack;
 
+  virtual void visit(PTree::CommentedAtom *);
   virtual void visit(PTree::List *);
   virtual void visit(PTree::Declarator *);
   virtual void visit(PTree::Declaration *);
