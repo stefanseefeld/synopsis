@@ -9,6 +9,7 @@
 from Synopsis import config
 from Synopsis.Processor import *
 from Synopsis.QualifiedName import *
+from Synopsis.Formatters import join_paths
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
@@ -131,7 +132,7 @@ class Source(View):
         self.write_navigation_bar()
         self.write('File: '+element('b', self.__title))
 
-        sxr = os.path.join(self.prefix, source + '.sxr')
+        sxr = join_paths(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
             translator = SXRTranslator(sxr, file.annotations['language'], self.processor.debug)
             linker = self.external_url and self.external_ref or self.lookup_symbol

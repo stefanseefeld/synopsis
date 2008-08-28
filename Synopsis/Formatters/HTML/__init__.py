@@ -87,8 +87,8 @@ class Formatter(Processor):
     toc_out = Parameter('', 'name of file into which to store the TOC')
     sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info')
 
-    index = Parameter([ModuleTree(), FileTree()], '')
-    detail = Parameter([ModuleIndex(), FileIndex()], '')
+    index = Parameter([ModuleTree(), FileTree()], 'set of index views')
+    detail = Parameter([ModuleIndex(), FileIndex()], 'set of detail views')
     content = Parameter([Scope(),
                          Source(),
                          XRef(),
@@ -96,7 +96,7 @@ class Formatter(Processor):
                          InheritanceTree(),
                          InheritanceGraph(),
                          NameIndex()],
-                        '')
+                        'set of content views')
    
     markup_formatters = Parameter({'javadoc':Javadoc(),
                                    'rst':RST(),

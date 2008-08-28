@@ -53,3 +53,13 @@ def copy_file(src, dest):
     if not os.path.exists(dest) or filetime > os.stat(dest)[stat.ST_MTIME]:
         open_file(dest).write(open(src, 'r').read())
     
+
+def join_paths(prefix, path):
+    """
+    This function joins `prefix` and `path`, irrespectively of whether
+    `path` is absolute or not. To do this portably is non-trivial."""
+
+    # FIXME: Figure out how to do this portably.
+    if path.startswith('/'):
+        path = path[1:]
+    return os.path.join(prefix, path)
