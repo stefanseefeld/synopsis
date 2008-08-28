@@ -58,7 +58,8 @@ class DirectoryLayout (TOC.Linker):
 
     def _strip(self, filename):
 
-        if len(filename) and filename[-1] == '/': filename = filename[:-1]
+        if filename.endswith('/'): filename = filename[:-1]
+        if filename.startswith('/'): filename = filename[1:]
         return filename
 
     def file_index(self, filename):

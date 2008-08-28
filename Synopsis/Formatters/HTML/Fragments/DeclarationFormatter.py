@@ -146,7 +146,7 @@ class DeclarationFormatter(Fragment):
         "(const type, const name = const value)"
 
         type = self.format_type(decl.ctype)
-        name = self.label(decl.name) + " = " + decl.value
+        name = self.label(decl.name) + " = " + escape(decl.value)
         chunk = '%s'%div('synopsis', type + ' ' + name)
         if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
         if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
@@ -232,16 +232,16 @@ class DeclarationFormatter(Fragment):
 
         text = []
         # Premodifiers
-        text.extend([span('keyword', m) for m in parameter.premodifier])
+        text.extend([span('keyword', escape(m)) for m in parameter.premodifier])
         # Param Type
         id_holder = [parameter.name]
         typestr = self.format_type(parameter.type, id_holder)
         if typestr: text.append(typestr)
         # Postmodifiers
-        text.extend([span('keyword', m) for m in parameter.postmodifier])
+        text.extend([span('keyword', escape(m)) for m in parameter.postmodifier])
         # Param name
         if id_holder and len(parameter.name) != 0:
-            text.append(span('variable', parameter.name))
+            text.append(span('variable', escape(parameter.name)))
         # Param value
         if len(parameter.value) != 0:
             text.append('= %s'%span('value', escape(parameter.value)))
@@ -286,8 +286,9 @@ class DeclarationDetailFormatter(DeclarationFormatter):
 
         text = self.label(enumerator.name)
         if len(enumerator.value):
-            value = ' = ' + span('value', enumerator.value)
+            value = ' = ' + span('value', escape(enumerator.value))
         else:
             value = ''
+        print 'value', value
         doc = self.processor.documentation.details(enumerator, self.view)
         return div('enumerator','%s%s%s'%(text, value, doc))
