@@ -137,7 +137,7 @@ Types::Type* Decoder::decodeType()
 	}
         case '*':
             {
-                ScopedName n;
+                QName n;
                 n.push_back("*");
                 baseType = new Types::Dependent(n);
                 break;

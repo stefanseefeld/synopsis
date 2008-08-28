@@ -44,7 +44,7 @@ Include::Include(SourceFile* target, bool is_macro, bool is_next)
 // ASG::Declaration
 //
 
-Declaration::Declaration(SourceFile* file, int line, const std::string& type, const ScopedName& name)
+Declaration::Declaration(SourceFile* file, int line, const std::string& type, const QName& name)
         : m_file(file), m_line(line), m_type(type), m_name(name), m_access(Default), m_declared(0)
 {}
 
@@ -78,7 +78,7 @@ Declaration::declared()
 // ASG::Builtin
 //
 
-Builtin::Builtin(SourceFile* file, int line, const std::string &type, const ScopedName& name)
+Builtin::Builtin(SourceFile* file, int line, const std::string &type, const QName& name)
     : Declaration(file, line, type, name)
 { }
 
@@ -95,7 +95,7 @@ Builtin::accept(Visitor* visitor)
 // ASG::Macro
 //
 
-Macro::Macro(SourceFile* file, int line, const ScopedName& name, Parameters* params, const std::string& text)
+Macro::Macro(SourceFile* file, int line, const QName& name, Parameters* params, const std::string& text)
     : Declaration(file, line, "macro", name),
     m_parameters(params), m_text(text)
 { }
@@ -113,7 +113,7 @@ Macro::accept(Visitor* visitor)
 // ASG::Scope
 //
 
-Scope::Scope(SourceFile* file, int line, const std::string& type, const ScopedName& name)
+Scope::Scope(SourceFile* file, int line, const std::string& type, const QName& name)
         : Declaration(file, line, type, name)
 { }
 
@@ -130,7 +130,7 @@ Scope::accept(Visitor* visitor)
 // ASG::Namespace
 //
 
-Namespace::Namespace(SourceFile* file, int line, const std::string& type, const ScopedName& name)
+Namespace::Namespace(SourceFile* file, int line, const std::string& type, const QName& name)
         : Scope(file, line, type, name)
 {}
 
@@ -147,7 +147,7 @@ Namespace::accept(Visitor* visitor)
 // ASG::Class
 //
 
-Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+Class::Class(SourceFile* file, int line, const std::string& type, const QName& name,
              bool is_template_specialization)
   : Scope(file, line, type, name), is_template_specialization_(is_template_specialization)
 {}
@@ -159,7 +159,7 @@ void Class::accept(Visitor* visitor) { visitor->visit_class(this);}
 // ASG::ClassTemplate
 //
 
-ClassTemplate::ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+ClassTemplate::ClassTemplate(SourceFile* file, int line, const std::string& type, const QName& name,
                              bool is_specialization)
   : Class(file, line, type, name, is_specialization),
     template_(0)
@@ -187,7 +187,7 @@ Inheritance::accept(Visitor* visitor)
 // ASG::Forward
 //
 
-Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+Forward::Forward(SourceFile* file, int line, const std::string& type, const QName& name,
                  bool is_template_specialization)
   : Declaration(file, line, type, name), template_(0),
     is_template_specialization_(is_template_specialization)
@@ -204,7 +204,7 @@ Forward::accept(Visitor* visitor)
 // ASG::Typedef
 //
 
-Typedef::Typedef(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr)
+Typedef::Typedef(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* alias, bool constr)
         : Declaration(file, line, type, name), m_alias(alias), m_constr(constr)
 { }
 
@@ -222,7 +222,7 @@ Typedef::accept(Visitor* visitor)
 // ASG::Variable
 //
 
-Variable::Variable(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr)
+Variable::Variable(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* vtype, bool constr)
         : Declaration(file, line, type, name), m_vtype(vtype), m_constr(constr)
 { }
 
@@ -239,7 +239,7 @@ Variable::accept(Visitor* visitor)
 // ASG::Const
 //
 
-Const::Const(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* t, const std::string& v)
+Const::Const(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* t, const std::string& v)
         : Declaration(file, line, type, name), m_ctype(t), m_value(v)
 { }
 
@@ -254,7 +254,7 @@ Const::accept(Visitor* visitor)
 // ASG::Enum
 //
 
-Enum::Enum(SourceFile* file, int line, const std::string& type, const ScopedName& name)
+Enum::Enum(SourceFile* file, int line, const std::string& type, const QName& name)
         : Declaration(file, line, type, name)
 { }
 
@@ -272,7 +272,7 @@ Enum::accept(Visitor* visitor)
 // ASG::Enumerator
 //
 
-Enumerator::Enumerator(SourceFile* file, int line, const std::string& type, const ScopedName& name, const std::string& value)
+Enumerator::Enumerator(SourceFile* file, int line, const std::string& type, const QName& name, const std::string& value)
         : Declaration(file, line, type, name), m_value(value)
 { }
 
@@ -288,7 +288,7 @@ Enumerator::accept(Visitor* visitor)
 //
 
 Function::Function(
-    SourceFile* file, int line, const std::string& type, const ScopedName& name,
+    SourceFile* file, int line, const std::string& type, const QName& name,
     const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
 )
   : Declaration(file, line, type, name), m_pre(premod), m_ret(ret), m_post(postmod),
@@ -310,7 +310,7 @@ Function::accept(Visitor* visitor)
 //
 
 Operation::Operation(
-    SourceFile* file, int line, const std::string& type, const ScopedName& name,
+    SourceFile* file, int line, const std::string& type, const QName& name,
     const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
 )
   : Function(file, line, type, name, premod, ret, postmod, realname)
@@ -345,7 +345,7 @@ void UsingDirective::accept(Visitor* visitor)
     visitor->visit_using_directive(this);
 }
 
-UsingDeclaration::UsingDeclaration(SourceFile* file, int line, ScopedName const& name, Types::Named *d)
+UsingDeclaration::UsingDeclaration(SourceFile* file, int line, QName const& name, Types::Named *d)
   : Declaration(file, line, "using", name), m_target(d) {}
 
 

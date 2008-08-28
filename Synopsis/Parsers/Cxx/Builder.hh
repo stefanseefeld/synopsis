@@ -11,7 +11,7 @@
 
 #include <map>
 #include "ASG.hh"
-#include "common.hh"
+#include "QName.hh"
 
 // Forward declare some Types::Types
 namespace Types
@@ -146,7 +146,7 @@ public:
                             ASG::Parameter::vector* templ_params, std::string const &primary_name);
 
     //. Construct and open a new Class with a qualified name
-    ASG::Class* start_class(int, const std::string& type, const ScopedName& names);
+    ASG::Class* start_class(int, const std::string& type, const QName& names);
 
     //. Update the search to include base classes. Call this method after
     //. startClass(), and after filling in the parents() vector of the returned
@@ -158,7 +158,7 @@ public:
     void end_class();
 
     //. Start function impl scope
-    void start_function_impl(const ScopedName& name);
+    void start_function_impl(const QName& name);
 
     //. End function impl scope
     void end_function_impl();
@@ -208,7 +208,7 @@ public:
 
     //. Maps a scoped name into a vector of scopes and the final type. Returns
     //. true on success.
-    bool mapName(const ScopedName& name, std::vector<ASG::Scope*>&, Types::Named*&);
+    bool mapName(const QName& name, std::vector<ASG::Scope*>&, Types::Named*&);
 
     //. Create a Base type for the given name in the current scope
     Types::Base* create_base(const std::string& name);
@@ -217,7 +217,7 @@ public:
     Types::Dependent* create_dependent(const std::string& name);
 
     //. Create an Unknown type for the given name in the current scope
-    Types::Unknown* create_unknown(const ScopedName& name);
+    Types::Unknown* create_unknown(const QName& name);
 
     //. Create a Template type for the given name in the current scope
     Types::Template* create_template(const std::string& name, const std::vector<Types::Type*>&);

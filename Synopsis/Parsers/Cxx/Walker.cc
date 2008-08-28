@@ -326,7 +326,7 @@ std::string Walker::format_parameters(ASG::Parameter::vector& params)
   // Set scope for formatter
   ASG::Scope* scope = my_builder->scope();
   if (scope) my_type_formatter->push_scope(scope->name());
-  else my_type_formatter->push_scope(ScopedName());
+  else my_type_formatter->push_scope(QName());
   // Format the parameters one at a time
   std::ostringstream buf;
   buf << "(" << my_type_formatter->format((*iter++)->type());
@@ -361,7 +361,7 @@ Walker::translate(PTree::Node *node)
     throw;    
   }
   // Debug and non-debug modes handle these very differently
-#ifdef DEBUG
+#if DEBUG
   catch (const TranslateError& e)
   {
     if (e.node) node = e.node;
@@ -577,7 +577,7 @@ std::vector<Inheritance*> Walker::translate_inheritance_spec(PTree::Node *node)
       catch (const TranslateError)
       {
         // Ignore error, and put an Unknown in, instead
-        ScopedName uname;
+        QName uname;
         uname.push_back(parse_name(name));
         type = new Types::Unknown(uname);
       }
@@ -598,9 +598,10 @@ std::vector<Inheritance*> Walker::translate_inheritance_spec(PTree::Node *node)
 
 void Walker::visit(PTree::ClassSpec *node)
 {
-  // REVISIT: figure out why this method is so long
   STrace trace("Walker::visit(PTree::ClassSpec*)");
-
+#if DEBUG
+  trace << node;
+#endif
   ASG::Parameter::vector* is_template = my_template;
   my_template = 0;
   int size = PTree::length(node);
@@ -670,7 +671,7 @@ void Walker::visit(PTree::ClassSpec *node)
   }
   else if (enc.at(0) == 'Q')
   {
-    ScopedName names;
+    QName names;
     my_decoder->decodeQualName(names);
     clas = my_builder->start_class(my_lineno, type, names);
   }
@@ -702,13 +703,12 @@ void Walker::visit(PTree::ClassSpec *node)
   bool in_template_decl = my_in_template_decl;
   my_in_template_decl = false;
   translate(pBody);
-
   // Translate any func impls inlined in the class
   FuncImplVec& vec = my_func_impl_stack.back();
   FuncImplVec::iterator iter = vec.begin();
-  while (iter != vec.end()) translate_func_impl_cache(*iter++);
+  while (iter != vec.end())
+    translate_func_impl_cache(*iter++);
   my_func_impl_stack.pop_back();
-
   my_builder->end_class();
   my_in_template_decl = in_template_decl;
   my_defines_class_or_enum = true;
@@ -977,7 +977,10 @@ PTree::Node *Walker::translate_typeof(PTree::Node *spec, PTree::Node *declaratio
 
 void Walker::visit(PTree::Declaration *node)
 {
-  STrace trace("Walker::visit(PTree::Declaration*)");
+  STrace trace("Walker::visit(PTree::Declaration *)");
+#if DEBUG
+  trace << node;
+#endif
   update_line_number(node);
   // Link any comments added because we are inside a function body
   if (sxr_) find_comments(node);
@@ -1482,6 +1485,9 @@ void
 Walker::translate_func_impl_cache(const FuncImplCache &cache)
 {
   STrace trace("Walker::translate_func_impl_cache");
+#if DEBUG
+  trace << cache.body;
+#endif
   // We create a dummy namespace with the name of the function. Any
   // declarations in the function are added to this dummy namespace. Once we
   // are done, we remove it from the parent scope (its not much use in the
@@ -1549,13 +1555,16 @@ void Walker::visit(PTree::EnumSpec *node)
 {
   STrace trace("Walker::visit(PTree::EnumSpec*)");
   //update_line_number(spec);
+  my_defines_class_or_enum = true;
   if (sxr_) sxr_->span(PTree::first(node), "keyword");
-  if (!PTree::second(node))
+  std::string name;
+  if (PTree::second(node))
+    name = PTree::reify(PTree::second(node));
+  else
   {
-    return; /* anonymous enum */
+    my_decoder->init(node->encoded_name());
+    name = my_decoder->decodeName();
   }
-  std::string name = PTree::reify(PTree::second(node));
-
   update_line_number(node);
   int enum_lineno = my_lineno;
   // Parse enumerators
@@ -1621,7 +1630,7 @@ void Walker::visit(PTree::UsingDirective *node)
   // Find name that we are looking up, and make a new ptree list for linking it
   p = p->car(); // p now points to the 'PTree::Name' child of 'PTree::Using'
   PTree::Node *p_name = PTree::snoc(0, p->car());
-  ScopedName name;
+  QName name;
   if (*PTree::first(p) == "::")
     // Eg; "using ::memcpy;" Indicate global scope with empty first
     name.push_back("");
@@ -1669,7 +1678,7 @@ void Walker::visit(PTree::UsingDeclaration *node)
   PTree::Node *p = PTree::rest(node);
   // Find name that we are looking up, and make a new ptree list for linking it
   PTree::Node *p_name = PTree::snoc(0, p->car());
-  ScopedName name;
+  QName name;
   if (*PTree::first(p) == "::")
     // Eg; "using ::memcpy;" Indicate global scope with empty first
     name.push_back("");
@@ -1751,7 +1760,7 @@ void Walker::translate_variable(PTree::Node *spec)
   {
     PTree::Node *name_spec = spec;
     Types::Named* type;
-    ScopedName scoped_name;
+    QName scoped_name;
     if (!spec->is_atom())
     {
       // Must be a scoped name.. iterate through the scopes
@@ -2324,24 +2333,22 @@ PTree::Node *Walker::translate_function_body(PTree::Node *)
   return 0;
 }
 
-//PTree::Node *Walker::TranslateEnumSpec(PTree::Node *) { STrace trace("Walker::TranslateEnumSpec NYI"); return 0; }
-
 void Walker::visit(PTree::AccessDecl *node)
 {
   STrace trace("Walker::visit(AccessDecl*) NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
 }
 
 void Walker::visit(PTree::UserAccessSpec *node)
 {
   STrace trace("Walker::visist(UserAccessSpec*) NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
 }
 
 void Walker::visit(PTree::DoStatement *node)
@@ -2376,24 +2383,27 @@ void Walker::visit(PTree::ContinueStatement *node)
 void Walker::visit(PTree::GotoStatement *node)
 {
   STrace trace("Walker::visist(Goto*) NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG  
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
 }
 
 void Walker::visit(PTree::LabelStatement *node)
 {
   STrace trace("Walker::visit(Label*) NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
 }
 
 void Walker::visit(PTree::Expression *node)
 {
   STrace trace("Walker::visit(Expression*)");
+#if DEBUG
+  trace << node;
+#endif
   PTree::Node *node2 = node;
   while (node2)
   {
@@ -2406,14 +2416,14 @@ void Walker::visit(PTree::Expression *node)
 void Walker::visit(PTree::PmExpr *node)
 {
   STrace trace("Walker::visit(Pm*) NYI");
-#ifdef DEBUG
-  node->print(std::cout);
-#endif
 }
 
 void Walker::visit(PTree::ThrowExpr *node)
 {
   STrace trace("Walker::visit(Throw*)");
+#if DEBUG
+  trace << node;
+#endif
   if (sxr_) find_comments(node);
   if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
@@ -2422,6 +2432,9 @@ void Walker::visit(PTree::ThrowExpr *node)
 void Walker::visit(PTree::SizeofExpr *node)
 {
   STrace trace("Walker::visit(Sizeof*)");
+#if DEBUG
+  trace << node;
+#endif
   if (sxr_) find_comments(node);
   if (sxr_) sxr_->span(PTree::first(node), "keyword");
   // TODO: find the type for highlighting, and figure out what the ??? is
@@ -2431,25 +2444,28 @@ void Walker::visit(PTree::SizeofExpr *node)
 void Walker::visit(PTree::NewExpr *node)
 {
   STrace trace("Walker::visit(New*) NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
 }
 
 PTree::Node *Walker::translate_new3(PTree::Node *node)
 {
   STrace trace("Walker::translate_new3 NYI");
-  if (sxr_) find_comments(node);
-#ifdef DEBUG
-  node->print(std::cout);
+#if DEBUG
+  trace << node;
 #endif
+  if (sxr_) find_comments(node);
   return 0;
 }
 
 void Walker::visit(PTree::DeleteExpr *node)
 {
   STrace trace("Walker::visit(DeleteExpr*)");
+#if DEBUG
+  trace << node;
+#endif
   if (sxr_) find_comments(node);
   if (sxr_) sxr_->span(PTree::first(node), "keyword");
   translate(PTree::second(node));
@@ -2458,6 +2474,9 @@ void Walker::visit(PTree::DeleteExpr *node)
 void Walker::visit(PTree::FstyleCastExpr *node)
 {
   STrace trace("Walker::visit(FstyleCast*) NYI");
+#if DEBUG
+  trace << node;
+#endif
   if (sxr_) find_comments(node);
   my_type = 0;
   //Translate(node->Third()); <-- unknown ptree???? FIXME
@@ -2469,15 +2488,9 @@ void Walker::visit(PTree::FstyleCastExpr *node)
 void Walker::visit(PTree::UserStatementExpr *node)
 {
   STrace trace("Walker::visit(UserStatement*) NYI");
-#ifdef DEBUG
-  node->print(std::cout);
-#endif
 }
 
 void Walker::visit(PTree::StaticUserStatementExpr *node)
 {
   STrace trace("Walker::visit(StaticUserStatement*) NYI");
-#ifdef DEBUG
-  node->print(std::cout);
-#endif
 }

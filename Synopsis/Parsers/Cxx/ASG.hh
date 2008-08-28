@@ -12,7 +12,7 @@
 #include <set>
 #include <map>
 #include <string>
-#include "common.hh"
+#include "QName.hh"
 #include "FakeGC.hh"
 
 // Forward declare Dictionary
@@ -51,14 +51,14 @@ struct Reference
 {
     std::string file;
     int         line;
-    ScopedName  scope;
+    QName  scope;
     std::string context;
 
     // Foundation
     Reference()
             : line(-1)
     { }
-    Reference(const std::string& _file, int _line, const ScopedName& _scope, const std::string& _context)
+    Reference(const std::string& _file, int _line, const QName& _scope, const std::string& _context)
             : file(_file), line(_line), scope(_scope), context(_context)
     { }
     Reference(const Reference& other)
@@ -150,7 +150,7 @@ public:
     typedef std::vector<Declaration*> vector;
 
     //. Constructor
-    Declaration(SourceFile* file, int line, const std::string& type, const ScopedName& name);
+    Declaration(SourceFile* file, int line, const std::string& type, const QName& name);
 
     //. Destructor. Recursively deletes the comments for this declaration
     virtual
@@ -165,13 +165,13 @@ public:
     //
 
     //. Returns the scoped name of this declaration
-    ScopedName& name()
+    QName& name()
     {
         return m_name;
     }
 
     //. Constant version of name()
-    const ScopedName& name() const
+    const QName& name() const
     {
         return m_name;
     }
@@ -251,7 +251,7 @@ private:
     //. The string type name
     std::string     m_type;
     //. The scoped name
-    ScopedName      m_name;
+    QName      m_name;
     //. The vector of Comment objects
     Comment::vector m_comments;
     //. The accessability spec
@@ -369,7 +369,7 @@ private:
 class Builtin : public Declaration
 {
 public:
-    Builtin(SourceFile* file, int line, const std::string &type, const ScopedName& name);
+    Builtin(SourceFile* file, int line, const std::string &type, const QName& name);
 
     //. Destructor
     virtual ~Builtin();
@@ -394,7 +394,7 @@ public:
 
     //. Constructor. Assumes ownership of the Parameters vector if it is not a
     //. null pointer.
-    Macro(SourceFile* file, int line, const ScopedName& name, Parameters* params, const std::string& text);
+    Macro(SourceFile* file, int line, const QName& name, Parameters* params, const std::string& text);
 
     //. Destructor
     virtual ~Macro();
@@ -431,7 +431,7 @@ class Scope : public Declaration
 {
 public:
     //. Constructor
-    Scope(SourceFile* file, int line, const std::string& type, const ScopedName& name);
+    Scope(SourceFile* file, int line, const std::string& type, const QName& name);
 
     //. Destructor.
     //. Recursively destroys contained declarations
@@ -469,7 +469,7 @@ class Namespace : public Scope
 {
 public:
     //. Constructor
-    Namespace(SourceFile* file, int line, const std::string& type, const ScopedName& name);
+    Namespace(SourceFile* file, int line, const std::string& type, const QName& name);
     //. Destructor
     virtual
     ~Namespace();
@@ -531,7 +531,7 @@ class Forward : public Declaration
 {
 public:
   //. Constructor
-  Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+  Forward(SourceFile* file, int line, const std::string& type, const QName& name,
           bool is_template_specialization);
 
   //. Accepts the given ASG::Visitor
@@ -554,7 +554,7 @@ class ClassTemplate;
 class Class : public Scope
 {
 public:
-  Class(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+  Class(SourceFile* file, int line, const std::string& type, const QName& name,
         bool is_specialization);
 
   virtual ~Class();
@@ -579,7 +579,7 @@ private:
 class ClassTemplate : public Class
 {
 public:
-  ClassTemplate(SourceFile* file, int line, const std::string& type, const ScopedName& name,
+  ClassTemplate(SourceFile* file, int line, const std::string& type, const QName& name,
                 bool is_specialization);
 
   virtual ~ClassTemplate();
@@ -599,7 +599,7 @@ class Typedef : public Declaration
 {
 public:
     //. Constructor
-    Typedef(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr);
+    Typedef(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* alias, bool constr);
 
     //. Destructor
     ~Typedef();
@@ -640,7 +640,7 @@ public:
     typedef std::vector<size_t> Sizes;
 
     //. Constructor
-    Variable(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr);
+    Variable(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* vtype, bool constr);
 
     //. Destructor
     ~Variable();
@@ -692,7 +692,7 @@ public:
     typedef std::vector<Enumerator*> vector;
 
     //. Constructor
-    Enumerator(SourceFile* file, int line, const std::string& type, const ScopedName& name, const std::string& value);
+    Enumerator(SourceFile* file, int line, const std::string& type, const QName& name, const std::string& value);
 
     //. Accept the given ASG::Visitor
     virtual void accept(Visitor*);
@@ -718,7 +718,7 @@ class Enum : public Declaration
 {
 public:
     //. Constructor
-    Enum(SourceFile* file, int line, const std::string& type, const ScopedName& name);
+    Enum(SourceFile* file, int line, const std::string& type, const QName& name);
     //. Destructor. Recursively destroys Enumerators
     ~Enum();
 
@@ -747,7 +747,7 @@ class Const : public Declaration
 {
 public:
     //. Constructor
-    Const(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* ctype, const std::string& value);
+    Const(SourceFile* file, int line, const std::string& type, const QName& name, Types::Type* ctype, const std::string& value);
 
     //. Accept the given ASG::Visitor
     virtual void accept(Visitor*);
@@ -864,7 +864,7 @@ public:
 
     //. Constructor
     Function(
-        SourceFile* file, int line, const std::string& type, const ScopedName& name,
+        SourceFile* file, int line, const std::string& type, const QName& name,
         const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
     );
 
@@ -940,7 +940,7 @@ class Operation : public Function
 {
 public:
     //. Constructor
-    Operation(SourceFile* file, int line, const std::string& type, const ScopedName& name, const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname);
+    Operation(SourceFile* file, int line, const std::string& type, const QName& name, const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname);
 
     //. Accept the given visitor
     virtual void
@@ -950,7 +950,7 @@ public:
 class UsingDirective : public Declaration
 {
 public:
-  UsingDirective(SourceFile* file, int line, const ScopedName& name)
+  UsingDirective(SourceFile* file, int line, const QName& name)
     : Declaration(file, line, "using namespace", name) {}
   virtual void accept(Visitor*);
 };
@@ -958,7 +958,7 @@ public:
 class UsingDeclaration : public Declaration
 {
 public:
-  UsingDeclaration(SourceFile* file, int line, ScopedName const& name, Types::Named *d);
+  UsingDeclaration(SourceFile* file, int line, QName const& name, Types::Named *d);
 
   Types::Named* target() { return m_target;}
   virtual void accept(Visitor*);

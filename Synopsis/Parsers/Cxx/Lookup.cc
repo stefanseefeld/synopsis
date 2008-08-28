@@ -93,18 +93,6 @@ public:
 };
 }
 
-// defined in common.hh
-std::string join(const ScopedName& strs, const std::string& sep)
-{
-    ScopedName::const_iterator iter = strs.begin();
-    if (iter == strs.end())
-        return "";
-    std::string str = *iter++;
-    while (iter != strs.end())
-        str += sep + *iter++;
-    return str;
-}
-
 //. Output operator for debugging
 std::ostream& operator << (std::ostream& o, TypeInfo& i)
 {
@@ -120,23 +108,6 @@ std::ostream& operator << (std::ostream& o, TypeInfo& i)
     return o;
 }
 
-
-//
-// Struct Lookup::Private
-//
-
-#if 0
-struct Lookup::Private
-{
-    //. A map of ASG::Scope's ScopeInfo objects
-    typedef std::map<ASG::Scope*, ScopeInfo*> ScopeMap;
-    ScopeMap map;
-
-    //. A map of name references
-    typedef std::map<ScopedName, std::vector<ASG::Reference> > RefMap;
-    RefMap refs;
-};
-#endif
 
 //
 // Class Lookup
@@ -230,7 +201,7 @@ Types::Named* Lookup::lookupType(const std::string& name, bool func_okay)
         return type;
     // Not found, declare it unknown
     //cout << "Warning: Name "<<name<<" not found in "<<m_filename<<endl;
-    ScopedName u_name;
+    QName u_name;
     u_name.push_back(name);
     return m_builder->create_unknown(u_name);
 }
@@ -478,7 +449,7 @@ ASG::Function* Lookup::lookupOperator(const std::string& oper, Types::Type* left
     if (left_user)
         try
         {
-            ScopedName enclosing_name = Types::type_cast<Types::Named>(left.type)->name();
+            QName enclosing_name = Types::type_cast<Types::Named>(left.type)->name();
             enclosing_name.pop_back();
             if (enclosing_name.size())
             {
@@ -492,7 +463,7 @@ ASG::Function* Lookup::lookupOperator(const std::string& oper, Types::Type* left
     if (right_user)
         try
         {
-            ScopedName enclosing_name = Types::type_cast<Types::Named>(right.type)->name();
+            QName enclosing_name = Types::type_cast<Types::Named>(right.type)->name();
             enclosing_name.pop_back();
             if (enclosing_name.size())
             {
@@ -543,7 +514,7 @@ void Lookup::findFunctions(const std::string& name, ScopeInfo* scope, ASG::Funct
     // Get the matching names from the dictionary
     try
     {
-        Named::vector types = scope->dict->lookupMultiple(name);
+      Named::vector types = scope->dict->lookup_multiple(name);
 
         // Put only the ASG::Functions into 'functions'
         for (Named::vector::iterator iter = types.begin(); iter != types.end();)
@@ -597,10 +568,10 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
         if (scope->dict->has_key(name))
         {
             if (results.empty())
-                results = scope->dict->lookupMultiple(name);
+                results = scope->dict->lookup_multiple(name);
             else
             {
-                Named::vector temp_result = scope->dict->lookupMultiple(name);
+              Named::vector temp_result = scope->dict->lookup_multiple(name);
                 std::copy(temp_result.begin(), temp_result.end(),
                           std::back_inserter(results));
             }
@@ -715,7 +686,7 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
                 }
                 catch (const Dictionary::MultipleError& e)
                 {
-                    // FIXME: check for duplicates etc etc
+                  // We may get a MultipleError only if we found functions.
                 }
                 catch (const Dictionary::KeyError& e)
                 {
@@ -749,10 +720,10 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
             {
                 // Add all results to results list
                 if (results.empty())
-                    results = ns->dict->lookupMultiple(name);
+                    results = ns->dict->lookup_multiple(name);
                 else
                 {
-                    std::vector<Types::Named*> temp = ns->dict->lookupMultiple(name);
+                    std::vector<Types::Named*> temp = ns->dict->lookup_multiple(name);
                     std::copy(temp.begin(), temp.end(),
                               back_inserter(results));
                 }
@@ -800,7 +771,7 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
     }
     // Not class or NS - which is illegal for a qualified (but coulda been
     // template etc?:)
-    LOG("Not class or namespace: " << typeid(scope->scope_decl).name());
+    LOG("Not class or namespace: " << typeid(*scope->scope_decl).name());
     return 0;
 }
 
@@ -869,14 +840,14 @@ Types::Named* Lookup::lookupType(const std::vector<std::string>& names, bool fun
 
 //. Maps a scoped name into a vector of scopes and the final type. Returns
 //. true on success.
-bool Lookup::mapName(const ScopedName& names, std::vector<ASG::Scope*>& o_scopes, Types::Named*& o_type)
+bool Lookup::mapName(const QName& names, std::vector<ASG::Scope*>& o_scopes, Types::Named*& o_type)
 {
     STrace trace("Lookup::mapName");
     ASG::Scope* asg_scope = global();
-    ScopedName::const_iterator iter = names.begin();
-    ScopedName::const_iterator lasg = names.end();
+    QName::const_iterator iter = names.begin();
+    QName::const_iterator lasg = names.end();
     lasg--;
-    ScopedName scoped_name;
+    QName scoped_name;
 
     // Start scope name at global level
     scoped_name.push_back("");
@@ -998,10 +969,10 @@ Types::Named* Lookup::resolveType(Types::Named* type)
     STrace trace("Lookup::resolveType(named)");
     try
     {
-        ScopedName& name = type->name();
+        QName& name = type->name();
         LOG("Resolving '" << name << "'");
 
-        ScopedName::iterator iter = name.begin(), end = name.end() - 1;
+        QName::iterator iter = name.begin(), end = name.end() - 1;
         ASG::Scope* scope = global();
         while (iter != end)
         {
@@ -1053,7 +1024,7 @@ std::string Lookup::dumpSearch(ScopeInfo* scope)
     while (iter != search.end())
     {
         buf << (iter==search.begin() ? "" : ", ");
-        const ScopedName& name = (*iter)->scope_decl->name();
+        const QName& name = (*iter)->scope_decl->name();
         if (name.size())
             if ( (*iter)->is_using )
                 buf << "(" << name << ")";

@@ -10,6 +10,7 @@
 #define Decoder_hh_
 
 #include <Synopsis/PTree/Encoding.hh>
+#include "QName.hh"
 #include <string>
 #include <vector>
 
@@ -19,9 +20,6 @@ namespace Types
 class Type;
 class Parameterized;
 }
-
-// bad duplicate typedef.. hmm
-typedef std::vector<std::string> ScopedName;
 
 // Forward decl of Builder
 class Builder;
@@ -69,7 +67,7 @@ public:
     std::string decodeName();
 
     //. Decode a qualified name
-    ScopedName decodeQualified();
+    QName decodeQualified();
 
     //. Decode a name starting from the given iterator.
     //. Note the iterator passed need not be from the currently decoding
@@ -80,7 +78,7 @@ public:
   std::string decodeName(const Synopsis::PTree::Encoding &);
 
     //. Decode a qualified name with only names in it
-    void decodeQualName(ScopedName& names);
+    void decodeQualName(QName& names);
 
     //. Returns true if the char* is pointing to a name (that starts with a
     //. length). This is needed since char can be signed or unsigned, and

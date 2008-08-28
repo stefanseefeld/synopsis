@@ -70,7 +70,7 @@ public:
     //. @param fuc_okay If true, multiple declarations will not cause an error (needs fixing)
     //. @param scope If set determines the scope to start lookup from, else the
     //. current scope is used
-    Types::Named* lookupType(const ScopedName& names, bool func_okay=false, ASG::Scope* scope=0);
+    Types::Named* lookupType(const QName& names, bool func_okay=false, ASG::Scope* scope=0);
 
     //. Looks up the name in the scope of the given scope. This method may
     //. return a 0 ptr if the lookup failed.
@@ -85,7 +85,7 @@ public:
 
     //. Maps a scoped name into a vector of scopes and the final type. Returns
     //. true on success.
-    bool mapName(const ScopedName& name, std::vector<ASG::Scope*>&, Types::Named*&);
+    bool mapName(const QName& name, std::vector<ASG::Scope*>&, Types::Named*&);
 
     //. Returns the types for an array operator on the given type with an
     //. argument of the given type. If a function is used then it is stored in

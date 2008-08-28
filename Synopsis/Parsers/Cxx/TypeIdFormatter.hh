@@ -19,7 +19,7 @@ public:
   TypeIdFormatter();
 
   //. Sets the current scope, pushing the previous onto a stack
-  void push_scope(const ScopedName& scope);
+  void push_scope(const QName& scope);
   //. Pops the previous scope from the stack
   void pop_scope();
 
@@ -46,11 +46,11 @@ private:
   //. The Type String
   std::string type_;
   //. The current scope name
-  ScopedName scope_;
+  QName scope_;
   //. Returns the given Name relative to the current scope
-  std::string colonate(const ScopedName& name);
+  std::string colonate(const QName& name);
   //. A stack of previous scopes
-  std::vector<ScopedName> scope_stack_;
+  std::vector<QName> scope_stack_;
   //. A pointer to the identifier for function pointers
   const std::string** fptr_id_;
 };

@@ -12,7 +12,7 @@
 #include <vector>
 #include <string>
 #include <typeinfo>
-#include "common.hh"
+#include "QName.hh"
 #include "FakeGC.hh"
 
 // Forward declare ASG::Declaration
@@ -59,7 +59,7 @@ public:
     typedef std::vector<Types::Named*> vector;
 
     //. Constructor
-    Named(const ScopedName& name);
+    Named(const QName& name);
 
     //. Destructor
     ~Named();
@@ -72,20 +72,20 @@ public:
     //
 
     //. Constant version of name()
-    const ScopedName& name() const
+    const QName& name() const
     {
         return m_name;
     }
 
-    //. Return the scoped ScopedName of this type
-    ScopedName& name()
+    //. Return the QName of this type
+    QName& name()
     {
         return m_name;
     }
 
 private:
-    //. The scoped ScopedName of this type
-    ScopedName m_name;
+    //. The fully qualified name of this type
+    QName m_name;
 };
 
 
@@ -94,7 +94,7 @@ class Base : public Named
 {
 public:
     //. Constructor
-    Base(const ScopedName& name);
+    Base(const QName& name);
 
     //. Accept the given visitor
     virtual void accept(Visitor*);
@@ -107,7 +107,7 @@ class Unknown : public Named
 {
 public:
     //. Constructor
-    Unknown(const ScopedName& name);
+    Unknown(const QName& name);
     //. Accept the given visitor
     virtual void accept(Visitor*);
 };
@@ -123,7 +123,7 @@ class Dependent : public Named
 {
 public:
     //. Constructor
-    Dependent(const ScopedName& name);
+    Dependent(const QName& name);
     //. Accept the given visitor
     virtual void accept(Visitor*);
 };
@@ -135,7 +135,7 @@ class Declared : public Named
 {
 public:
     //. Constructor
-    Declared(const ScopedName& name, ASG::Declaration* decl);
+    Declared(const QName& name, ASG::Declaration* decl);
     //. Accept the given visitor
     virtual void accept(Visitor*);
 
@@ -176,7 +176,7 @@ public:
     typedef std::vector<ASG::Parameter*> param_vector;
 
     //. Constructor
-    Template(const ScopedName& name , ASG::Declaration* decl, const param_vector& params);
+    Template(const QName& name , ASG::Declaration* decl, const param_vector& params);
 
     //. Accept the given visitor
     virtual void accept(Visitor*);

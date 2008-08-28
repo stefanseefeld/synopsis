@@ -21,7 +21,7 @@ namespace FakeGC
 struct LightObject
 {
   LightObject() : next(head) { LightObject::head = this;}
-  virtual ~LightObject() { delete next;}
+  virtual ~LightObject() {}
 
   LightObject *next;
   static LightObject *head;

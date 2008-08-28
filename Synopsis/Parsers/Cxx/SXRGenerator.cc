@@ -75,7 +75,7 @@ int SXRGenerator::map_column(ASG::SourceFile *file, int line, char const *ptr)
   return file->map_column(line, col);
 }
 
-void SXRGenerator::xref(PTree::Node *node, Context context, ScopedName const &name, std::string const &desc, ASG::Declaration const *decl)
+void SXRGenerator::xref(PTree::Node *node, Context context, QName const &name, std::string const &desc, ASG::Declaration const *decl)
 {
   walker_->update_line_number(node);
   ASG::SourceFile* file = walker_->current_file();
@@ -281,13 +281,13 @@ void SXRGenerator::long_span(PTree::Node *node, char const *desc)
 // Store a link in the Syntax File
 void SXRGenerator::store_xref(ASG::SourceFile* file,
                               int line, int col, int len, Context context,
-                              ScopedName const &qname, std::string const &desc,
+                              QName const &qname, std::string const &desc,
                               bool continuation)
 {
   SXRBuffer *sxr = get_buffer(file);
   std::vector<ASG::Scope*> scopes;
   Types::Named* vtype;
-  ScopedName name;
+  QName name;
   if (walker_->builder()->mapName(qname, scopes, vtype))
   {
     for (size_t i = 0; i < scopes.size(); i++)

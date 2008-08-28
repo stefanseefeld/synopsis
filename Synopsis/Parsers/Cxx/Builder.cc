@@ -25,55 +25,48 @@ using namespace Types;
 using namespace ASG;
 
 //. Utility method
-ScopedName extend(const ScopedName& name, const std::string& str)
+QName extend(const QName& name, const std::string& str)
 {
-    ScopedName ret = name;
+    QName ret = name;
     ret.push_back(str);
     return ret;
 }
 
-
-/////// FIXME: wtf is this doing here??
 namespace
 {
-//. This class is very similar to ostream_iterator, except that it works on
-//. pointers to types
-template <typename T>
-class ostream_ptr_iterator
+class DeclarationTypeFinder : ASG::Visitor, Types::Visitor
 {
-    std::ostream* out;
-    const char* sep;
 public:
-    ostream_ptr_iterator(std::ostream& o, const char* s) : out(&o), sep(s)
-    {}
-    ostream_ptr_iterator<T>& operator =(const T* value)
-    {
-        *out << *value;
-        if (sep)
-            *out << sep;
-        return *this;
-    }
-    ostream_ptr_iterator<T>& operator *()
-    {
-        return *this;
-    }
-    ostream_ptr_iterator<T>& operator ++()
-    {
-        return *this;
-    }
-    ostream_ptr_iterator<T>& operator ++(int)
-    {
-        return *this;
-    }
-};
-}
+  enum Type { NONE = 0, FORWARD = 1, CLASS = 2, TEMPLATE = 4};
 
-//. Formats a vector<string> to the output, joining the strings with ::'s.
-//. This operator is prototyped in builder.hh and can be used from other
-//. modules
-std::ostream& operator <<(std::ostream& out, const ScopedName& vec)
-{
-    return out << join(vec, "::");
+  int resolve(Types::Named *t)
+  {
+    decl_ = 0;
+    cache_ = NONE;
+    t->accept(this);
+    return cache_;
+  }
+  ASG::Declaration *declaration() const { return decl_;}
+private:
+
+  virtual void visit_declared(Types::Declared *d) 
+  {
+    decl_ = d->declaration();
+    decl_->accept(this);
+  }
+
+  virtual void visit_class(Class*) { cache_ = CLASS;}
+  virtual void visit_class_template(ClassTemplate*) { cache_ = TEMPLATE;}
+  virtual void visit_forward(Forward* f) 
+  {
+    cache_ = FORWARD;
+    if (f->template_id()) cache_ |= TEMPLATE;
+  }
+
+  ASG::Declaration *decl_;
+  int cache_;
+};
+
 }
 
 //
@@ -86,7 +79,7 @@ struct Builder::Private
     ScopeMap map;
 
     //. A map of name references
-    typedef std::map<ScopedName, std::vector<ASG::Reference> > RefMap;
+    typedef std::map<QName, std::vector<ASG::Reference> > RefMap;
     RefMap refs;
 
     //. A list of builtin declarations
@@ -103,7 +96,7 @@ Builder::Builder(ASG::SourceFile* file)
     m_file = file;
     m_unique = 1;
     m = new Private;
-    ScopedName name;
+    QName name;
     m_scope = m_global = new ASG::Namespace(file, 0, "global", name);
     ScopeInfo* global = find_info(m_global);
     m_scopes.push_back(global);
@@ -188,27 +181,42 @@ const Declaration::vector& Builder::builtin_decls() const
 
 void Builder::add(ASG::Declaration* decl, bool is_template)
 {
-    ScopeInfo* scopeinfo;
-    ASG::Declaration::vector* decls;
-    if (is_template)
+  ScopeInfo *scopeinfo = is_template ? m_scopes[m_scopes.size()-2] : m_scopes.back();
+  Types::Named *previous = 0;
+  if (scopeinfo->dict->has_key(decl->name().back()))
+    previous = scopeinfo->dict->lookup_multiple(decl->name().back())[0];
+
+  // If the given name is already known, and if one of them is a forward-declaration,
+  // we eliminate it.
+  if (previous)
+  {
+    DeclarationTypeFinder finder;
+    int type = finder.resolve(previous);
+    // If the previous is a forward-declaration, replace it.
+    if (type & DeclarationTypeFinder::FORWARD)
     {
-        scopeinfo = m_scopes[m_scopes.size()-2];
-        decls = &scopeinfo->scope_decl->declarations();
+      // Now remove the old one from the scope, as well as from the symbol-table.
+      scopeinfo->dict->remove(decl->name().back());
     }
     else
     {
-        scopeinfo = m_scopes.back();
-        decls = &m_scope->declarations();
+      // Else if the old one isn't a forward-declaration, but the new-one is,
+      // simply ignore it.
+      DeclarationTypeFinder finder;
+//       int type = finder.resolve(decl);
+//       if (type & DeclarationTypeFinder::FORWARD)
+//         return;
+    // else add the new declaration.
     }
-    // Set access
-    decl->set_access(scopeinfo->access);
-    // Add to name dictionary
-    scopeinfo->dict->insert(decl);
+  }
 
-    const std::string& scope_type = scopeinfo->scope_decl->type();
-    if (scope_type != "local" && scope_type != "function")
-      decls->push_back(decl);
-    decl->file()->declarations().push_back(decl);
+  decl->set_access(scopeinfo->access);
+  scopeinfo->dict->insert(decl);
+
+  const std::string& scope_type = scopeinfo->scope_decl->type();
+  if (scope_type != "local" && scope_type != "function")
+    scopeinfo->scope_decl->declarations().push_back(decl);
+  decl->file()->declarations().push_back(decl);
 }
 
 void Builder::add(Types::Named* type)
@@ -240,7 +248,7 @@ ASG::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
         if (dict->has_key(name))
           try
           {
-            Types::Named::vector types = dict->lookupMultiple(name);
+            Types::Named::vector types = dict->lookup_multiple(name);
             ns = Types::declared_cast<ASG::Namespace>(*types.begin());
           }
           catch (const Types::wrong_type_cast&) {}
@@ -290,7 +298,7 @@ ASG::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
         else
         {
             // Generate a nested name
-            ScopedName ns_name = extend(m_scope->name(), name);
+            QName ns_name = extend(m_scope->name(), name);
             ns = new ASG::Namespace(m_file, 0, type_str, ns_name);
             add(ns);
         }
@@ -369,7 +377,7 @@ ASG::Class* Builder::start_class(int lineno, const std::string& type, const std:
     bool is_specialization = *name.rbegin() == '>';
     if (is_template)
     {
-      ScopedName class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
+      QName class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
       ASG::ClassTemplate *ct = new ASG::ClassTemplate(m_file, lineno, type, class_name, is_specialization);
       Types::Template* templ = new Types::Template(class_name, ct, *templ_params);
       ct->set_template_id(templ);
@@ -378,7 +386,7 @@ ASG::Class* Builder::start_class(int lineno, const std::string& type, const std:
     }
     else
     {
-      ScopedName class_name = extend(m_scope->name(), name);
+      QName class_name = extend(m_scope->name(), name);
       class_ = new ASG::Class(m_file, lineno, type, class_name, is_specialization);
       add(class_);
     }
@@ -395,7 +403,7 @@ ASG::Class* Builder::start_class(int lineno, const std::string& type, const std:
 
 // Declaration of a previously forward declared class (ie: must find and
 // replace previous forward declaration in the appropriate place)
-ASG::Class* Builder::start_class(int lineno, const std::string& type, const ScopedName& names)
+ASG::Class* Builder::start_class(int lineno, const std::string& type, const QName& names)
 {
     // Find the forward declaration of this class
     Types::Named* named = m_lookup->lookupType(names);
@@ -419,7 +427,7 @@ ASG::Class* Builder::start_class(int lineno, const std::string& type, const Scop
     // Create the Class
     ASG::Class* ns = new ASG::Class(m_file, lineno, type, named->name(), false);
     // Add to container scope
-    ScopedName scope_name = names;
+    QName scope_name = names;
     scope_name.pop_back();
     Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
     if (!scope_type)
@@ -469,7 +477,7 @@ void Builder::end_template()
 
 
 //. Start function impl scope
-void Builder::start_function_impl(const ScopedName& name)
+void Builder::start_function_impl(const QName& name)
 {
     STrace trace("Builder::start_function_impl");
     // Create the Namespace
@@ -535,7 +543,7 @@ ASG::Function* Builder::add_function(int line, const std::string& name,
         parent_scope = m_scope;
 
     // Determine the new scoped name
-    ScopedName func_name = extend(parent_scope->name(), name);
+    QName func_name = extend(parent_scope->name(), name);
 
     // Decide whether this is a member function (aka operation) or just a
     // function
@@ -566,7 +574,7 @@ ASG::Function* Builder::add_function(int line, const std::string& name,
 ASG::Variable* Builder::add_variable(int line, const std::string& name, Types::Type* vtype, bool constr, const std::string& type)
 {
     // Generate the name
-    ScopedName scope = m_scope->name();
+    QName scope = m_scope->name();
     scope.push_back(name);
     ASG::Variable* var = new ASG::Variable(m_file, line, type, scope, vtype, constr);
     add(var);
@@ -576,7 +584,7 @@ ASG::Variable* Builder::add_variable(int line, const std::string& name, Types::T
 ASG::Const* Builder::add_constant(int line, const std::string& name, Types::Type* cType, const std::string& type, std::string const &value)
 {
     // Generate the name
-    ScopedName scope = m_scope->name();
+    QName scope = m_scope->name();
     scope.push_back(name);
     ASG::Const* c = new ASG::Const(m_file, line, type, scope, cType, value);
     add(c);
@@ -587,7 +595,7 @@ void Builder::add_this_variable()
 {
     // First find out if we are in a method
     ASG::Scope* func_ns = m_scope;
-    ScopedName name = func_ns->name();
+    QName name = func_ns->name();
     name.pop_back();
     name.insert(name.begin(), std::string());
     Types::Named* clas_named = m_lookup->lookupType(name, false);
@@ -613,7 +621,7 @@ void Builder::add_this_variable()
 ASG::Typedef* Builder::add_typedef(int line, const std::string& name, Types::Type* alias, bool constr)
 {
     // Generate the name
-    ScopedName scoped_name = extend(m_scope->name(), name);
+    QName scoped_name = extend(m_scope->name(), name);
     // Create the object
     ASG::Typedef* tdef = new ASG::Typedef(m_file, line, "typedef", scoped_name, alias, constr);
     add(tdef);
@@ -623,7 +631,7 @@ ASG::Typedef* Builder::add_typedef(int line, const std::string& name, Types::Typ
 //. Add an enumerator
 ASG::Enumerator* Builder::add_enumerator(int line, const std::string& name, const std::string& value)
 {
-    ScopedName scoped_name = extend(m_scope->name(), name);
+    QName scoped_name = extend(m_scope->name(), name);
     ASG::Enumerator* enumor = new ASG::Enumerator(m_file, line, "enumerator", scoped_name, value);
     add(enumor->declared());
     return enumor;
@@ -632,7 +640,7 @@ ASG::Enumerator* Builder::add_enumerator(int line, const std::string& name, cons
 //. Add an enum
 ASG::Enum* Builder::add_enum(int line, const std::string& name, const std::vector<ASG::Enumerator*>& enumors)
 {
-    ScopedName scoped_name = extend(m_scope->name(), name);
+    QName scoped_name = extend(m_scope->name(), name);
     ASG::Enum* theEnum = new ASG::Enum(m_file, line, "enum", scoped_name);
     theEnum->enumerators() = enumors;
     add(theEnum);
@@ -642,7 +650,7 @@ ASG::Enum* Builder::add_enum(int line, const std::string& name, const std::vecto
 //. Add tail comment
 ASG::Builtin *Builder::add_tail_comment(int line)
 {
-    ScopedName name;
+    QName name;
     name.push_back("EOS");
     ASG::Builtin *builtin = new ASG::Builtin(m_file, line, "EOS", name);
     add(builtin);
@@ -674,14 +682,14 @@ public:
 
 //. Maps a scoped name into a vector of scopes and the final type. Returns
 //. true on success.
-bool Builder::mapName(const ScopedName& names, std::vector<ASG::Scope*>& o_scopes, Types::Named*& o_type)
+bool Builder::mapName(const QName& names, std::vector<ASG::Scope*>& o_scopes, Types::Named*& o_type)
 {
     STrace trace("Builder::mapName");
     ASG::Scope* ast_scope = m_global;
-    ScopedName::const_iterator iter = names.begin();
-    ScopedName::const_iterator last = names.end();
+    QName::const_iterator iter = names.begin();
+    QName::const_iterator last = names.end();
     last--;
-    ScopedName scoped_name;
+    QName scoped_name;
 
     // Start scope name at global level
     scoped_name.push_back("");
@@ -728,11 +736,11 @@ bool Builder::mapName(const ScopedName& names, std::vector<ASG::Scope*>& o_scope
 }
 
 
-Types::Unknown* Builder::create_unknown(const ScopedName& name)
+Types::Unknown* Builder::create_unknown(const QName& name)
 {
     // Generate the name
-    ScopedName u_name = m_scope->name();
-    for (ScopedName::const_iterator i = name.begin(); i != name.end(); ++i)
+    QName u_name = m_scope->name();
+    for (QName::const_iterator i = name.begin(); i != name.end(); ++i)
       u_name.push_back(*i);
     Types::Unknown* unknown = new Types::Unknown(u_name);
     return unknown;
@@ -742,7 +750,7 @@ Types::Unknown* Builder::add_unknown(const std::string& name)
 {
     if (m_scopes.back()->dict->has_key(name) == false)
     {
-      ScopedName u_name;
+      QName u_name;
       u_name.push_back(name);
       add(create_unknown(u_name));
     }
@@ -756,7 +764,7 @@ ASG::Forward* Builder::add_forward(int lineno, const std::string& name, const st
     // Must find the scope above the template scope
     m_scopes[m_scopes.size() - 2] : 
     m_scopes[m_scopes.size() - 1];
-  ScopedName scoped_name = extend(parent_scope->scope_decl->name(), name);
+  QName scoped_name = extend(parent_scope->scope_decl->name(), name);
   // The type is already known.
   if (parent_scope->dict->has_key(name) == true) return 0;
   bool is_template = templ_params && templ_params->size();
@@ -795,7 +803,7 @@ std::string Builder::dump_search(ScopeInfo* scope)
     while (iter != search.end())
     {
         buf << (iter==search.begin() ? "" : ", ");
-        const ScopedName& name = (*iter)->scope_decl->name();
+        const QName& name = (*iter)->scope_decl->name();
         if (name.size())
             if ( (*iter)->is_using )
                 buf << "(" << name << ")";
@@ -837,7 +845,7 @@ void Builder::do_add_using_directive(ScopeInfo* target, ScopeInfo* scope)
     scope->using_scopes.push_back(target);
     target->used_by.push_back(scope);
 
-    ScopedName& target_name = target->scope_decl->name();
+    QName& target_name = target->scope_decl->name();
 
     // Find where to insert 'scope' into top()'s search list
     // "closest enclosing namespace that contains both using directive and
@@ -851,7 +859,7 @@ void Builder::do_add_using_directive(ScopeInfo* target, ScopeInfo* scope)
     {
         // Move to next scope to check
         --iter;
-        ScopedName& search_name = (*iter)->scope_decl->name();
+        QName& search_name = (*iter)->scope_decl->name();
         if (target_name.size() < search_name.size())
             // Search is more nested than the target
             break;
@@ -903,7 +911,7 @@ void Builder::add_aliased_using_namespace(Types::Named* type, const std::string&
     ASG::Namespace* ns = Types::declared_cast<ASG::Namespace>(type);
 
     // Create a new declared type with a different name
-    ScopedName new_name = extend(m_scope->name(), alias);
+    QName new_name = extend(m_scope->name(), alias);
     Types::Declared* declared = new Types::Declared(new_name, ns);
 
     // Add to current scope
@@ -914,7 +922,7 @@ void Builder::add_aliased_using_namespace(Types::Named* type, const std::string&
 ASG::UsingDeclaration *Builder::add_using_declaration(int line, Types::Named* type)
 {
     // Add it to the current scope
-    ScopedName name = extend(m_scope->name(), type->name().back());
+    QName name = extend(m_scope->name(), type->name().back());
     ASG::UsingDeclaration* u = new ASG::UsingDeclaration(m_file, line, name, type);
     add(u);
     return u;

@@ -10,10 +10,10 @@
 TypeIdFormatter::TypeIdFormatter ()
   : fptr_id_(0)
 {
-  scope_stack_.push_back(ScopedName());
+  scope_stack_.push_back(QName());
 }
 
-void TypeIdFormatter::push_scope(const ScopedName& scope)
+void TypeIdFormatter::push_scope(const QName& scope)
 {
   scope_stack_.push_back(scope_);
   scope_ = scope;
@@ -25,11 +25,11 @@ void TypeIdFormatter::pop_scope()
   scope_stack_.pop_back();
 }
 
-std::string TypeIdFormatter::colonate(const ScopedName& name)
+std::string TypeIdFormatter::colonate(const QName& name)
 {
   std::string str;
-  ScopedName::const_iterator n = name.begin();
-  ScopedName::const_iterator s = scope_.begin();
+  QName::const_iterator n = name.begin();
+  QName::const_iterator s = scope_.begin();
   // Skip identical scopes
   while (n != name.end() && s != scope_.end() && *n == *s) ++n, ++s;
   // If name == scope, just return last eg: struct S { S* ptr; };

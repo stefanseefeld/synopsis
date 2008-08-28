@@ -60,7 +60,7 @@ public:
 
   //. Store a link for the given Ptree node. If a decl is given, store an
   //. xref too
-  void xref(Synopsis::PTree::Node *node, Context, ScopedName const &name, std::string const &desc, ASG::Declaration const *decl = 0);
+  void xref(Synopsis::PTree::Node *node, Context, QName const &name, std::string const &desc, ASG::Declaration const *decl = 0);
 
   //. Store a Definition link for the given Ptree node using the ASG node
   void xref(Synopsis::PTree::Node *node, ASG::Declaration const *decl);
@@ -85,7 +85,7 @@ private:
   void store_span(unsigned int line, unsigned int col, int len, char const *type);
   void store_xref(ASG::SourceFile*,
                   int line, int col, int len, Context context,
-                  ScopedName const &name, std::string const &desc, bool continuation);
+                  QName const &name, std::string const &desc, bool continuation);
 
   SXRBuffer *get_buffer(ASG::SourceFile*);
 

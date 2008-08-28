@@ -200,8 +200,12 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   }
 
   PTree::cleanup_gc();
-  delete FakeGC::LightObject::head;
-
+  while (FakeGC::LightObject::head)
+  {
+    FakeGC::LightObject *tmp = FakeGC::LightObject::head->next;
+    delete FakeGC::LightObject::head;
+    FakeGC::LightObject::head = tmp;
+  }
   return ir;
 }
 

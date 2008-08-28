@@ -29,7 +29,7 @@ Type::accept(Visitor* visitor)
 // Class Types::Named
 //
 
-Named::Named(const ScopedName& n)
+Named::Named(const QName& n)
         : m_name(n)
 {}
 
@@ -45,7 +45,7 @@ void Named::accept(Visitor* visitor)
 // Class Types::Base
 //
 
-Base::Base(const ScopedName& n)
+Base::Base(const QName& n)
         : Named(n)
 {}
 
@@ -60,7 +60,7 @@ Base::accept(Visitor* visitor)
 // Class Types::Unknown
 //
 
-Unknown::Unknown(const ScopedName& n)
+Unknown::Unknown(const QName& n)
         : Named(n)
 {}
 
@@ -75,7 +75,7 @@ Unknown::accept(Visitor* visitor)
 // Class Types::Dependent
 //
 
-Dependent::Dependent(const ScopedName& n)
+Dependent::Dependent(const QName& n)
         : Named(n)
 {}
 
@@ -89,7 +89,7 @@ Dependent::accept(Visitor* visitor)
 // Class Types::Declared
 //
 
-Declared::Declared(const ScopedName& n, ASG::Declaration* decl)
+Declared::Declared(const QName& n, ASG::Declaration* decl)
         : Named(n), m_decl(decl)
 {}
 
@@ -104,7 +104,7 @@ Declared::accept(Visitor* visitor)
 // Class Types::Template
 //
 
-Template::Template(const ScopedName& n, ASG::Declaration* decl, const param_vector& params)
+Template::Template(const QName& n, ASG::Declaration* decl, const param_vector& params)
         : Declared(n, decl), m_params(params)
 {}
 

@@ -104,11 +104,11 @@ struct Translator::Private
     return tuple;
   }
 
-  PyObject* QName(const ScopedName& name)
+  PyObject* QualifiedName(const QName& name)
   {
     PyObject* tuple = PyTuple_New(name.size());
     int index = 0;
-    ScopedName::const_iterator iter = name.begin();
+    QName::const_iterator iter = name.begin();
     while (iter != name.end())
       PyTuple_SET_ITEM(tuple, index++, py(*iter++));
     PyObject *qname = PyObject_CallFunctionObjArgs(m_qname_factory, tuple, NULL);
@@ -409,7 +409,7 @@ PyObject *Translator::Base(Types::Base* type)
   Trace trace("Translator::Base", Trace::TRANSLATION);
   PyObject *name, *base;
   base = PyObject_CallMethod(m_asg_module, "BuiltinTypeId", "OO",
-                             m->cxx(), name = m->QName(type->name()));
+                             m->cxx(), name = m->QualifiedName(type->name()));
   PyObject_SetItem(m_dictionary, name, base);
   Py_DECREF(name);
   return base;
@@ -420,7 +420,7 @@ PyObject *Translator::Dependent(Types::Dependent* type)
   Trace trace("Translator::Dependent", Trace::TRANSLATION);
   PyObject *name, *base;
   base = PyObject_CallMethod(m_asg_module, "DependentTypeId", "OO",
-                             m->cxx(), name = m->QName(type->name()));
+                             m->cxx(), name = m->QualifiedName(type->name()));
   PyObject_SetItem(m_dictionary, name, base);
   Py_DECREF(name);
   return base;
@@ -431,7 +431,7 @@ PyObject *Translator::Unknown(Types::Named* type)
   Trace trace("Translator::Unknown", Trace::TRANSLATION);
   PyObject *name, *unknown;
   unknown = PyObject_CallMethod(m_asg_module, "UnknownTypeId", "OO",
-                                m->cxx(), name = m->QName(type->name()));
+                                m->cxx(), name = m->QualifiedName(type->name()));
   PyObject_SetItem(m_dictionary, name, unknown);
   Py_DECREF(name);
   return unknown;
@@ -442,7 +442,7 @@ PyObject *Translator::Declared(Types::Declared* type)
   Trace trace("Translator::Declared", Trace::TRANSLATION);
   PyObject *name, *declared, *decl;
   declared = PyObject_CallMethod(m_asg_module, "DeclaredTypeId", "OOO",
-                                 m->cxx(), name = m->QName(type->name()), 
+                                 m->cxx(), name = m->QualifiedName(type->name()), 
                                  decl = m->py(type->declaration()));
   // Skip zero-length names (eg: dummy declarators/enumerators)
   if (type->name().size())
@@ -457,7 +457,7 @@ PyObject *Translator::Template(Types::Template* type)
   Trace trace("Translator::Template", Trace::TRANSLATION);
   PyObject *name, *templ, *decl, *params;
   templ = PyObject_CallMethod(m_asg_module, "TemplateId", "OOOO",
-                              m->cxx(), name = m->QName(type->name()), 
+                              m->cxx(), name = m->QualifiedName(type->name()), 
                               decl = m->py(type->declaration()),
                               params = m->List(type->parameters()));
   PyObject_SetItem(m_dictionary, name, templ);
@@ -590,7 +590,7 @@ PyObject *Translator::Declaration(ASG::Declaration* decl)
   PyObject *pydecl, *file, *type, *name;
   pydecl = PyObject_CallMethod(m_asg_module, "Declaration", "OiOO",
                                file = m->py(decl->file()), decl->line(),
-                               type = m->py(decl->type()), name = m->QName(decl->name()));
+                               type = m->py(decl->type()), name = m->QualifiedName(decl->name()));
   if (!pydecl) throw py_error_already_set();
   addComments(pydecl, decl);
   Py_DECREF(file);
@@ -605,7 +605,7 @@ PyObject *Translator::Builtin(ASG::Builtin* decl)
   PyObject *pybuiltin, *file, *type, *name;
   pybuiltin = PyObject_CallMethod(m_asg_module, "Builtin", "OiOO",
                                   file = m->py(decl->file()), decl->line(),
-                                  type = m->py(decl->type()), name = m->QName(decl->name()));
+                                  type = m->py(decl->type()), name = m->QualifiedName(decl->name()));
   if (!pybuiltin) throw py_error_already_set();
   addComments(pybuiltin, decl);
   Py_DECREF(file);
@@ -626,7 +626,7 @@ PyObject *Translator::Macro(ASG::Macro* decl)
   }
   pymacro = PyObject_CallMethod(m_asg_module, "Macro", "OiOOOO",
                                 file = m->py(decl->file()), decl->line(),
-                                type = m->py(decl->type()), name = m->QName(decl->name()),
+                                type = m->py(decl->type()), name = m->QualifiedName(decl->name()),
                                 params, text = m->py(decl->text()));
   if (!pymacro) throw py_error_already_set();
   addComments(pymacro, decl);
@@ -644,7 +644,7 @@ PyObject *Translator::Forward(ASG::Forward* decl)
   PyObject *forward, *file, *type, *name;
   forward = PyObject_CallMethod(m_asg_module, "Forward", "OiOO",
                                 file = m->py(decl->file()), decl->line(),
-                                type = m->py(decl->type()), name = m->QName(decl->name()));
+                                type = m->py(decl->type()), name = m->QualifiedName(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, forward);
   if (decl->template_id())
@@ -670,7 +670,7 @@ PyObject *Translator::Scope(ASG::Scope* decl)
   PyObject *scope, *file, *type, *name;
   scope = PyObject_CallMethod(m_asg_module, "Scope", "OiOO",
                               file = m->py(decl->file()), decl->line(),
-                              type = m->py(decl->type()), name = m->QName(decl->name()));
+                              type = m->py(decl->type()), name = m->QualifiedName(decl->name()));
   PyObject *decls = PyObject_GetAttrString(scope, "declarations");
   PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
   addComments(scope, decl);
@@ -687,7 +687,7 @@ PyObject *Translator::Namespace(ASG::Namespace* decl)
   PyObject *module, *file, *type, *name;
   module = PyObject_CallMethod(m_asg_module, "Module", "OiOO",
                                file = m->py(decl->file()), decl->line(),
-                               type = m->py(decl->type()), name = m->QName(decl->name()));
+                               type = m->py(decl->type()), name = m->QualifiedName(decl->name()));
   PyObject *decls = PyObject_GetAttrString(module, "declarations");
   PyObject *new_decls = m->List(decl->declarations());
   PyObject_CallMethod(decls, "extend", "O", new_decls);
@@ -720,7 +720,7 @@ PyObject *Translator::Class(ASG::Class* decl)
                              file = m->py(decl->file()),
                              decl->line(),
                              type = m->py(decl->type()),
-                             name = m->QName(decl->name()));
+                             name = m->QualifiedName(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
   PyObject *new_decls, *new_parents;
@@ -751,7 +751,7 @@ PyObject *Translator::ClassTemplate(ASG::ClassTemplate *decl)
                              file = m->py(decl->file()),
                              decl->line(),
                              type = m->py(decl->type()),
-                             name = m->QName(decl->name()));
+                             name = m->QualifiedName(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
   PyObject *new_decls, *new_parents;
@@ -786,7 +786,7 @@ PyObject *Translator::Typedef(ASG::Typedef* decl)
   PyObject *tdef, *file, *type, *name, *alias;
   tdef = PyObject_CallMethod(m_asg_module, "Typedef", "OiOOOi",
                              file = m->py(decl->file()), decl->line(),
-                             type = m->py(decl->type()), name = m->QName(decl->name()),
+                             type = m->py(decl->type()), name = m->QualifiedName(decl->name()),
                              alias = m->py(decl->alias()), decl->constructed());
   addComments(tdef, decl);
   Py_DECREF(file);
@@ -806,12 +806,12 @@ PyObject *Translator::Enumerator(ASG::Enumerator* decl)
      eos.push_back("EOS");
      enumor = PyObject_CallMethod(m_asg_module, "Builtin", "OiOO",
                                   file = m->py(decl->file()), decl->line(),
-                                  type = m->py("EOS"), name = m->QName(eos));
+                                  type = m->py("EOS"), name = m->QualifiedName(eos));
   }
   else
      enumor = PyObject_CallMethod(m_asg_module, "Enumerator", "OiOs",
                                   file = m->py(decl->file()), decl->line(),
-                                  name = m->QName(decl->name()), decl->value().c_str());
+                                  name = m->QualifiedName(decl->name()), decl->value().c_str());
   addComments(enumor, decl);
   Py_DECREF(file);
   Py_DECREF(name);
@@ -824,7 +824,7 @@ PyObject *Translator::Enum(ASG::Enum* decl)
   PyObject *enumor, *file, *enums, *name;
   enumor = PyObject_CallMethod(m_asg_module, "Enum", "OiOO",
                                file = m->py(decl->file()), decl->line(),
-                               name = m->QName(decl->name()), enums = m->List(decl->enumerators()));
+                               name = m->QualifiedName(decl->name()), enums = m->List(decl->enumerators()));
   addComments(enumor, decl);
   Py_DECREF(file);
   Py_DECREF(enums);
@@ -838,7 +838,7 @@ PyObject *Translator::Variable(ASG::Variable* decl)
   PyObject *var, *file, *type, *name, *vtype;
   var = PyObject_CallMethod(m_asg_module, "Variable", "OiOOOi",
                             file = m->py(decl->file()), decl->line(),
-                            type = m->py(decl->type()), name = m->QName(decl->name()),
+                            type = m->py(decl->type()), name = m->QualifiedName(decl->name()),
                             vtype = m->py(decl->vtype()), decl->constructed());
   addComments(var, decl);
   Py_DECREF(file);
@@ -855,7 +855,7 @@ PyObject *Translator::Const(ASG::Const* decl)
   cons = PyObject_CallMethod(m_asg_module, "Const", "OiOOOs",
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), ctype = m->py(decl->ctype()),
-                             name = m->QName(decl->name()), decl->value().c_str());
+                             name = m->QualifiedName(decl->name()), decl->value().c_str());
   if (PyErr_Occurred()) PyErr_Print();
   addComments(cons, decl);
   Py_DECREF(file);
@@ -890,7 +890,7 @@ PyObject *Translator::Function(ASG::Function* decl)
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
-                             name = m->QName(decl->name()), realname = m->py(decl->realname()));
+                             name = m->QualifiedName(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
   if (decl->template_id())
@@ -924,7 +924,7 @@ PyObject *Translator::Operation(ASG::Operation* decl)
                              file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
-                             name = m->QName(decl->name()), realname = m->py(decl->realname()));
+                             name = m->QualifiedName(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
   if (decl->template_id())
@@ -955,7 +955,7 @@ PyObject *Translator::UsingDirective(ASG::UsingDirective* u)
   PyObject *dir, *file, *type, *name;
   dir = PyObject_CallMethod(m_asg_module, "UsingDirective", "OiOO",
                             file = m->py(u->file()), u->line(),
-                            type = m->py(u->type()), name = m->QName(u->name()));
+                            type = m->py(u->type()), name = m->QualifiedName(u->name()));
   Py_DECREF(file);
   Py_DECREF(type);
   Py_DECREF(name);
@@ -968,8 +968,8 @@ PyObject *Translator::UsingDeclaration(ASG::UsingDeclaration* u)
   PyObject *decl, *file, *type, *name, *alias;
   decl = PyObject_CallMethod(m_asg_module, "UsingDeclaration", "OiOOO",
                              file = m->py(u->file()), u->line(),
-                             type = m->py(u->type()), name = m->QName(u->name()),
-                             alias = m->QName(u->target()->name()));
+                             type = m->py(u->type()), name = m->QualifiedName(u->name()),
+                             alias = m->QualifiedName(u->target()->name()));
   Py_DECREF(alias);
   Py_DECREF(file);
   Py_DECREF(type);

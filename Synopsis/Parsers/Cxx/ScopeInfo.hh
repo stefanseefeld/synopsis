@@ -12,7 +12,7 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "common.hh"
+#include "QName.hh"
 #include "FakeGC.hh"
 
 class Dictionary;

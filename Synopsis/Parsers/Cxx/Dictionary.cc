@@ -9,40 +9,9 @@
 #include "Dictionary.hh"
 #include "ASG.hh"
 #include "Types.hh"
-
-#include <map>
-#include <vector>
-#include <list>
-#include <string>
-#include <iostream>
 #include <cassert>
+#include <iostream>
 
-typedef std::multimap<std::string, Types::Named*> name_map;
-
-//. Define nested class
-struct Dictionary::Data
-{
-    name_map map;
-};
-
-//. Constructor
-Dictionary::Dictionary()
-{
-    m = new Data;
-}
-
-//. Destructor
-Dictionary::~Dictionary()
-{
-    delete m;
-}
-
-//. Quick check if the name is in the dict
-bool
-Dictionary::has_key(const std::string& name)
-{
-    return m->map.find(name) != m->map.end();
-}
 
 //. Lookup single
 //. TODO: the forward filtering could probably be done much simpler!
@@ -50,89 +19,94 @@ Dictionary::has_key(const std::string& name)
 Types::Named*
 Dictionary::lookup(const std::string& name)
 {
-    name_map::iterator iter = m->map.lower_bound(name);
-    name_map::iterator end = m->map.upper_bound(name);
+  iterator i = map_.lower_bound(name);
+  iterator end = map_.upper_bound(name);
 
-    // Check for not found
-    if (iter == end)
-        throw KeyError(name);
+  // Check for not found
+  if (i == end)
+    throw KeyError(name);
 
-    Types::Named* type = iter->second;
-    if (++iter == end)
-        return type;
+  Types::Named* type = i->second;
+  if (++i == end)
+    return type;
 
-    // Check for Unknown types
-    if (dynamic_cast<Types::Unknown*>(type))
-    {
-        // Skip further unknown types
-        while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
-            ++iter;
-        if (iter == end)
-            // No choice but to return the Unknown
-            return type;
-        type = (iter++)->second;
-        // Any other types that aren't unknown cause error
-        while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
-            ++iter;
-        if (iter == end)
-            // No more non-Unknown types, so return the one we found
-            return type;
-    }
-    // Create exception object
-    MultipleError exc(name);
-    exc.types.push_back(type);
-    do
-        exc.types.push_back(iter->second);
-    while (++iter != end);
-    throw exc;
+  // Check for Unknown types
+  if (dynamic_cast<Types::Unknown*>(type))
+  {
+    // Skip further unknown types
+    while (i != end && dynamic_cast<Types::Unknown*>(i->second))
+      ++i;
+    if (i == end)
+      // No choice but to return the Unknown
+      return type;
+    type = (i++)->second;
+    // Any other types that aren't unknown cause error
+    while (i != end && dynamic_cast<Types::Unknown*>(i->second))
+      ++i;
+    if (i == end)
+      // No more non-Unknown types, so return the one we found
+      return type;
+  }
+  // Create exception object
+  MultipleError exc(name);
+  exc.types.push_back(type);
+  do
+    exc.types.push_back(i->second);
+  while (++i != end);
+  throw exc;
 }
 
 //. Lookup multiple
 std::vector<Types::Named*>
-Dictionary::lookupMultiple(const std::string& name) throw (KeyError)
+Dictionary::lookup_multiple(const std::string& name) throw (KeyError)
 {
-    name_map::iterator iter = m->map.lower_bound(name);
-    name_map::iterator end = m->map.upper_bound(name);
+  iterator i = map_.lower_bound(name);
+  iterator end = map_.upper_bound(name);
 
-    // Check for not found
-    if (iter == end)
-        throw KeyError(name);
+  // Check for not found
+  if (i == end)
+    throw KeyError(name);
 
-    // Store type pointers in a vector
-    std::vector<Types::Named*> types;
-    do
-        types.push_back(iter->second);
-    while (++iter != end);
-    return types;
+  // Store type pointers in a vector
+  std::vector<Types::Named*> types;
+  do
+    types.push_back(i->second);
+  while (++i != end);
+  return types;
 }
 
 void
 Dictionary::insert(Types::Named* type)
 {
-    std::string key = type->name().back();
-    m->map.insert(name_map::value_type(key, type));
+  std::string key = type->name().back();
+  map_.insert(value_type(key, type));
 }
 
 void
 Dictionary::insert(ASG::Declaration* decl)
 {
-    Types::Declared* declared = new Types::Declared(decl->name(), decl);
-    insert(declared);
-    if (ASG::Function* func = dynamic_cast<ASG::Function*>(decl))
-        // Also insert real (unmangled) name of functions
-        m->map.insert(name_map::value_type(func->realname(), declared));
+  Types::Declared* declared = new Types::Declared(decl->name(), decl);
+  insert(declared);
+  if (ASG::Function* func = dynamic_cast<ASG::Function*>(decl))
+    // Also insert real (unmangled) name of functions
+    map_.insert(value_type(func->realname(), declared));
+}
+
+void
+Dictionary::remove(std::string const &name)
+{
+  map_.erase(name);
 }
 
 void
 Dictionary::dump()
 {
-    name_map::iterator iter = m->map.begin(), end = m->map.end();
-    std::cout << "Dumping dictionary: " << m->map.size() << " items.\n";
-    while (iter != end)
-    {
-        name_map::value_type p = *iter++;
-        std::cout << "   " << p.first << "\t-> " << p.second->name() << "\n";
-    }
-    std::cout.flush();
+  iterator i = map_.begin(), end = map_.end();
+  std::cout << "Dumping dictionary: " << map_.size() << " items.\n";
+  while (i != end)
+  {
+    value_type p = *i++;
+    std::cout << "   " << p.first << "\t-> " << p.second->name() << "\n";
+  }
+  std::cout.flush();
 }
-// vim: set ts=8 sts=4 sw=4 et:

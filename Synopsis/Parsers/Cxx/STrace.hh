@@ -15,11 +15,19 @@
 #include <exception>
 #include <list>
 
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Display.hh>
+
 namespace Synopsis
 {
 namespace PTree { class Node;}
 }
-#if defined(DEBUG)
+
+#ifndef DEBUG
+# define DEBUG 0
+#endif
+
+#if DEBUG
 #define DO_TRACE
 //. A tracer class that can be used as a Guard around sections of code. The
 //. instances are kept in a class-static stack, and enter/leave messages are
@@ -35,7 +43,7 @@ class STrace
     typedef std::list<std::string> string_list;
 public:
     //. Constructor
-    STrace(const std::string &s)
+  STrace(const std::string &s)
             : m_scope(s)
     {
         m_list.push_back(indent() + "entering " + m_scope);

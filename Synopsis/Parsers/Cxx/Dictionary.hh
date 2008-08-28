@@ -11,7 +11,10 @@
 
 #include <vector>
 #include <string>
-#include "common.hh"
+#include <map>
+#include <list>
+
+#include "QName.hh"
 #include "FakeGC.hh"
 
 // Forward declaration of Type::Named
@@ -33,11 +36,6 @@ class Declaration;
 class Dictionary : public FakeGC::LightObject
 {
 public:
-    //. Constructor
-    Dictionary();
-    //. Destructor
-    ~Dictionary();
-
     //. The type of multiple entries. We don't want to include type.hh just for
     //. this, so this is a workaround
     typedef std::vector<Types::Named*> Type_vector;
@@ -65,7 +63,7 @@ public:
     };
 
     //. Returns true if name is in dict
-    bool has_key(const std::string& name);
+    bool has_key(const std::string& name) const { return map_.find(name) != map_.end();}
 
     //. Lookup a name in the dictionary. If more than one declaration has this
     //. name then an exception is thrown.
@@ -74,12 +72,14 @@ public:
     //. Lookup a name in the dictionary expecting multiple decls. Use this
     //. method if you expect to find more than one declaration, eg importing
     //. names via a using statement.
-    Type_vector lookupMultiple(const std::string& name) throw (KeyError);
+    Type_vector lookup_multiple(const std::string& name) throw (KeyError);
 
     //. Add a declaration to the dictionary. The name() is extracted from the
     //. declaration and its last string used as the key. The declaration is
     //. stored as a Type::Declared which is created inside this method.
     void insert(ASG::Declaration* decl);
+
+    void remove(std::string const &name);
 
     //. Add a named type to the dictionary. The name() is extracted from the
     //. type and its last string used as they key.
@@ -90,11 +90,11 @@ public:
 
 
 private:
-    struct Data;
-    //. The private data. This is a forward declared * to speed compilation since
-    //. std::map is a large template.
-    Data*  m;
+  typedef std::multimap<std::string, Types::Named*> NameMap;
+  typedef NameMap::iterator iterator;
+  typedef NameMap::value_type value_type;
+
+  NameMap map_;
 };
 
 #endif // header guard
-// vim: set ts=8 sts=4 sw=4 et:
