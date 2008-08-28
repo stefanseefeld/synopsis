@@ -45,6 +45,7 @@ List of options:
   -V, --version               Display version information.
   -v  --verbose               Operate verbosely.
   -d  --debug                 Operate in debug mode.
+  -P  --profile               Profile execution.
   -o <file>, --output=<file>  Write output to <file>.
   -p <lang>, --parser=<lang>  Select a parser for <lang>.
   -Wp,<arg>[,<arg>...]        Send <args> to the parser.
