@@ -8,7 +8,9 @@ Synopsis 0.11
 
 * Enhance the build system to support OSX.
 * Upgrade to libgc 7.0.
+* Add a new '--disable-threads' config option.
 * Fix the way template specializations are handled in the ASG.
+* Fix a number of validation errors for the HTML formatter.
 
 Synopsis 0.10
 =============

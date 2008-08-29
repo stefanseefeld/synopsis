@@ -289,6 +289,5 @@ class DeclarationDetailFormatter(DeclarationFormatter):
             value = ' = ' + span('value', escape(enumerator.value))
         else:
             value = ''
-        print 'value', value
         doc = self.processor.documentation.details(enumerator, self.view)
         return div('enumerator','%s%s%s'%(text, value, doc))

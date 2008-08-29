@@ -13,24 +13,28 @@ AC_REVISION($Revision: 1.9 $)
 AC_INIT(libSynopsis, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_ENABLE(version,
-  [  --enable-version=VERSION      specify the Synopsis version to build],
+  [AC_HELP_STRING([--enable-version=VERSION],[specify the Synopsis version to build])],
   [version=$enableval],
   [version="1.0"]
 )
 
 AC_ARG_WITH(python, 
-  [  --with-python=PATH      specify the Python interpreter],
+  [AC_HELP_STRING([--with-python=PATH],[specify the Python interpreter])],
   PYTHON="$with_python",
   PYTHON="python"
 )
 
+AC_ARG_ENABLE(threads,
+  [AC_HELP_STRING([--disable-threads], [disable threading support])],
+  [],[enable_threads=yes])
+
 AC_ARG_ENABLE([gc], 
-  [  --disable-gc            don't use garbage collector (default is enabled)],
+  [AC_HELP_STRING([--disable-gc],[don't use garbage collector (default is enabled)])],
   [ac_cv_enable_gc=no],
   [ac_cv_enable_gc=yes])
 
 AC_ARG_WITH([gc_prefix],
-  [  --with-gc-prefix=PATH   specify the prefix to the garbage collector],
+  [AC_HELP_STRING([--with-gc-prefix=PATH],[specify the prefix to the garbage collector])],
   [ac_cv_with_gc_prefix="$with_gc_prefix"],
   [ac_cv_with_gc_prefix=""])
 
@@ -73,7 +77,9 @@ if test "$ac_cv_enable_gc" == "yes"; then
     GC_CPP="-I\${includedir}/Synopsis/gc/include"
     GC_LIB="Synopsis/gc/.libs/libgc.a"
     dnl We need to link with posix threads since libgc wants it.
-    SYN_SEARCH_PTHREAD
+    if test $enable_threads != no
+    then SYN_SEARCH_PTHREAD
+    fi
   fi
 else
   GC_BRIDGE=$srcdir/Synopsis/PTree/GC-disabled.tmpl

@@ -1612,7 +1612,7 @@ void Walker::visit(PTree::EnumSpec *node)
     // belong to the enum. This is policy. #TODO review policy
     //my_declaration->SetComments(0); ?? typedef doesn't have comments?
   }
-  if (sxr_) sxr_->xref(PTree::second(node), theEnum);
+  if (sxr_ && PTree::second(node)) sxr_->xref(PTree::second(node), theEnum);
   my_defines_class_or_enum = true;
 }
 

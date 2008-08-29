@@ -24,6 +24,8 @@ class config(build_ext):
          "installation prefix"),
         ('libdir=', None,
          "library installation directory"),
+        ('disable-threads', None,
+         "whether or not to enable thread-support"),
         ('disable-gc', None,
          "whether or not to build the C++ parser with the garbage collector"),
         ('with-gc-prefix=', None,
@@ -34,13 +36,14 @@ class config(build_ext):
         ('with-boost-prefix=', None, 'the prefix to the boost libraries.'),
         ('with-boost-lib-suffix=', None,
          'the library suffix to the used for boost libraries.')]
-    boolean_options = build_ext.boolean_options[:] + ['disable-gc', 'with-boost']
+    boolean_options = build_ext.boolean_options[:] + ['disable-threads', 'disable-gc', 'with-boost']
 
     def initialize_options(self):
 
         self.prefix = None
         self.libdir = None
         build_ext.initialize_options(self)
+        self.disable_threads = 0
         self.disable_gc = 0
         self.with_gc_prefix = ''
         self.with_boost = False
@@ -142,6 +145,8 @@ class config(build_ext):
             python = sys.executable
             prefix = self.prefix
         command = '%s --prefix="%s" --with-python="%s"'%(configure, prefix, python)
+        if self.disable_threads:
+            command += ' --disable-threads'
         if self.disable_gc:
             command += ' --disable-gc'
         elif self.with_gc_prefix:
