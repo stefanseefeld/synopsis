@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<book xmlns:xi="http://www.w3.org/2003/XInclude">
+<book xmlns:xi="http://www.w3.org/2001/XInclude">
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
-    <releaseinfo>Version 0.10</releaseinfo>
+    <releaseinfo>Version 0.11</releaseinfo>
     <author>
       <firstname>Stefan</firstname>
       <surname>Seefeld</surname>

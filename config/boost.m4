@@ -35,7 +35,7 @@ AC_ARG_WITH([boost_version],
                            [specify boost version]),
   [boost_version="$withval"],[boost_version=$1])
 
-boost_version_req=ifelse([$boost_version], ,1.33.0,$boost_version)
+boost_version_req=ifelse([$boost_version], ,1.35.0,$boost_version)
 boost_version_req_shorten=`expr $boost_version_req : '\([[0-9]]*\.[[0-9]]*\)'`
 boost_version_req_major=`expr $boost_version_req : '\([[0-9]]*\)'`
 boost_version_req_minor=`expr $boost_version_req : '[[0-9]]*\.\([[0-9]]*\)'`

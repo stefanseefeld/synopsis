@@ -16,7 +16,7 @@ see the file COPYING for details.
 @c title page for the printed version
 @titlepage
 @title Synopsis
-@subtitle Version: 0.10
+@subtitle Version: 0.11
 @author Stefan Seefeld
 
 @page
@@ -24,7 +24,7 @@ see the file COPYING for details.
 Copyright @copyright{} 2001-2008 Stefan Seefeld
 
 @sp 2
-This is Version: 0.10 of the Synopsis Reference Manual
+This is Version: 0.11 of the Synopsis Reference Manual
 @sp 2
 
 All rights reserved.
@@ -36,7 +36,7 @@ see the file COPYING for details.
 @headings off
 @evenheading @thispage @|  @| @thischapter
 @oddheading  @thissection @|  @| @thispage
-@everyfooting @| Synopsis Manual @| Version: 0.10
+@everyfooting @| Synopsis Manual @| Version: 0.11
 @end iftex
 
 @c top level menu
