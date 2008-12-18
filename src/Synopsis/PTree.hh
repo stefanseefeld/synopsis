@@ -13,7 +13,6 @@
 #include <Synopsis/PTree/Atoms.hh>
 #include <Synopsis/PTree/Lists.hh>
 #include <Synopsis/PTree/TypeVisitor.hh>
-#include <Synopsis/PTree/generation.hh>
 
 namespace Synopsis
 {
