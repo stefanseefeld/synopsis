@@ -10,6 +10,7 @@ Synopsis 0.11
 * Upgrade to libgc 7.0.
 * Add a new '--disable-threads' config option.
 * Fix the way template specializations are handled in the ASG.
+* Fix a number of minor incompatibilities with Python 2.6.
 * Fix a number of validation errors for the HTML formatter.
 
 Synopsis 0.10

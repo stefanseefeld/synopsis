@@ -160,7 +160,12 @@ def find_gcc_compiler_info(language, compiler, flags):
     temp = TempFile(language == 'C++' and '.cc' or '.c')
     # The output below assumes the en_US locale, so make sure we use that.
     command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, flags, temp.name)
-    cin, out, err = os.popen3(command)
+    try:
+        import subprocess # available only since Python 2.5
+        p = subprocess.Popen(commmand, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+        cin, out, err = p.stdin, p.stdout, p.stderr
+    except:
+        cin, out, err = os.popen3(command) # for Python < 2.5
     lines = err.readlines()
     cin.close()
     err.close()

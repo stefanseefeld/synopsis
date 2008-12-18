@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-import os, stat, md5
+import os, stat
 
 
 def quote_name(name):
@@ -30,9 +30,16 @@ def quote_name(name):
         name = name.replace(*p)
    
     if len(name) > 100:
-        hash = md5.md5(original).hexdigest()
+        try:
+            import hashlib # only available since Python 2.5
+            md5 = hashlib.md5()
+            md5.update(original)
+            digest = md5.digest()
+        except:
+            import md5 # for Python < 2.5
+            digest = md5.md5(original).hexdigest()
         # Keep as much of the name as possible
-        name = name[:100 - len(hash)] + hash
+        name = name[:100 - len(digest)] + digest
 
     return name
 

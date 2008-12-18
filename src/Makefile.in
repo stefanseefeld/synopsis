@@ -11,7 +11,8 @@ srcdir	:= @srcdir@
 builddir:= @builddir@
 
 PLATFORM:= @PLATFORM@
-SYNOPSIS:= python synopsis.py
+PYTHON	:= @PYTHON@
+SYNOPSIS:= $(PYTHON) synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
 LDSONAME:= @LDSONAME@
