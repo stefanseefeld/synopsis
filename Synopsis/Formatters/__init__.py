@@ -34,7 +34,7 @@ def quote_name(name):
             import hashlib # only available since Python 2.5
             md5 = hashlib.md5()
             md5.update(original)
-            digest = md5.digest()
+            digest = md5.hexdigest()
         except:
             import md5 # for Python < 2.5
             digest = md5.md5(original).hexdigest()
