@@ -212,13 +212,13 @@ pre.sxr
 }
 pre.sxr .lineno
 {
+  border-right: 1px solid #aaaaaa;
   font-style: italic;
   font-size: 90%;
   padding: .5em;
 }
 pre.sxr .line
 {
-  border-left: 1px solid #aaaaaa;
   margin-left: .2em;
   padding-left: .4em;
 }

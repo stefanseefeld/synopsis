@@ -59,6 +59,8 @@ class SXRTranslator:
             text = ''.join([n.toxml() for n in line.childNodes])
             if text:
                 writer.write('<span class="line">%s</span>\n'%text)
+            else:
+                writer.write('\n')
         writer.write('</pre>')
 
 
