@@ -2871,7 +2871,7 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
   if(t == Token::Identifier)
   {
     PTree::Identifier *name = new PTree::Identifier(tk);
-    encode.simple_name(name);
+    encode.simple_name((PTree::Node*)name);
     spec->set_encoded_name(encode);
     spec = PTree::snoc(spec, name);
     if(my_lexer.look_ahead(0) == '{') t = my_lexer.get_token(tk);
