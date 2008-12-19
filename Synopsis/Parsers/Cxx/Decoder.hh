@@ -85,6 +85,9 @@ public:
     //. explicitly casting to one or the other is ugly
   bool isName(const Synopsis::PTree::Encoding &);
 
+  friend std::ostream &operator<< (std::ostream &os, Decoder const &d)
+  { return os << code((code::const_iterator)d.m_iter, d.m_string.end());}
+
 private:
     //. The encoded type string currently being decoded
     code m_string;

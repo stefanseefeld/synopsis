@@ -2772,10 +2772,23 @@ bool Parser::initialize_expr(PTree::Node *&exp)
     while(t != '}')
     {
       PTree::Node *d = 0;
-      if (!(my_ruleset & CXX) && (t == '.' || t == '[') && !designation(d))
+      // as a GCC extension, this syntax is also permitted in C++
+      if ((!(my_ruleset & CXX) || my_ruleset & GCC) &&
+          (t == '.' || t == '[') && !designation(d))
 	return false;
-      t = my_lexer.look_ahead(0);
-      if(!initialize_expr(e))
+      // else it might be an old GCC extension: 'fieldname: initializer'
+      if ((!(my_ruleset & CXX) || my_ruleset & GCC) && !d &&
+          t == Token::Identifier && my_lexer.look_ahead(1) == ':')
+      {
+        Token id;
+        my_lexer.get_token(id);
+        Token colon;
+        my_lexer.get_token(colon);
+        d = PTree::nconc(d, PTree::list(new PTree::Identifier(id),
+                                        new PTree::Atom(colon)));
+        if (!assign_expr(e)) return false;
+      }
+      else if(!initialize_expr(e))
       {
 	if(!mark_error()) return false; // too many errors
 
@@ -2785,7 +2798,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
 	return true;		// error recovery
       }
 
-      elist = PTree::snoc(elist, d ? PTree::nconc(d, e) : e);
+      elist = PTree::snoc(elist, d ? PTree::nconc(d, PTree::list(e)) : e);
       t = my_lexer.look_ahead(0);
       if(t == '}') break;
       else if(t == ',')
@@ -2857,7 +2870,7 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
   int t = my_lexer.get_token(tk);
   if(t == Token::Identifier)
   {
-    PTree::Node *name = new PTree::Atom(tk);
+    PTree::Identifier *name = new PTree::Identifier(tk);
     encode.simple_name(name);
     spec->set_encoded_name(encode);
     spec = PTree::snoc(spec, name);

@@ -248,6 +248,9 @@ Token::Type Lexer::skip_extension(const char *&ptr, size_t &length)
   do { c = my_buffer->get();}
   while(is_blank(c) || c == '\n');
 
+#if 0
+  // FIXME: Figure out under what circumstances we need to skip
+  //        __extension__ (...)
   if(c != '(')
   {
     my_buffer->unget();
@@ -255,6 +258,10 @@ Token::Type Lexer::skip_extension(const char *&ptr, size_t &length)
   }
   skip_paren();
   return Token::Identifier; // regards it as the identifier __extension__
+#else
+  my_buffer->unget();
+  return Token::Ignore; // if no (..) follows, ignore __extension__
+#endif
 }
 
 inline bool check_end_of_instruction(Buffer *buffer, char c, const char *delimiter)
