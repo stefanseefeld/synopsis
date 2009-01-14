@@ -103,6 +103,7 @@ class SXRGenerator:
         except StopIteration:
             raise
         self.sxr.write(trailer)
+        self.sxr.close()
         self.scopes.pop()
 
     def handle(self, ptree):
