@@ -1326,6 +1326,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
 
   if(cv_q == 0 && is_constructor_decl())
   {
+    ScopeGuard guard(*this, type_name);
     PTree::Encoding ftype_encode;
     if(!constructor_decl(decl, ftype_encode))
       return false;
