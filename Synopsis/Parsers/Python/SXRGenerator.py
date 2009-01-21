@@ -319,7 +319,11 @@ class SXRGenerator:
         else: map(self.handle, content)
 
 
-    def handle_encoding_decl(self, nodes): pass
+    def handle_encoding_decl(self, nodes):
+
+        # For some reason the encoding is the last tuple item
+        for n in nodes[:-1]: self.handle(n)
+        
     def handle_import_as_names(self, nodes):
 
         for n in nodes: self.handle(n)
