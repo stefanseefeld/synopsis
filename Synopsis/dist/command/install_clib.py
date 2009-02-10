@@ -75,7 +75,9 @@ class install_clib(Command):
             self.run_command('build_clib')
 
         make = os.environ.get('MAKE', 'make')
-        command = '%s -C "%s" %s DESTDIR=%s'%(make, path, 'install', self.root)
+        command = '%s -C "%s" %s'%(make, path, 'install')
+        if self.root:
+            command += ' DESTDIR=%s'%self.root
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
             
 
