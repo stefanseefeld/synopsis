@@ -10,7 +10,6 @@ __docformat__ = 'reStructuredText'
 import sys, os, os.path, re, string, stat, tempfile
 from Synopsis.config import version
 
-
 class TempFile:
     # Use tempfile.NamedTemporaryFile once we can rely on Python 2.4
     def __init__(self, suffix):
@@ -161,17 +160,19 @@ def find_gcc_compiler_info(language, compiler, flags):
     # The output below assumes the en_US locale, so make sure we use that.
     command = 'LANG=en_US %s %s -E -v -dD %s'%(compiler, flags, temp.name)
     try:
-        import subprocess # available only since Python 2.5
-        p = subprocess.Popen(commmand, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
-        cin, out, err = p.stdin, p.stdout, p.stderr
+        import subprocess # available only since Python 2.4
+        p = subprocess.Popen(command, shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, close_fds=True)
+        stdout, stderr = p.communicate()
+        out, err = stdout.split('\n'), stderr.split('\n')
     except:
-        cin, out, err = os.popen3(command) # for Python < 2.5
-    lines = err.readlines()
-    cin.close()
-    err.close()
+        stdin, stdout, stderr = os.popen3(command) # for Python < 2.4
+        out, err = stdout.readlines(), stderr.readlines()
+        stdin.close()
 
     state = 0
-    for line in lines:
+    for line in err:
         line = line.rstrip()
         if state == 0:
             if line[:11] == 'gcc version': state = 1
@@ -187,7 +188,7 @@ def find_gcc_compiler_info(language, compiler, flags):
                 paths.append(line.strip())
     # now read built-in macros
     state = 0
-    for line in out.readlines():
+    for line in out:
         line = line.rstrip()
         if state == 0:
             if line == '# 1 "<built-in>"' or line == '# 1 "<command line>"':
@@ -200,8 +201,6 @@ def find_gcc_compiler_info(language, compiler, flags):
             elif line == '# 1 "%s"'%temp:
                 state = 0
 
-    out.close()
-    
     # Per-compiler adjustments
     for name, value in tuple(macros):
         if name == '__GNUC__' and value == '2':
