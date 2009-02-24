@@ -63,6 +63,20 @@ Building
   instead of the built in one, run 
   'python setup.py config --with-gc-prefix=/your/gc/prefix'
 
+
+* To build within the source tree, it might be best to set up
+  a setup.cfg file containing these options::
+  
+  [build_ext]
+  inplace=1
+  
+  [build_clib]
+  build_clib=.
+
+  As a result, libSynopsis.so will be built into lib/, and the
+  parser modules will be built right into Synopsis/, so set your
+  LD_LIBRARY_PATH and PYTHONPATH variables accordingly.
+
 Testing
 -------
 
