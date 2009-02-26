@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cassert>
 #include <cstring>
+#include <cstdio> // for EOF
 
 namespace Synopsis
 {
