@@ -47,6 +47,14 @@ class DeclarationFormatter(Fragment):
 
         return div('synopsis', self.label(decl.name))
 
+    def format_macro(self, decl):
+        """"""
+
+        chunk = div('synopsis', self.label(decl.name))
+        if self.xref: chunk += ' %s'%div('xref', self.xref.format_macro(decl))
+        if self.source: chunk += ' %s'%div('source', self.source.format_macro(decl))
+        return chunk
+
     def format_forward(self, decl):
 
         # treat template syntax like a premodifier

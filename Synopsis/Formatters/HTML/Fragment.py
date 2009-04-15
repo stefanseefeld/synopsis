@@ -63,6 +63,7 @@ class Fragment(object):
    # ASG Formatters
    #
    def format_declaration(self, decl): pass
+   def format_macro(self, decl): pass
    def format_forward(self, decl): pass
    def format_group(self, decl): pass
    def format_scope(self, decl): pass

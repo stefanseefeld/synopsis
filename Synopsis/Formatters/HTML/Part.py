@@ -44,6 +44,7 @@ class Part(Parametrized, ASG.Visitor):
         self.__id_holder = None
         # Lists of format methods for each ASG type
         self.__formatdict = {'format_declaration':[],
+                             'format_macro':[],
                              'format_forward':[],
                              'format_group':[],
                              'format_scope':[],
@@ -135,10 +136,11 @@ class Part(Parametrized, ASG.Visitor):
 	
     #################### ASG Visitor ############################################
     def visit_declaration(self, decl): self.format_declaration(decl, 'format_declaration')
+    def visit_macro(self, decl): self.format_declaration(decl, 'format_macro')
     def visit_forward(self, decl): self.format_declaration(decl, 'format_forward')
     def visit_group(self, decl): self.format_declaration(decl, 'format_group')
     def visit_scope(self, decl): self.format_declaration(decl, 'format_scope')
-    def visit_module(self, decl):	self.format_declaration(decl, 'format_module')
+    def visit_module(self, decl): self.format_declaration(decl, 'format_module')
     def visit_meta_module(self, decl): self.format_declaration(decl, 'format_meta_module')
     def visit_class(self, decl): self.format_declaration(decl, 'format_class')
     def visit_class_template(self, decl): self.format_declaration(decl, 'format_class_template')
