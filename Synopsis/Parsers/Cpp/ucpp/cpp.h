@@ -1,5 +1,5 @@
 /*
- * (c) Thomas Pornin 1999, 2000
+ * (c) Thomas Pornin 1999 - 2002
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -123,15 +123,14 @@ enum {
 	LAST_MEANINGFUL_TOKEN,		/* reserved words will go there */
 
 	MACROARG,	/* special token for representing macro arguments */
-	MACROEND,	/* special token for representing end of macro */
 
 	UPLUS = CPPERR,	/* unary + */
 	UMINUS		/* unary - */
 };
 
+#include "tune.h"
 #include <stdio.h>
 #include <setjmp.h>
-#include "tune.h"
 
 struct token {
 	int type;
@@ -191,6 +190,10 @@ struct lexer_state {
 	/* lexer options */
 	long line;
 	long oline;
+#ifdef SYNOPSIS
+	long column;           /*< Position of next read token is column + discard */
+	long ocolumn;          /*< Position of next written token is ocolumn */
+#endif
 	unsigned long flags;
 	long count_trigraphs;
 	struct garbage_fifo *gf;
@@ -199,11 +202,6 @@ struct lexer_state {
 	int condcomp;
 	int condmet;
 	unsigned long condf[2];
-#ifdef SYNOPSIS
-	/* Synopsis options */
-	long input_pos;     /*< Pos of next token is input_pos + discard */
-	long output_pos;    /*< Pos in output stream. May use for stats */
-#endif
 };
 
 /*
@@ -241,7 +239,7 @@ struct lexer_state {
 /* internal flags */
 #define READ_AGAIN	     0x080000UL	/* emit again the last token */
 #define TEXT_OUTPUT	     0x100000UL	/* output text */
-#define FILE_STRIKES_BACK    0x200000UL /* return to a file */
+
 /*
  * Public function prototypes
  */
@@ -273,6 +271,8 @@ void add_incpath(char *);
 void init_tables(int);
 int enter_file(struct lexer_state *, unsigned long, unsigned long enter_exit);
 int cpp(struct lexer_state *);
+void set_identifier_char(int c);
+void unset_identifier_char(int c);
 
 #ifdef UCPP_MMAP
 FILE *fopen_mmap_file(char *);

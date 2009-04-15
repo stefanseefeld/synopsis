@@ -1,329 +1,161 @@
 //
-// Copyright (C) 2003 Stefan Seefeld
+// Copyright (C) 2009 Stefan Seefeld
 // All rights reserved.
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
 
-#include <Synopsis/ASG/ASGKit.hh>
-#include <Support/Path.hh>
-#include <Support/ErrorHandler.hh>
+#include "comments.hh"
+#include <cstdio>
+#include <stdexcept>
 #include <vector>
 #include <string>
-#include <iostream>
-#include <fstream>
 #include <cstring>
-#include <cstdio>
-#include <memory>
-#include <functional>
-#include <algorithm>
-
-using namespace Synopsis;
-
-PyObject *py_error;
-
-namespace
-{
-
-int verbose = 0;
-int debug = 0;
-int profile = 0;
-int primary_file_only = 0;
-bool active = true;
-const char *language;
-std::string base_path;
-// these python objects need to be referenced as pointers
-// since the python runtime environment has to be initiaized first
-std::auto_ptr<ASG::ASGKit> asg_kit;
-std::auto_ptr<SourceFileKit> sf_kit;
-std::auto_ptr<IR> ir;
-std::auto_ptr<SourceFile> source_file;
-const char *input = 0;
-
-//. creates new SourceFile object and store it into ast
-SourceFile create_source_file(const std::string &filename, bool primary)
-{
-  Path path = Path(filename).abs();
-  path.strip(base_path);
-  std::string name = path.str();
-  SourceFile sf = sf_kit->create_source_file(name, filename);
-  Python::Dict files = ir->files();
-  files.set(name, sf);
-  if (primary) sf.set_primary(true);
-  return sf;
-}
-
-//. creates new or returns existing SourceFile object
-//. with the given filename
-SourceFile lookup_source_file(const std::string &filename, bool primary)
-{
-  Python::Dict files = ir->files();
-  Path path = Path(filename).abs();
-  path.strip(base_path);
-  SourceFile sf = files.get(path.str());
-  if (sf && primary) sf.set_primary(true);
-  return sf ? sf : create_source_file(filename, primary);
-}
-
-//. creates new Macro object
-void create_macro(const char *filename, int line,
-		  const char *macro_name, int num_args, const char **args,
-		  int vaarg, const char *text)
-{
-  Python::Tuple name(macro_name);
-  SourceFile sf = lookup_source_file(filename, true);
-  Python::List params;
-  if (args)
-  {
-    for (int i = 0; i < num_args; ++i) params.append(args[i]);
-    if (vaarg) params.append("...");
-  }
-  ASG::Macro macro = asg_kit->create_macro(sf, line, name, params, text);
-  Python::Module qn = Python::Module::import("Synopsis.QualifiedName");
-  Python::Object qname_ = qn.attr("QualifiedCxxName");
-  ASG::DeclaredTypeId declared =
-    asg_kit->create_declared_type_id(qname_(Python::Tuple(Python::Object(name))), macro);
-
-  Python::List declarations = ir->declarations();
-  declarations.append(macro);
-
-  Python::Dict types = ir->types();
-  types.set(qname_(name), declared);
-}
-
-bool extract(PyObject *py_flags, std::vector<const char *> &out)
-{
-  Py_INCREF(py_flags);
-  Python::List list = Python::Object(py_flags);
-  for (size_t i = 0; i != list.size(); ++i)
-  {
-    const char *value = Python::Object::narrow<const char *>(list.get(i));
-    if (!value) return false;
-    out.push_back(value);
-  }
-  return true;
-}
 
 extern "C"
 {
-  // ucpp_main is the renamed main() func of ucpp, since it is included in this
-  // module
-  int ucpp_main(int argc, char** argv);
+#include <cpp.h>
+};
+
+void handle_newline(lexer_state &ls)
+{
+  add_newline();
+  if (ls.flags & KEEP_OUTPUT) fputs("\n", ls.output);
 }
 
-PyObject *ucpp_parse(PyObject *self, PyObject *args)
+void handle_pragma(lexer_state &ls)
 {
-  try
+  if (ls.flags & KEEP_OUTPUT)
   {
-    const char *py_base_path;
-    char *output;
-    PyObject *py_system_flags, *py_flags;
-    std::vector<const char *> flags;
-    PyObject *py_ir;
-    if (!PyArg_ParseTuple(args, "OszzsO!O!iiii",
-                          &py_ir,
-                          &input,
-                          &py_base_path,
-                          &output,
-                          &language,
-                          &PyList_Type, &py_system_flags,
-                          &PyList_Type, &py_flags,
-                          &primary_file_only,
-                          &verbose,
-                          &debug,
-                          &profile)
-        || !extract(py_flags, flags) || !extract(py_system_flags, flags))
-      return 0;
-    
-    Py_INCREF(py_error);
-    std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
-    Py_INCREF(py_ir);
-    // since everything in this file is accessed only during the execution
-    // of ucpp_parse, we can safely manage these objects in this scope yet
-    // reference them globally (for convenience)
-    ir.reset(new IR(py_ir));
-    asg_kit.reset(new ASG::ASGKit(language));
-    sf_kit.reset(new SourceFileKit(language));
-
-//     std::cout << "base path " << base_path << std::endl;
-    if (py_base_path)
+    // If this is a PRAGMA token, the
+    // string content is in fact a compressed token list,
+    // that we uncompress and print.
+    fputs("#pragma ", ls.output);
+    for (char *c = ls.ctok->name; *c; ++c)
     {
-      Path path(py_base_path);
-      base_path = path.abs().str();
-    }
-//     std::cout << "base path " << base_path << std::endl;
-    source_file.reset(new SourceFile(lookup_source_file(input, true)));
-
-    // ucpp considers __STDC__ to be predefined, and doesn't allow
-    // us to set it explicitely.
-    flags.erase(std::remove(flags.begin(), flags.end(), std::string("-D__STDC__=1")),
-                flags.end());
-
-    flags.insert(flags.begin(), "ucpp");
-    flags.push_back("-C"); // keep comments
-    flags.push_back("-lg"); // gcc-like line numbers
-    if (output)
-    {
-      flags.push_back("-o"); // output to...
-      flags.push_back(output);
-    }
-    else
-    {
-      flags.push_back("-o"); // output to...
-#ifdef __WIN32__
-      flags.push_back("NUL");
-#else
-      flags.push_back("/dev/null");
-#endif
-    }
-    flags.push_back(input);
-    if (verbose)
-    {
-      std::cout << "calling ucpp\n";
-      for (std::vector<const char *>::iterator i = flags.begin();
-	   i != flags.end(); ++i)
-	std::cout << ' ' << *i;
-      std::cout << std::endl;
-    }
-    
-    int status = ucpp_main(flags.size(), (char **)&*flags.begin());
-    if (status != 0)
-    {
-      std::string msg = "ucpp could not parse ";
-      msg += input;
-      Python::Object py_e((*error_type)(Python::Tuple(msg)));
-      PyErr_SetObject(py_error, py_e.ref());
-    }
-
-    Python::Dict files = ir->files();
-    Path path = Path(input).abs();
-    path.strip(base_path);
-    files.set(path.str(), *source_file);
-
-    py_ir = ir->ref(); // add new reference
-    // make sure these objects are deleted before the python runtime
-    source_file.reset();
-    asg_kit.reset();
-    sf_kit.reset();
-    ir.reset();
-    return py_ir;
-  }
-  catch (const std::exception &e)
-  {
-    std::cerr << "Internal error : " << e.what() << std::endl;
-    return 0;
-  }
-}
-
-extern "C"
-{
-  //. This function is a callback from the ucpp code to report
-  //. a context switch in the parser, i.e. either to enter a
-  //. new (included) file (@new_file == true) or to return control
-  //. to an already open file once parsing an included file is
-  //. terminated (@new_file == false)
-  //. Depending on whether the new filename matches with the base_path,
-  //. the parser is activated or deactivated
-  void synopsis_file_hook(const char *filename, int new_file)
-  {
-    // turn 'filename' into an absolute path so we can match it against
-    // base_path
-    std::string abs_filename = Path(filename).abs().str();
-    bool activate = false;
-//     std::cout << base_path << ' ' << abs_filename << std::endl;
-    if ((primary_file_only && strcmp(input, filename)) || 
-	(base_path.size() && abs_filename.substr(0, base_path.size()) != base_path))
-      active = false;
-    else
-    {
-      if (!active) active = activate = true;
-    }
-
-//     std::cout << "synopsis_file_hook " << filename << ' ' << new_file << ' ' << active << std::endl;
-//     std::cout << base_path.size() << ' ' << abs_filename << ' ' << base_path << std::endl;
-//     std::cout << input << ' ' << filename << std::endl;
-    if (!active) return;
-
-    // just for symmetry, don't report if we were just activated 
-    if (debug && !activate)
-      if (new_file)
-	std::cout << "entering new file " << abs_filename << std::endl;
+      if (STRING_TOKEN(*c))
+        for (++c; *c != PRAGMA_TOKEN_END; ++c) fputc(*c, ls.output);
       else
-	std::cout << "returning to file " << abs_filename << std::endl;
-
-    source_file.reset(new SourceFile(lookup_source_file(abs_filename, true)));
+        fputs(operators_name[*c], ls.output);
+    }
   }
+}
 
-  //. This function is a callback from the ucpp code to store macro
-  //. expansions
-  void synopsis_macro_hook(const char *name,
-                           int start_line, int start_col, int end_line, int end_col,
-			   int e_start_line, int e_start_col, int e_end_line, int e_end_col)
-  {
-    if (!active) return;
-    if (debug) 
-      std::cout << "macro : " << name << " (" << start_line << ':' << start_col << ")<->("
-		<< end_line << ':' << end_col << ") expanded to ("
-                << e_start_line << ':' << e_start_col << ")<->(" << e_end_line << ':' << e_end_col << ')'
-                << std::endl;
-
-    Python::List calls = source_file->macro_calls();
-    calls.append(sf_kit->create_macro_call(name,
-                                           start_line, start_col, end_line, end_col,
-                                           e_start_line, e_start_col, e_end_line, e_end_col));
-  }
-
-  //. This function is a callback from the ucpp code to store includes
-  void synopsis_include_hook(const char *source, const char *target,
-			     const char *fname, int is_system,
-			     int is_macro, int is_next)
-  {
-    if (!active) return;
-
-    std::string name = fname;
-    if (is_system) name = '"' + name + '"';
-    else name = '<' + name + '>';
-
-    if (debug) 
-      std::cout << "include : " << source << ' ' << target << ' ' << name << ' '
-		<< is_macro << ' ' << is_next << std::endl;
-
-    Path path = Path(target).abs();
-
-//     bool main = !base_path || strncmp(path.str().c_str(), base_path, strlen(base_path));
-    SourceFile target_file = lookup_source_file(path.str(), false);
-
-    Include include = sf_kit->create_include(target_file, name, is_macro, is_next);
-    Python::List includes = source_file->includes();
-    includes.append(include);
-  }
-
-  //. This function is a callback from the ucpp code to store macro
-  //. definitions
-  void synopsis_define_hook(const char *filename, int line,
-			    const char *name,
-			    int num_args, const char **args, int vaarg, 
-			    const char *text)
-  {
-    if (!active) return;
-    if (debug) 
-      std::cout << "define : " << filename << ' ' << line << ' ' 
-		<< name << ' ' << num_args << ' ' << text << std::endl;
-
-    create_macro(filename, line, name, num_args, args, vaarg, text);
-  }
-};
-
-PyMethodDef methods[] = {{(char*)"parse", ucpp_parse, METH_VARARGS},
-			 {0}};
-};
-
-extern "C" void initParserImpl()
+void handle_context(lexer_state &ls)
 {
-  Python::Module module = Python::Module::define("ParserImpl", methods);
-  module.set_attr("version", "0.1");
-  Python::Object processor = Python::Object::import("Synopsis.Processor");
-  Python::Object error_base = processor.attr("Error");
-  py_error = PyErr_NewException("ParserImpl.ParseError", error_base.ref(), 0);
-  module.set_attr("ParseError", py_error);
+  if (ls.flags & KEEP_OUTPUT)
+    fprintf(ls.output, "#line %ld \"%s\"\n", ls.line, ls.ctok->name);//, enter_leave);
+  // Reset for new file.
+  ls.oline = ls.line;
+}
+
+void handle_token(lexer_state &ls)
+{
+  if (ls.flags & KEEP_OUTPUT)
+    fputs(STRING_TOKEN(ls.ctok->type) ? ls.ctok->name : operators_name[ls.ctok->type],
+          ls.output);
+  if (ls.ctok->type == COMMENT)
+  {
+    if (ls.ctok->name[0] == '/' && ls.ctok->name[1] == '*')
+    {
+      add_ccomment(ls.ctok->name);
+      // If this is a multi-line comment, account for embedded newlines.
+      char const *c = ls.ctok->name + 2;
+      while (*(++c)) if (*c == '\n') ++ls.oline;
+    }
+    else
+      add_cxxcomment(ls.ctok->name);
+  }
+  else
+    clear_comment_cache();
+}
+
+
+void ucpp(char const *input, char const *output, std::vector<std::string> const &flags)
+{
+  lexer_state ls;
+
+  // step 1
+  init_cpp();
+
+  // step 2
+  no_special_macros = 0;
+  emit_defines = emit_assertions = 0;
+
+  // step 3 -- with assertions
+  init_tables(1);
+
+  // step 4 -- no default include path
+  init_include_path(0);
+
+  // step 5 -- no need to reset the two emit_* variables set in 2
+  emit_dependencies = 0;
+
+  // step 6 -- we work with stdin, this is not a real filename
+  set_init_filename(const_cast<char*>(input), 0);
+
+  // step 7 -- we make sure that assertions are on, and pragma are handled
+  init_lexer_state(&ls);
+  init_lexer_mode(&ls);
+  ls.flags |= HANDLE_ASSERTIONS | HANDLE_PRAGMA | LINE_NUM | KEEP_OUTPUT;
+  ls.flags |= MACRO_VAARG | CPLUSPLUS_COMMENTS | HANDLE_TRIGRAPHS; 
+  ls.flags &= ~DISCARD_COMMENTS;
+
+  // step 8 -- prepare I/O
+  ls.input = fopen(input, "r");
+  if (!ls.input) throw std::runtime_error("unable to open input for reading");
+  if (output && output[0] == '-' && output[1] == 0) ls.output = stdout;
+  else if (output)
+  {
+    ls.output = fopen(output, "w");
+    if (!ls.output)
+    {
+
+      fclose(ls.input);
+      throw std::runtime_error("unable to open output for writing");
+    }
+  }
+  else
+  {
+    // no output
+    ls.output = 0;
+    ls.flags &= ~KEEP_OUTPUT;
+  }
+
+  // step 9 -- handle preprocessor flags: -D, -U, and -I
+  for (std::vector<std::string>::const_iterator i = flags.begin(); i != flags.end(); ++i)
+  {
+    // -D
+    if (*i == "-D") define_macro(&ls, const_cast<char*>((++i)->c_str()));
+    else if (i->substr(0, 2) == "-D") define_macro(&ls, const_cast<char*>(i->substr(2).c_str()));
+    // -U
+    else if (*i == "-U") undef_macro(&ls, const_cast<char*>((++i)->c_str()));
+    else if (i->substr(0, 2) == "-U") undef_macro(&ls, const_cast<char*>(i->substr(2).c_str()));
+    // -I
+    else if (*i == "-I") add_incpath(const_cast<char*>((++i)->c_str()));
+    else if (i->substr(0, 2) == "-I") add_incpath(const_cast<char*>(i->substr(2).c_str()));
+  }
+  // step 10 -- we are a lexer and we want CONTEXT tokens
+  enter_file(&ls, ls.flags, 0);
+
+  // read tokens until end-of-input is reached -- errors (non-zero
+  // retur nvalues different from CPPERR_EOF) are ignored
+  int r;
+  while ((r = lex(&ls)) < CPPERR_EOF)
+  {
+    if (r)
+    {
+      // error condition -- no token was retrieved
+      continue;
+    }
+    if (ls.ctok->type == PRAGMA) handle_pragma(ls);
+    else if (ls.ctok->type == CONTEXT) handle_context(ls);
+    else if (ls.ctok->type == NEWLINE) handle_newline(ls);
+    else handle_token(ls);
+  }
+
+  // give back memory and exit
+  wipeout();
+  if (ls.output && ls.output != stdout) fclose(ls.output);
+  free_lexer_state(&ls);
 }

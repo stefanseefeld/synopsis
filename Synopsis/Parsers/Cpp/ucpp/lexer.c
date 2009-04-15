@@ -1,5 +1,5 @@
 /*
- * (c) Thomas Pornin 1999, 2000
+ * (c) Thomas Pornin 1999 - 2002
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,17 +28,13 @@
  */
 
 #include "tune.h"
-#ifdef UCPP_MMAP
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE	1
-#endif
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 #include <limits.h>
 #include "ucppi.h"
 #include "mem.h"
+#include "assert.h"
 #ifdef UCPP_MMAP
 #include <unistd.h>
 #include <sys/types.h>
@@ -160,7 +156,7 @@ static struct machine_state {
 	/* after a " */
 	{ S_STRING,	{ ANY },	PUT(S_STRING)		},
 	{ S_STRING,	{ VCH },	FRZ(S_TRUNC)		},
-	/*{ S_STRING,	{ '\n' },	FRZ(S_BEHEAD)		},*/
+	{ S_STRING,	{ '\n' },	FRZ(S_BEHEAD)		},
 	{ S_STRING,	{ '\\' },	PUT(S_STRING2)		},
 	{ S_STRING,	{ '"' },	PUT(STO(STRING))	},
 
@@ -404,6 +400,24 @@ void init_cppm(void)
 	}
 }
 
+/*
+ * Make some character as equivalent to a letter for identifiers.
+ */
+void set_identifier_char(int c)
+{
+	cppm[S_START][c] = PUT(S_NAME);
+	cppm[S_NAME][c] = PUT(S_NAME);
+}
+
+/*
+ * Remove the "identifier" status from a character.
+ */
+void unset_identifier_char(int c)
+{
+	cppm[S_START][c] = S_ILL;
+	cppm[S_NAME][c] = FRZ(STO(NAME));
+}
+
 int space_char(int c)
 {
 	if (c == ' ' || c == '\t' || c == '\v' || c == '\f'
@@ -454,9 +468,10 @@ static inline void write_char(struct lexer_state *ls, unsigned char c)
 	if (c == '\n') {
 		ls->oline ++;
 #ifdef SYNOPSIS
-		ls->output_pos = 0;
+                assert(0);
+		ls->ocolumn = 0;
 	} else {
-		ls->output_pos++;
+		ls->ocolumn++;
 #endif
 	}
 }
@@ -480,8 +495,8 @@ static inline int read_char(struct lexer_state *ls)
 #ifdef SYNOPSIS
 		int c = ((ls->pbuf ++) < ls->ebuf) ?
 			ls->input_string[ls->pbuf - 1] : -1;
-		if (c == '\n') ls->input_pos = 0;
-		else ls->input_pos++;
+		if (c == '\n') ls->column = 0;
+		else ls->column++;
 		return c;
 #else
 		return ((ls->pbuf ++) < ls->ebuf) ?
@@ -511,8 +526,8 @@ static inline int read_char(struct lexer_state *ls)
 		c = x;
 #endif
 #ifdef SYNOPSIS
-		if (c == '\n') ls->input_pos = 0;
-		else ls->input_pos++;
+		if (c == '\n') ls->column = 0;
+		else ls->column++;
 #endif
 		if (ls->flags & COPY_LINE) {
 			if (c == '\n') {
@@ -794,11 +809,11 @@ static inline int read_token(struct lexer_state *ls)
 	int cstat = S_START, nstat;
 	size_t ltok = 0;
 	int c, outc = 0, ucn_in_id = 0;
-	int shift_state = 0;
-	unsigned long utf8 = 0;
+	int shift_state;
+	unsigned long utf8;
 	long l = ls->line;
 #ifdef SYNOPSIS
-	ls->ctok->pos = ls->input_pos + (ls->discard ? 1 : 0);
+	ls->ctok->pos = ls->column + (ls->discard ? 1 : 0);
 #endif
 	ls->ctok->line = l;
 	if (ls->pending_token) {
@@ -930,7 +945,7 @@ static inline int read_token(struct lexer_state *ls)
 					outc = 0;
 				} else if (z == S_LCHAR || z == S_SLASH
 					|| (z == S_SHARP && ls->ltwnl)
-					//|| (z == S_PCT && ls->ltwnl)
+					|| (z == S_PCT && ls->ltwnl)
 					|| (z == S_BACKSLASH)) {
 					outc = c;
 				} else if (z == S_PCT2 && ls->ltwnl) {
