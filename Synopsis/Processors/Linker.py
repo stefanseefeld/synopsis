@@ -43,19 +43,20 @@ class Linker(Composite, ASG.Visitor):
       for file in self.ir.files.values():
          self.visit_source_file(file)
 
-      self.ir = TemplateLinker.TemplateLinker().process(self.ir)
+      self.ir = TemplateLinker.TemplateLinker().process(self.ir, debug=self.debug)
 
       if self.remove_empty_modules:
          import ModuleFilter
-         self.ir = ModuleFilter.ModuleFilter().process(self.ir)
+         self.ir = ModuleFilter.ModuleFilter().process(self.ir, debug=self.debug)
 
       if self.sort_modules:
          import ModuleSorter
-         self.ir = ModuleSorter.ModuleSorter().process(self.ir)
+         self.ir = ModuleSorter.ModuleSorter().process(self.ir, debug=self.debug)
          
       if self.sxr_prefix:
          import SXRCompiler
-         self.ir = SXRCompiler.SXRCompiler(prefix=self.sxr_prefix).process(self.ir)
+         sxrcompiler = SXRCompiler.SXRCompiler(prefix=self.sxr_prefix)
+         self.ir = sxrcompiler.process(self.ir, debug=self.debug)
 
       # now deal with the sub-processors, if any
       output = self.output
