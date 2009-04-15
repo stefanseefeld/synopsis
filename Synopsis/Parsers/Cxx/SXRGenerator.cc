@@ -61,6 +61,29 @@ SXRGenerator::~SXRGenerator()
   }
 }
 
+void SXRGenerator::xref_macro_calls()
+{
+  for (SXRDict::iterator f = buffers_.begin(); f != buffers_.end(); ++f)
+  {
+    ASG::SourceFile *file = f->first;
+    SXRBuffer *sxr = f->second;
+    ASG::SourceFile::Lines &lines = file->macro_calls();
+    for (ASG::SourceFile::Lines::iterator l = lines.begin(); l != lines.end(); ++l)
+    {
+      long lineno = l->first;
+      ASG::SourceFile::Line &line = l->second;
+      for (ASG::SourceFile::Line::iterator e = line.begin(); e != line.end(); ++e)
+      {
+        ASG::SourceFile::MacroCall const &call = *e;
+        if (!call.continuation)
+          sxr->insert_xref(lineno, call.column, call.name.size(), call.name, "definition",
+                           "global scope", "macro call", false);
+        
+      }
+    }
+  }
+}
+
 Walker* SXRGenerator::walker()
 {
   return walker_;

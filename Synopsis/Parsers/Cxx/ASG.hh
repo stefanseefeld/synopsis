@@ -317,6 +317,27 @@ private:
 class SourceFile : public FakeGC::LightObject
 {
 public:
+  struct MacroCall
+  {
+    MacroCall(char const *n, long col, long sl, long sc, long el, long ec, long o, bool c = false)
+      : name(n), column(col), start_line(sl), start_column(sc), end_line(el), end_column(ec),
+        offset(o), continuation(c) {}
+    std::string name;
+    // start column of the macro call
+    long column;
+    // start position of the expanded macro
+    long start_line, start_column;
+    // end position of the expanded macro
+    long end_line, end_column;
+    // offset of all subsequent tokens in the stream, caused by this expansion.
+    long offset;
+    // true if this is the continuation from a call in a previous line.
+    bool continuation;
+    bool operator <(const MacroCall &o) const { return start_column < o.start_column;}
+  };
+  typedef std::set<MacroCall> Line;
+  typedef std::map<long, Line> Lines;
+
   //. A vector of SourceFiles
   typedef std::vector<SourceFile*> vector;
 
@@ -332,28 +353,20 @@ public:
   Include::vector& includes() { return includes_;}
   const Include::vector& includes() const { return includes_;}
 
-  void add_macro_call(char const *name, int line, int start_col, int end_col, int offset);
+  //. Right now we record the start position (line, column) of the call,
+  //. the start and end positions of the expansion, as well as the offset 
+  //. of subsequent tokens due to expansion.
+  void add_macro_call(char const *name, long start_line, long start_col,
+                      long e_start_line, long e_start_col, long e_end_line, long e_end_col,
+                      long offset, bool);
+
+  Lines &macro_calls() { return macro_calls_;}
 
   //. Map a position in the preprocessed file to a position in the original file.
   //. If the position happens to fall right into an expanded macro, -1 is returned.
   int map_column(int line, int col);
   
 private:
-  struct MacroCall
-  {
-    MacroCall(char const *n, int s, int e, int o)
-      : name(n), start(s), end(e), offset(o) {}
-    std::string name;
-    // start column of the expanded macro
-    long start;
-    // end column of the expanded macro
-    long end;
-    // offset of all subsequent tokens in the stream, caused by this expansion.
-    long offset;
-    bool operator <(const MacroCall &o) const { return start < o.start;}
-  };
-  typedef std::set<MacroCall> Line;
-  typedef std::map<long, Line> Lines;
 
   std::string name_;
   std::string abs_name_;

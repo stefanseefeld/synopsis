@@ -58,6 +58,9 @@ public:
   //. Destructor. Closes all opened file streams
   ~SXRGenerator();
 
+  //. Store links for all macro calls back to their definitions.
+  void xref_macro_calls();
+
   //. Store a link for the given Ptree node. If a decl is given, store an
   //. xref too
   void xref(Synopsis::PTree::Node *node, Context, QName const &name, std::string const &desc, ASG::Declaration const *decl = 0);

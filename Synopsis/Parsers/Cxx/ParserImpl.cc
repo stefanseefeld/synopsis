@@ -179,6 +179,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       Translator translator(filter, ir);
       translator.set_builtin_decls(builder.builtin_decls());
       translator.translate(builder.scope());
+      if (sxr_generator) sxr_generator->xref_macro_calls();
       delete sxr_generator;
     }
   }

@@ -12,10 +12,11 @@
 
 using namespace ASG;
 
-void SourceFile::add_macro_call(char const *name, int l, int s, int e, int o)
+void SourceFile::add_macro_call(char const *name, long l, long col,
+                                long sl, long sc, long el, long ec, long o, bool c)
 {
   Line &line = macro_calls_[l];
-  line.insert(MacroCall(name, s, e, o));
+  line.insert(MacroCall(name, col, sl, sc, el, ec, o, c));
 }
 
 int SourceFile::map_column(int l, int col)
@@ -24,9 +25,9 @@ int SourceFile::map_column(int l, int col)
   if (i == macro_calls_.end()) return col;
   Line &line = i->second;
   int offset = 0;
-  for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start <= col; ++j)
+  for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start_column <= col; ++j)
   {
-    if (col <= j->end) return -1;
+    if (j->end_column == -1 || col <= j->end_column) return -1;
     offset = j->offset;
   }
   return col - offset;

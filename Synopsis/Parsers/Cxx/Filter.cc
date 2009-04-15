@@ -72,26 +72,32 @@ ASG::SourceFile *import_source_file(PyObject *ir,
   {
     PyObject *call = PyList_GetItem(macro_calls, i);
     PyObject *call_name = PyObject_GetAttrString(call, "name");
+    PyObject *start = PyObject_GetAttrString(call, "start");
     PyObject *end = PyObject_GetAttrString(call, "end");
     PyObject *expanded_start = PyObject_GetAttrString(call, "expanded_start");
     PyObject *expanded_end = PyObject_GetAttrString(call, "expanded_end");
     char const *macro_name = PyString_AsString(call_name);
-    int col = PyInt_AsLong(PyTuple_GetItem(end, 1));
-    int start_line = PyInt_AsLong(PyTuple_GetItem(expanded_start, 0));
-    int start_col = PyInt_AsLong(PyTuple_GetItem(expanded_start, 1));
-    int end_line = PyInt_AsLong(PyTuple_GetItem(expanded_end, 0));
-    int end_col = PyInt_AsLong(PyTuple_GetItem(expanded_end, 1));
-    if (start_line == end_line)
-      sourcefile->add_macro_call(macro_name,
-                                 start_line, start_col, end_col, end_col - col);
+    long start_line = PyInt_AsLong(PyTuple_GetItem(start, 0));
+    long start_col = PyInt_AsLong(PyTuple_GetItem(start, 1));
+    long end_col = PyInt_AsLong(PyTuple_GetItem(end, 1));
+    long e_start_line = PyInt_AsLong(PyTuple_GetItem(expanded_start, 0));
+    long e_start_col = PyInt_AsLong(PyTuple_GetItem(expanded_start, 1));
+    long e_end_line = PyInt_AsLong(PyTuple_GetItem(expanded_end, 0));
+    long e_end_col = PyInt_AsLong(PyTuple_GetItem(expanded_end, 1));
+    if (e_start_line == e_end_line)
+      sourcefile->add_macro_call(macro_name, start_line, start_col,
+                                 e_start_line, e_start_col, e_end_line, e_end_col, e_end_col - end_col, false);
     else
     {
       // first line
-      sourcefile->add_macro_call(macro_name, start_line, start_col, -1, 0);
-      for (int line = start_line + 1; line != end_line; ++line)
-        sourcefile->add_macro_call(macro_name, line, 0, -1, 0);
+      sourcefile->add_macro_call(macro_name, start_line, start_col,
+                                 e_start_line, e_start_col, -1, -1, 0, false);
+      for (int line = e_start_line + 1; line != e_end_line; ++line)
+        sourcefile->add_macro_call(macro_name, start_line, start_col,
+                                   line, 0, -1, -1, 0, true);
       // last line
-      sourcefile->add_macro_call(macro_name, end_line, 0, end_col, end_col - col);
+      sourcefile->add_macro_call(macro_name, start_line, start_col,
+                                 e_end_line, 0, e_end_line, e_end_col, e_end_col - end_col, true);
     }
     Py_DECREF(expanded_end);
     Py_DECREF(expanded_start);
