@@ -6,6 +6,13 @@
 #
 
 import os, stat
+try:
+    import hashlib
+    md5 = hashlib.md5
+except ImportError:
+    # 2.4 compatibility
+    import md5
+    md5 = md5.new
 
 
 def quote_name(name):
@@ -30,14 +37,7 @@ def quote_name(name):
         name = name.replace(*p)
    
     if len(name) > 100:
-        try:
-            import hashlib # only available since Python 2.5
-            md5 = hashlib.md5()
-            md5.update(original)
-            digest = md5.hexdigest()
-        except:
-            import md5 # for Python < 2.5
-            digest = md5.md5(original).hexdigest()
+        digest = md5(original).hexdigest()
         # Keep as much of the name as possible
         name = name[:100 - len(digest)] + digest
 
