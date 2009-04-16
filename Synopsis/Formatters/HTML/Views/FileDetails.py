@@ -79,43 +79,46 @@ class FileDetails(View):
          includes = [i for i in file.includes if i.target.annotations['primary']]
          self.write('<h2 class="heading">Includes from this file:</h2>')
          if not includes:
-            self.write('No includes.<br/>')
-         for include in includes:
-            target_filename = include.target.name
-            if include.is_next: idesc = 'include_next '
-            else: idesc = 'include '
-            if include.is_macro: idesc = idesc + 'from macro '
-            link = rel(self.filename(), self.directory_layout.file_details(target_filename))
-            self.write(idesc + href(link, target_filename)+'<br/>')
+            self.write('<p>No includes.</p>\n')
+         else:
+            self.write('<ul>\n')
+            for include in includes:
+               target_filename = include.target.name
+               if include.is_next: idesc = 'include_next '
+               else: idesc = 'include '
+               if include.is_macro: idesc = idesc + 'from macro '
+               link = rel(self.filename(), self.directory_layout.file_details(target_filename))
+               self.write('<li>' + idesc + href(link, target_filename)+'</li>\n')
+            self.write('</ul>\n')
       except:
          pass
 
-      self.write('<h2 class="heading">Declarations in this file:</h2>')
+      self.write('<h2 class="heading">Declarations in this file:</h2>\n')
       # Sort items (by name)
-      items = [(d.type, d.name, d) for d in file.declarations]
+      items = [(d.type, d.name, d) for d in file.declarations
+               # We don't want to list (function, template) parameters, and neither 'this'.
+               if type(d) is not ASG.Parameter and d.type not in ('this', 'parameter', 'local variable')]
       # ignore ASG.Builtin
       items = [i for i in items if not isinstance(i[2], ASG.Builtin)]
       items.sort()
       curr_scope = None
       curr_type = None
-      br = 0
       for decl_type, name, decl in items:
          # Check scope and type to see if they've changed since the last
          # declaration, thereby forming sections of scope and type
          decl_scope = name[:-1]
          if decl_scope != curr_scope or decl_type != curr_type:
             if curr_scope is not None:
-               self.write('\n</div>')
+               self.write('\n</div>\n')
             curr_scope = decl_scope
             curr_type = decl_type
             if len(curr_type) and curr_type[-1] == 's': plural = 'es'
             else: plural = 's'
             if len(curr_scope):
-               self.write('<h3>%s%s in %s</h3>\n<div>'%(
+               self.write('<div><h3>%s%s in %s</h3>\n'%(
                   curr_type.capitalize(), plural, escape(str(curr_scope))))
             else:
-               self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
-            br = 0
+               self.write('<div><h3>%s%s</h3>\n'%(curr_type.capitalize(),plural))
             
          # Format this declaration
          entry = self.processor.toc[name]
@@ -123,17 +126,13 @@ class FileDetails(View):
          label = replace_spaces(label)
          if entry:
             link = rel(self.filename(), entry.link)
-            text = ' ' + href(link, label)
+            item = href(link, label)
          else:
-            text = ' ' + label
-         if br: self.write('<br/>')
-         self.write(text)
-         # Print summary
-         text = self.processor.documentation.summary(decl, self)
-         self.write('<br/>\n' + span('summary', text))
-         br = 1
+            item = label
+         doc = div('doc', self.processor.documentation.summary(decl, self))
+         self.write(div('item', item + '\n' + doc) + '\n')
 	
       # Close open div
       if curr_scope is not None:
-         self.write('\n</div>')
+         self.write('</div>\n')
       self.end_file()
