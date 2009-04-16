@@ -1,5 +1,5 @@
 %define name synopsis
-%define version 0.11
+%define version 0.12
 %define release 1
 %define py_sitedir %(%{__python} -c "from distutils.sysconfig  import get_python_lib; print get_python_lib()")
 %define py_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")
@@ -127,5 +127,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/synopsis-%{version}/NEWS
 
 %changelog
+* Thu Apr 16 2009 Stefan Seefeld <stefan@fresco.org> 0.12-1
+- Bump version number.
+
 * Fri Dec 26 2008 Stefan Seefeld <stefan@fresco.org> 0.11-1
 - initial package.

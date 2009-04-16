@@ -108,7 +108,7 @@ class build_ext(base):
             
             if self.inplace: build_path = target
             else: build_path = os.path.join(self.build_lib, target)            
-            mkpath (build_path, 0777, self.verbose, self.dry_run)
+            mkpath (build_path, int('777', 8), self.verbose, self.dry_run)
             copy_file(os.path.join(path, ext[1]),
                       os.path.join(build_path, ext[1]),
                       1, 1, 0, None, self.verbose, self.dry_run)

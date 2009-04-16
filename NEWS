@@ -3,6 +3,14 @@ NEWS
 
 This file describes user-visible changes to Synopsis.
 
+Synopsis 0.12
+=============
+
+* Upgraded preprocessor to ucpp 1.3.
+* Enhanced Cpp processor to allow documenting macros, as well as cross-referencing
+  macro calls.
+* Improvements for Python 2.6 / 3.x compatibility.
+
 Synopsis 0.11
 =============
 
@@ -20,10 +28,10 @@ Synopsis' Internal Representation has been largely refactored, to better
 support the new features:
 
 * More information is captured, for example relationships between primary
-class templates and their specializations / instantiations.
+  class templates and their specializations / instantiations.
 
 * The storage of source-code cross-references has been simplified and integrated
-into the IR, leading to a much more intuitive and convenient user interface.
+  into the IR, leading to a much more intuitive and convenient user interface.
 
 The Python parser has been largely rewritten, adding support
 for parsing of dependent (imported) files.

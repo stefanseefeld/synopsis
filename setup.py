@@ -19,7 +19,7 @@ module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return [pref + x for x in list]
 
-version = '0.11'
+version = '0.12'
 revision = open('revision').read()[:-1]
 
 py_packages = ["Synopsis",
@@ -55,18 +55,16 @@ data_files.append(('share/synopsis-%s'%version, glob.glob('share/synopsis/*.*'))
 
 #### add documentation
 
-def add_documentation(all, directory, files):
-
-    if '.svn' in files: files.remove('.svn')
-    dest = directory.replace('share/doc/synopsis',
-                             'share/doc/synopsis-%s'%version)
-    all.append((dest,
-                [os.path.join(directory, file)
-                 for file in files
-                 if os.path.isfile(os.path.join(directory, file))]))
-
 documentation = []
-os.path.walk('share/doc/synopsis', add_documentation, documentation)
+for root, dirs, files in os.walk('share/doc/synopsis'):
+    dest = root.replace('share/doc/synopsis',
+                        'share/doc/synopsis-%s'%version)
+    documentation.append((dest,
+                          [os.path.join(root, file)
+                           for file in files
+                           if os.path.isfile(os.path.join(root, file))]))
+    if '.svn' in dirs: dirs.remove('.svn')
+    
 data_files.extend(documentation)
 
 setup(distclass=Distribution,

@@ -73,7 +73,7 @@ def copy_shared_library(name, version, src, dest, verbose, dry_run):
         LIBEXT = sysconfig.get_config_var('SO')
     library = 'lib%s%s'%(name, LIBEXT)
 
-    mkpath (dest, 0777, verbose, dry_run)
+    mkpath (dest, int('777', 8), verbose, dry_run)
     if os.name == 'posix' and not os.uname()[0].startswith('CYGWIN'):
         # Copy versioned DSO
         copy_file(os.path.join(src, 'lib', '%s.%s'%(library, version)),

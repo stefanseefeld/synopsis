@@ -20,10 +20,10 @@ if test -n "$PYTHON" -a "$PYTHON" != yes; then
 else
   AC_PATH_PROG(PYTHON, python2 python, python)
 fi
-PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix" | tr -d "\r"`
+PYTHON_PREFIX=`$PYTHON -c "import sys; print(sys.prefix)" | tr -d "\r"`
 AC_MSG_CHECKING(for Python development environment)
-PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_inc()" | tr -d "\r"`
-PYTHON_H=`$PYTHON -c "from os.path import *; h = join('$PYTHON_INCLUDE', 'Python.h'); print exists(h) and h or ''"`
+PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_inc())" | tr -d "\r"`
+PYTHON_H=`$PYTHON -c "from os.path import *; h = join('$PYTHON_INCLUDE', 'Python.h'); print(exists(h) and h or '')"`
 if test $PYTHON_H
 then AC_MSG_RESULT(yes)
 else AC_MSG_ERROR([Python.h not found.])
@@ -32,35 +32,35 @@ fi
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
 
-LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')" | tr -d "\r"`
+LIBEXT=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_config_var('SO'))" | tr -d "\r"`
 case `uname -s` in
 CYGWIN*)
-    if test `$PYTHON -c "import os; print os.name" | tr -d "\r"` = posix; then
-      PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
+    if test `$PYTHON -c "import os; print(os.name)" | tr -d "\r"` = posix; then
+      PYTHON_VERSION=`$PYTHON -c "import sys; print('%d.%d'%(sys.version_info[[0]],sys.version_info[[1]]))"`
       PYTHON_LIBS="-L$PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
 dnl Cygwin doesn't have an -lutil, but some versions of distutils tell us to use it anyway.
 dnl It would be better to check for each library it tells us to use with AC_CHECK_LIB, but
 dnl to do that, we need the name of a function in each one, so we'll just hack -lutil out 
 dnl of the list.
-      PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or '')"`
+      PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print(re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or ''))"`
     else dnl this is 'nt'
       if test "$CXX" = "g++"; then
         CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
         CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
         LDFLAGS="-mno-cygwin $LDFLAGS"
-        PYTHON_VERSION=`$PYTHON -c "import sys; print '%d%d'%(sys.version_info[[0]],sys.version_info[[1]])" | tr -d "\r"`
+        PYTHON_VERSION=`$PYTHON -c "import sys; print('%d%d'%(sys.version_info[[0]],sys.version_info[[1]]))" | tr -d "\r"`
         PYTHON_LIBS="-L`cygpath -a $PYTHON_PREFIX | tr -d \"\r\"`/Libs -lpython$PYTHON_VERSION"
       fi
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE | tr -d "\r"`
-      PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''" | tr -d "\r"`
+      PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_config_var('LIBS') or '')" | tr -d "\r"`
     fi
     LDSHARED="$CXX -shared"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 Darwin)
-    PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
+    PYTHON_VERSION=`$PYTHON -c "import sys; print('%d.%d'%(sys.version_info[[0]],sys.version_info[[1]]))"`
     PYTHON_LIBS="-L$PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
 
     CFLAGS="$CFLAGS -fPIC"
@@ -68,7 +68,7 @@ Darwin)
     LDSHARED="$CXX -dynamiclib -Wl,-undefined,dynamic_lookup"
     ;;
 *)
-    PYTHON_VERSION=`$PYTHON -c "import sys; print '%d.%d'%(sys.version_info[[0]],sys.version_info[[1]])"`
+    PYTHON_VERSION=`$PYTHON -c "import sys; print('%d.%d'%(sys.version_info[[0]],sys.version_info[[1]]))"`
     PYTHON_LIBS="-L$PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
 
     CFLAGS="$CFLAGS -fPIC"

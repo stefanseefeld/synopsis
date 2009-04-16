@@ -120,13 +120,13 @@ class config(build_ext):
 
         self.announce("configuring '%s'" % component)
         path = os.path.join(build_temp, component)
-        mkpath (path, 0777, self.verbose, self.dry_run)
+        mkpath (path, int('777', 8), self.verbose, self.dry_run)
         srcdir = os.path.abspath(component)
         tempdir = os.path.abspath(os.path.join(build_temp, component))
         builddir = os.path.abspath(os.path.join(build_lib, component))
 
         cwd = os.getcwd()
-        mkpath(tempdir, 0777, self.verbose, self.dry_run)
+        mkpath(tempdir, int('777', 8), self.verbose, self.dry_run)
         os.chdir(tempdir)
         
         if os.name == 'nt':

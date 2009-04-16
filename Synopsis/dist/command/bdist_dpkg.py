@@ -5,8 +5,6 @@ Implements the Distutils 'bdist_dpkg' command (create a Debian package).
 
 # This module should be kept compatible with Python 1.5.2.
 
-__revision__ = "$Id: bdist_dpkg.py,v 1.7 2004/06/16 14:56:27 akuchling Exp $"
-
 import sys, os, string
 import glob
 from types import *
@@ -43,7 +41,7 @@ class bdist_dpkg (Command):
 
     def finalize_options (self):
         if os.name != 'posix':
-            raise DistutilsPlatformError, \
+            raise DistutilsPlatformError \
                   ("don't know how to create DPKG "
                    "distributions on platform %s" % os.name)
 
@@ -52,7 +50,7 @@ class bdist_dpkg (Command):
     def run (self):
 
         if DEBUG:
-            print "before _get_package_data():"
+            print("before _get_package_data():")
 
         self._create_dpkg_files()
 
@@ -134,7 +132,7 @@ Section: libs
             output.write("Package: %s\n" % package_name)
 
             #added missing Version information to control --- Vinzenz Feenstra (evilissimo@users.sf.net)
-	    output.write("Version: %s\n" % dist.get_version() )
+            output.write("Version: %s\n" % dist.get_version() )
             output.write("""Section: libs
 Architecture: any\n""")
             output.write("Depends: python%(pyversion)s\n" % d)
@@ -160,14 +158,14 @@ Architecture: any\n""")
             output = self._write_file('rules')
             output.write(RULES_FILE % d)
             output.close()
-            os.chmod('debian/rules', 0755)
+            os.chmod('debian/rules', int('755', 8))
 
         if not self._is_user_file('copyright'):
             log.info('writing copyright file')
             output = self._write_file('copyright')
             output.write(COPYRIGHT_FILE % d)
             output.close()
-        mkpath('debian/tmp/DEBIAN', 0755)
+        mkpath('debian/tmp/DEBIAN', int('755', 8))
         copy_file('debian/control', 'debian/tmp/DEBIAN/control')
 
     def _write_file (self, filename):

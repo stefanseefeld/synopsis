@@ -17,6 +17,7 @@ from Synopsis.dist.command.install_clib import install_clib
 from Synopsis.dist.command.install_lib import install_lib
 from Synopsis.dist.command.install import install
 from Synopsis.dist.command.bdist_dpkg import bdist_dpkg
+from Synopsis.dist.command.bdist_rpm import bdist_rpm
 from Synopsis.dist.command.clean import clean
 
 # patch distutils if it can't cope with the "classifiers" keyword
@@ -44,4 +45,5 @@ class Distribution(dist.Distribution):
         self.cmdclass['install_lib'] = install_lib
         self.cmdclass['install'] = install
         self.cmdclass['bdist_dpkg'] = bdist_dpkg
+        self.cmdclass['bdist_rpm'] = bdist_rpm
         self.cmdclass['clean'] = clean

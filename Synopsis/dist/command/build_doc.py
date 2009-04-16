@@ -88,7 +88,7 @@ to query and browse cross-referenced source code."""
 
       section = 1
       man_dir = 'share/man/man%d'%section
-      mkpath(man_dir, 0777, self.verbose, self.dry_run)
+      mkpath(man_dir, int('777', 8), self.verbose, self.dry_run)
 
       for s in ['synopsis', 'sxr-server']:
          command = [help2man, '-N', '-n', descriptions[s]]
@@ -123,19 +123,19 @@ to query and browse cross-referenced source code."""
          if os.path.exists(src) and newer(src, dest):
             copy_file(src, dest)
          else:
-            print 'not copying', src
+            self.announce('not copying %s'%src)
       src, dest = os.path.join(tmpdir, 'sxr'), os.path.join(tmp_man_dir, 'sxr')
       if os.path.exists(src) and newer(src, dest):
          copy_tree(src, dest)
       else:
-         print 'not copying', src
+         self.announce('not copying %s'%src)
          
       # now run make inside doc/Manual to do the rest
 
       srcdir = os.path.abspath('doc/Manual/')
 
       cwd = os.getcwd()
-      mkpath(tmp_man_dir, 0777, self.verbose, self.dry_run)
+      mkpath(tmp_man_dir, int('777', 8), self.verbose, self.dry_run)
 
       if self.html:
          spawn([make, '-C', tmp_man_dir, 'html'])
@@ -168,7 +168,7 @@ to query and browse cross-referenced source code."""
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/synopsis/print'))
-         mkpath(builddir, 0777, self.verbose, self.dry_run)
+         mkpath(builddir, int('777', 8), self.verbose, self.dry_run)
          copy_file(os.path.join(tmp_man_dir, 'Manual.pdf'),
                    os.path.join(builddir, 'Manual.pdf'))
 
@@ -180,7 +180,7 @@ to query and browse cross-referenced source code."""
       tempdir = os.path.abspath(os.path.join(self.build_temp,
                                              'doc/Tutorial'))
       cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
+      mkpath(tempdir, int('777', 8), self.verbose, self.dry_run)
 
       self.build_examples()
 
@@ -204,7 +204,7 @@ to query and browse cross-referenced source code."""
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/synopsis/print'))
-         mkpath(builddir, 0777, self.verbose, self.dry_run)
+         mkpath(builddir, int('777', 8), self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
                    os.path.join(builddir, 'Tutorial.pdf'))
          copy_file(os.path.join(tempdir, 'DevGuide.pdf'),
@@ -217,7 +217,7 @@ to query and browse cross-referenced source code."""
       srcdir = os.path.abspath('doc/Tutorial/')
       tempdir = os.path.abspath(os.path.join(self.build_temp, 'doc/Tutorial'))
       cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
+      mkpath(tempdir, int('777', 8), self.verbose, self.dry_run)
 
       # Copy examples sources into build tree.
       examples = []
@@ -229,7 +229,7 @@ to query and browse cross-referenced source code."""
       os.path.walk('doc/Tutorial/examples', visit, examples)
       for e in examples:
          dirname = os.path.dirname(os.path.join(self.build_temp, e))
-         mkpath(dirname, 0777, self.verbose, self.dry_run)
+         mkpath(dirname, int('777', 8), self.verbose, self.dry_run)
          copy_file(e, dirname)
       
       make = os.environ.get('MAKE', 'make')
