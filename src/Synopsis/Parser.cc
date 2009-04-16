@@ -900,10 +900,12 @@ bool Parser::template_decl(PTree::Node *&decl)
   PTree::Declaration *body;
   PTree::TemplateDecl *tdecl;
   TemplateDeclKind kind = tdk_unknown;
-
-  my_comments = wrap_comments(my_lexer.get_comments());
+  // If there are comments, they are meant for the declaration, not for the
+  // template parameter lists.
+  PTree::Node *comments = wrap_comments(my_lexer.get_comments());
   if(!template_decl2(tdecl, kind)) return false;
   if (kind == tdk_decl || kind == tdk_specialization) my_in_template_decl = true;
+  my_comments = comments;
   bool success = declaration(body);
   my_in_template_decl = false;
   if (!success) return false;
