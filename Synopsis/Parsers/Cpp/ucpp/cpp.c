@@ -2040,12 +2040,10 @@ handle_warp:
                 {
                   /* We are about to skip an conditional block, so line numbers
                    are wrong. Emitting a line directive should fix that. */
-/*                   printf("skipping to line %d (%d)\n", ls->line, ls->oline); */
                   ls->oline = ls->line;
                   struct token t;
                   t.type = CONTEXT;
                   t.line = ls->line;
-/*                   printf("new line : %d\n", t.line); */
                   t.name = current_long_filename ?
                     current_long_filename : current_filename;
                   print_token(ls, &t, 0);
@@ -2147,26 +2145,16 @@ int cpp(struct lexer_state *ls)
 				i_line_start = ls->line;
 				o_line_start = ls->oline;
 				o_pos_start = ls->ocolumn;
-/*                                 printf("before: %d\n", ls->ocolumn); */
-				x = substitute_macro(ls, m, 0, 1, 0,
-					ls->ctok->line);
-/*                                 printf("after: %d\n", ls->ocolumn); */
+				x = substitute_macro(ls, m, 0, 1, 0, ls->ctok->line);
 				if (!(ls->flags & LEXER))
 					garbage_collect(ls->gf);
                                 i_line_end = ls->line;
-/*                                 i_pos_end = ls->ctok->pos - 1; */
 				o_line_end = ls->oline;
  				i_pos_end = ls->column + (ls->discard ? 1 : 0) - 1;
 				o_pos_end = ls->ocolumn - 1;
-/* 				if (!strcmp(current_filename, original_filename)) { */
-/*                                 printf("macro call at : %d:%d <-> %d:%d\n", */
-/*                                        i_line_start, i_pos_start, i_line_end, i_pos_end); */
-/*                                 printf("macro expands to %d:%d <-> %d:%d\n", */
-/*                                        o_line_start, o_pos_start, o_line_end, o_pos_end); */
                                 synopsis_macro_hook(HASH_ITEM_NAME(m),
                                                     i_line_start, i_pos_start, i_line_end, i_pos_end,
                                                     o_line_start, o_pos_start, o_line_end, o_pos_end);
-/* 				} */
 #else
 				x = substitute_macro(ls, m, 0, 1, 0,
 					ls->ctok->line);
