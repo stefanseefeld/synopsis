@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <ostream>
 
 //. A qualified name, containing zero or more elements. This typedef makes it
 //. easier to use qualified name types, and also makes it clearer than using the
