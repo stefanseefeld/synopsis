@@ -10,6 +10,7 @@ Synopsis 0.12
 * Enhanced Cpp processor to allow documenting macros, as well as cross-referencing
   macro calls.
 * Improvements for Python 2.6 / 3.x compatibility.
+* Minor bug fixes.
 
 Synopsis 0.11
 =============

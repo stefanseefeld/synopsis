@@ -56,5 +56,5 @@ class test(build_ext):
             spawn(['sh', '-c', command], self.verbose, self.dry_run)
         # As qmtest returns a non-zero exit code if some tests fail, we
         # simply ignore exec errors here.
-        except DistutilsExecError(error):
+        except DistutilsExecError:
             pass
