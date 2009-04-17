@@ -340,12 +340,13 @@ class CompilerList(object):
 
             def __init__(cls, name, bases, dict):
 
-                if glob['version'] == version:
-                    compiler = CompilerInfo()
-                    for name, value in CompilerInfo.__dict__.items():
-                        if name[0] != '_':
-                            setattr(compiler, name, dict.get(name, value))
-                    compilers.append(compiler)
+                if glob['version'] != version:
+                    print('Warning: reading compiler emulation cache from different Synopsis version\n')
+                compiler = CompilerInfo()
+                for name, value in CompilerInfo.__dict__.items():
+                    if name[0] != '_':
+                        setattr(compiler, name, dict.get(name, value))
+                compilers.append(compiler)
 
 
         if not filename:
