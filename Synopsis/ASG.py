@@ -277,7 +277,7 @@ class UsingDirective(Builtin):
    def accept(self, visitor): visitor.visit_using_directive(self)
 
 
-class UsingDeclaration(Builtin):
+class UsingDeclaration(Declaration):
     """Import a declaration into this module."""
 
     def __init__(self, file, line, type, name, alias):
@@ -556,7 +556,7 @@ class Visitor(object):
       operate on Builtin nodes have to provide an appropriate implementation."""
       pass
    def visit_using_directive(self, node): self.visit_builtin(node)
-   def visit_using_declaration(self, node): self.visit_builtin(node)
+   def visit_using_declaration(self, node): pass
    def visit_macro(self, node): self.visit_declaration(node)
    def visit_forward(self, node): self.visit_declaration(node)
    def visit_group(self, node):
