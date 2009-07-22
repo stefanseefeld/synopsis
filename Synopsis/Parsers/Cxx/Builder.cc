@@ -219,6 +219,18 @@ void Builder::add(ASG::Declaration* decl, bool is_template)
   decl->file()->declarations().push_back(decl);
 }
 
+void Builder::add(ASG::UsingDirective *d)
+{
+  ScopeInfo *scopeinfo = m_scopes.back();
+  d->set_access(scopeinfo->access);
+  //  scopeinfo->dict->insert(decl);
+
+  const std::string& scope_type = scopeinfo->scope_decl->type();
+  if (scope_type != "local" && scope_type != "function")
+    scopeinfo->scope_decl->declarations().push_back(d);
+  d->file()->declarations().push_back(d);
+}
+
 void Builder::add(Types::Named* type)
 {
     // Add to name dictionary
@@ -892,6 +904,7 @@ void Builder::do_add_using_directive(ScopeInfo* target, ScopeInfo* scope)
 ASG::UsingDirective *Builder::add_using_directive(int line, Types::Named* type)
 {
     STrace trace("Builder::using_directive");
+ 
     ASG::Scope* ast_scope = Types::declared_cast<ASG::Scope>(type);
     ScopeInfo* target = find_info(ast_scope);
     do_add_using_directive(target, m_scopes.back());

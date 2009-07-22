@@ -115,6 +115,9 @@ public:
     //. current scope is the temporary template scope
     void add(ASG::Declaration* declaration, bool is_template = false);
 
+    //. Add a using directive.
+    void add(ASG::UsingDirective *);
+
     //. Add the given non-declaration type to the current scope
     void add(Types::Named* named);
 
