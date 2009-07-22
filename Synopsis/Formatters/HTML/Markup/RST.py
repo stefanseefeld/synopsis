@@ -5,12 +5,20 @@
 # see the file COPYING for details.
 #
 
+from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
 from docutils.nodes import *
 from docutils.core import *
 from docutils.parsers.rst import roles
 import re, StringIO
+
+def span(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    """Maps a rols to a <span class="role">...</span>."""
+
+    node = inline(rawtext, text)
+    node['classes'] = [name]
+    return [node], []
 
 
 class SummaryExtractor(NodeVisitor):
@@ -59,12 +67,17 @@ class RST(Formatter):
     """Format summary and detail documentation according to restructured text markup.
     """
 
+    roles = Parameter({'equation':span},
+                      "A (name->function) mapping of custom ReST roles.")
+
     def format(self, decl, view):
 
         formatter = self
         
         def ref(name, rawtext, text, lineno, inliner,
                 options={}, content=[]):
+            # This function needs to be local to be able to access
+            # the current state in form of the formatter.
 
             name = utils.unescape(text)
             uri = formatter.lookup_symbol(name, decl.name[:-1])
@@ -75,6 +88,8 @@ class RST(Formatter):
                 node = emphasis(rawtext, name)
             return [node], []
 
+        for r in self.roles:
+            roles.register_local_role(r, self.roles[r])
         roles.register_local_role('', ref)
 
         errstream = StringIO.StringIO()
