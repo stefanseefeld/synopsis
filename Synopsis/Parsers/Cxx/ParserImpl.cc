@@ -148,7 +148,6 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   if (syn_sxr_prefix) filter.set_sxr_prefix(syn_sxr_prefix);
 
   ASG::SourceFile *source_file = filter.get_sourcefile(src);
-  // Run OCC to generate the IR
   try
   {
     Buffer buffer(ifs.rdbuf(), source_file->abs_name());
@@ -183,14 +182,15 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       delete sxr_generator;
     }
   }
-  catch (const std::exception &e)
+  catch (py_error_already_set const &e)
+  {
+    e.restore();
+    return 0;
+  }
+  catch (std::exception const &e)
   {
     Python::Object py_e((*error_type)(Python::Tuple(e.what())));
     PyErr_SetObject(py_error, py_e.ref());
-    return 0;
-  }
-  catch (py_error_already_set const &)
-  {
     return 0;
   }
   catch (...)
@@ -199,7 +199,6 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     PyErr_SetObject(py_error, py_e.ref());
     return 0;
   }
-
   PTree::cleanup_gc();
   while (FakeGC::LightObject::head)
   {

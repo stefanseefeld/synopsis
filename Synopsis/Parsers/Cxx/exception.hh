@@ -11,6 +11,20 @@
 #include <Python.h>
 #include <exception>
 
-class py_error_already_set : std::exception {};
+struct py_error_already_set : std::exception
+{
+  py_error_already_set(bool fetch = true)
+    : type(0), value(0), stack(0)
+  {
+    if (fetch) PyErr_Fetch(&type, &value, &stack);
+  }
+  void restore() const
+  {
+    if (type) PyErr_Restore(type, value, stack);
+  }
+  PyObject *type;
+  PyObject *value;
+  PyObject *stack;
+};
 
 #endif
