@@ -45,10 +45,6 @@ class Linker(Composite, ASG.Visitor):
 
       self.ir = TemplateLinker.TemplateLinker().process(self.ir, debug=self.debug)
 
-      if self.remove_empty_modules:
-         import ModuleFilter
-         self.ir = ModuleFilter.ModuleFilter().process(self.ir, debug=self.debug)
-
       if self.sort_modules:
          import ModuleSorter
          self.ir = ModuleSorter.ModuleSorter().process(self.ir, debug=self.debug)
@@ -63,6 +59,10 @@ class Linker(Composite, ASG.Visitor):
       self.ir = Composite.process(self, self.ir, input=[], output='')
       self.output = output
       
+      if self.remove_empty_modules:
+         import ModuleFilter
+         self.ir = ModuleFilter.ModuleFilter().process(self.ir, debug=self.debug)
+
       return self.output_and_return_ir()
 
    def lookup(self, name):
@@ -303,6 +303,7 @@ class Linker(Composite, ASG.Visitor):
       self.add_declaration(decl)
 
    visit_declaration = add_declaration
+   visit_using_declaration = add_declaration
    visit_forward = add_declaration
    visit_enum = add_declaration
 
