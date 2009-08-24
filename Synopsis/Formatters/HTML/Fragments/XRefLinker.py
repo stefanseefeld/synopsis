@@ -12,9 +12,9 @@ from Default import Default
 class XRefLinker(Default):
     """Adds an xref link to all declarations"""
 
-    def register(self, formatter):
+    def register(self, part):
 
-        Default.register(self, formatter)
+        Default.register(self, part)
         self.pager = self.processor.xref
         self.sxr = self.processor.sxr_prefix and self.processor.ir.sxr
 

@@ -34,8 +34,10 @@ class DirectoryLayout (TOC.Linker):
             print "ERROR: Output must be a directory."
             sys.exit(1)
 
+        js = os.path.join(config.datadir, 'html.js')
+        self.copy_file(js, 'synopsis.js')
         if os.path.isfile(processor.stylesheet):
-            self.copy_file(processor.stylesheet, 'style.css')
+            self.copy_file(processor.stylesheet, 'synopsis.css')
         else:
             print "ERROR: stylesheet %s doesn't exist"%processor.stylesheet
             sys.exit(1)

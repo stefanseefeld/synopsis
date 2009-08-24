@@ -16,17 +16,17 @@ class HeadingFormatter(Fragment):
     """Formats the top of a view - it is passed only the Declaration that the
     view is for (a Module or Class)."""
 
-    def register(self, formatter):
+    def register(self, part):
 
-        super(HeadingFormatter, self).register(formatter)
+        super(HeadingFormatter, self).register(part)
         if self.processor.has_view('XRef'):
             self.xref = XRefLinker()
-            self.xref.register(formatter)
+            self.xref.register(part)
         else:
             self.xref = None
         if self.processor.has_view('Source'):
             self.source = SourceLinker()        
-            self.source.register(formatter)
+            self.source.register(part)
         else:
             self.source = None
             
@@ -104,33 +104,33 @@ class HeadingFormatter(Fragment):
         decl, module = self.format_module_of_name(class_.name)
         if decl:
             module = '%s %s'%(decl.type, module)
-            module = div('class-module', module)
+            module = div(module, class_='class-module')
         else:
             module = ''
 
         # Calculate class name string
         type = class_.type
         name = self.format_name_in_module(class_.name)
-        name = div('class-name', '%s %s'%(type, name))
+        name = div('%s %s'%(type, name), class_='class-name')
 
         # Calculate file-related string
         file_name = rel(self.processor.output, class_.file.name)
         # Try the file index view first
         file_link = self.directory_layout.file_index(class_.file.name)
         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
+            file_ref = href(rel(self.part.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
             file_link = self.directory_layout.file_source(class_.file.name)
             if self.processor.filename_info(file_link):
-                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+                file_ref = href(rel(self.part.filename(), file_link), file_name)
             else:
                 file_ref = file_name
 
-        links = div('file', 'File: %s'%file_ref)
-        if self.xref: links += ' %s'%div('xref', self.xref.format_class(class_))
-        if self.source: links += ' %s'%div('source', self.source.format_class(class_))
-        info = div('links', links)
+        links = div('File: %s'%file_ref, class_='file')
+        if self.xref: links += ' %s'%div(self.xref.format_class(class_), class_='xref')
+        if self.source: links += ' %s'%div(self.source.format_class(class_), class_='source')
+        info = div(links, class_='links')
 
         return '%s%s%s'%(module, name, info)
 
@@ -141,7 +141,7 @@ class HeadingFormatter(Fragment):
         decl, module = self.format_module_of_name(class_.name)
         if decl:
             module = '%s %s'%(decl.type, module)
-            module = div('class-module', module)
+            module = div(module, class_='class-module')
         else:
             module = ''
 
@@ -149,31 +149,31 @@ class HeadingFormatter(Fragment):
         templ = class_.template
         params = templ.parameters
         params = ', '.join([self.format_parameter(p) for p in params])
-        templ = div('class-template', "template &lt;%s&gt;"%params)
+        templ = div('template &lt;%s&gt;'%params, class_='class-template')
 
         # Calculate class name string
         type = class_.type
         name = self.format_name_in_module(class_.name)
-        name = div('class-name', '%s %s'%(type, name))
+        name = div('%s %s'%(type, name), class_='class-name')
 
         # Calculate file-related string
         file_name = rel(self.processor.output, class_.file.name)
         # Try the file index view first
         file_link = self.directory_layout.file_index(class_.file.name)
         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
+            file_ref = href(rel(self.part.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
             file_link = self.directory_layout.file_source(class_.file.name)
             if self.processor.filename_info(file_link):
-                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+                file_ref = href(rel(self.part.filename(), file_link), file_name)
             else:
                 file_ref = file_name
 
-        links = div('file', 'File: %s'%file_ref)
-        if self.xref: links += ' %s'%div('xref', self.xref.format_class(class_))
-        if self.source: links += ' %s'%div('source', self.source.format_class(class_))
-        info = div('links', links)
+        links = div('File: %s'%file_ref, class_='file')
+        if self.xref: links += ' %s'%div(self.xref.format_class(class_), class_='xref')
+        if self.source: links += ' %s'%div(self.source.format_class(class_), class_='source')
+        info = div(links, class_='links')
 
         return '%s%s%s%s'%(module, templ, name, info)
 
@@ -184,7 +184,7 @@ class HeadingFormatter(Fragment):
         decl, module = self.format_module_of_name(forward.name)
         if decl:
             module = '%s %s'%(decl.type, module)
-            module = div('class-module', module)
+            module = div(module, class_='class-module')
         else:
             module = ''
 
@@ -194,29 +194,29 @@ class HeadingFormatter(Fragment):
 
         params = forward.template.parameters
         params = ', '.join([self.format_parameter(p) for p in params])
-        templ = div('class-template', "template &lt;%s&gt;"%params)
+        templ = div('template &lt;%s&gt;'%params, class_='class-template')
 
         # Calculate class name string
         type = forward.type
         name = self.format_name_in_module(forward.name)
-        name = div('class-name', '%s %s'%(type, name))
+        name = div('%s %s'%(type, name), class_='class-name')
 
         # Calculate file-related string
         file_name = rel(self.processor.output, forward.file.name)
         # Try the file index view first
         file_link = self.directory_layout.file_index(forward.file.name)
         if self.processor.filename_info(file_link):
-            file_ref = href(rel(self.formatter.filename(), file_link), file_name, target='detail')
+            file_ref = href(rel(self.part.filename(), file_link), file_name, target='detail')
         else:
             # Try source file next
             file_link = self.directory_layout.file_source(forward.file.name)
             if self.processor.filename_info(file_link):
-                file_ref = href(rel(self.formatter.filename(), file_link), file_name)
+                file_ref = href(rel(self.part.filename(), file_link), file_name)
             else:
                 file_ref = file_name
 
-        links = div('file', 'File: %s'%file_ref)
-        info = div('links', links)
+        links = div('File: %s'%file_ref, class_='file')
+        info = div(links, class_='links')
 
         return '%s%s%s%s'%(module, templ, name, info)
 
@@ -225,16 +225,16 @@ class HeadingFormatter(Fragment):
 
         chunks = []
         # Premodifiers
-        chunks.extend([span("keyword", escape(m)) for m in parameter.premodifier])
+        chunks.extend([span(escape(m), class_='keyword') for m in parameter.premodifier])
         # Param Type
         typestr = self.format_type(parameter.type)
         if typestr: chunks.append(typestr)
         # Postmodifiers
-        chunks.extend([span("keyword", m) for m in parameter.postmodifier])
+        chunks.extend([span(m, class_='keyword') for m in parameter.postmodifier])
         # Param name
         if len(parameter.name) != 0:
-            chunks.append(span("variable", parameter.name))
+            chunks.append(span(parameter.name, class_='variable'))
         # Param value
         if len(parameter.value) != 0:
-            chunks.append(" = " + span("value", parameter.value))
+            chunks.append(" = " + span(parameter.value, class_='value'))
         return ' '.join(chunks)

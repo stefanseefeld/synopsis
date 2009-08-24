@@ -25,9 +25,8 @@ class Scope(View):
     """
 
     parts = Parameter([Heading(),
-                       Summary(),
-                       Inheritance(),
-                       Detail()],
+                       Body(),
+                       Inheritance()],
                       '')
    
     def register(self, frame):
@@ -124,5 +123,5 @@ class Scope(View):
         logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
-        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        self.write(div('Generated on ' + now + ' by \n<br/>\n' + logo, class_='logo'))
         View.end_file(self)

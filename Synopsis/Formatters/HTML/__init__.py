@@ -63,19 +63,20 @@ class DocCache:
         else:
             return self._doc_cache[key]
 
+    def doc(self, decl, view):
+
+        return self._process(decl, view)
 
     def summary(self, decl, view):
         """"""
 
-        doc = self._process(decl, view)
-        return doc.summary
+        return self.doc(decl, view).summary
 
 
     def details(self, decl, view):
         """"""
 
-        doc = self._process(decl, view)
-        return doc.details
+        return self.doc(decl, view).details
 
 
 class Formatter(Processor):

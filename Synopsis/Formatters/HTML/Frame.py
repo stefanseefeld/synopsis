@@ -48,12 +48,12 @@ class Frame:
 
             url, label = v.root()
             if url == view.filename():
-                return span('selected', label) + '\n'
+                return span(label, class_='selected') + '\n'
             else:
-                return span('normal', href(rel(view.filename(), url), label)) + '\n'
+                return span(href(rel(view.filename(), url), label), class_='normal') + '\n'
 
         items = [item(v) for v in views]
-        return items and div('navigation', '\n' + ''.join(items)) or ''
+        return items and div('\n' + ''.join(items), class_='navigation') or ''
 
 
         

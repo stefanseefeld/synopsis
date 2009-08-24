@@ -152,18 +152,18 @@ class Javadoc(Formatter):
         params = [b for b in blocks if b.tag == 'param']
         def row(dt, dd):
             return element('tr',
-                           element('th', dt, Class='dt') +
-                           element('td', dd, Class='dd'))
+                           element('th', dt, class_='dt') +
+                           element('td', dd, class_='dd'))
         if params:
-            content += div('tag-heading',"Parameters:")
+            content += div('Parameters:', class_='tag-heading')
             dl = element('table', ''.join([row(p.arg, p.body) for p in params]),
-                         Class='dl')
-            content += div('tag-section', dl)
+                         class_='dl')
+            content += div(dl, class_='tag-section')
         kwds = [b for b in blocks if b.tag == 'keyword']
         if kwds:
-            content += div('tag-heading',"Keywords:")
-            dl = element('dl', ''.join([row( k.arg, k.body) for k in kwds]), Class='dl')
-            content += div('tag-section', dl)
+            content += div('Keywords:', class_='tag-heading')
+            dl = element('dl', ''.join([row( k.arg, k.body) for k in kwds]), class_='dl')
+            content += div(dl, class_='tag-section')
         return content
 
 
@@ -172,10 +172,10 @@ class Javadoc(Formatter):
         content = ''
         throws = [b for b in blocks if b.tag in ['throws', 'exception']]
         if throws:
-            content += div('tag-heading',"Throws:")
+            content += div('Throws:', class_='tag-heading')
             dl = element('dl', ''.join([element('dt', t.arg) + element('dd', t.body)
                                         for t in throws]))
-            content += div('tag-section', dl)
+            content += div(dl, class_='tag-section')
         return content
 
 
@@ -184,10 +184,10 @@ class Javadoc(Formatter):
         content = ''
         items = [b for b in blocks if b.tag == tag]
         if items:
-            content += div('tag-heading', self.tag_name[tag][1])
-            content += div('tag-section',
-                           '<br/>'.join([self.format_inlines(view, decl, i.body)
-                                         for i in items]))
+            content += div(self.tag_name[tag][1], class_='tag-heading')
+            content += div('<br/>'.join([self.format_inlines(view, decl, i.body)
+                                         for i in items]),
+                           class_='tag-section')
         return content
 
     def format_inline_tag(self, tag, content, view, decl):

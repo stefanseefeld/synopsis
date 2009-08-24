@@ -71,7 +71,7 @@ class FileDetails(View):
       if self.link_source:
          link = rel(self.filename(),
                     self.directory_layout.file_source(filename))
-         self.write(div('', href(link, 'source code', target='content')) + '\n')
+         self.write(div(href(link, 'source code', target='content')) + '\n')
 
       # Print list of includes
       try:
@@ -129,8 +129,8 @@ class FileDetails(View):
             item = href(link, label)
          else:
             item = label
-         doc = div('doc', self.processor.documentation.summary(decl, self))
-         self.write(div('item', item + '\n' + doc) + '\n')
+         doc = div(self.processor.documentation.summary(decl, self), class_='doc')
+         self.write(div(item + '\n' + doc, class_='item') + '\n')
 	
       # Close open div
       if curr_scope is not None:

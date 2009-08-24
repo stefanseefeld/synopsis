@@ -22,17 +22,17 @@ class DeclarationFormatter(Fragment):
     printed out in the detailed version.
     """
 
-    def register(self, formatter):
+    def register(self, part):
 
-        super(DeclarationFormatter, self).register(formatter)
+        super(DeclarationFormatter, self).register(part)
         if self.processor.has_view('XRef'):
             self.xref = XRefLinker()
-            self.xref.register(formatter)
+            self.xref.register(part)
         else:
             self.xref = None
         if self.processor.has_view('Source'):
             self.source = SourceLinker()        
-            self.source.register(formatter)
+            self.source.register(part)
         else:
             self.source = None
             
@@ -45,14 +45,14 @@ class DeclarationFormatter(Fragment):
         """The default is to return no type and just the declarations name for
         the name."""
 
-        return div('synopsis', self.label(decl.name))
+        return div(self.label(decl.name), class_='synopsis')
 
     def format_macro(self, decl):
         """"""
 
-        chunk = div('synopsis', self.label(decl.name))
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_macro(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_macro(decl))
+        chunk = div(self.label(decl.name), class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_macro(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_macro(decl), class_='source')
         return chunk
 
     def format_forward(self, decl):
@@ -60,7 +60,7 @@ class DeclarationFormatter(Fragment):
         # treat template syntax like a premodifier
         if decl.template:
             templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
-            templ = div('template', templ)
+            templ = div(templ, class_='template')
             type = '%s %s'%(templ, decl.type)
         else:
             type = decl.type
@@ -70,9 +70,9 @@ class DeclarationFormatter(Fragment):
             name  = self.format_scope(decl)
         else:
             name = self.label(decl.name)
-        chunk = div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_forward(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_forward(decl))
+        chunk = div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_forward(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_forward(decl), class_='source')
         return chunk
 
     def format_group(self, decl):
@@ -83,7 +83,7 @@ class DeclarationFormatter(Fragment):
         """Scopes have their own views, so return a reference to it."""
 
         name = decl.name
-        link = rel(self.formatter.filename(),
+        link = rel(self.part.filename(),
                    self.directory_layout.scope(name))
         return href(link, escape(name[-1]))
 
@@ -97,9 +97,9 @@ class DeclarationFormatter(Fragment):
 
     def format_class(self, decl):
 
-        chunk = div('synopsis', decl.type + ' ' + self.format_scope(decl))
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = div(decl.type + ' ' + self.format_scope(decl), class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
     def format_class_template(self, decl):
@@ -107,13 +107,13 @@ class DeclarationFormatter(Fragment):
         # treat template syntax like a premodifier
         if decl.template:
             templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
-            templ = div('template', templ)
+            templ = div(templ, class_='template')
             type = '%s %s'%(templ, decl.type)
 
         name  = self.format_scope(decl)
-        chunk = div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
 
@@ -121,9 +121,9 @@ class DeclarationFormatter(Fragment):
         "(typedef type, typedef name)"
 
         type = self.format_type(decl.alias)
-        chunk = '%s'%div('synopsis', type + ' ' + self.label(decl.name))
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + self.label(decl.name), class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
     def format_enumerator(self, decl):
@@ -136,18 +136,18 @@ class DeclarationFormatter(Fragment):
 
         type = self.label(decl.name)
         name = ', '.join([e.name[-1] for e in decl.enumerators])
-        chunk = '%s'%div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
     def format_variable(self, decl):
 
         # TODO: deal with sizes
         type = self.format_type(decl.vtype)
-        chunk = '%s'%div('synopsis', type + ' ' + self.label(decl.name))
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + self.label(decl.name), class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
     def format_const(self, decl):
@@ -155,9 +155,9 @@ class DeclarationFormatter(Fragment):
 
         type = self.format_type(decl.ctype)
         name = self.label(decl.name) + " = " + escape(decl.value)
-        chunk = '%s'%div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
         return chunk
 
     def format_function(self, decl):
@@ -184,9 +184,9 @@ class DeclarationFormatter(Fragment):
         if decl.type == 'attribute': name = '%s %s %s'%(name, postmod, raises)
         else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
 
-        chunk = '%s'%div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
 
         return chunk
 
@@ -216,12 +216,12 @@ class DeclarationFormatter(Fragment):
         # treat template syntax like a premodifier
         if decl.template:
             templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template.parameters),)
-            templ = div('template', templ)
+            templ = div(templ, class_='template')
             type = '%s %s'%(templ, type)
 
-        chunk = '%s'%div('synopsis', type + ' ' + name)
-        if self.xref: chunk += ' %s'%div('xref', self.xref.format_class(decl))
-        if self.source: chunk += ' %s'%div('source', self.source.format_class(decl))
+        chunk = '%s'%div(type + ' ' + name, class_='synopsis')
+        if self.xref: chunk += ' %s'%div(self.xref.format_class(decl), class_='xref')
+        if self.source: chunk += ' %s'%div(self.source.format_class(decl), class_='source')
 
         return chunk
 
@@ -240,19 +240,21 @@ class DeclarationFormatter(Fragment):
 
         text = []
         # Premodifiers
-        text.extend([span('keyword', escape(m)) for m in parameter.premodifier])
+        text.extend([span(escape(m), class_='keyword')
+                     for m in parameter.premodifier])
         # Param Type
         id_holder = [parameter.name]
         typestr = self.format_type(parameter.type, id_holder)
         if typestr: text.append(typestr)
         # Postmodifiers
-        text.extend([span('keyword', escape(m)) for m in parameter.postmodifier])
+        text.extend([span(escape(m), class_='keyword')
+                     for m in parameter.postmodifier])
         # Param name
         if id_holder and len(parameter.name) != 0:
-            text.append(span('variable', escape(parameter.name)))
+            text.append(span(escape(parameter.name), class_='variable'))
         # Param value
         if len(parameter.value) != 0:
-            text.append('= %s'%span('value', escape(parameter.value)))
+            text.append('= %s'%span(escape(parameter.value), class_='value'))
         return ' '.join(text)
 
 
@@ -275,27 +277,27 @@ class DeclarationDetailFormatter(DeclarationFormatter):
         """Prints out the full exception spec"""
 
         if len(oper.exceptions):
-            raises = span('keyword', 'raises')
+            raises = span('raises', class_='keyword')
             exceptions = []
             for exception in oper.exceptions:
                 exceptions.append(self.reference(exception.name))
-            exceptions = span('raises', ', '.join(exceptions))
+            exceptions = span(', '.join(exceptions), class_='raises')
             return '%s (%s)'%(raises, exceptions)
         else:
             return ''
 
     def format_enum(self, enum):
 
-        name = span('keyword', 'enum') + ' ' + self.label(enum.name)
+        name = span('enum', class_='keyword') + ' ' + self.label(enum.name)
         enumors = ''.join([self.format_enumerator(e) for e in enum.enumerators])
-        return name + div('enum', enumors)
+        return name + div(enumors, class_='enum')
 
     def format_enumerator(self, enumerator):
 
         text = self.label(enumerator.name)
         if len(enumerator.value):
-            value = ' = ' + span('value', escape(enumerator.value))
+            value = ' = ' + span(escape(enumerator.value), class_='value')
         else:
             value = ''
         doc = self.processor.documentation.details(enumerator, self.view)
-        return div('enumerator','%s%s%s'%(text, value, doc))
+        return div('%s%s%s'%(text, value, doc), class_='enumerator')

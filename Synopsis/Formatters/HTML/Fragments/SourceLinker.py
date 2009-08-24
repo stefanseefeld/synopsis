@@ -16,9 +16,9 @@ _icons = {'C':'src-c.png',
 class SourceLinker(Default):
     """Adds a link to the decl on the file view to all declarations"""
 
-    def register(self, formatter):
+    def register(self, part):
 
-        Default.register(self, formatter)
+        Default.register(self, part)
         self.sxr = self.processor.sxr_prefix and True
 
     def format_declaration(self, decl):

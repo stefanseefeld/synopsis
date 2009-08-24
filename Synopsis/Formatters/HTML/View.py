@@ -45,8 +45,10 @@ class Format(Parametrized):
         os.write("<head>\n")
         os.write('<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type"/>\n')
         os.write(element('title','Synopsis - '+ title) + '\n')
-        css = self.prefix + 'style.css'
+        css = self.prefix + 'synopsis.css'
         os.write(element('link', type='text/css', rel='stylesheet', href=css) + '\n')
+        js = self.prefix + 'synopsis.js'
+        os.write(element('script', '', type='text/javascript', src=js) + '\n')
         os.write(headextra)
         os.write("</head>\n%s\n"%body)
 
@@ -172,6 +174,16 @@ class View(Parametrized):
 
         super(View, self).__init__(**kwds)
         self.main = False
+        self._id_counter = 0
+
+
+    def generate_id(self):
+        """Generate an id that is (at least) unique on a particular view,
+        and thus, html document."""
+
+        c = self._id_counter
+        self._id_counter += 1
+        return c
 
     def register(self, frame):
         """Registers this View class with its frame."""
@@ -257,7 +269,7 @@ class View(Parametrized):
         prefix = rel(self.filename(), '')
         self.template.init(self.processor, prefix)
         if not body:
-            body = '<body class="%s">'%self.__class__.__name__
+            body = '<body class="%s" onload="load()">'%self.__class__.__name__
         self.template.view_header(self.__os, self.title(), body, headextra, self)
     
     def end_file(self, body='</body>'):
