@@ -51,9 +51,6 @@ class Body(Part):
             started = 0 # Lazy section start incase no details for this section
             # Iterate through the children in this section
             for child in sorter[section]:
-                # Check if need to add to detail list
-                if not doc.details(child, self.view()):
-                    continue
                 # Check section heading
                 if not started:
                     started = 1

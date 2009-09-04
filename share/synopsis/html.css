@@ -158,11 +158,15 @@ div.desc {
 .heading .toggle
 {
   cursor: pointer;
-  border: 1px solid #aaaaaa;
   background-color: #f2f5f7;
   color: #303030;
   padding-left: 5px;
   padding-right: 5px;
+}
+.body .item .doc .expand-toggle,
+.body .item .doc .collapse-toggle
+{
+  border: 1px solid #aaaaaa;
 }
 /* In case javascript is disabled, don't display those: */
 .collapsed,
