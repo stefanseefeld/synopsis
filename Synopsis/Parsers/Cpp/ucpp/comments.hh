@@ -10,6 +10,11 @@
 #include <vector>
 #include <string>
 
+// A file preamble is the first set of comments
+// in a file, preceding any non-comment token.
+void start_file_preamble();
+void end_file_preamble();
+bool may_be_file_preamble();
 // accumulate comments that may be macro docstrings
 void add_ccomment(char const *);
 void add_cxxcomment(char const *);

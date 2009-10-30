@@ -6,11 +6,31 @@
 //
 #include "comments.hh"
 
+extern "C" void synopsis_file_preamble_hook();
+
 std::vector<std::string> comment_cache;
 namespace
 {
+// A file preamble may contain file-specific metadata.
+bool in_file_preamble = true;
 // A value > 1 means the next comment is not to be concatenated to the previous.
 int newlines = 1;
+}
+
+void start_file_preamble()
+{
+  in_file_preamble = true;
+}
+
+void end_file_preamble()
+{
+  if (in_file_preamble) synopsis_file_preamble_hook();
+  in_file_preamble = false;
+}
+
+bool may_be_file_preamble()
+{
+  return in_file_preamble;
 }
 
 void add_ccomment(char const *comment)

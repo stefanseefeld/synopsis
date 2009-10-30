@@ -45,6 +45,7 @@ public:
   Python::List includes() { return attr("includes");}
   Python::List macro_calls() { return attr("macro_calls");}
   ASG::Declarations declarations();
+  Python::Dict annotations() { return attr("annotations");}
 };
 
 namespace ASG

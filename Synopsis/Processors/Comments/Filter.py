@@ -18,6 +18,9 @@ class Filter(Processor, ASG.Visitor):
 
         self.ir = self.merge_input(ir)
 
+        for sf in self.ir.files.values():
+            self.visit_sourcefile(sf)
+
         for d in ir.asg.declarations:
             d.accept(self)
 
@@ -31,6 +34,7 @@ class Filter(Processor, ASG.Visitor):
                        for c in comments]
 
     visit_builtin = visit_declaration
+    visit_sourcefile = visit_declaration
 
     def filter_comment(self, comment):
         """Filter comment."""

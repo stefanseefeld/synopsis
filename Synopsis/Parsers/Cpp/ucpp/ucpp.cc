@@ -66,8 +66,11 @@ void handle_token(lexer_state &ls)
     else
       add_cxxcomment(ls.ctok->name);
   }
-  else
+  else // non-comment token
+  {
+    end_file_preamble();
     clear_comment_cache();
+  }
 }
 
 
@@ -153,6 +156,7 @@ void ucpp(char const *input, char const *output, std::vector<std::string> const 
     else if (ls.ctok->type == NEWLINE) handle_newline(ls);
     else handle_token(ls);
   }
+  end_file_preamble();
 
   // give back memory and exit
   wipeout();

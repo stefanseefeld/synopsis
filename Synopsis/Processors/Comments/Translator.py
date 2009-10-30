@@ -28,6 +28,9 @@ class Translator(Processor, ASG.Visitor):
         if self.processor:
             self.ir = self.processor.process(self.ir)
 
+        for sf in self.ir.files.values():
+            self.visit_sourcefile(sf)
+
         for decl in self.ir.asg.declarations:
             decl.accept(self)
 
@@ -53,3 +56,24 @@ class Translator(Processor, ASG.Visitor):
                         break
             doc = DocString(text or '', self.markup)
             decl.annotations['doc'] = doc
+
+    def visit_sourcefile(self, sf):
+        """Map comments to a doc string."""
+
+        comments = sf.annotations.get('comments')
+        if comments:
+            text = None
+            if self.primary_only:
+                # A 'primary' comment for a file is the first one,
+                # not the last.
+                text = comments[0]
+            elif self.combine:
+                text = ''.join([c for c in comments if c])
+            else:
+                comments = comments[:]
+                for c in comments:
+                    if c is not None:
+                        text = c
+                        break
+            doc = DocString(text or '', self.markup)
+            sf.annotations['doc'] = doc

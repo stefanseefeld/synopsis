@@ -158,6 +158,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       base_path = path.abs().str();
     }
     source_file.reset(new SourceFile(lookup_source_file(input, true)));
+    start_file_preamble();
 
     // ucpp considers __STDC__ to be predefined, and doesn't allow
     // us to set it explicitely.
@@ -209,6 +210,11 @@ extern "C"
   //. the parser is activated or deactivated
   void synopsis_file_hook(char const *filename, int new_file)
   {
+    // We are about to enter a new file. Flush the comment cache.
+    if (active)
+      end_file_preamble();
+    clear_comment_cache();
+
     // turn 'filename' into an absolute path so we can match it against
     // base_path
     std::string abs_filename = Path(filename).abs().str();
@@ -230,6 +236,23 @@ extern "C"
 	std::cout << "returning to file " << abs_filename << std::endl;
 
     source_file.reset(new SourceFile(lookup_source_file(abs_filename, true)));
+    if (new_file) start_file_preamble();
+  }
+
+  //. This function is called on the first non-comment token in
+  //. a file, so we can collect all comments encountered so far
+  //. and attach them to the source file object.
+  void synopsis_file_preamble_hook()
+  {
+    Python::List comments;
+    for (std::vector<std::string>::iterator i = comment_cache.begin();
+	 i != comment_cache.end();
+	 ++i)
+    {
+      if (*i->rbegin() == '\n') i->erase(i->size() - 1);
+      comments.append(*i);
+    }
+    source_file->annotations().set("comments", comments);
   }
 
   //. This function is a callback from the ucpp code to store macro
