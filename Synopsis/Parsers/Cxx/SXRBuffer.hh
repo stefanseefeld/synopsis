@@ -168,10 +168,6 @@ private:
     }
     switch (c)
     {
-      // I'm not sure why we are seeing CR, since we are not operating in
-      // binary mode. However, when processing source code using DOS-style 
-      // line endings, we run into these, so we explicitly skip them here.
-      case '\r': break;
       case '\n':
         outbuf_.sputn("</line>\n", 8);
         ++line_;
