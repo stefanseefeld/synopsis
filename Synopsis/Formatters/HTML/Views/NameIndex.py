@@ -109,8 +109,13 @@ class NameIndex(View):
         self.write('\n')
         title = escape(str(name))
         type = decl.type
-        name = self.reference(name, (), realname, title=title)+' '+type
-        self.write(div(name, class_='nameindex-item'))
+        # The name index should not list function or template parameters
+        # or local variables. There are just too many of them...
+        # typenames are not referring to actual (declared) types,
+        # so aren't meaningful here either.
+        if type not in ['parameter', 'local variable', 'typename']:
+            name = self.reference(name, (), realname, title=title)+' '+type
+            self.write(div(name, class_='nameindex-item'))
 
     def end_file(self):
         """Overrides end_file to provide synopsis logo"""
