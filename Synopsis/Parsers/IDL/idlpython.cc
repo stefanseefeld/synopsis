@@ -284,8 +284,8 @@ private:
 PythonVisitor::
 PythonVisitor()
 {
-  idlast_  = PyImport_ImportModule((char*)"idlast");
-  idltype_ = PyImport_ImportModule((char*)"idltype");
+  idlast_  = PyImport_ImportModule((char*)"Synopsis.Parsers.IDL.idlast");
+  idltype_ = PyImport_ImportModule((char*)"Synopsis.Parsers.IDL.idltype");
   ASSERT_PYOBJ(idlast_);
   ASSERT_PYOBJ(idltype_);
 }
