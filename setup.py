@@ -19,7 +19,7 @@ module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return [pref + x for x in list]
 
-version = '0.12'
+version = '0.13'
 revision = open('revision').read()[:-1]
 
 py_packages = ["Synopsis",
