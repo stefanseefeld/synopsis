@@ -28,7 +28,7 @@ int SourceFile::map_column(int l, int col)
   for (Line::iterator j = line.begin(), end = line.end(); j != end && j->start_column <= col; ++j)
   {
     if (j->end_column == -1 || col <= j->end_column) return -1;
-    offset = j->offset;
+    offset += j->offset;
   }
   return col - offset;
 }
