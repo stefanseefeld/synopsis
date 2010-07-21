@@ -144,7 +144,7 @@ class SXRGenerator:
 
         t = self.next_token()
         if item is not None and t[1] != item:
-            raise 'Internal error in line %d: expected "%s", got "%s" (%d)'%(self.lineno, item, t[1], t[0])
+            raise Exception('Internal error in line %d: expected "%s", got "%s" (%d)'%(self.lineno, item, t[1], t[0]))
         else:
             self.print_token(t)
   
@@ -153,7 +153,7 @@ class SXRGenerator:
 
         kind, value, (srow, scol), (erow, ecol), line = self.next_token()
         if (kind, value) != (token.NAME, name):
-            raise 'Internal error in line %d: expected name "%s", got "%s" (%d)'%(name, self.lineno, item, t[1], t[0])
+            raise Exception('Internal error in line %d: expected name "%s", got "%s" (%d)'%(name, self.lineno, item, t[1], t[0]))
 
         if self.col != scol:
             self.sxr.write(' ' * (scol - self.col))
