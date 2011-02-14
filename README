@@ -5,6 +5,8 @@ Requirements
 ------------
 
 Synopsis uses features found in Python 2.2 and up.
+It requires relatively recent versions of the Boost libraries, as well
+as LLVM (trunk).
 The build system requires a posix environment with GNU make and GNU
 autoconf installed.
 However, it is possible to build Synopsis for a native windows
@@ -49,10 +51,6 @@ Building
   python library (libpythonxx.a), which you have to build first. Instructions
   for this are at http://www.python.org/doc/current/inst/index.html.
 
-* If you want to use an external garbage collector for the Cxx parser
-  instead of the built in one, run 
-  'python setup.py config --with-gc-prefix=/your/gc/prefix'
-
 Testing
 -------
 
@@ -93,8 +91,7 @@ Installing
 Using Synopsis
 --------------
 
-* Remember to set the PYTHONPATH variable if necessary, as well as
-  LD_LIBRARY_PATH.
+* Remember to set the PYTHONPATH variable if necessary.
 
 * Read the tutorial to learn how to get started using synopsis.
 
