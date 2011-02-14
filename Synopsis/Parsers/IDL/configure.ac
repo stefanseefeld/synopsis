@@ -30,7 +30,7 @@ AC_PROG_YACC
 # Unfortunately, AC_PROG_YACC sets $YACC to 'yacc' if it couldn't
 # find anything (yacc itself doesn't appear to be checked for.)
 # Thus we take this as an indication that the test failed.
-if test $YACC = yacc
+if test "$YACC" = yacc
 then AC_MSG_ERROR(This package needs bison to build.)
 fi
 

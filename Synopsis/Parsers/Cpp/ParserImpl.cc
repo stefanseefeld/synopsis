@@ -7,15 +7,8 @@
 
 #include <boost/version.hpp>
 #include <boost/python.hpp>
-#include <Synopsis/Trace.hh>
-#include <Synopsis/Timer.hh>
-#include <Support/ErrorHandler.hh>
-
-#if BOOST_VERSION < 103500 || BOOST_WAVE_USE_DEPRECIATED_PREPROCESSING_HOOKS != 0
-# include "IRGenerator-depreciated.hh"
-#else
-# include "IRGenerator.hh"
-#endif
+#include <Support/Timer.hh>
+#include "IRGenerator.hh"
 #include <memory>
 #include <sstream>
 
@@ -53,9 +46,6 @@ bpl::object parse(bpl::object ir,
     user_flags[i] = bpl::extract<char const *>(py_user_flags[i]);
 
   std::set_unexpected(unexpected);
-  ErrorHandler error_handler();
-
-  if (debug) Synopsis::Trace::enable(Trace::ALL);
 
   if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
   std::ifstream ifs(input_file);

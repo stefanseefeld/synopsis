@@ -22,27 +22,25 @@ class config(build_ext):
                     if o[0] in ['inplace', 'build-lib=', 'build-temp=']] + [
         ('prefix=', None,
          "installation prefix"),
-        ('disable-gc', None,
-         "whether or not to build the C++ parser with the garbage collector"),
-        ('with-gc-prefix=', None,
-         "the prefix to the garbage collector."),
         ('with-boost-version=', None,
          "the boost version."),
         ('with-boost-prefix=', None,
          "the prefix to the boost libraries."),
         ('with-boost-lib-suffix=', None,
-         "the library suffix to the used for boost libraries.")]
+         "the boost library suffix."),
+        ('with-llvm-prefix=', None,
+         "the prefix to the llvm libraries.")]
     boolean_options = build_ext.boolean_options[:] + ['disable-gc']
 
     def initialize_options(self):
 
         self.prefix = None
         build_ext.initialize_options(self)
-        self.disable_gc = 0
         self.with_gc_prefix = ''
         self.with_boost_version = ''
         self.with_boost_prefix = ''
         self.with_boost_lib_suffix = ''
+        self.with_llvm_prefix = ''
 
     def finalize_options(self):
 
@@ -51,18 +49,6 @@ class config(build_ext):
             install = self.distribution.get_command_obj('install')
             install.ensure_finalized()
             self.prefix = install.prefix
-        # set build_clib to build_lib if it was explicitely given,
-        # overriding the default value.
-        if self.build_temp:
-            self.build_ctemp = self.build_temp
-        else:
-            self.build_ctemp = os.path.join('build', 'ctemp.' + get_platform())
-
-        if self.build_lib:
-            self.build_clib = self.build_lib
-        else:
-            self.build_clib = os.path.join('build', 'clib.' + get_platform())
-
         build_ext.finalize_options(self)
         # only append the path once 
         self.extensions = []
@@ -73,34 +59,13 @@ class config(build_ext):
     def run(self):
 
         version = self.distribution.get_version()
-        self.config('src', self.build_ctemp, self.build_clib,
-                    '--enable-version=%s'%version)
-        if not self.disable_gc and not self.with_gc_prefix:
-            if os.name == 'nt':
-                # for the gc configuration on the win32 native platform
-                # set 'CC' explicitely to 'gcc -mno-cygwin'
-                os.environ['CC'] = "gcc -mno-cygwin"
-            self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
-
-        if os.name == 'nt':
-            syn_cxx = '`cygpath -a "%s/src"`'%os.path.abspath(self.build_ctemp)
-            #syn_cxx = syn_cxx.replace('\\', '\\\\\\\\\\\\\\\\')
-        else:
-            syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
         for ext in self.extensions:
-            if not self.rpath:
-                self.config(ext, self.build_temp, self.build_lib,
-                            '--with-syn-cxx=%s'%syn_cxx)
-            else:
-                self.config(ext, self.build_temp, self.build_lib,
-                            '--with-syn-cxx=%s LDFLAGS=-Wl,-rpath,%s'%(syn_cxx, self.rpath[0]))
+            self.config(ext, self.build_temp, self.build_lib)
 
-        self.config('tests', self.build_temp, self.build_lib,
-                    '--with-syn-cxx="%s"'%syn_cxx)
+        #self.config('tests', self.build_temp, self.build_lib)
         self.config('doc', self.build_temp, self.build_lib)
-        self.config('sandbox', self.build_temp, self.build_lib,
-                    '--with-syn-cxx="%s"'%syn_cxx)
+        #self.config('sandbox', self.build_temp, self.build_lib)
 
             
     def config(self, component, build_temp, build_lib, args=''):
@@ -127,7 +92,6 @@ class config(build_ext):
                          + component + '/configure')
             python = '`cygpath -a "%s"`'%os.path.dirname(sys.executable)
             python += '/' + os.path.basename(sys.executable)
-            #python.replace('\\', '\\\\\\\\\\\\\\\\')
             prefix = '`cygpath -a "%s"`'%sys.prefix
         
         else:
@@ -135,16 +99,14 @@ class config(build_ext):
             python = sys.executable
             prefix = self.prefix
         command = '%s --prefix="%s" --with-python="%s"'%(configure, prefix, python)
-        if self.disable_gc:
-            command += ' --disable-gc'
-        elif self.with_gc_prefix:
-            command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
         if self.with_boost_version:
             command += ' --with-boost-version="%s"'%self.with_boost_version
         if self.with_boost_prefix:
             command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
         if self.with_boost_lib_suffix:
             command += ' --with-boost-lib-suffix="%s"'%self.with_boost_lib_suffix
+        if self.with_llvm_prefix:
+            command += ' --with-llvm-prefix="%s"'%self.with_llvm_prefix
         command += ' %s'%args
         self.announce(command)
         # Work around a hack in distutils.spawn by an even more evil hack:

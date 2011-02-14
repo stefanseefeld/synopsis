@@ -15,7 +15,6 @@
 #include <boost/wave/cpplexer/re2clex/cpp_re2c_lexer.hpp>
 #include <boost/wave/preprocessing_hooks.hpp>
 #include <stack>
-#include <Synopsis/Trace.hh>
 #include <Support/path.hh>
 
 using namespace Synopsis;
@@ -61,7 +60,6 @@ public:
       verbose_(v),
       debug_(d)
   {
-    Trace trace("IRGenerator::IRGenerator", Trace::TRANSLATION);
     file_stack_.push(lookup_source_file(raw_filename_, true));
     bpl::object asg = ir.attr("asg");
     declarations_ = bpl::extract<bpl::list>(asg.attr("declarations"))();
@@ -156,7 +154,6 @@ bool IRGenerator::expanding_function_like_macro(Context const &ctx,
                                                 IteratorT const &seqstart,
                                                 IteratorT const &seqend)
 {
-  Trace trace("IRGenerator::expand_function_like_macro", Trace::TRANSLATION);
   if (mask_counter_) return false;
   if (!macro_level_counter_)
   {
@@ -175,7 +172,6 @@ bool IRGenerator::expanding_object_like_macro(Context const& ctx,
                                               Container const &definition,
                                               Token const &macrocall)
 {
-  Trace trace("IRGenerator::expand_object_like_macro", Trace::TRANSLATION);
   if (mask_counter_) return false;
   if (!macro_level_counter_)
   {
@@ -192,14 +188,12 @@ inline
 void IRGenerator::expanded_macro(Context const &ctx,
                                  Container const &result)
 {
-  Trace trace("IRGenerator::expand_macro", Trace::TRANSLATION);
 }
 
 inline 
 void IRGenerator::rescanned_macro(Context const &ctx,
                                   Container const &result)
 {
-  Trace trace("IRGenerator::rescanned_macro", Trace::TRANSLATION);
   if (!mask_counter_ && !--macro_level_counter_)
   {
     // All (potentially recursive) scanning is finished at this point, so we
@@ -229,9 +223,6 @@ bool IRGenerator::found_include_directive(Context const &ctx,
                                           std::string const &filename, 
                                           bool next)
 {
-  Trace trace("IRGenerator::found_include_directive", Trace::TRANSLATION);
-  trace << filename;
-    
   include_dir_ = filename;
   include_next_dir_ = next;
   return false;
@@ -243,8 +234,6 @@ void IRGenerator::opened_include_file(Context const &ctx,
                                       std::string const &absname,
                                       bool is_system_include)
 {
-  Trace trace("IRGenerator::opened_include_file", Trace::TRANSLATION);
-  trace << absname;
   if (mask_counter_)
   {
     ++mask_counter_;
@@ -271,7 +260,6 @@ void IRGenerator::opened_include_file(Context const &ctx,
 inline
 void IRGenerator::returning_from_include_file(Context const &ctx)
 {
-  Trace trace("IRGenerator::returning_from_include_file", Trace::TRANSLATION);
   if (mask_counter_ < 2) file_stack_.pop();
   // if the file was masked, decrement the counter
   if (mask_counter_) --mask_counter_;
@@ -300,7 +288,6 @@ void IRGenerator::defined_macro(Context const &ctx,
                                 Container const &definition,
                                 bool is_predefined)
 {
-  Trace trace("IRGenerator::defined_macro", Trace::TRANSLATION);
   if (mask_counter_ || is_predefined) return;
   
   Token::string_type const &m = name.get_value();
@@ -335,17 +322,12 @@ void IRGenerator::defined_macro(Context const &ctx,
 inline
 void IRGenerator::undefined_macro(Context const &ctx, Token const &name)
 {
-  Trace trace("IRGenerator::undefined_macro", Trace::TRANSLATION);
-  trace << name;
 }
 
 inline
 bpl::object IRGenerator::lookup_source_file(std::string const &filename,
                                             bool primary)
 {
-  Trace trace("IRGenerator::lookup_source_file", Trace::TRANSLATION);
-  trace << filename << ' ' << primary;
-
   std::string long_name = make_full_path(filename);
   std::string short_name = make_short_path(filename, base_path_);
   bpl::object source_file = files_.get(short_name);

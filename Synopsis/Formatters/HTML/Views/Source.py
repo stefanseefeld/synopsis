@@ -130,6 +130,8 @@ class Source(View):
         self.write_navigation_bar()
         self.write('File: '+element('b', self.__title))
 
+        if os.path.isabs(source):
+            source = os.path.splitdrive(source)[1][1:]
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
             translator = SXRTranslator(sxr, file.annotations['language'], self.processor.debug)

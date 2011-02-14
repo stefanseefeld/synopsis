@@ -470,7 +470,7 @@ class Parameter(object):
       self.type = type
       self.postmodifier = postmod
       self.name = name
-      self.value = value
+      self.value = value or ''
 
    def accept(self, visitor): visitor.visit_parameter(self)
    

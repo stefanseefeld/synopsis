@@ -9,81 +9,97 @@
 #define ASGTranslator_hh_
 
 #include <boost/python.hpp>
-#include <Synopsis/PTree.hh>
-#include <Synopsis/Buffer.hh>
+#include <clang-c/Index.h>
 #include <stack>
+#include <map>
 
-using namespace Synopsis;
 namespace bpl = boost::python;
 
-class ASGTranslator : private PTree::Visitor
+class SymbolTable
+{
+  struct less
+  {
+    bool operator()(CXCursor c1, CXCursor c2) const
+    { return c1.data[0] < c2.data[0] || 
+	(c1.data[0] == c2.data[0] && c1.data[1] < c2.data[1]);
+    }
+  };
+  typedef std::map<CXCursor, bpl::object, less> symbol_map;
+
+public:
+  void declare(CXCursor c, bpl::object d) { symbols_[c] = d;}
+  bpl::object lookup(CXCursor c) const { return symbols_[c];}
+
+private:
+  mutable symbol_map symbols_;
+};
+
+class TypeRepository
+{
+  struct less
+  {
+    bool operator()(CXType t1, CXType t2) const
+    { return t1.data[0] < t2.data[0] || 
+	(t1.data[0] == t2.data[0] && t1.data[1] < t2.data[1]);
+    }
+  };
+  typedef std::map<CXType, bpl::object, less> type_map;
+public:
+  TypeRepository(bpl::dict types, bool verbose);
+  void declare(CXType t, bpl::object declaration, bool visible);
+  bpl::object lookup(CXType t) const;
+
+private:
+  bpl::object qname(std::string const &name) const { return qname_(bpl::make_tuple(name));}
+
+  bpl::object asg_module_;
+  bpl::object qname_;
+  mutable bpl::dict types_;
+  mutable type_map cx_types_;
+  bool verbose_;
+};
+
+class ASGTranslator
 {
 public:
   ASGTranslator(std::string const &filename,
 		std::string const &base_path, bool primary_file_only,
 		bpl::object ir, bool v, bool d);
 
-  void translate(PTree::Node *, Buffer &);
+  void translate(CXTranslationUnit);
+
+  //. look up an ASG.Declaration from a cursor.
+  bpl::object lookup(CXCursor d) const { return symbols_.lookup(d);}
 
 private:
-  typedef std::stack<bpl::object> ScopeStack;
+  typedef std::stack<bpl::object> scope_stack;
 
-  virtual void visit(PTree::List *);
-  virtual void visit(PTree::Declarator *);
-  virtual void visit(PTree::SimpleDeclaration *);
-  virtual void visit(PTree::ClassSpec *);
-  virtual void visit(PTree::EnumSpec *);
-  virtual void visit(PTree::ParameterDeclaration *);
+  bpl::object qname(std::string const &name);
+  void declare(CXCursor, bpl::object);
 
-  void add_comments(bpl::object declaration, PTree::Node *);
-  //. Update positional information for the given
-  //. node. This will reset 'lineno_' and may change
-  //. 'file_'.
-  //. Return whether or not the node should be translated,
-  //. according to the current file and the 'primary_file_only' flag.
-  bool update_position(PTree::Node *);
+  CXChildVisitResult visit_declaration(CXCursor c, CXCursor p);
 
-  //. look up and return the named type. If this is a derived type,
-  //. it may create a modifier and return that.
-  bpl::object lookup(PTree::Encoding const &name);
-  bpl::object lookup_function_types(PTree::Encoding const &name, bpl::list types);
-  //. Declare the given type-id either as a `DeclaredTypeId` (if visible), or
-  //. an `UnknownTypeId` otherwise.
-  bpl::object declare_type(bpl::object id, bpl::object declaration, bool visible);
+  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d);
 
-  void declare(bpl::object declaration);
+  bpl::object get_source_file(std::string const &);
+  bpl::object create(CXCursor c);
 
-  PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, bpl::object &);
-  PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
-					    bpl::object &type,
-					    bpl::list postmod);
-  PTree::Encoding::iterator decode_name(PTree::Encoding::iterator,
-					std::string &name);
-
-  bpl::object qname(std::string const &name) { return qname_(bpl::make_tuple(name));}
-
-  bpl::object         qname_;
-  bpl::object         asg_module_;
-  bpl::object         sf_module_;
-  bpl::dict           files_;
-  bpl::dict           types_;
-  bpl::list           declarations_;
-  bpl::object         file_;
-  std::string         raw_filename_;
-  std::string         base_path_;
-  bool                primary_file_only_;
-  unsigned long       lineno_;
-  ScopeStack          scope_;
-  bool                verbose_;
-  bool                debug_;
-  Buffer             *buffer_;
-  PTree::Declaration *declaration_;
-  bpl::object         parameter_;
-  //. True if we have just seen a class-specifier or enum-specifier
-  //. inside a decl-specifier-seq.
-  bool                defines_class_or_enum_;
-  PTree::Encoding     name_;
+  CXTranslationUnit tu_;
+  bpl::object       qname_;
+  bpl::object       asg_module_;
+  bpl::object       sf_module_;
+  bpl::dict         files_;
+  TypeRepository    types_;
+  SymbolTable       symbols_;
+  bpl::list         declarations_;
+  bpl::list         enumerators_;
+  scope_stack       scope_;
+  bpl::object       file_;
+  std::string       raw_filename_;
+  std::string       base_path_;
+  bool              primary_file_only_;
+  bool              verbose_;
+  bool              debug_;
 };
 
 #endif
-

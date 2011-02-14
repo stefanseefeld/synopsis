@@ -120,62 +120,45 @@ void SXRGenerator::xref(CXToken const &t)
   clang_disposeString(s);
   CXCursor c = clang_getCursor(tu_, l);
   CXCursor r = clang_getCursorReferenced(c);
-  if (clang_isCursorDefinition(c) &&
-      // template specializations can't be found via symbol lookup
-      c.kind != CXCursor_ClassTemplatePartialSpecialization)
+  if (clang_isCursorDefinition(c))
   {
     bpl::object decl = translator_.lookup(c);
-    // if (!decl)
-      // throw std::runtime_error("Error: can't find definition for symbol " + cursor_info(c));
-    if (decl)
-    {
-      char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-      write("<a href=\"");
-      write_esc(qname);
-      write("\" from=\"#\"");
-      write(" type=\"definition\">");
-      write_esc(text.c_str());
-      write("</a>");
-    }
-    else
-      write_esc(text.c_str());
+    if (!decl)
+      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
+    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
+    write("<a href=\"");
+    write_esc(qname);
+    write("\" from=\"#\"");
+    write(" type=\"definition\">");
+    write_esc(text.c_str());
+    write("</a>");
   }
   else if (clang_isDeclaration(c.kind))
   {
     bpl::object decl = translator_.lookup(c);
-    // if (!decl)
-    //   throw std::runtime_error("Error: can't find declaration for symbol " + cursor_info(c));
-    if (decl)
-    {
-      char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-      write("<a href=\"");
-      write_esc(qname);
-      write("\" from=\"#\"");
-      write(" type=\"definition\">");
-      write_esc(text.c_str());
-      write("</a>");
-    }
-    else
-      write_esc(text.c_str());
+    if (!decl)
+      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
+    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
+    write("<a href=\"");
+    write_esc(qname);
+    write("\" from=\"#\"");
+    write(" type=\"definition\">");
+    write_esc(text.c_str());
+    write("</a>");
   }
-  else if (!clang_equalCursors(r, c))
+  else if (!clang_equalCursors(r, clang_getNullCursor()))
   {
     bpl::object decl = translator_.lookup(r);
-    // if (!decl)
-    //   throw std::runtime_error("Error: can't find reference for symbol " + cursor_info(r));
-    if (decl)
-    {
-      char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-      // A reference
-      write("<a href=\"");
-      write_esc(qname);
-      write("\" from=\"#\"");
-      write(" type=\"reference\">");
-      write_esc(text.c_str());
-      write("</a>");
-    }
-    else
-      write_esc(text.c_str());
+    if (!decl)
+      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
+    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
+    // A reference
+    write("<a href=\"");
+    write_esc(qname);
+    write("\" from=\"#\"");
+    write(" type=\"reference\">");
+    write_esc(text.c_str());
+    write("</a>");
   }
   else 
     throw std::runtime_error("unimplemented: " + cursor_info(c));

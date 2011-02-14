@@ -12,26 +12,15 @@ AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.10 $)
 AC_INIT(Cpp, 1.0, synopsis-devel@fresco.org)
 
-AC_ARG_WITH(syn-cxx,
-  [  --with-syn-cxx=PATH     specify the Synopsis C++ library prefix],
-  SYN_CXX="$with_syn_cxx",
-  SYN_CXX="/usr/local"
-)
-
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 
-SYN_CPP="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --cflags synopsis-uninstalled`"
-SYN_LIBS="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --libs synopsis-uninstalled`"
-AC_SUBST(SYN_CPP)
-AC_SUBST(SYN_LIBS)
-
 AC_PYTHON_EXT
-CPPFLAGS="$CPPFLAGS -I $PYTHON_INCLUDE"
+CPPFLAGS="$CPPFLAGS -I$PYTHON_INCLUDE"
 
 AC_LANG(C++)
-AC_BOOST([1.33])
+AC_BOOST([1.44])
 SYN_BOOST_LIB_FILESYSTEM
 SYN_BOOST_LIB_WAVE
 SYN_BOOST_LIB_PYTHON

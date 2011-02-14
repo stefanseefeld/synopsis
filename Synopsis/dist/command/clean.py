@@ -14,23 +14,9 @@ from distutils.command.clean import clean as base
 
 class clean(base):
 
-    def finalize_options(self):
-        
-        base.finalize_options(self)
-        
-        build_clib = self.distribution.get_command_obj('build_clib')
-        build_clib.ensure_finalized()
-        self.build_ctemp = build_clib.build_ctemp
-        self.build_clib = build_clib.build_clib
-
     def run(self):
 
         base.run(self)
-
-        # Remove the build/ctemp.<plat> directory (unless it's already
-        # gone).
-        if os.path.exists(self.build_ctemp):
-            remove_tree(self.build_ctemp, dry_run=self.dry_run)
 
         if self.all:
 

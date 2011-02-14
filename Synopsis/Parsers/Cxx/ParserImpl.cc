@@ -7,19 +7,13 @@
 
 #include "ASGTranslator.hh"
 #include "SXRGenerator.hh"
-#include <Synopsis/Trace.hh>
-#include <Synopsis/Timer.hh>
-#include <Synopsis/PTree.hh>
-#include <Synopsis/PTree/Display.hh>
-#include <Synopsis/SymbolLookup.hh>
-#include <Synopsis/Buffer.hh>
-#include <Synopsis/Lexer.hh>
-#include <Synopsis/SymbolFactory.hh>
-#include <Synopsis/Parser.hh>
-#include <Support/ErrorHandler.hh>
+#include <Support/Timer.hh>
 #include <Support/path.hh>
 #include <boost/filesystem/convenience.hpp>
+#include <clang-c/Index.h>
 #include <fstream>
+#include <cstring>
+#include <unistd.h>
 
 using namespace Synopsis;
 namespace fs = boost::filesystem;
@@ -37,60 +31,75 @@ void unexpected()
 
 bpl::object parse(bpl::object ir,
                   char const *cpp_file, char const *input_file, char const *base_path,
-                  bool primary_file_only, char const *syntax_prefix, char const *xref_prefix,
+                  bool primary_file_only, char const *sxr_prefix,
                   bool verbose, bool debug, bool profile)
 {
   std::set_unexpected(unexpected);
-  ErrorHandler error_handler();
 
-  if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
+  // if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
   if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
 
-  std::ifstream ifs(cpp_file);
-  Buffer buffer(ifs.rdbuf(), input_file);
-  Lexer lexer(&buffer, Lexer::CXX|Lexer::GCC);
-  SymbolFactory symbols(SymbolFactory::CXX);
-  Parser parser(lexer, symbols, Parser::CXX|Parser::GCC);
   Timer timer;
-  PTree::Node *ptree = parser.parse();
+  // first arg: exclude declarations from PCH
+  // second arg: display diagnostics
+  CXIndex idx = clang_createIndex(0, 1);
+  CXTranslationUnit_Flags flags = CXTranslationUnit_DetailedPreprocessingRecord;
+  CXTranslationUnit tu = 
+    clang_parseTranslationUnit(idx, input_file,
+			       0,  // command-line args
+			       0,  // number of command-line args
+			       0,  // unsaved_files
+			       0,  // num_unsaved_files
+			       flags);
+  if (!tu) 
+  {
+    std::cerr << "unable to parse input\n";
+    return ir;
+  }
+
   if (profile)
     std::cout << "C++ parser took " << timer.elapsed() 
               << " seconds" << std::endl;
-  const Parser::ErrorList &errors = parser.errors();
-  if (!errors.empty())
+  unsigned diagnostics = clang_getNumDiagnostics(tu);
+  if (diagnostics)
   {
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
+    for (unsigned i = 0; i != diagnostics; ++i)
+    {
+      CXDiagnostic d = clang_getDiagnostic(tu, i);
+      CXString diagnostic = clang_formatDiagnostic(d, flags);
+      std::cerr << clang_getCString(diagnostic) << std::endl;
+      clang_disposeString(diagnostic);
+      clang_disposeDiagnostic(d);
+    }
     throw std::runtime_error("The input contains errors.");
   }
-  else if (ptree)
+  timer.reset();
+  ASGTranslator translator(input_file, base_path, primary_file_only, ir, verbose, debug);
+  translator.translate(tu);
+
+  if (profile)
+    std::cout << "ASG translation took " << timer.elapsed() 
+	      << " seconds" << std::endl;
+  if (sxr_prefix)
   {
     timer.reset();
-    ASGTranslator translator(symbols.current_scope(),
-                             input_file, base_path, primary_file_only, ir, verbose, debug);
-    translator.translate(ptree, buffer);
+
+    std::string long_filename = make_full_path(input_file);
+    std::string short_filename = make_short_path(input_file, base_path);
+    //bpl::object file = ir.attr("files")[short_filename];
+  //   // Undo the preprocesser's macro expansions.
+  //   bpl::dict macro_calls = bpl::dict(file.attr("macro_calls"));
+    std::string sxr = std::string(sxr_prefix) + "/" + short_filename + ".sxr";
+    create_directories(fs::path(sxr).branch_path());
+    SXRGenerator generator(sxr, translator);
+    generator.generate(tu, short_filename);
     if (profile)
-      std::cout << "ASG translation took " << timer.elapsed() 
-                << " seconds" << std::endl;
-    if (syntax_prefix)
-    {
-      timer.reset();
-      std::string long_filename = make_full_path(input_file);
-      std::string short_filename = make_short_path(input_file, base_path);
-      bpl::object file = ir.attr("files")[short_filename];
-      // Undo the preprocesser's macro expansions.
-      bpl::dict macro_calls = bpl::dict(file.attr("macro_calls"));
-      std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
-      create_directories(fs::path(sxr).branch_path());
-      std::ofstream ofs(sxr.c_str());
-      SXRGenerator generator(buffer, symbols.current_scope(), ofs);
-      generator.process(ptree);
-      if (profile)
-        std::cout << "SXR generation took " << timer.elapsed() 
-                  << " seconds" << std::endl;
-    }
+      std::cout << "SXR generation took " << timer.elapsed() 
+  		<< " seconds" << std::endl;
   }
+  clang_disposeTranslationUnit(tu);
+  clang_disposeIndex(idx);
   return ir;
 }
 

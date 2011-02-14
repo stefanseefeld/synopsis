@@ -60,6 +60,8 @@ class XRef(View):
         pages = self.processor.xref.pages()
         if not pages: return
         for p in range(len(pages)):
+            if not pages[p]: 
+                continue
             self.__filename = self.directory_layout.xref(p)
 
             first, last = pages[p][0], pages[p][-1]

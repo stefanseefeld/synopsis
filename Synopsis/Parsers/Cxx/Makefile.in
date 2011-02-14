@@ -8,19 +8,14 @@
 SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
-builddir:= @builddir@
-
-PYTHON	:= @PYTHON@
 
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ @BOOST_CPPFLAGS@ -I .
-CPPFLAGS+= -I $(srcdir)
-CPPFLAGS+= @SYN_CPP@
+CPPFLAGS:= @CPPFLAGS@ -I$(srcdir) -I$(srcdir)/../../../src -I@llvm_prefix@/include @BOOST_CPPFLAGS@
 CXXFLAGS:= @CXXFLAGS@
-LDFLAGS	:= @LDFLAGS@
-LIBS	:= @BOOST_LIBS@ @SYN_LIBS@ @LIBS@
+LDFLAGS	:= @LDFLAGS@ -L@llvm_prefix@/lib
+LIBS	:= -lclang @BOOST_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 SRC	:= ASGTranslator.cc SXRGenerator.cc ParserImpl.cc

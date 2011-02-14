@@ -9,19 +9,14 @@ SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
 
-PYTHON	:= @PYTHON@
-
-CC	:= @CC@
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ @BOOST_CPPFLAGS@ -I .
-CPPFLAGS+= -I $(srcdir)
-CPPFLAGS+= @SYN_CPP@
+CPPFLAGS:= -I$(srcdir) -I$(srcdir)/../../../src @CPPFLAGS@ @BOOST_CPPFLAGS@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@ @BOOST_LDFLAGS@
-LIBS	:= @BOOST_LIBS@ @SYN_LIBS@ @LIBS@
+LIBS	:= @BOOST_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 SRC	:= ParserImpl.cc
