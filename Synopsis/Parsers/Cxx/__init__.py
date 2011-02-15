@@ -12,8 +12,9 @@ import os, os.path, tempfile
 
 class Parser(Processor):
 
-    preprocess = Parameter(True, 'whether or not to preprocess the input')
+    preprocess = Parameter(False, 'whether or not to preprocess the input')
     emulate_compiler = Parameter('c++', 'a compiler to emulate')
+    compiler_flags = Parameter([], 'list of flags for the emulated compiler')
     cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
@@ -22,7 +23,7 @@ class Parser(Processor):
     def process(self, ir, **kwds):
 
         self.set_parameters(kwds)
-        self.preprocess = False
+        if not self.input: raise MissingArgument('input')
         self.ir = ir
 
         if self.preprocess:
@@ -31,9 +32,10 @@ class Parser(Processor):
             cpp = Cpp.Parser(base_path = self.base_path,
                              language = 'C++',
                              flags = self.cppflags,
-                             emulate_compiler = self.emulate_compiler)
+                             emulate_compiler = self.emulate_compiler,
+                             compiler_flags = self.compiler_flags)
 
-        base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
+        base_path = self.base_path and os.path.join(os.path.abspath(self.base_path), os.sep) or ''
 
         for file in self.input:
 

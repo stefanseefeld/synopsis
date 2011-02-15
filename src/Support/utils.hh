@@ -11,6 +11,16 @@
 #include <iostream>
 #include <sstream>
 
+// Some declarations are anonymous.
+// Generate unique names for them so we can refer to them.
+inline std::string make_anonymous_name()
+{
+  static int i = 0;
+  std::ostringstream oss;
+  oss << '`' << (i++);
+  return oss.str();
+}
+
 inline std::string cursor_info(CXCursor c)
 {
   std::ostringstream oss;
@@ -24,10 +34,32 @@ inline std::string cursor_info(CXCursor c)
 
 inline std::string type_info(CXType t)
 {
-  std::ostringstream oss;
   CXString kind = clang_getTypeKindSpelling(t.kind);
-  oss << "type " << clang_getCString(kind);
+  std::string type = clang_getCString(kind);
   clang_disposeString(kind);
+  return type;
+}
+
+inline std::string cursor_location(CXCursor c, bool extent = false)
+{
+  std::ostringstream oss;
+  CXSourceRange range = clang_getCursorExtent(c);
+  CXSourceLocation start = clang_getRangeStart(range);
+  CXFile sf;
+  unsigned line, column;
+  clang_getSpellingLocation(start, &sf, &line, &column, /*offset*/ 0);
+  CXString f = clang_getFileName(sf);
+  oss << clang_getCString(f);
+  clang_disposeString(f);
+  if (extent)
+  {
+    oss << '(' << line << ':' << column << '-';
+    CXSourceLocation end = clang_getRangeEnd(range);
+    clang_getSpellingLocation(end, 0/*file*/, &line, &column, /*offset*/ 0);
+    oss << line << ':' << column << ')';
+  }
+  else
+    oss << ':' << line << ':' << column;
   return oss.str();
 }
 

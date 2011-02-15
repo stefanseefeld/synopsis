@@ -74,8 +74,11 @@ bpl::object parse(bpl::object ir,
     }
     throw std::runtime_error("The input contains errors.");
   }
+  bpl::object asg = ir.attr("asg");
+  bpl::dict files = bpl::extract<bpl::dict>(ir.attr("files"));
+
   timer.reset();
-  ASGTranslator translator(input_file, base_path, primary_file_only, ir, verbose, debug);
+  ASGTranslator translator(input_file, base_path, primary_file_only, asg, files, verbose, debug);
   translator.translate(tu);
 
   if (profile)
@@ -84,16 +87,17 @@ bpl::object parse(bpl::object ir,
   if (sxr_prefix)
   {
     timer.reset();
-
-    std::string long_filename = make_full_path(input_file);
-    std::string short_filename = make_short_path(input_file, base_path);
-    //bpl::object file = ir.attr("files")[short_filename];
-  //   // Undo the preprocesser's macro expansions.
-  //   bpl::dict macro_calls = bpl::dict(file.attr("macro_calls"));
-    std::string sxr = std::string(sxr_prefix) + "/" + short_filename + ".sxr";
-    create_directories(fs::path(sxr).branch_path());
-    SXRGenerator generator(sxr, translator);
-    generator.generate(tu, short_filename);
+    SXRGenerator generator(translator, verbose, debug);
+    for (size_t i = 0; i != bpl::len(files); ++i)
+    {
+      bpl::object sf = files.attr("values")()[i];
+      if (!bpl::extract<bpl::dict>(sf.attr("annotations"))().get("primary", false)) continue;
+      std::string abs_name = bpl::extract<char const *>(sf.attr("abs_name"))();
+      std::string name = bpl::extract<char const *>(sf.attr("name"))();
+      std::string sxr = std::string(sxr_prefix) + "/" + name + ".sxr";
+      create_directories(fs::path(sxr).branch_path());
+      generator.generate(tu, sxr, abs_name, name);
+    }
     if (profile)
       std::cout << "SXR generation took " << timer.elapsed() 
   		<< " seconds" << std::endl;

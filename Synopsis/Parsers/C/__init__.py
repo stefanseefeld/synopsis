@@ -5,8 +5,6 @@
 # see the file COPYING for details.
 #
 
-"""C Parser"""
-
 from Synopsis.Processor import Processor, Parameter
 from ParserImpl import parse
 
@@ -14,13 +12,13 @@ import os, os.path, tempfile
 
 class Parser(Processor):
 
-    preprocess = Parameter(True, 'whether or not to preprocess the input')
+    preprocess = Parameter(False, 'whether or not to preprocess the input')
     emulate_compiler = Parameter('cc', 'a compiler to emulate')
     compiler_flags = Parameter([], 'list of flags for the emulated compiler')
     cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
     primary_file_only = Parameter(True, 'should only primary file be processed')
     base_path = Parameter('', 'path prefix to strip off of the file names')
-    sxr_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
+    sxr_prefix = Parameter(None, 'path prefix (directory) to contain sxr info')
 
     def process(self, ir, **kwds):
 
@@ -37,6 +35,8 @@ class Parser(Processor):
                              emulate_compiler = self.emulate_compiler,
                              compiler_flags = self.compiler_flags)
 
+        base_path = self.base_path and os.path.join(os.path.abspath(self.base_path), os.sep) or ''
+
         for file in self.input:
 
             i_file = file
@@ -51,13 +51,14 @@ class Parser(Processor):
                                       cpp_output = i_file,
                                       input = [file],
                                       primary_file_only = self.primary_file_only,
+                                      base_path = base_path,
                                       verbose = self.verbose,
                                       debug = self.debug,
                                       profile = self.profile)
 
             self.ir = ParserImpl.parse(self.ir, i_file,
                                        os.path.abspath(file),
-                                       os.path.abspath(self.base_path),
+                                       base_path,
                                        self.primary_file_only,
                                        self.sxr_prefix,
                                        self.verbose,

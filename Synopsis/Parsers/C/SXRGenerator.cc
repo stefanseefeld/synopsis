@@ -1,63 +1,34 @@
 //
-// Copyright (C) 2006 Stefan Seefeld
+// Copyright (C) 2011 Stefan Seefeld
 // All rights reserved.
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
 #include "SXRGenerator.hh"
+#include <Support/utils.hh>
 #include <cstring>
 #include <boost/filesystem/operations.hpp>
 #include <sstream>
 
 namespace fs = boost::filesystem;
 
-
-namespace
+SXRGenerator::SXRGenerator(ASGTranslator const &t, bool v, bool d)
+  : translator_(t),
+    verbose_(v),
+    debug_(d)
 {
-void print_extent(CXSourceRange range)
-{
-  CXSourceLocation start = clang_getRangeStart(range);
-  unsigned line, column;
-  clang_getSpellingLocation(start, 0/*file*/, &line, &column, /*offset*/ 0);
-  std::cout << "start: " << line << ':' << column;
-  CXSourceLocation end = clang_getRangeEnd(range);
-  clang_getSpellingLocation(end, 0/*file*/, &line, &column, /*offset*/ 0);
-  std::cout << " end: " << line << ':' << column;
-  std::cout << std::endl;
 }
 
-std::string cursor_info(CXCursor c)
-{
-  std::ostringstream oss;
-  CXString kind = clang_getCursorKindSpelling(c.kind);
-  CXString name = clang_getCursorDisplayName(c);
-  oss << "kind=" << clang_getCString(kind) << ", name=" << clang_getCString(name);
-  clang_disposeString(name);
-  clang_disposeString(kind);
-  return oss.str();
-}
-
-}
-
-SXRGenerator::SXRGenerator(std::string const &sxr, ASGTranslator const &t)
-  : translator_(t)
-{
-  obuf_.open(sxr.c_str(), std::ios_base::out);
-}
-
-SXRGenerator::~SXRGenerator()
-{
-  obuf_.close();
-}
-
-void SXRGenerator::generate(CXTranslationUnit tu, std::string const &filename)
+void SXRGenerator::generate(CXTranslationUnit tu,
+			    std::string const &sxr, std::string const &abs_filename, std::string const &filename)
 {
   tu_ = tu;
+  obuf_.open(sxr.c_str(), std::ios_base::out);
   // FIXME: This function is broken. Construct the range manually instead...
   // CXSourceRange range = clang_getCursorExtent(clang_getTranslationUnitCursor(tu));
-  fs::path path(filename, fs::native);
+  fs::path path(abs_filename, fs::native);
   size_t size = fs::file_size(path);
-  CXFile f = clang_getFile(tu, filename.c_str());
+  CXFile f = clang_getFile(tu, abs_filename.c_str());
   CXSourceLocation begin = clang_getLocationForOffset(tu, f, 0);
   CXSourceLocation end = clang_getLocationForOffset(tu, f, size);
   CXSourceRange range = clang_getRange(begin, end);
@@ -90,6 +61,8 @@ void SXRGenerator::generate(CXTranslationUnit tu, std::string const &filename)
     switch (kind)
     {
       case CXToken_Comment:
+	write_comment(s, line);
+	break;
       case CXToken_Keyword:
       case CXToken_Literal:
 	write("<span class=\"");
@@ -99,7 +72,7 @@ void SXRGenerator::generate(CXTranslationUnit tu, std::string const &filename)
 	write("</span>");
 	break;
       case CXToken_Identifier:
-	xref(tokens[i]);
+	write_xref(tokens[i]);
 	break;
       default:
 	write_esc(s);
@@ -110,58 +83,7 @@ void SXRGenerator::generate(CXTranslationUnit tu, std::string const &filename)
   }
   write("</line>\n</sxr>\n");
   clang_disposeTokens(tu, tokens, num_tokens);
-}
-
-void SXRGenerator::xref(CXToken const &t)
-{
-  CXSourceLocation l = clang_getTokenLocation(tu_, t);
-  CXString s = clang_getTokenSpelling(tu_, t);
-  std::string text = clang_getCString(s);
-  clang_disposeString(s);
-  CXCursor c = clang_getCursor(tu_, l);
-  CXCursor r = clang_getCursorReferenced(c);
-  if (clang_isCursorDefinition(c))
-  {
-    bpl::object decl = translator_.lookup(c);
-    if (!decl)
-      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
-    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-    write("<a href=\"");
-    write_esc(qname);
-    write("\" from=\"#\"");
-    write(" type=\"definition\">");
-    write_esc(text.c_str());
-    write("</a>");
-  }
-  else if (clang_isDeclaration(c.kind))
-  {
-    bpl::object decl = translator_.lookup(c);
-    if (!decl)
-      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
-    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-    write("<a href=\"");
-    write_esc(qname);
-    write("\" from=\"#\"");
-    write(" type=\"definition\">");
-    write_esc(text.c_str());
-    write("</a>");
-  }
-  else if (!clang_equalCursors(r, clang_getNullCursor()))
-  {
-    bpl::object decl = translator_.lookup(r);
-    if (!decl)
-      throw std::runtime_error("Error: can't find symbol " + cursor_info(c));
-    char const *qname = bpl::extract<char const *>(bpl::str(decl.attr("name")));
-    // A reference
-    write("<a href=\"");
-    write_esc(qname);
-    write("\" from=\"#\"");
-    write(" type=\"reference\">");
-    write_esc(text.c_str());
-    write("</a>");
-  }
-  else 
-    throw std::runtime_error("unimplemented: " + cursor_info(c));
+  obuf_.close();
 }
 
 char const *SXRGenerator::token_kind_to_class(CXTokenKind k)
@@ -175,16 +97,137 @@ char const *SXRGenerator::token_kind_to_class(CXTokenKind k)
   }
 }
 
+char const *SXRGenerator::xref(CXCursor c)
+{
+  bpl::object decl = translator_.lookup(c);
+  if (decl)
+    return bpl::extract<char const *>(bpl::str(decl.attr("name")));
+  else
+  // throw std::runtime_error("Error: can't find definition for symbol " + cursor_info(c));
+    return 0;
+}
+
+char const *SXRGenerator::from(CXCursor c)
+{
+  if (debug_)
+    std::cout << "from " << cursor_info(c) << std::endl;
+  return 0;
+}
+
+void SXRGenerator::write_comment(std::string const &comment, unsigned &line)
+{
+  write("<span class=\"comment\">");
+  // If the comment contains newlines, we need to write it in chunks
+  std::string::size_type begin = 0, end = comment.find('\n');
+  while (end != std::string::npos)
+  {
+    write_esc(comment.substr(begin, end - begin));
+    write("</span></line>\n");
+    write("<line><span class=\"comment\" continuation=\"true\">");
+    ++line;
+    begin = end + 1;
+    end = comment.find('\n', begin);
+  }
+  write_esc(comment.substr(begin));
+  write("</span>");
+}
+
+void SXRGenerator::write_xref(CXToken const &t)
+{
+  CXSourceLocation l = clang_getTokenLocation(tu_, t);
+  CXString s = clang_getTokenSpelling(tu_, t);
+  std::string text = clang_getCString(s);
+  clang_disposeString(s);
+  CXCursor c = clang_getCursor(tu_, l);
+  CXCursor r = clang_getCursorReferenced(c);
+  if (clang_isCursorDefinition(c))
+  {
+    char const *xref = this->xref(c);
+    if (xref)
+    {
+      write("<a href=\"");
+      write_esc(xref);
+      char const *from = this->from(c);
+      if (from)
+      {
+	write("\" from=\"");
+	write(from);
+      }
+      write("\" type=\"definition\">");
+      write_esc(text.c_str());
+      write("</a>");
+    }
+    else
+      write_esc(text.c_str());
+  }
+  else if (clang_isDeclaration(c.kind))
+  {
+    char const *xref = this->xref(c);
+    if (xref)
+    {
+      write("<a href=\"");
+      write_esc(xref);
+      char const *from = this->from(c);
+      if (from)
+      {
+	write("\" from=\"");
+	write(from);
+      }
+      write("\" type=\"definition\">");
+      write_esc(text.c_str());
+      write("</a>");
+    }
+    else
+      write_esc(text.c_str());
+  }
+  else if (!clang_equalCursors(r, c))
+  {
+    char const *xref = this->xref(r);
+    if (xref)
+    {
+      write("<a href=\"");
+      write_esc(xref);
+      char const *from = this->from(c);
+      if (from)
+      {
+	write("\" from=\"");
+	write(from);
+      }
+      write("\" type=\"reference\">");
+      write_esc(text.c_str());
+      write("</a>");
+    }
+    else
+      write_esc(text.c_str());
+  }
+  else 
+    throw std::runtime_error("unimplemented: " + cursor_info(c));
+}
+
 void SXRGenerator::write(char const *text, size_t len)
 {
   if (len) obuf_.sputn(text, len);
   else obuf_.sputn(text, strlen(text));
 }
 
+void SXRGenerator::write_esc(std::string const &text)
+{
+  // output each character, escaping it as necessary
+  for (std::string::const_iterator i = text.begin(); i != text.end(); ++i)
+    switch (*i)
+    {
+      case '&': write("&amp;"); break;
+      case '<': write("&lt;"); break;
+      case '>': write("&gt;"); break;
+      case '"': write("&quot;"); break;
+      default: obuf_.sputc(*i); break;
+    }
+};
+
 void SXRGenerator::write_esc(char const *text)
 {
   // output each character, escaping it as necessary
-  do
+  while (*text)
   {
     switch (*text)
     {
@@ -194,6 +237,7 @@ void SXRGenerator::write_esc(char const *text)
       case '"': write("&quot;"); break;
       default: obuf_.sputc(*text); break;
     }
+    ++text;
   }
   while (*++text);
 };

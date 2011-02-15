@@ -29,19 +29,6 @@ void cv_qual(CXType t, bpl::list mods)
     mods.append("volatile");
 }
 
-void print_cursor_extent(CXCursor c)
-{
-  CXSourceRange range = clang_getCursorExtent(c);
-  CXSourceLocation start = clang_getRangeStart(range);
-  unsigned line, column;
-  clang_getSpellingLocation(start, 0/*file*/, &line, &column, /*offset*/ 0);
-  // std::cout << "start: " << line << ':' << column;
-  CXSourceLocation end = clang_getRangeEnd(range);
-  clang_getSpellingLocation(end, 0/*file*/, &line, &column, /*offset*/ 0);
-  // std::cout << " end: " << line << ':' << column;
-  // std::cout << std::endl;
-}
-
 class Stringifier
 {
 public:
@@ -50,7 +37,6 @@ public:
   {
     value_ = "";
     clang_visitChildren(parent, &Stringifier::visit, this);
-    // std::cout << "stringify : " << value_ << std::endl;
     return value_;
   }
 private:
@@ -62,14 +48,36 @@ private:
     CXString k = clang_getCursorKindSpelling(c.kind);
     std::string kind = clang_getCString(k);
     clang_disposeString(k);
-    // std::cout << "stringify::visit " << kind << std::endl;
-    // print_cursor_extent(c);
     stringifier->value_ += stringify_range(stringifier->tu_, clang_getCursorExtent(c));
     return CXChildVisit_Continue;
   }
 
   CXTranslationUnit tu_;
   std::string value_;
+};
+
+class UsingDirectiveDereferencer
+{
+public:
+  UsingDirectiveDereferencer() {}
+  CXCursor reference(CXCursor parent)
+  {
+    clang_visitChildren(parent, &UsingDirectiveDereferencer::visit, this);
+    return r_;
+  }
+private:
+
+  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d)
+  {
+    UsingDirectiveDereferencer *visitor = static_cast<UsingDirectiveDereferencer *>(d);
+    if (c.kind == CXCursor_NamespaceRef)
+      visitor->r_ = clang_getCursorReferenced(c);
+    // The referenced name may be qualified, in which case we'll iterate over all scopes.
+    // We are interested into the last cursor in this iteration.
+    return CXChildVisit_Continue;
+  }
+
+  CXCursor r_;
 };
 
 
@@ -85,9 +93,14 @@ public:
     qname_ = qname_module.attr("QualifiedCxxName");  
   }
 
-  bpl::list translate(CXCursor parent)
+  bpl::list translate_function_parameters(CXCursor parent)
   {
-    clang_visitChildren(parent, &ParamVisitor::visit, this);
+    clang_visitChildren(parent, &ParamVisitor::visit_function_parameters, this);
+    return params_;
+  }
+  bpl::list translate_template_parameters(CXCursor parent)
+  {
+    clang_visitChildren(parent, &ParamVisitor::visit_template_parameters, this);
     return params_;
   }
 private:
@@ -120,8 +133,9 @@ private:
       }
       case CXCursor_NonTypeTemplateParameter:
       {
+	bpl::object type = types_.lookup(clang_getCursorType(c));
 	return asg_module_.attr("Parameter")(bpl::list(), // premod
-					     bpl::object(), // type
+					     type,
 					     bpl::list(), // postmod
 					     name,
 					     bpl::object()); // value
@@ -130,12 +144,34 @@ private:
 	throw std::runtime_error("unimplemented: " + cursor_info(c));
     }
   }
-  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d)
+  static CXChildVisitResult visit_function_parameters(CXCursor c, CXCursor p, CXClientData d)
+  {
+    ParamVisitor *visitor = static_cast<ParamVisitor*>(d);
+    switch (c.kind)
+    {
+      case CXCursor_TemplateTypeParameter:
+      case CXCursor_NonTypeTemplateParameter:
+	return CXChildVisit_Continue; // ignore template parameters
+      case CXCursor_ParmDecl:
+      {
+	bpl::object o = visitor->create(c);
+	// parameters aren't declared. We need them in the symbol table anyhow.
+	visitor->symbols_.declare(c, o);
+        visitor->params_.append(o);
+        return CXChildVisit_Continue;
+      }
+    }
+    // If we are here, we are past the parameters, and can abort.
+    return CXChildVisit_Break;
+  }
+
+  static CXChildVisitResult visit_template_parameters(CXCursor c, CXCursor p, CXClientData d)
   {
     ParamVisitor *visitor = static_cast<ParamVisitor*>(d);
     switch (c.kind)
     {
       case CXCursor_ParmDecl:
+	return CXChildVisit_Continue; // ignore function parameters
       case CXCursor_TemplateTypeParameter:
       case CXCursor_NonTypeTemplateParameter:
       {
@@ -146,6 +182,7 @@ private:
         return CXChildVisit_Continue;
       }
     }
+    // If we are here, we are past the parameters, and can abort.
     return CXChildVisit_Break;
   }
 
@@ -253,7 +290,8 @@ bpl::object TypeRepository::lookup(CXType t) const
     {
       bpl::object type = cx_types_[t];
       if (!type)
-	throw std::runtime_error("undefined type " + type_info(t));
+	// throw std::runtime_error("undefined type " + type_info(t));
+	type = asg_module_.attr("UnknownTypeId")("C++", qname("<unknown>"));
       return type;
     }
   };
@@ -261,12 +299,12 @@ bpl::object TypeRepository::lookup(CXType t) const
 
 ASGTranslator::ASGTranslator(std::string const &filename,
 			     std::string const &base_path, bool primary_file_only,
-			     bpl::object ir,
+			     bpl::object asg, bpl::dict files,
 			     bool v, bool d)
   : asg_module_(bpl::import("Synopsis.ASG")),
     sf_module_(bpl::import("Synopsis.SourceFile")),
-    files_(bpl::extract<bpl::dict>(ir.attr("files"))()),
-    types_(bpl::extract<bpl::dict>(ir.attr("asg").attr("types"))(), v),
+    files_(files),
+    types_(bpl::extract<bpl::dict>(asg.attr("types"))(), v),
     raw_filename_(filename),
     base_path_(base_path),
     primary_file_only_(primary_file_only),
@@ -275,7 +313,6 @@ ASGTranslator::ASGTranslator(std::string const &filename,
 {
   bpl::object qname_module = bpl::import("Synopsis.QualifiedName");
   qname_ = qname_module.attr("QualifiedCxxName");
-  bpl::object asg = ir.attr("asg");
   declarations_ = bpl::extract<bpl::list>(asg.attr("declarations"))();
   // determine canonical filenames
   std::string long_filename = Synopsis::make_full_path(raw_filename_);
@@ -298,6 +335,24 @@ void ASGTranslator::translate(CXTranslationUnit tu)
   clang_visitChildren(clang_getTranslationUnitCursor(tu), &ASGTranslator::visit, this);
 }
 
+bool ASGTranslator::is_visible(CXCursor c)
+{
+  // Whether a cursor is visible depends on the file it is positioned in.
+  // If 'primary_file_only_' is true, only 'raw_file_name_' is accepted.
+  // Otherwise, all files that match the given 'base_path_' are.
+  CXSourceLocation l = clang_getCursorLocation(c);
+  CXFile sf;
+  clang_getSpellingLocation(l, &sf, 0 /*line*/, /*column*/ 0, /*offset*/ 0);
+  CXString f = clang_getFileName(sf);
+  char const *filename = clang_getCString(f);
+  bool mask = 
+    !filename ||                                         // a builtin entity
+    (primary_file_only_ && raw_filename_ != filename) || // not primary file
+    !matches_path(filename, base_path_);                 // outside base_path
+  clang_disposeString(f);
+  return !mask;
+}
+
 bpl::object ASGTranslator::get_source_file(std::string const &filename)
 {
   std::string long_filename = make_full_path(filename);
@@ -307,6 +362,8 @@ bpl::object ASGTranslator::get_source_file(std::string const &filename)
   if (!file)
   {
     file = sf_module_.attr("SourceFile")(short_filename, long_filename, "C++");
+    if (base_path_.empty() || matches_path(long_filename, base_path_))
+      annotations(file)["primary"] = true;
     files_[short_filename] = file;
   }
   return file;
@@ -340,6 +397,7 @@ bpl::object ASGTranslator::create(CXCursor c)
   std::string name = clang_getCString(n);
   clang_disposeString(n);
   clang_disposeString(k);
+  if (name.empty()) name = make_anonymous_name();
   CXFile sf;
   unsigned line;
   CXSourceLocation l = clang_getCursorLocation(c);
@@ -369,7 +427,7 @@ bpl::object ASGTranslator::create(CXCursor c)
 	clang_disposeString(sn);
       }
       ParamVisitor param_visitor(symbols_, types_);
-      bpl::list params = param_visitor.translate(c);
+      bpl::list params = param_visitor.translate_template_parameters(c);
       clang_visitChildren(c, &ASGTranslator::visit, this);
       CXCursorKind k = clang_getTemplateCursorKind(c);
       char const *kind = "class";
@@ -389,7 +447,14 @@ bpl::object ASGTranslator::create(CXCursor c)
 	if (p != std::string::npos) name.erase(0, p + 1);
 	name = "{" + name + "}";
       }
-      return asg_module_.attr("Module")(source_file, line, "namespace", qname(name));
+
+      // If the namespace already exists, return it.
+      bpl::object qname = this->qname(name);
+      bpl::object decls = declarations_;
+      if (scope_.size()) decls = scope_.top().attr("declarations");
+      for (size_t i = 0; i != bpl::len(decls); ++i)
+	if (decls[i].attr("name") == qname) return decls[i];
+      return asg_module_.attr("Module")(source_file, line, "namespace", qname);
     }
     case CXCursor_FieldDecl:
     {
@@ -420,27 +485,80 @@ bpl::object ASGTranslator::create(CXCursor c)
     }
     case CXCursor_EnumDecl:
     {
+      if (name.empty()) name = make_anonymous_name();
       enumerators_ = bpl::list();
       clang_visitChildren(c, &ASGTranslator::visit, this);
       return asg_module_.attr("Enum")(source_file, line, qname(name), enumerators_);
     }
     case CXCursor_FunctionDecl:
+    case CXCursor_FunctionTemplate:
+    case CXCursor_Constructor:
+    case CXCursor_Destructor:
+    case CXCursor_CXXMethod:
+    case CXCursor_ConversionFunction:
     {
       CXString dn = clang_getCursorDisplayName(c);
       std::string full_name = clang_getCString(dn);
       clang_disposeString(dn);
       bpl::object return_type = types_.lookup(clang_getCursorResultType(c));
       clang_visitChildren(c, &ASGTranslator::visit, this);
-      bpl::object f = asg_module_.attr("Function")(source_file, line,
-						   "function",
-						   bpl::list(), // premod
-						   return_type,
-						   bpl::list(), // postmod
-						   qname(full_name), // fname (mangled)
-						   name); // fname
+      bpl::object f;
+      if (c.kind == CXCursor_FunctionTemplate)
+      {
+	f = asg_module_.attr("FunctionTemplate")(source_file, line,
+						 "function template",
+						 bpl::list(), // premod
+						 return_type,
+						 bpl::list(), // postmod
+						 qname(full_name), // fname (mangled)
+						 name); // fname
+	ParamVisitor param_visitor(symbols_, types_);
+	bpl::list params = param_visitor.translate_template_parameters(c);
+	bpl::object t_id = asg_module_.attr("TemplateId")("C++", qname(name), f, params);
+	f.attr("template") = t_id;
+      }
+      else if (c.kind == CXCursor_FunctionDecl)
+	f = asg_module_.attr("Function")(source_file, line,
+					 "function",
+					 bpl::list(), // premod
+					 return_type,
+					 bpl::list(), // postmod
+					 qname(full_name), // fname (mangled)
+					 name); // fname
+      else if (c.kind == CXCursor_Constructor ||
+	       c.kind == CXCursor_Destructor ||
+	       c.kind == CXCursor_CXXMethod ||
+	       c.kind == CXCursor_ConversionFunction)
+      {
+	char const *type = c.kind == CXCursor_Constructor ? "constructor" :
+	  c.kind == CXCursor_Destructor ? "destructor" :
+	  "operation";
+	bpl::list premod;
+	if (clang_CXXMethod_isStatic(c))
+	  premod.append("static");
+	f = asg_module_.attr("Operation")(source_file, line,
+					  type,
+					  premod,
+					  return_type,
+					  bpl::list(), // postmod
+					  qname(full_name), // fname (mangled)
+					  name); // fname
+      }
       ParamVisitor param_visitor(symbols_, types_);
-      f.attr("parameters") = param_visitor.translate(c);
+      f.attr("parameters") = param_visitor.translate_function_parameters(c);
       return f;
+    }
+    case CXCursor_UsingDirective:
+    {
+      UsingDirectiveDereferencer udd;
+      CXCursor r = udd.reference(c);
+      bpl::object aliased = symbols_.lookup(r);
+      return asg_module_.attr("UsingDirective")(source_file, line, "using", bpl::object(aliased.attr("name")));
+    }
+    case CXCursor_UsingDeclaration:
+    {
+      bpl::object aliased = symbols_.lookup(clang_getCursorReferenced(c));
+      return asg_module_.attr("UsingDeclaration")(source_file, line, "using", qname(name), aliased);
     }
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
@@ -450,13 +568,8 @@ bpl::object ASGTranslator::create(CXCursor c)
 CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
 {
   // Skip any builtin declarations
-  CXSourceLocation l = clang_getCursorLocation(c);
-  CXFile sf;
-  clang_getSpellingLocation(l, &sf, 0 /*line*/, /*column*/ 0, /*offset*/ 0);
-  CXString f = clang_getFileName(sf);
-  bool visible = clang_getCString(f);
-  clang_disposeString(f);
-  if (!visible) return CXChildVisit_Continue;
+  if (!is_visible(c))
+    return CXChildVisit_Continue;
 
   CXType type = clang_getCursorType(c);
   switch (c.kind)
@@ -510,6 +623,13 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
       return CXChildVisit_Continue;
     }
     case CXCursor_FunctionDecl:
+    case CXCursor_FunctionTemplate:
+    case CXCursor_Constructor:
+    case CXCursor_Destructor:
+    case CXCursor_CXXMethod:
+    case CXCursor_ConversionFunction:
+    case CXCursor_UsingDeclaration:
+    case CXCursor_UsingDirective:
     {
       bpl::object o = create(c);
       declare(c, o);
@@ -520,6 +640,10 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_TemplateTypeParameter:
     case CXCursor_NonTypeTemplateParameter:
       return CXChildVisit_Continue;
+    case CXCursor_UnexposedDecl:
+      if (debug_)
+	std::cout << cursor_info(c) << " in " << cursor_location(c) << std::endl;
+      return CXChildVisit_Continue;     
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
@@ -531,12 +655,15 @@ CXChildVisitResult ASGTranslator::visit(CXCursor c, CXCursor p, CXClientData d)
   if (translator->verbose_)
     std::cout << "visit " << cursor_info(c) << std::endl;
 
-  CXCursor tu = clang_getTranslationUnitCursor(translator->tu_);
-  CXCursor lp = clang_getCursorLexicalParent(c);
-  // std::cout << "parent cursor equals TU :" << clang_equalCursors(tu, p) << std::endl;
-  // std::cout << "parent cursor equals lexical parent :" << clang_equalCursors(lp, p) << std::endl;
-  // std::cout << "lexical parent equals TU :" << clang_equalCursors(lp, tu) << std::endl;
-
-  if (clang_isDeclaration(c.kind)) return translator->visit_declaration(c, p);
-  return CXChildVisit_Continue;
+  try
+  {
+    if (clang_isDeclaration(c.kind)) return translator->visit_declaration(c, p);
+    return CXChildVisit_Continue;
+  }
+  catch (...)
+  {
+    if (translator->debug_)
+      std::cerr << "Error at " << cursor_info(c) << " in " << cursor_location(c, true) << std::endl;
+    throw;
+  }
 }

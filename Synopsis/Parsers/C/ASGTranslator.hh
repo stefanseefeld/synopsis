@@ -64,7 +64,7 @@ class ASGTranslator
 public:
   ASGTranslator(std::string const &filename,
 		std::string const &base_path, bool primary_file_only,
-		bpl::object ir, bool v, bool d);
+		bpl::object asg, bpl::dict files, bool v, bool d);
 
   void translate(CXTranslationUnit);
 
@@ -73,6 +73,8 @@ public:
 
 private:
   typedef std::stack<bpl::object> scope_stack;
+
+  bool is_visible(CXCursor);
 
   bpl::object qname(std::string const &name);
   void declare(CXCursor, bpl::object);
