@@ -21,6 +21,25 @@ inline std::string make_anonymous_name()
   return oss.str();
 }
 
+inline std::string token_info(CXTranslationUnit tu, CXToken t)
+{
+  std::ostringstream oss;
+  CXTokenKind kind = clang_getTokenKind(t);
+  CXString text = clang_getTokenSpelling(tu, t);
+  switch (kind)
+  {
+    case CXToken_Punctuation: oss << "punktuation"; break;
+    case CXToken_Keyword: oss << "keyword"; break;
+    case CXToken_Identifier: oss << "identifier"; break;
+    case CXToken_Literal: oss << "literal"; break;
+    case CXToken_Comment: oss << "comment"; break;
+    default: throw std::runtime_error("Unknown token kind");
+  }
+  oss << ": '" << clang_getCString(text) << "'";
+  clang_disposeString(text);
+  return oss.str();
+}
+
 inline std::string cursor_info(CXCursor c)
 {
   std::ostringstream oss;

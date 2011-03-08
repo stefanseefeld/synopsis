@@ -286,6 +286,16 @@ bpl::object TypeRepository::lookup(CXType t) const
       bpl::object inner = lookup(i);
       return asg_module_.attr("ModifierTypeId")("C++", inner, bpl::list(), postmod);
     }
+    case CXType_Unexposed:
+    {
+      // FIXME: Find a way to use the actual type name (stringified ?), instead of
+      // just '<unknown>'
+
+      // This may be a dependent type.
+      if (clang_isDependentType(t))
+	return asg_module_.attr("UnknownTypeId")("C++", qname("<dependent>"));
+      return asg_module_.attr("UnknownTypeId")("C++", qname("<unknown>"));
+    }
     default:
     {
       bpl::object type = cx_types_[t];
@@ -332,6 +342,9 @@ ASGTranslator::ASGTranslator(std::string const &filename,
 void ASGTranslator::translate(CXTranslationUnit tu)
 {
   tu_ = tu; // save to make tu accessible elsewhere (tokenization)
+  CXFile f = clang_getFile(tu, raw_filename_.c_str());
+  comment_horizon_ = clang_getLocationForOffset(tu, f, 0);
+  // prev_cursor_.push(clang_getNullCursor())
   clang_visitChildren(clang_getTranslationUnitCursor(tu), &ASGTranslator::visit, this);
 }
 
@@ -346,9 +359,9 @@ bool ASGTranslator::is_visible(CXCursor c)
   CXString f = clang_getFileName(sf);
   char const *filename = clang_getCString(f);
   bool mask = 
-    !filename ||                                         // a builtin entity
-    (primary_file_only_ && raw_filename_ != filename) || // not primary file
-    !matches_path(filename, base_path_);                 // outside base_path
+    !filename ||                                          // a builtin entity
+    ((primary_file_only_ && raw_filename_ != filename) && // not primary file
+     !matches_path(filename, base_path_));                // outside base_path
   clang_disposeString(f);
   return !mask;
 }
@@ -428,7 +441,6 @@ bpl::object ASGTranslator::create(CXCursor c)
       }
       ParamVisitor param_visitor(symbols_, types_);
       bpl::list params = param_visitor.translate_template_parameters(c);
-      clang_visitChildren(c, &ASGTranslator::visit, this);
       CXCursorKind k = clang_getTemplateCursorKind(c);
       char const *kind = "class";
       if (k == CXCursor_StructDecl) kind == "struct";
@@ -475,6 +487,7 @@ bpl::object ASGTranslator::create(CXCursor c)
 	"global variable";
       if (vtype == "function") vtype = "local variable";
       else if (vtype == "namespace") vtype = "variable";
+      else if (vtype == "class") vtype = "data member";
 
       return asg_module_.attr("Variable")(source_file, line, vtype, qname(name), type, false);
     }
@@ -571,6 +584,8 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
   if (!is_visible(c))
     return CXChildVisit_Continue;
 
+  bpl::object declaration;
+  bpl::list comments = get_comments(c);
   CXType type = clang_getCursorType(c);
   switch (c.kind)
   {
@@ -580,48 +595,42 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_ClassTemplate:
     case CXCursor_ClassTemplatePartialSpecialization:
     case CXCursor_Namespace:
-    {
-      bpl::object o = create(c);
-      declare(c, o);
+      declaration = create(c);
+      declare(c, declaration);
       if (c.kind == CXCursor_ClassTemplatePartialSpecialization)
       {
 	CXCursor p = clang_getSpecializedCursorTemplate(c);
 	bpl::object primary = lookup(p);
-	bpl::extract<bpl::list>(primary.attr("specializations"))().append(o);
-	o.attr("primary") = primary;
+	bpl::extract<bpl::list>(primary.attr("specializations"))().append(declaration);
+	declaration.attr("primary") = primary;
       }
       if (type.kind != CXType_Invalid) // e.g. for namespaces
-	types_.declare(type, o, true);
-      scope_.push(o);
+	types_.declare(type, declaration, true);
+      scope_.push(declaration);
       clang_visitChildren(c, &ASGTranslator::visit, this);
       scope_.pop();
-      return CXChildVisit_Continue;
-    }
+      break;
     case CXCursor_EnumConstantDecl:
-    {
-      bpl::object o = create(c);
+      declaration = create(c);
       // enumerators aren't declared. We need them in the symbol table anyhow.
-      symbols_.declare(c, o);
-      enumerators_.append(o);
-      return CXChildVisit_Continue;
-    }
+      symbols_.declare(c, declaration);
+      enumerators_.append(declaration);
+      break;
     case CXCursor_FieldDecl:
     case CXCursor_VarDecl:
     case CXCursor_TypedefDecl:
       if (type.kind != CXType_Invalid) // e.g. builtin typendefs
       {
-	bpl::object o = create(c);
-	declare(c, o);
-	types_.declare(type, o, true);
+	declaration = create(c);
+	declare(c, declaration);
+	types_.declare(type, declaration, true);
       }
-      return CXChildVisit_Continue;
+      break;
     case CXCursor_EnumDecl:
-    {
-      bpl::object o = create(c);
-      declare(c, o);
-      types_.declare(type, o, true);
-      return CXChildVisit_Continue;
-    }
+      declaration = create(c);
+      declare(c, declaration);
+      types_.declare(type, declaration, true);
+      break;
     case CXCursor_FunctionDecl:
     case CXCursor_FunctionTemplate:
     case CXCursor_Constructor:
@@ -629,25 +638,99 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_CXXMethod:
     case CXCursor_ConversionFunction:
     case CXCursor_UsingDeclaration:
+      declaration = create(c);
+      declare(c, declaration);
+      break;
     case CXCursor_UsingDirective:
-    {
-      bpl::object o = create(c);
-      declare(c, o);
-      return CXChildVisit_Continue;
-    }
+      break;
     // These are dealt with elsewhere. Ignore them in this context.
     case CXCursor_ParmDecl:
     case CXCursor_TemplateTypeParameter:
     case CXCursor_NonTypeTemplateParameter:
-      return CXChildVisit_Continue;
+      break;
     case CXCursor_UnexposedDecl:
       if (debug_)
 	std::cout << cursor_info(c) << " in " << cursor_location(c) << std::endl;
-      return CXChildVisit_Continue;     
+      break;
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
+  if (declaration && comments)
+    bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
+  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
+  return CXChildVisit_Continue;
 }
+
+bpl::list ASGTranslator::get_comments(CXCursor c)
+{
+  // Terminology:
+  // A single comment is either a C-style ('/* ... */') comment,
+  // or a consecutive set of C++-style comments, i.e. where individual
+  // comment lines are separated only by a single newline.
+  //
+  // In addition, if the given cursor is separated from preceding comments by an
+  // empty line, an empty item is pushed into the list, to allow comment-processors
+  // to take this into account during filtering.
+  bpl::list comments;
+  bool next_is_cxx_comment = false;
+  unsigned next_token_start_line;
+  clang_getSpellingLocation(clang_getRangeStart(clang_getCursorExtent(c)),
+			    0, &next_token_start_line, 0, 0);
+  // Tokenize the range from the comment horizon to the start
+  // of the current cursor.
+  CXSourceRange range = clang_getRange(comment_horizon_,
+				       clang_getRangeStart(clang_getCursorExtent(c)));
+  CXToken *tokens;
+  unsigned num_tokens;
+  clang_tokenize(tu_, range, &tokens, &num_tokens);
+  // FIXME: Due to a bug in clang_tokenize, the last token returned is actually outside
+  //        the range
+  // if (num_tokens) --num_tokens;
+  // Walk backwards from the given cursor, stopping
+  // at the first non-comment token
+  for (unsigned i = num_tokens; i; --i)
+  {
+    if (debug_)
+      std::cout << token_info(tu_, tokens[i - 1]) << std::endl;
+    CXTokenKind kind = clang_getTokenKind(tokens[i - 1]);
+    if (kind != CXToken_Comment) break;
+
+    CXString s = clang_getTokenSpelling(tu_, tokens[i - 1]);
+    char const *text = clang_getCString(s);
+    bool is_cxx_comment = text[1] == '/';
+    CXSourceRange token_range = clang_getTokenExtent(tu_, tokens[i - 1]);
+    unsigned prev_token_end_line;
+    clang_getSpellingLocation(clang_getRangeStart(token_range),
+			      0, &prev_token_end_line, 0, 0);
+    // If the comment directly preceding the cursor is separated from it by
+    // an empty line, insert an empty string into the comments.
+    if (bpl::len(comments) == 0 &&
+	prev_token_end_line + 1 != next_token_start_line)
+      comments.append("");
+
+    // If two consecutive comments are both C++-style and are only separated by
+    // a single newline, concatenate them.
+    if (prev_token_end_line + 1 == next_token_start_line &&
+	is_cxx_comment && next_is_cxx_comment)
+    {
+      std::string comment = bpl::extract<std::string>(comments[0]);
+      comment.insert(0, "\n");
+      comment.insert(0, text);
+      comments[0] = comment;
+    }
+    else comments.insert(0, text);
+
+    clang_disposeString(s);
+
+    next_is_cxx_comment = is_cxx_comment;
+    clang_getSpellingLocation(clang_getRangeStart(token_range),
+			      0, &next_token_start_line, 0, 0);
+  }
+  clang_disposeTokens(tu_, tokens, num_tokens);
+  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
+  return comments;
+}
+
 
 CXChildVisitResult ASGTranslator::visit(CXCursor c, CXCursor p, CXClientData d)
 {
@@ -658,6 +741,7 @@ CXChildVisitResult ASGTranslator::visit(CXCursor c, CXCursor p, CXClientData d)
   try
   {
     if (clang_isDeclaration(c.kind)) return translator->visit_declaration(c, p);
+    translator->comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
     return CXChildVisit_Continue;
   }
   catch (...)
