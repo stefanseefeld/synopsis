@@ -1085,7 +1085,7 @@ class SummaryExtractor(NodeVisitor):
         # Extract the first sentence.
         for child in node:
             if isinstance(child, Text):
-                m = re.match(r'(\s*[\w\W]*?\.)(\s|$)', child.data)
+                m = re.match(r'(\s*[\w\W]*?\.)(\s|$)', child.astext())
                 if m:
                     summary_pieces.append(Text(m.group(1)))
                     break
