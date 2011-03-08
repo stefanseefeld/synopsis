@@ -32,6 +32,7 @@ void unexpected()
 bpl::object parse(bpl::object ir,
                   char const *cpp_file, char const *input_file, char const *base_path,
                   bool primary_file_only, char const *sxr_prefix,
+		  bpl::list cpp_flags,
                   bool verbose, bool debug, bool profile)
 {
   std::set_unexpected(unexpected);
@@ -40,6 +41,10 @@ bpl::object parse(bpl::object ir,
 
   if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
 
+  char const **args = new char const*[bpl::len(cpp_flags)];
+  for (size_t i = 0; i != bpl::len(cpp_flags); ++i)
+    args[i] = bpl::extract<char const *>(cpp_flags[i]);
+
   Timer timer;
   // first arg: exclude declarations from PCH
   // second arg: display diagnostics
@@ -47,11 +52,12 @@ bpl::object parse(bpl::object ir,
   CXTranslationUnit_Flags flags = CXTranslationUnit_DetailedPreprocessingRecord;
   CXTranslationUnit tu = 
     clang_parseTranslationUnit(idx, input_file,
-			       0,  // command-line args
-			       0,  // number of command-line args
+			       args,
+			       bpl::len(cpp_flags),
 			       0,  // unsaved_files
 			       0,  // num_unsaved_files
 			       flags);
+  delete [] args;
   if (!tu) 
   {
     std::cerr << "unable to parse input\n";

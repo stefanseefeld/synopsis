@@ -61,6 +61,7 @@ class Parser(Processor):
                             base_path,
                             self.primary_file_only,
                             self.sxr_prefix,
+                            self.cppflags,
                             self.verbose,
                             self.debug,
                             self.profile)
