@@ -292,8 +292,8 @@ bpl::object TypeRepository::lookup(CXType t) const
       // just '<unknown>'
 
       // This may be a dependent type.
-      if (clang_isDependentType(t))
-	return asg_module_.attr("UnknownTypeId")("C++", qname("<dependent>"));
+      // if (clang_isDependentType(t))
+      // 	return asg_module_.attr("UnknownTypeId")("C++", qname("<dependent>"));
       return asg_module_.attr("UnknownTypeId")("C++", qname("<unknown>"));
     }
     default:
