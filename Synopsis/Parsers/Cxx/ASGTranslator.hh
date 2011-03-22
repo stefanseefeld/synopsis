@@ -103,9 +103,9 @@ private:
   // comments.
   CXSourceLocation  comment_horizon_;
   bpl::object       file_;
-  std::string       raw_filename_;
-  std::string       base_path_;
+  std::string       primary_filename_;
   bool              primary_file_only_;
+  std::string       base_path_;
   bool              verbose_;
   bool              debug_;
 };

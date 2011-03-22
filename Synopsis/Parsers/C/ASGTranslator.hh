@@ -72,8 +72,6 @@ public:
   bpl::object lookup(CXCursor d) const { return symbols_.lookup(d);}
 
 private:
-  typedef std::stack<bpl::object> scope_stack;
-
   bool is_visible(CXCursor);
 
   bpl::object qname(std::string const &name);
@@ -81,10 +79,12 @@ private:
 
   CXChildVisitResult visit_declaration(CXCursor c, CXCursor p);
 
-  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d);
-
   bpl::object get_source_file(std::string const &);
   bpl::object create(CXCursor c);
+
+  bpl::list get_comments(CXCursor);
+
+  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d);
 
   CXTranslationUnit tu_;
   bpl::object       qname_;
@@ -95,11 +95,17 @@ private:
   SymbolTable       symbols_;
   bpl::list         declarations_;
   bpl::list         enumerators_;
-  scope_stack       scope_;
+  std::stack<bpl::object> scope_;
+  // When translating declarations, we want to store comments that may
+  // represent inline documentation. To do that, we keep track of the
+  // location of the last visited cursor, which allows us to tokenize
+  // everything between that and the current cursor's start, fishing for
+  // comments.
+  CXSourceLocation  comment_horizon_;
   bpl::object       file_;
-  std::string       raw_filename_;
-  std::string       base_path_;
+  std::string       primary_filename_;
   bool              primary_file_only_;
+  std::string       base_path_;
   bool              verbose_;
   bool              debug_;
 };

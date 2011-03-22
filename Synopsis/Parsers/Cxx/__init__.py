@@ -56,6 +56,7 @@ class Parser(Processor):
                                       debug = self.debug,
                                       profile = self.profile)
 
+            print 'parsing', file
             self.ir = parse(self.ir, ii_file,
                             os.path.abspath(file),
                             base_path,

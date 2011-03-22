@@ -12,12 +12,12 @@
 #include <sstream>
 
 // Some declarations are anonymous.
-// Generate unique names for them so we can refer to them.
-inline std::string make_anonymous_name()
+// Generate unique names so we can refer to them.
+inline std::string make_anonymous_name(std::string const &suffix = std::string())
 {
   static int i = 0;
   std::ostringstream oss;
-  oss << '`' << (i++);
+  oss << '`' << (i++) << '{' << suffix << '}';
   return oss.str();
 }
 
