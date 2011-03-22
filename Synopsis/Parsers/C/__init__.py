@@ -56,14 +56,15 @@ class Parser(Processor):
                                       debug = self.debug,
                                       profile = self.profile)
 
-            self.ir = ParserImpl.parse(self.ir, i_file,
-                                       os.path.abspath(file),
-                                       base_path,
-                                       self.primary_file_only,
-                                       self.sxr_prefix,
-                                       self.verbose,
-                                       self.debug,
-                                       self.profile)
+            self.ir = parse(self.ir, i_file,
+                            os.path.abspath(file),
+                            base_path,
+                            self.primary_file_only,
+                            self.sxr_prefix,
+                            self.cppflags,
+                            self.verbose,
+                            self.debug,
+                            self.profile)
 
             if self.preprocess: os.remove(i_file)
 
