@@ -5,22 +5,8 @@
 # see the file COPYING for details.
 #
 
+from Error import *
 import IR
-
-class Error(Exception):
-   """An exception a processor may raise during processing."""
-
-   def __init__(self, what):
-
-      self.what = what
-
-   def __str__(self):
-      return "%s: %s"%(self.__class__.__name__, self.what)
-
-class InvalidArgument(Error): pass
-class MissingArgument(Error): pass
-class InvalidCommand(Error): pass
-class InternalError(Error): pass
 
 class Parameter(object):
    """A Parameter is a documented value, kept inside a Processor."""

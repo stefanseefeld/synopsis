@@ -5,6 +5,7 @@
 # see the file COPYING for details.
 #
 
+from Error import *
 import ASG
 import SXR
 import cPickle
@@ -74,8 +75,14 @@ class IR(object):
 def load(filename):
     """Loads an IR object from the given filename"""
 
-    file = open(filename, 'rb')
-    unpickler = cPickle.Unpickler(file)
-    ir = unpickler.load()
-    file.close()
+    try:
+        file = open(filename, 'rb')
+        unpickler = cPickle.Unpickler(file)
+        ir = unpickler.load()
+        file.close()
+    except IOError:
+        raise InvalidArgument, "Error reading '%s'"%filename
+    except:
+        raise InvalidArgument, "Error loading '%s'"%filename
+
     return ir
