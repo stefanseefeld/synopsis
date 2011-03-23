@@ -80,6 +80,68 @@ private:
   CXCursor r_;
 };
 
+class BaseSpecVisitor
+{
+public:
+  BaseSpecVisitor(TypeRepository &types)
+    : asg_module_(bpl::import("Synopsis.ASG")),
+      types_(types)
+  {
+    bpl::object qname_module = bpl::import("Synopsis.QualifiedName");
+    qname_ = qname_module.attr("QualifiedCxxName");  
+  }
+
+  bpl::list find_bases(CXCursor parent)
+  {
+    clang_visitChildren(parent, &BaseSpecVisitor::visit, this);
+    return bases_;
+  }
+private:
+
+  bpl::object qname(std::string const &name) { return qname_(bpl::make_tuple(name));}
+  CXChildVisitResult visit(CXCursor c)
+  {
+    switch (c.kind)
+    {
+      case CXCursor_CXXBaseSpecifier:
+      {
+	bpl::object parent = types_.lookup(clang_getCursorType(c));
+	bpl::list attributes;
+	if (clang_isVirtualBase(c))
+	  attributes.append("virtual");
+	attributes.append(access_spec(clang_getCXXAccessSpecifier(c)));
+	bases_.append(asg_module_.attr("Inheritance")("inherits", parent, attributes));
+        return CXChildVisit_Continue;
+      }
+      default:
+	// Unfortunately there is no way to only visit base specifiers,
+	// making the whole traversal rather inefficient.
+        return CXChildVisit_Continue;
+    }
+    // If we are here, we are past the base specifiers, and can abort.
+    return CXChildVisit_Break;
+  }
+  static CXChildVisitResult visit(CXCursor c, CXCursor p, CXClientData d)
+  {
+    BaseSpecVisitor *visitor = static_cast<BaseSpecVisitor*>(d);
+    return visitor->visit(c);
+  }
+  static char const *access_spec(CX_CXXAccessSpecifier s)
+  {
+    switch (s)
+    {
+      case CX_CXXPublic: return "public";
+      case CX_CXXProtected: return "protected";
+      case CX_CXXPrivate: return "private";
+      default: throw std::runtime_error("invalid access specifier");
+    }
+  };
+
+  bpl::object asg_module_;
+  bpl::object qname_;
+  TypeRepository &types_;
+  bpl::list bases_;
+};
 
 class ParamVisitor
 {
@@ -588,6 +650,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
   bpl::object declaration;
   bpl::list comments = get_comments(c);
   CXType type = clang_getCursorType(c);
+  bpl::list bases;
   switch (c.kind)
   {
     case CXCursor_StructDecl:
@@ -596,8 +659,14 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_ClassTemplate:
     case CXCursor_ClassTemplatePartialSpecialization:
     case CXCursor_Namespace:
+    {
       declaration = create(c);
       declare(c, declaration);
+      if (c.kind != CXCursor_Namespace)
+      {
+	BaseSpecVisitor base_visitor(types_);
+	declaration.attr("parents") = base_visitor.find_bases(c);
+      }
       if (c.kind == CXCursor_ClassTemplatePartialSpecialization)
       {
 	CXCursor p = clang_getSpecializedCursorTemplate(c);
@@ -611,6 +680,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
       clang_visitChildren(c, &ASGTranslator::visit, this);
       scope_.pop();
       break;
+    }
     case CXCursor_EnumConstantDecl:
       declaration = create(c);
       // enumerators aren't declared. We need them in the symbol table anyhow.
