@@ -358,14 +358,24 @@ bpl::object ASGTranslator::create(CXCursor c)
     }
     case CXCursor_VarDecl:
     {
-      bpl::object type = types_.lookup(clang_getCursorType(c));
-      std::string vtype = scope_.size() ?
+      CXType t = clang_getCursorType(c);
+      bool is_const = clang_isConstQualifiedType(t);
+      bool is_volatile = clang_isVolatileQualifiedType(t);
+      bpl::object type = types_.lookup(t);
+      std::string stype = scope_.size() ?
 	std::string(bpl::extract<std::string>(scope_.top().attr("type"))) :
-	"global variable";
-      if (vtype == "function") vtype = "local variable";
-      else if (vtype == "namespace") vtype = "variable";
-
-      return asg_module_.attr("Variable")(source_file, line, vtype, qname(name), type, false);
+	"global";
+      std::string vtype = stype == "function" ? "local " : "";
+      vtype += is_const ? "constant" : "variable";
+      if (stype == "struct" || stype == "union") vtype = "data member";
+      if (is_const)
+      {
+	Stringifier stringifier(tu_);
+	bpl::object value(stringifier.stringify(c));
+	return asg_module_.attr("Const")(source_file, line, vtype, qname(name), type, value);
+      }
+      else
+	return asg_module_.attr("Variable")(source_file, line, vtype, qname(name), type, false);
     }
     case CXCursor_TypedefDecl:
     {

@@ -454,7 +454,7 @@ class Variable(Declaration):
 class Const(Declaration):
    """Constant declaration. A constant is a name with a type and value."""
 
-   def __init__(self, file, line, type, ctype, name, value):
+   def __init__(self, file, line, type, name, ctype, value):
       Declaration.__init__(self, file, line, type, name)
       self.ctype  = ctype
       self.value = value
