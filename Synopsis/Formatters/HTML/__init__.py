@@ -19,6 +19,7 @@ from Views import *
 from Frame import Frame
 from FrameSet import FrameSet
 from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
+from Synopsis.Formatters.HTML.Markup.Doxygen import Doxygen
 try:
     from Synopsis.Formatters.HTML.Markup.RST import RST
 except ImportError:
@@ -99,6 +100,7 @@ class Formatter(Processor):
                         '')
    
     markup_formatters = Parameter({'javadoc':Javadoc(),
+                                   'doxygen':Doxygen(),
                                    'rst':RST(),
                                    'reStructuredText':RST()},
                                   'Markup-specific formatters.')
