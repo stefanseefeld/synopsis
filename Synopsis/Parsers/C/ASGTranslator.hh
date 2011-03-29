@@ -77,6 +77,7 @@ private:
   bpl::object qname(std::string const &name);
   void declare(CXCursor, bpl::object);
 
+  CXChildVisitResult visit_pp_directive(CXCursor c, CXCursor p);
   CXChildVisitResult visit_declaration(CXCursor c, CXCursor p);
 
   bpl::object get_source_file(std::string const &);

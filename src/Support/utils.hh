@@ -21,6 +21,23 @@ inline std::string make_anonymous_name(std::string const &suffix = std::string()
   return oss.str();
 }
 
+inline std::string range_info(CXSourceRange r)
+{
+  std::ostringstream oss;
+  CXFile file;
+  unsigned line;
+  unsigned column;
+  clang_getSpellingLocation(clang_getRangeStart(r), &file, &line, &column, 0);
+  CXString filename = clang_getFileName(file);
+  oss << clang_getCString(filename) << ':' << line << ':' << column << " - ";
+  clang_disposeString(filename);
+  clang_getSpellingLocation(clang_getRangeEnd(r), &file, &line, &column, 0);
+  filename = clang_getFileName(file);
+  oss << clang_getCString(filename) << ':' << line << ':' << column;;
+  clang_disposeString(filename);
+  return oss.str();
+}
+
 inline std::string token_info(CXTranslationUnit tu, CXToken t)
 {
   std::ostringstream oss;

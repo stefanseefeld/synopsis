@@ -133,7 +133,7 @@ TypeRepository::TypeRepository(bpl::dict types, bool verbose)
   bpl::object qname_module = bpl::import("Synopsis.QualifiedName");
   qname_ = qname_module.attr("QualifiedCxxName");  
 
-#define DECLARE_BUILTIN_TYPE(T) types_[qname(T)] = asg_module_.attr("BuiltinTypeId")("C++", qname(T))
+#define DECLARE_BUILTIN_TYPE(T) types_[qname(T)] = asg_module_.attr("BuiltinTypeId")("C", qname(T))
 
   DECLARE_BUILTIN_TYPE("bool");
   DECLARE_BUILTIN_TYPE("char");
@@ -167,8 +167,8 @@ void TypeRepository::declare(CXType t, bpl::object declaration, bool visible)
     std::cout << "declare " << type_info(t) << std::endl;
   bpl::object name = declaration.attr("name");
   bpl::object type;
-  if (visible) type = asg_module_.attr("DeclaredTypeId")("C++", name, declaration);
-  else asg_module_.attr("UnknownTypeId")("C++", name, declaration);
+  if (visible) type = asg_module_.attr("DeclaredTypeId")("C", name, declaration);
+  else asg_module_.attr("UnknownTypeId")("C", name, declaration);
   types_[name] = type;
   cx_types_[t] = type;
 }
@@ -204,7 +204,7 @@ bpl::object TypeRepository::lookup(CXType t) const
       cv_qual(i, postmod);
       postmod.append("&");
       bpl::object inner = lookup(i);
-      return asg_module_.attr("ModifierTypeId")("C++", inner, bpl::list(), postmod);
+      return asg_module_.attr("ModifierTypeId")("C", inner, bpl::list(), postmod);
     }
     case CXType_Pointer:
     {
@@ -213,14 +213,20 @@ bpl::object TypeRepository::lookup(CXType t) const
       cv_qual(i, postmod);
       postmod.append("*");
       bpl::object inner = lookup(i);
-      return asg_module_.attr("ModifierTypeId")("C++", inner, bpl::list(), postmod);
+      return asg_module_.attr("ModifierTypeId")("C", inner, bpl::list(), postmod);
+    }
+    case CXType_Unexposed:
+    {
+      // FIXME: Find a way to use the actual type name (stringified ?), instead of
+      // just '<unknown>'
+      return asg_module_.attr("UnknownTypeId")("C", qname("<unknown>"));
     }
     default:
     {
       bpl::object type = cx_types_[t];
       if (!type)
 	// throw std::runtime_error("undefined type " + type_info(t));
-	type = asg_module_.attr("UnknownTypeId")("C++", qname("<unknown>"));
+	type = asg_module_.attr("UnknownTypeId")("C", qname("<unknown>"));
       return type;
     }
   };
@@ -252,7 +258,7 @@ ASGTranslator::ASGTranslator(std::string const &filename,
     file_ = file;
   else
   {
-    file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C++");
+    file_ = sf_module_.attr("SourceFile")(short_filename, long_filename, "C");
     files_[short_filename] = file_;
   }
   annotations(file_)["primary"] = true;
@@ -293,7 +299,7 @@ bpl::object ASGTranslator::get_source_file(std::string const &filename)
   bpl::object file = files_.get(short_filename);
   if (!file)
   {
-    file = sf_module_.attr("SourceFile")(short_filename, long_filename, "C++");
+    file = sf_module_.attr("SourceFile")(short_filename, long_filename, "C");
     if (base_path_.empty() || matches_path(long_filename, base_path_))
       annotations(file)["primary"] = true;
     files_[short_filename] = file;
@@ -380,7 +386,14 @@ bpl::object ASGTranslator::create(CXCursor c)
     case CXCursor_TypedefDecl:
     {
       bpl::object type = types_.lookup(clang_getCursorType(c));
-      return asg_module_.attr("Typedef")(source_file, line, "typedef", qname(name), type, false);
+      // HACK: Find out whether the referenced type is an UnknownTypeId.
+      //       If it is, assume it was constructed in-place.
+      bpl::object name_attr = bpl::getattr(type, "name", bpl::object());
+      if (name_attr &&
+	  bpl::extract<char const *>(bpl::str(name_attr))[0] == '`')
+	return asg_module_.attr("Typedef")(source_file, line, "typedef", qname(name), type, true);
+      else
+	return asg_module_.attr("Typedef")(source_file, line, "typedef", qname(name), type, false);
     }
     case CXCursor_EnumDecl:
     {
@@ -409,6 +422,33 @@ bpl::object ASGTranslator::create(CXCursor c)
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
+}
+
+CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
+{
+  // Skip any builtin declarations
+  if (!is_visible(c))
+    return CXChildVisit_Continue;
+
+  bpl::object declaration;
+  bpl::list comments = get_comments(c);
+  CXType type = clang_getCursorType(c);
+  bpl::list bases;
+  switch (c.kind)
+  {
+    case CXCursor_MacroDefinition:
+      break;
+    case CXCursor_MacroInstantiation:
+      break;
+    case CXCursor_InclusionDirective:
+      break;
+    default:
+      throw std::runtime_error("unimplemented: " + cursor_info(c));
+  }
+  if (declaration && comments)
+    bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
+  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
+  return CXChildVisit_Continue;
 }
 
 CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
@@ -463,6 +503,9 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_UnexposedDecl:
       if (debug_)
 	std::cout << cursor_info(c) << " in " << cursor_location(c) << std::endl;
+      // clang reports 'extern "C" ...' as an unexposed decl, which we definitely
+      // need to recurse into.
+      return CXChildVisit_Recurse;
       break;
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
@@ -492,12 +535,14 @@ bpl::list ASGTranslator::get_comments(CXCursor c)
   // of the current cursor.
   CXSourceRange range = clang_getRange(comment_horizon_,
 				       clang_getRangeStart(clang_getCursorExtent(c)));
+  if (debug_)
+    std::cout << "looking for comments in " << range_info(range) << std::endl;
   CXToken *tokens;
   unsigned num_tokens;
   clang_tokenize(tu_, range, &tokens, &num_tokens);
   // FIXME: Due to a bug in clang_tokenize, the last token returned is actually outside
   //        the range
-  // if (num_tokens) --num_tokens;
+  if (num_tokens) --num_tokens;
   // Walk backwards from the given cursor, stopping
   // at the first non-comment token
   for (unsigned i = num_tokens; i; --i)
@@ -512,7 +557,7 @@ bpl::list ASGTranslator::get_comments(CXCursor c)
     bool is_cxx_comment = text[1] == '/';
     CXSourceRange token_range = clang_getTokenExtent(tu_, tokens[i - 1]);
     unsigned prev_token_end_line;
-    clang_getSpellingLocation(clang_getRangeStart(token_range),
+    clang_getSpellingLocation(clang_getRangeEnd(token_range),
 			      0, &prev_token_end_line, 0, 0);
     // If the comment directly preceding the cursor is separated from it by
     // an empty line, insert an empty string into the comments.
@@ -539,7 +584,6 @@ bpl::list ASGTranslator::get_comments(CXCursor c)
 			      0, &next_token_start_line, 0, 0);
   }
   clang_disposeTokens(tu_, tokens, num_tokens);
-  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
   return comments;
 }
 
@@ -551,7 +595,8 @@ CXChildVisitResult ASGTranslator::visit(CXCursor c, CXCursor p, CXClientData d)
 
   try
   {
-    if (clang_isDeclaration(c.kind)) return translator->visit_declaration(c, p);
+    if (clang_isPreprocessing(c.kind)) return translator->visit_pp_directive(c, p);
+    else if (clang_isDeclaration(c.kind)) return translator->visit_declaration(c, p);
     translator->comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
     return CXChildVisit_Continue;
   }
