@@ -51,3 +51,4 @@ class TypedefFolder(Processor, ASG.Visitor):
                 i = len(alias.declaration.name)
                 for d in alias.declaration.declarations:
                     d.name = d.name[:i-1] + (alias.name[-1],) + d.name[i:]
+            alias.declaration.annotations.update(t.annotations)
