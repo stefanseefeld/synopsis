@@ -459,6 +459,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
 
   bpl::object declaration;
   bpl::list comments = get_comments(c);
+  bool consume_comments = true;
   CXType type = clang_getCursorType(c);
   switch (c.kind)
   {
@@ -466,10 +467,19 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_UnionDecl:
       declaration = create(c);
       declare(c, declaration);
-      if (type.kind != CXType_Invalid) // e.g. for namespaces
+      // HACK: If this is an anonymous struct, class, etc., we look back to see
+      //       whether this is part of a typedef declaration (with in-place construction)
+      //       such as 'typedef struct {...} foo;'
+      //       If it is, we don't consume the comments, to allow the typedef to use them,
+      //       which is visited after the struct.
+      if (bpl::extract<char const *>(bpl::str(declaration.attr("name")))[0] == '`')
+	consume_comments = false;
+      if (type.kind != CXType_Invalid)
 	types_.declare(type, declaration, true);
       scope_.push(declaration);
+      CXSourceLocation comment_horizon_backup = comment_horizon_;
       clang_visitChildren(c, &ASGTranslator::visit, this);
+      comment_horizon_ = comment_horizon_backup;
       scope_.pop();
       break;
     case CXCursor_EnumConstantDecl:
@@ -505,14 +515,19 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
 	std::cout << cursor_info(c) << " in " << cursor_location(c) << std::endl;
       // clang reports 'extern "C" ...' as an unexposed decl, which we definitely
       // need to recurse into.
-      return CXChildVisit_Recurse;
+      {
+	CXSourceLocation comment_horizon_backup = comment_horizon_;
+	clang_visitChildren(c, &ASGTranslator::visit, this);
+	comment_horizon_ = comment_horizon_backup;
+      }
       break;
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
   if (declaration && comments)
     bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
-  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
+  if (consume_comments)
+    comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
   return CXChildVisit_Continue;
 }
 
