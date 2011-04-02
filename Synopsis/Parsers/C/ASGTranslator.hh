@@ -80,6 +80,8 @@ private:
   CXChildVisitResult visit_pp_directive(CXCursor c, CXCursor p);
   CXChildVisitResult visit_declaration(CXCursor c, CXCursor p);
 
+  void visit_children(CXCursor c);
+
   bpl::object get_source_file(std::string const &);
   bpl::object create(CXCursor c);
 

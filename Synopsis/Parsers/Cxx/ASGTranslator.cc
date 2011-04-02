@@ -420,12 +420,11 @@ bool ASGTranslator::is_visible(CXCursor c)
   clang_getSpellingLocation(l, &sf, 0 /*line*/, /*column*/ 0, /*offset*/ 0);
   CXString f = clang_getFileName(sf);
   char const *filename = clang_getCString(f);
-  bool mask = 
-    !filename ||                                          // a builtin entity
-    ((primary_file_only_ && primary_filename_ != filename) && // not primary file
-     !matches_path(filename, base_path_));                // outside base_path
+  bool visible = filename &&                              // not a builtin entity
+    (primary_file_only_ ? primary_filename_ == filename : // a primary file
+     matches_path(filename, base_path_));                 // or inside the base_path
   clang_disposeString(f);
-  return !mask;
+  return visible;
 }
 
 bpl::object ASGTranslator::get_source_file(std::string const &filename)
@@ -579,7 +578,7 @@ bpl::object ASGTranslator::create(CXCursor c)
     case CXCursor_EnumDecl:
     {
       enumerators_ = bpl::list();
-      clang_visitChildren(c, &ASGTranslator::visit, this);
+      visit_children(c);
       return asg_module_.attr("Enum")(source_file, line, qname(name), enumerators_);
     }
     case CXCursor_FunctionDecl:
@@ -593,7 +592,7 @@ bpl::object ASGTranslator::create(CXCursor c)
       std::string full_name = clang_getCString(dn);
       clang_disposeString(dn);
       bpl::object return_type = types_.lookup(clang_getCursorResultType(c));
-      clang_visitChildren(c, &ASGTranslator::visit, this);
+      visit_children(c);
       bpl::object f;
       if (c.kind == CXCursor_FunctionTemplate)
       {
@@ -663,14 +662,17 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
   if (!is_visible(c))
     return CXChildVisit_Continue;
 
-  bpl::object declaration;
-  bpl::list comments = get_comments(c);
-  CXType type = clang_getCursorType(c);
-  bpl::list bases;
   switch (c.kind)
   {
     case CXCursor_MacroDefinition:
+    {
+      bpl::object declaration;
+      bpl::list comments = get_comments(c);
+      if (declaration && comments)
+	bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
+      comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
       break;
+    }
     case CXCursor_MacroInstantiation:
       break;
     case CXCursor_InclusionDirective:
@@ -678,9 +680,6 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
-  if (declaration && comments)
-    bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
-  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
   return CXChildVisit_Continue;
 }
 
@@ -728,9 +727,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
       if (type.kind != CXType_Invalid) // e.g. for namespaces
 	types_.declare(type, declaration, true);
       scope_.push(declaration);
-      CXSourceLocation comment_horizon_backup = comment_horizon_;
-      clang_visitChildren(c, &ASGTranslator::visit, this);
-      comment_horizon_ = comment_horizon_backup;
+      visit_children(c);
       scope_.pop();
       break;
     }
@@ -777,11 +774,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
 	std::cout << cursor_info(c) << " in " << cursor_location(c) << std::endl;
       // clang reports 'extern "C" ...' as an unexposed decl, which we definitely
       // need to recurse into.
-      {
-	CXSourceLocation comment_horizon_backup = comment_horizon_;
-	clang_visitChildren(c, &ASGTranslator::visit, this);
-	comment_horizon_ = comment_horizon_backup;
-      }
+      visit_children(c);
       break;
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
@@ -791,6 +784,13 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
   if (consume_comments)
     comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
   return CXChildVisit_Continue;
+}
+
+void ASGTranslator::visit_children(CXCursor c)
+{
+  CXSourceLocation comment_horizon_backup = comment_horizon_;
+  clang_visitChildren(c, &ASGTranslator::visit, this);
+  comment_horizon_ = comment_horizon_backup;
 }
 
 bpl::list ASGTranslator::get_comments(CXCursor c)
@@ -827,7 +827,18 @@ bpl::list ASGTranslator::get_comments(CXCursor c)
     if (debug_)
       std::cout << token_info(tu_, tokens[i - 1]) << std::endl;
     CXTokenKind kind = clang_getTokenKind(tokens[i - 1]);
-    if (kind != CXToken_Comment) break;
+    // FIXME: Right now the cursor extent of certain types may not go quite far enough.
+    //        For example, function declarations may start with a macro which is actually defined
+    //        to be empty (and thus can't be seen by the extent-computing machinery.
+    //
+    //        As a simple heuristic (and until we find a better solution), ignore such tokens.
+    if (kind == CXToken_Identifier && bpl::len(comments) == 0)
+    {
+      // look it up to see whether it is actually part of a macro instantiation (and defines to nothing).
+      //...
+      continue;
+    }
+    else if (kind != CXToken_Comment) break;
 
     CXString s = clang_getTokenSpelling(tu_, tokens[i - 1]);
     char const *text = clang_getCString(s);
