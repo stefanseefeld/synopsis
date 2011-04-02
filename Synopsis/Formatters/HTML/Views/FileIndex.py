@@ -70,13 +70,13 @@ class FileIndex(View):
         if self.link_source:
             link = rel(self.filename(),
                       self.directory_layout.file_source(filename))
-            self.write(div('', href(link, 'source code', target='content')) + '\n')
+            self.write(div(href(link, 'source code', target='content')) + '\n')
         if self.link_details:
             link = rel(self.filename(),
                        self.directory_layout.file_details(filename))
-            self.write(div('', href(link, 'details', target='content')) + '\n')
+            self.write(div(href(link, 'details', target='content')) + '\n')
 
-        self.write(div('heading', 'Declarations') + '\n')
+        self.write(div('Declarations', class_='heading') + '\n')
         # Sort items (by name)
         items = [(d.name, d) for d in file.declarations]
         items.sort()
@@ -106,7 +106,8 @@ class FileIndex(View):
             # Now print the actual item
             label = replace_spaces(escape(str(scope.prune(label))))
             title = '(%s)'%decl.type
-            self.write(div('href',href(link, label, target='content', title=title)))
+            self.write(div(href(link, label, target='content', title=title),
+                           class_='href'))
             # Store this name in case, f.ex, it's a class and the next item is
             # in that class scope
             last = name

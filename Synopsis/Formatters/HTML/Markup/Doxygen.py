@@ -9,6 +9,24 @@ from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
 import re
 
+_inline_tags = {}
+_inline_tags['c'] = 'code'
+_inline_tags['e'] = 'em'
+_inline_tags['em'] = 'em'
+_inline_tags['a'] = 'em'
+
+def _replace_inline_tag(match):
+
+    word = match.group('word')
+    tag = match.group('tag')
+    if tag == 'c':
+        return '<code>%s</code>'%escape(word)
+    elif tag in _inline_tags:
+        tag = _inline_tags[tag]
+        return '<%s>%s</%s>'%(tag, word, tag)
+    else:
+        return word
+
 class Doxygen(Formatter):
     """A formatter that formats comments similar to doxygen. (http://www.doxygen.org)"""
 
@@ -16,130 +34,104 @@ class Doxygen(Formatter):
 
         def __init__(self, tag, arg, body):
             self.tag, self.arg, self.body = tag, arg, body
+
+        def astext(self, f):
+            text = f.inline_tag.sub(_replace_inline_tag, self.body)
+            if not self.tag:
+                return para(text)
+            elif self.tag in ('result', 'return', 'returns'):
+                return (div('Returns', class_='tag-heading') +
+                        div(text, class_='tag-section'))
+            elif self.tag in ('param'):
+                return (div('Parameters', class_='tag-heading') +
+                        div(text, class_='tag-section'))
+            elif self.tag in ('code'):
+                return element('pre', escape(text))
+            else: # TODO: raise error on unknown tag ?
+                return para(text)
             
+    brief = r'^\s*(\\|@)brief\s+([\w\W]*?\.)(\s|$)'
+    # Simple tags covering a single word.
+    inline_tag = r'(\\|@)(?P<tag>\w+)\s+(?P<word>\S+)'
+    # blocks are either enclosed by ('\tag', '\endtag') pairs, or
+    # a '\tag' and the paragraph (denoted by an empty line).
+    #
+    # Note: For block tags we require the opening marker to appear
+    #       near the start of a line. We therefor start with a check
+    #       for '(^|\n)'. Since we also detect paragraph boundaries
+    #       by an empty line '(\n\s*\n)', we can't consume the last
+    #       newline there (as we consume it in the next block !).
+    #       Thus, as end of paragraph we use a look-ahead pattern.
+    block_tag = (r'(^|\n)\s*(\\|@)(?P<tag>\w+)\s+'
+                 r'((?P<block>[\s\S]*)(\2end\3)|'
+                 r'(?P<paragraph>[\s\S]*?)((\n\s*(?=\n))|(\s*$)))')
 
-    brief = r'\\brief(\s*[\w\W]*?\.)(\s|$)'
-    block_tag = r'(^\s*\@\w+[\s$])'
-    inline_tag = r'{@(?P<tag>\w+)\s+(?P<content>[^}]+)}'
-    inline_tag_split = r'({@\w+\s+[^}]+})'
-    xref = r'([\w#.]+)(?:\([^\)]*\))?\s*(.*)'
-
-    tag_name = {
-    'author': ['Author', 'Authors'],
-    'date': ['Date', 'Dates'],
-    'deprecated': ['Deprecated', 'Deprecated'],
-    'exception': ['Exception', 'Exceptions'],
-    'invariant': ['Invariant', 'Invariants'],
-    'keyword': ['Keyword', 'Keywords'],
-    'param': ['Parameter', 'Parameters'],
-    'postcondition': ['Postcondition', 'Postcondition'],
-    'precondition': ['Precondition', 'Preconditions'],
-    'return': ['Returns', 'Returns'],
-    'see': ['See also', 'See also'],
-    'throws': ['Throws', 'Throws'],
-    'version': ['Version', 'Versions']}
     arg_tags = ['param', 'keyword', 'exception']
-
 
     def __init__(self):
         """Create regex objects for regexps"""
 
         self.brief = re.compile(Doxygen.brief)
-        self.block_tag = re.compile(Doxygen.block_tag, re.M)
         self.inline_tag = re.compile(Doxygen.inline_tag)
-        self.inline_tag_split = re.compile(Doxygen.inline_tag_split)
-        self.xref = re.compile(Doxygen.xref)
+        self.block_tag = re.compile(Doxygen.block_tag)
 
-
-    def split(self, doc):
-        """Split a javadoc comment into description and blocks."""
-
-        chunks = self.block_tag.split(doc)
-        description = chunks[0]
-        blocks = []
-        for i in range(1, len(chunks)):
-            if i % 2 == 1:
-                tag = chunks[i].strip()[1:]
-            else:
-                if tag in self.arg_tags:
-                    arg, body = chunks[i].strip().split(None, 1)
-                else:
-                    arg, body = None, chunks[i]
-
-                if tag == 'see' and body:
-                    if body[0] in ['"', "'"]:
-                        if body[-1] == body[0]:
-                            body = body[1:-1]
-                    elif body[0] == '<':
-                        pass
-                    else:
-                        # @link tags are interpreted as cross-references
-                        #       and resolved later (see format_inline_tag)
-                        body = '{@link %s}'%body
-                blocks.append(Doxygen.Block(tag, arg, body))
-        
-        return description, blocks
-
-
-    def split_summary(self, description):
+    def split(self, description):
         """Split summary and details from description."""
 
         m = self.brief.match(description)
         if m:
-            return m.group(1), description[m.end():]
+            return m.group(2), description[m.end():]
         else:
             return description.split('\n', 1)[0]+'...', description
 
 
     def format(self, decl, view):
-        """Format using javadoc markup."""
+        """Format using doxygen markup."""
 
         doc = decl.annotations.get('doc')
-        doc = doc and doc.text or ''
-        if not doc:
+        text = doc and doc.text.strip() or ''
+        if not text:
             return Struct('', '')
-        doc = doc.strip()
-        description, blocks = self.split(doc)
-
-        details = self.format_description(description, view, decl)
-        summary, details = self.split_summary(details)
-
-        details += self.format_params(blocks, view, decl)
-        details += self.format_tag('return', blocks, view, decl)
-        details += self.format_throws(blocks, view, decl)
-        details += self.format_tag('precondition', blocks, view, decl)
-        details += self.format_tag('postcondition', blocks, view, decl)
-        details += self.format_tag('invariant', blocks, view, decl)
-        details += self.format_tag('author', blocks, view, decl)
-        details += self.format_tag('date', blocks, view, decl)
-        details += self.format_tag('version', blocks, view, decl)
-        details += self.format_tag('deprecated', blocks, view, decl)
-        details += self.format_tag('see', blocks, view, decl)
-
-        return Struct(summary, details)
+        summary, details = self.split(text)
+        if not details:
+            details = summary
+        return Struct(self.format_summary(summary, view, decl),
+                      self.format_details(details, view, decl))
 
 
-    def format_description(self, text, view, decl):
+    def format_summary(self, text, view, decl):
 
-        return self.format_inlines(view, decl, text)
+        text = self.inline_tag.sub(_replace_inline_tag, text)
+        return text
 
+    def format_details(self, text, view, decl):
 
-    def format_inlines(self, view, decl, text):
-        """Formats inline tags in the text."""
+        blocks = []
+        pos = 0
+        for m in self.block_tag.finditer(text):
 
-        chunks = self.inline_tag_split.split(text)
-        text = ''
-        # Every other chunk is now an inlined tag, which we process
-        # in this loop.
-        for i in range(len(chunks)):
-            if i % 2 == 0:
-                text += chunks[i]
-            else:
-                m = self.inline_tag.match(chunks[i])
-                if m:
-                    text += self.format_inline_tag(m.group('tag'),
-                                                   m.group('content'),
-                                                   view, decl)
+            if pos < m.start():
+                blocks.append(Doxygen.Block('', None, text[pos:m.start()]))
+            arg, content = None, m.group('paragraph') or m.group('block')
+            if m.group('tag') in self.arg_tags:
+                arg, content = content.strip().split(None, 1)
+            blocks.append(Doxygen.Block(m.group('tag'), arg, content))
+            pos = m.end()
+        if pos < len(text):
+            blocks.append(Doxygen.Block('', None, text[pos:]))
+
+        return self.format_blocks(blocks, view, decl)
+
+    def format_blocks(self, blocks, view, decl):
+
+        text = self.format_params([b for b in blocks if b.tag in ('param', 'keyword')],
+                                  view, decl)
+        text += self.format_throws([b for b in blocks if b.tag in ('throws')],
+                                   view, decl)
+        for b in blocks:
+            if b.tag in ('param', 'keyword', 'throws'):
+                continue
+            text += b.astext(self)
         return text
 
 
@@ -150,18 +142,18 @@ class Doxygen(Formatter):
         params = [b for b in blocks if b.tag == 'param']
         def row(dt, dd):
             return element('tr',
-                           element('th', dt, Class='dt') +
-                           element('td', dd, Class='dd'))
+                           element('th', dt, class_='dt') +
+                           element('td', dd, class_='dd'))
         if params:
-            content += div('tag-heading',"Parameters:")
+            content += div('Parameters:', class_='tag-heading')
             dl = element('table', ''.join([row(p.arg, p.body) for p in params]),
-                         Class='dl')
-            content += div('tag-section', dl)
+                         class_='dl')
+            content += div(dl, class_='tag-section')
         kwds = [b for b in blocks if b.tag == 'keyword']
         if kwds:
-            content += div('tag-heading',"Keywords:")
-            dl = element('dl', ''.join([row( k.arg, k.body) for k in kwds]), Class='dl')
-            content += div('tag-section', dl)
+            content += div('Keywords:', class_='tag-heading')
+            dl = element('dl', ''.join([row( k.arg, k.body) for k in kwds]), class_='dl')
+            content += div(dl, class_='tag-section')
         return content
 
 
@@ -170,10 +162,10 @@ class Doxygen(Formatter):
         content = ''
         throws = [b for b in blocks if b.tag in ['throws', 'exception']]
         if throws:
-            content += div('tag-heading',"Throws:")
+            content += div('Throws:', class_='tag-heading')
             dl = element('dl', ''.join([element('dt', t.arg) + element('dd', t.body)
                                         for t in throws]))
-            content += div('tag-section', dl)
+            content += div(dl, class_='tag-section')
         return content
 
 
@@ -182,37 +174,10 @@ class Doxygen(Formatter):
         content = ''
         items = [b for b in blocks if b.tag == tag]
         if items:
-            content += div('tag-heading', self.tag_name[tag][1])
-            content += div('tag-section',
-                           '<br/>'.join([self.format_inlines(view, decl, i.body)
-                                         for i in items]))
+            content += div(self.tag_name[tag][1], class_='tag-heading')
+            content += div('<br/>'.join([self.format_inlines(view, decl, i.body)
+                                         for i in items]),
+                           class_='tag-section')
         return content
 
-    def format_inline_tag(self, tag, content, view, decl):
 
-        text = ''
-        if tag == 'link':
-            xref = self.xref.match(content)
-            name, label = xref.groups()
-            if not label:
-                label = name
-            # javadoc uses '{@link  package.class#member  label}'
-            # Here we simply replace '#' by either '::' or '.' to match
-            # language-specific qualification rules.
-            if '#' in name:
-                if '::' in name:
-                    name = name.replace('#', '::')
-                else:
-                    name = name.replace('#', '.')
-            target = self.lookup_symbol(name, decl.name[:-1])
-            if target:
-                url = rel(view.filename(), target)
-                text += href(url, label)
-            else:
-                text += label
-        elif tag == 'code':
-            text += '<code>%s</code>'%escape(content)
-        elif tag == 'literal':
-            text += '<code>%s</code>'%escape(content)
-
-        return text

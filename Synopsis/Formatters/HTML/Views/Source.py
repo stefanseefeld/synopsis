@@ -9,6 +9,7 @@
 from Synopsis import config
 from Synopsis.Processor import *
 from Synopsis.QualifiedName import *
+from Synopsis.Formatters import join_paths
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from xml.dom.minidom import parse
@@ -52,11 +53,14 @@ class SXRTranslator:
         lines = self.sxr.getElementsByTagName('line')
         lineno_template = '%%%ds' % len(`len(lines)`)
         for lineno, line in enumerate(lines):
-            writer.write('<a name="%d"></a>'%(lineno + 1))
+            writer.write('<a id="line%d"></a>'%(lineno + 1))
             text = lineno_template % (lineno + 1)
             writer.write('<span class="lineno">%s</span>'%text)
             text = ''.join([n.toxml() for n in line.childNodes])
-            writer.write('<span class="line">%s</span>\n'%text)
+            if text:
+                writer.write('<span class="line">%s</span>\n'%text)
+            else:
+                writer.write('\n')
         writer.write('</pre>')
 
 
@@ -130,9 +134,7 @@ class Source(View):
         self.write_navigation_bar()
         self.write('File: '+element('b', self.__title))
 
-        if os.path.isabs(source):
-            source = os.path.splitdrive(source)[1][1:]
-        sxr = os.path.join(self.prefix, source + '.sxr')
+        sxr = join_paths(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
             translator = SXRTranslator(sxr, file.annotations['language'], self.processor.debug)
             linker = self.external_url and self.external_ref or self.lookup_symbol
@@ -156,8 +158,8 @@ class Source(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
-        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        self.write(div('Generated on ' + now + ' by \n<br/>\n' + logo, class_='logo'))
         View.end_file(self)

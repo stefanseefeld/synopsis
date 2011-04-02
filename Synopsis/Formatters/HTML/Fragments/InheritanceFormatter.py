@@ -15,7 +15,7 @@ class InheritanceFormatter(Default):
    def format_declaration(self, decl, label=None):
 
       if not label: label = decl.name[-1]
-      qname = self.formatter.scope().prune(decl.name)
+      qname = self.part.scope().prune(decl.name)
       title = decl.type + ' ' + escape(str(qname))
       return self.reference(decl.name, label=label, title=title) + ' '
 

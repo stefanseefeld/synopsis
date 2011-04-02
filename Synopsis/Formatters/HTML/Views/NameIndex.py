@@ -43,12 +43,13 @@ class NameIndex(View):
         dict = self.make_dictionary()
         keys = dict.keys()
         keys.sort()
-        linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
-        self.write(div('nameindex-index', ''.join([linker(k) for k in keys])) + '\n')
+        linker = lambda key: '<a href="#key%d">%s</a>'%(ord(key),key)
+        self.write(div(''.join([linker(k) for k in keys]),
+                       class_='nameindex-index') + '\n')
         for key in keys:
-            self.write('<a name="%s">'%ord(key)+'</a>')
+            self.write('<a id="key%d">'%ord(key)+'</a>')
             self.write(element('h2', key) + '\n')
-            self.write('<table border="0" width="100%" summary="table of names">\n')
+            self.write('<table summary="table of names">\n')
             self.write('<col width="*"/>'*self.columns + '\n')
             self.write('<tr>\n')
             items = dict[key]
@@ -108,16 +109,21 @@ class NameIndex(View):
         self.write('\n')
         title = escape(str(name))
         type = decl.type
-        name = self.reference(name, (), realname, title=title)+' '+type
-        self.write(div('nameindex-item', name))
+        # The name index should not list function or template parameters
+        # or local variables. There are just too many of them...
+        # typenames are not referring to actual (declared) types,
+        # so aren't meaningful here either.
+        if type not in ['parameter', 'local variable', 'typename', 'this']:
+            name = self.reference(name, (), realname, title=title)+' '+type
+            self.write(div(name, class_='nameindex-item'))
 
     def end_file(self):
         """Overrides end_file to provide synopsis logo"""
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
-        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        self.write(div('Generated on ' + now + ' by \n<br/>\n' + logo, class_='logo'))
         View.end_file(self)

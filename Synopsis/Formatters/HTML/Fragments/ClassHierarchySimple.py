@@ -24,13 +24,13 @@ class ClassHierarchySimple(Fragment):
       if class_.parents:
          parents = [self.format_inheritance(i) for i in class_.parents]
          super = ', '.join(parents)
-         super = div('superclasses', "Superclasses: "+super)
+         super = div('Superclasses: '+super, class_='superclasses')
 
       # Print subclasses
       subs = self.processor.class_tree.subclasses(class_.name)
       if subs:
          sub = ', '.join([self.reference(s) for s in subs])
-         sub = div('subclasses', "Known subclasses: "+sub) 
+         sub = div('Known subclasses: '+sub, class_='subclasses') 
 	
       return super + sub
 

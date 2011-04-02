@@ -26,7 +26,7 @@ class ClassHierarchyGraph(ClassHierarchySimple):
             # Skip classes with a boring graph
             return ''
         #label = self.processor.files.scoped_special('inheritance', clas.name)
-        label = self.formatter.filename()[:-5] + '-inheritance.html'
+        label = self.part.filename()[:-5] + '-inheritance.html'
         tmp = os.path.join(self.processor.output, label)
         ir = IR.IR(files={}, asg=ASG.ASG([class_], self.processor.ir.asg.types))
         dot = Dot.Formatter(bgcolor=self.processor.graph_color)
@@ -35,7 +35,7 @@ class ClassHierarchyGraph(ClassHierarchySimple):
             dot.process(ir,
                         output=tmp,
                         format='html',
-                        base_url=self.formatter.filename(),
+                        base_url=self.part.filename(),
                         type='single',
                         title=label)
             text = ''

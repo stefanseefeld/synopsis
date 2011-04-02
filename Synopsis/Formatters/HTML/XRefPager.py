@@ -16,8 +16,9 @@ class XRefPager:
         # Split the data into multiple files based on size
         page = 0
         count = 0
-        self.page_info.append([])
         names = ir.sxr.keys()
+        if names:
+            self.page_info.append([])
         names.sort()
         for name in names:
             if count > 200:

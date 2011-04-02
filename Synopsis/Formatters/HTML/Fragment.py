@@ -16,13 +16,13 @@ class Fragment(object):
    
    The key concept of this class is the format* methods. Any
    class derived from Strategy that overrides one of the format methods
-   will have that method called by the Summary and Detail formatters when
+   will have that method called by the Summary and Detail parts when
    they visit that ASG type. Summary and Detail maintain a list of
    Strategies, and a list for each ASG type.
     
    For example, when Strategy.Summary visits a Function object, it calls
    the formatFunction method on all Strategys registed with
-   SummaryFormatter that implemented that method. Each of these format
+   Summary that implemented that method. Each of these format
    methods returns a string, which may contain a TD tag to create a new
    column.
 
@@ -31,20 +31,20 @@ class Fragment(object):
    overridden then it is not called for that declaration type.
    """
 
-   def register(self, formatter):
-      """Store formatter as self.formatter. The formatter is either a
-      SummaryFormatter or DetailFormatter, and is used for things like
-      reference() and label() calls. Local references to the formatter's
+   def register(self, part):
+      """Store part as self.part. The part is either a
+      Summary or Detail, and is used for things like
+      reference() and label() calls. Local references to the part's
       reference and label methods are stored in self for more efficient use
       of them."""
 
-      self.processor = formatter.processor
+      self.processor = part.processor
       self.directory_layout = self.processor.directory_layout
-      self.formatter = formatter
-      self.label = formatter.label
-      self.reference = formatter.reference
-      self.format_type = formatter.format_type
-      self.view = formatter.view()
+      self.part = part
+      self.label = part.label
+      self.reference = part.reference
+      self.format_type = part.format_type
+      self.view = part.view()
 
    #
    # Utility methods
@@ -54,8 +54,8 @@ class Fragment(object):
       modifiers are enclosed in 'keyword' spans."""
 
       def keyword(m):
-         if m == '&': return span('keyword', '&amp;')
-         return span('keyword', m)
+         if m == '&': return span('&amp;', class_='keyword')
+         return span(m, class_='keyword')
       return ''.join([keyword(m) for m in modifiers])
 
 
@@ -63,6 +63,7 @@ class Fragment(object):
    # ASG Formatters
    #
    def format_declaration(self, decl): pass
+   def format_macro(self, decl): pass
    def format_forward(self, decl): pass
    def format_group(self, decl): pass
    def format_scope(self, decl): pass

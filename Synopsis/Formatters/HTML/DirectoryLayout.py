@@ -35,8 +35,10 @@ class DirectoryLayout (TOC.Linker):
             print "ERROR: Output must be a directory."
             sys.exit(1)
 
+        js = os.path.join(config.datadir, 'html.js')
+        self.copy_file(js, 'synopsis.js')
         if os.path.isfile(processor.stylesheet):
-            self.copy_file(processor.stylesheet, 'style.css')
+            self.copy_file(processor.stylesheet, 'synopsis.css')
         else:
             print "ERROR: stylesheet %s doesn't exist"%processor.stylesheet
             sys.exit(1)
@@ -59,7 +61,8 @@ class DirectoryLayout (TOC.Linker):
 
     def _strip(self, filename):
 
-        if len(filename) and filename[-1] == '/': filename = filename[:-1]
+        if filename.endswith('/'): filename = filename[:-1]
+        if filename.startswith('/'): filename = filename[1:]
         return filename
 
     def file_index(self, filename):
@@ -131,8 +134,8 @@ class DirectoryLayout (TOC.Linker):
             return self.scope(decl.name)
         # Assume parent scope is class or module, and this is a <A> name in it
         filename = self.scope(decl.name[:-1])
-        anchor = escape(decl.name[-1].replace(' ','.'))
-        return filename + '#' + anchor
+        fragment = quote_as_id(decl.name[-1])
+        return filename + '#' + fragment
 
 class NestedDirectoryLayout(DirectoryLayout):
     """Organizes files in a directory tree."""

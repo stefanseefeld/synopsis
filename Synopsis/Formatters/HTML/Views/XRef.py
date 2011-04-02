@@ -12,7 +12,6 @@ from Synopsis import ASG
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-from Synopsis.Formatters.HTML.DirectoryLayout import quote_name
 import os, time
 
 class XRef(View):
@@ -38,7 +37,7 @@ class XRef(View):
         for name in self.processor.ir.sxr.keys():
             page = self.processor.xref.get(name)
             file = self.directory_layout.special('xref%d'%page)
-            file += '#' + quote_name(str(name))
+            file += '#' + quote_as_id(str(name))
             self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
 
     def toc(self, start):
@@ -60,12 +59,10 @@ class XRef(View):
         pages = self.processor.xref.pages()
         if not pages: return
         for p in range(len(pages)):
-            if not pages[p]: 
-                continue
             self.__filename = self.directory_layout.xref(p)
 
             first, last = pages[p][0], pages[p][-1]
-            self.__title = 'Cross Reference : %s - %s'%(first, last)
+            self.__title = 'Cross Reference : %s - %s'%(escape(str(first)), escape(str(last)))
 
             self.start_file()
             self.write_navigation_bar()
@@ -122,7 +119,7 @@ class XRef(View):
       
         entry = self.processor.ir.sxr.get(name)
         if not entry: return
-        self.write(element('a', '', name=quote_name(escape(str(name)))))
+        self.write(element('a', '', id=quote_as_id(str(name))))
         desc = ''
         decl = None
         type = self.processor.ir.asg.types.get(name)
@@ -151,7 +148,7 @@ class XRef(View):
             for file, line, scope in entry.references:
                 self.process_link(file, line, scope)
             self.write('</ul></li>\n')
-        if isinstance(decl, ASG.Scope):
+        if isinstance(decl, ASG.Scope) and decl.declarations:
             self.write('<li>Declarations:\n<ul>\n')
             for child in decl.declarations:
                 if isinstance(child, ASG.Builtin) and child.type == 'EOS':
@@ -176,8 +173,8 @@ class XRef(View):
 
         self.write('\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo', border='0')
+        logo = img(src=rel(self.filename(), 'synopsis.png'), alt='logo')
         logo = href('http://synopsis.fresco.org', logo + ' synopsis', target='_blank')
         logo += ' (version %s)'%config.version
-        self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
+        self.write(div('Generated on ' + now + ' by \n<br/>\n' + logo, class_='logo'))
         View.end_file(self)

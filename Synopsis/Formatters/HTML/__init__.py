@@ -64,19 +64,20 @@ class DocCache:
         else:
             return self._doc_cache[key]
 
+    def doc(self, decl, view):
+
+        return self._process(decl, view)
 
     def summary(self, decl, view):
         """"""
 
-        doc = self._process(decl, view)
-        return doc.summary
+        return self.doc(decl, view).summary
 
 
     def details(self, decl, view):
         """"""
 
-        doc = self._process(decl, view)
-        return doc.details
+        return self.doc(decl, view).details
 
 
 class Formatter(Processor):
@@ -88,8 +89,8 @@ class Formatter(Processor):
     toc_out = Parameter('', 'name of file into which to store the TOC')
     sxr_prefix = Parameter(None, 'path prefix (directory) under which to find sxr info')
 
-    index = Parameter([ModuleTree(), FileTree()], '')
-    detail = Parameter([ModuleIndex(), FileIndex()], '')
+    index = Parameter([ModuleTree(), FileTree()], 'set of index views')
+    detail = Parameter([ModuleIndex(), FileIndex()], 'set of detail views')
     content = Parameter([Scope(),
                          Source(),
                          XRef(),
@@ -97,7 +98,7 @@ class Formatter(Processor):
                          InheritanceTree(),
                          InheritanceGraph(),
                          NameIndex()],
-                        '')
+                        'set of content views')
    
     markup_formatters = Parameter({'javadoc':Javadoc(),
                                    'doxygen':Doxygen(),
@@ -105,6 +106,8 @@ class Formatter(Processor):
                                    'reStructuredText':RST()},
                                   'Markup-specific formatters.')
     graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
+    struct_as_class = Parameter(False, 'Fuse structs and classes into the same section.') 
+    group_as_section = Parameter(True, 'Map group to section, instead of keeping it as a single declaration.')
 
     def process(self, ir, **kwds):
 
@@ -137,7 +140,8 @@ class Formatter(Processor):
         self.xref = XRefPager(self.ir)
 
         from Synopsis.DeclarationSorter import DeclarationSorter
-        self.sorter = DeclarationSorter()
+        self.sorter = DeclarationSorter(struct_as_class=self.struct_as_class,
+                                        group_as_section=self.group_as_section)
 
         # Make all views queryable through Formatter.has_view()
         self.views = self.content + self.index + self.detail

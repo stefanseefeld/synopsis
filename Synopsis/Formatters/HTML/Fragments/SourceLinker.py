@@ -16,9 +16,9 @@ _icons = {'C':'src-c.png',
 class SourceLinker(Default):
     """Adds a link to the decl on the file view to all declarations"""
 
-    def register(self, formatter):
+    def register(self, part):
 
-        Default.register(self, formatter)
+        Default.register(self, part)
         self.sxr = self.processor.sxr_prefix and True
 
     def format_declaration(self, decl):
@@ -26,6 +26,6 @@ class SourceLinker(Default):
         if not self.sxr or not decl.file: return ''
         language = decl.file.annotations['language']
         icon = _icons[language]
-        url = self.directory_layout.file_source(decl.file.name) + '#%d' % decl.line
-        label = img(src=rel(self.view.filename(), icon), alt='source code', border='0')
+        url = self.directory_layout.file_source(decl.file.name) + '#line%d' % decl.line
+        label = img(src=rel(self.view.filename(), icon), alt='source code')
         return href(rel(self.view.filename(), url), label)

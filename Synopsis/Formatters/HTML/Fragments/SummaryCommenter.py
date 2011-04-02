@@ -13,5 +13,5 @@ class SummaryCommenter(Default):
     """Adds summary annotations to all declarations."""
 
     def format_declaration(self, decl):
-        summary = self.processor.documentation.summary(decl, self.view)
-        return div('doc', summary or '')
+        doc = self.processor.documentation.doc(decl, self.view)
+        return div(doc.summary or '', class_='doc')

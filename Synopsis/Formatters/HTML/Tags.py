@@ -11,13 +11,8 @@ You will probably find it easiest to import * from this module."""
 
 using_frames = True #overwritten by Formatter...
 
-def attributes(keys):
-    "Convert a name/value dict to a string of attributes"
-
-    return ' '.join(['%s="%s"'%(k,v) for k,v in keys.items()])
-
 def rel(origin, target):
-    "Find link to target relative to origin."
+    "Find link to target relative to origin URL."
 
     origin, target = origin.split('/'), target.split('/')
     if len(origin) < len(target): check = len(origin) - 1
@@ -34,47 +29,40 @@ def rel(origin, target):
     if origin: target = ['..'] * (len(origin) - 1) + target
     return '/'.join(target)
 
-def href(_ref, _label, **attrs):
-    "Return a href to 'ref' with name 'label' and attributes"
+def attributes(keys):
+    """Convert a name/value dict to a string of attributes.
+    A common HTML attribute is 'class'. Since 'class' is a Python keyword,
+    we accept 'class_' instead, and translate that to 'class'."""
 
+    if 'class_' in keys:
+        keys['class'] = keys['class_']
+        del keys['class_']
     # Remove target if not using frames
-    if attrs.has_key('target') and not using_frames:
-        del attrs['target']
-    return '<a href="%s" %s>%s</a>'%(_ref,attributes(attrs),_label)
-
-def img(**attrs):
-    "Return an img element."
-
-    return '<img %s/>'%attributes(attrs)
-
-def name(ref, label):
-    "Return a name anchor with given reference and label"
-
-    return '<a class="name" name="%s">%s</a>'%(ref,label)
-
-def span(class_, body):
-    "Wrap the body in a span of the given class"
-
-    if class_:
-        return '<span class="%s">%s</span>'%(class_,body)
-    else:
-        return '<span>%s</span>'%body
-
-def div(class_, body):
-    "Wrap the body in a div of the given class"
-
-    if class_:
-        return '<div class="%s">%s</div>'%(class_,body)
-    else:
-        return '<div>%s</div>'%body
+    if 'target' in keys and not using_frames:
+        del keys['target']
+    return ' '.join(['%s="%s"'%(k,v) for k,v in keys.items()])
 
 def element(_, body = None, **keys):
     "Wrap the body in a tag of given type and attributes"
 
-    if body:
-        return '<%s %s>%s</%s>'%(_, attributes(keys), body, _)
+    attrs = attributes(keys)
+    if body != None:
+        if attrs:
+            return '<%s %s>%s</%s>'%(_, attrs, body, _)
+        else:
+            return '<%s>%s</%s>'%(_, body, _)
     else:
-        return '<%s %s />'%(_, attributes(keys))
+        if attrs:
+            return '<%s %s/>'%(_, attrs)
+        else:
+            return '<%s/>'%(_)
+
+def href(ref, label, **attrs): return element('a', label, href=ref, **attrs)
+def img(**attrs): return element('img', **attrs)
+def name(ref, label): return element('a', label, class_='name', id=ref)
+def span(body, **attrs): return element('span', body, **attrs)
+def div(body, **attrs): return element('div', body, **attrs)
+def para(body, **attrs): return element('p', body, **attrs)
 
 def desc(text):
     "Create a description div for the given text"
@@ -84,7 +72,17 @@ def desc(text):
 
 def escape(text):
 
-    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
+    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),
+              ('(', '&#40;'), (')', '&#41;'), (',', '&#44;'), (',', '&#59;')]:
+        text = text.replace(*p)
+    return text
+
+def quote_as_id(text):
+
+    for p in [(' ', '.'),
+              ('<', '_L'), ('>', '_R'), ('(', '_l'), (')', '_r'), ('::', '-'), ('~', '_t'),
+              (':', '.'), ('&', '_A'), ('*', '_S'), (' ', '_s'), (',', '_c'), (';', '_C'),
+              ('!', '_n'), ('[', '_b'), (']', '_B'), ('=', '_e'), ('+', '_p'), ('-', '_m')]:
         text = text.replace(*p)
     return text
 

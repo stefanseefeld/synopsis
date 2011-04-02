@@ -38,14 +38,14 @@ class Summary(Part):
         if label is None: label = ref
         if self.__link_detail:
             # Insert a reference instead
-            return span('name',self.reference(ref, str(self.scope().prune(label))))
+            return span(self.reference(ref, str(self.scope().prune(label))), class_='name')
         return Part.label(self, ref, label)
 	
     def write_section_start(self, heading):
         """Start a 'summary' section and write an appropriate heading."""
 
         self.write('<div class="summary">\n')
-        self.write(div('heading', heading) + '\n')
+        self.write(div(heading, class_='heading') + '\n')
 
     def write_section_end(self, heading):
         """Close the section."""
@@ -55,7 +55,7 @@ class Summary(Part):
     def write_section_item(self, text):
         """Add an item."""
 
-        self.write(div('item', text) + '\n')
+        self.write(div(text, class_='item') + '\n')
       
     def process(self, scope):
         "Print out the summaries from the given scope"
