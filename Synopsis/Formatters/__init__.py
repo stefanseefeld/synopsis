@@ -5,7 +5,14 @@
 # see the file COPYING for details.
 #
 
-import os, stat, md5
+import os, stat
+try:
+    import hashlib
+    md5 = hashlib.md5
+except ImportError:
+    # 2.4 compatibility
+    import md5
+    md5 = md5.new
 
 
 def quote_name(name):
@@ -26,13 +33,13 @@ def quote_name(name):
     # name = re.sub('\.','_',name) 
     # The . is arbitrary..
     for p in [('<', '.L'), ('>', '.R'), ('(', '.l'), (')', '.r'), ('::', '-'),
-              (':', '.'), ('&', '.A'), ('*', '.S'), (' ', '.s')]:
+              (':', '.'), ('&', '.A'), ('*', '.S'), (' ', '.s'), (',', '.c'), (';', '.C')]:
         name = name.replace(*p)
    
     if len(name) > 100:
-        hash = md5.md5(original).hexdigest()
+        digest = md5(original).hexdigest()
         # Keep as much of the name as possible
-        name = name[:100 - len(hash)] + hash
+        name = name[:100 - len(digest)] + digest
 
     return name
 
@@ -53,3 +60,13 @@ def copy_file(src, dest):
     if not os.path.exists(dest) or filetime > os.stat(dest)[stat.ST_MTIME]:
         open_file(dest).write(open(src, 'r').read())
     
+
+def join_paths(prefix, path):
+    """
+    This function joins `prefix` and `path`, irrespectively of whether
+    `path` is absolute or not. To do this portably is non-trivial."""
+
+    # FIXME: Figure out how to do this portably.
+    if path.startswith('/'):
+        path = path[1:]
+    return os.path.join(prefix, path)

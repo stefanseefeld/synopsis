@@ -14,7 +14,7 @@ class Grouper(Transformer):
     """A class that detects grouping tags and moves the enclosed nodes
     into a subnode (a 'Group')"""
 
-    tags = r'^\s*((?P<open>@group\s*(?P<name>.*){)|(?P<close>\s*}))\s*\Z'
+    tags = r'^\s*((?P<open>@group\s*(?P<name>.*)(?P<doc>[\s\S]*){)|(?P<close>\s*}))\s*\Z'
 
     def __init__(self, **kwds):
 
@@ -85,6 +85,7 @@ class Grouper(Transformer):
 
         comments = []
         for c in decl.annotations.get('comments', []):
+
             if c is None:
                 comments.append(None)
                 continue
@@ -104,6 +105,9 @@ class Grouper(Transformer):
                 if tag.start('open') > 0:
                     c = c[:tag.start('open')]
                     comments.append(c)
+                # There may also be comments between the group marker and the '{'
+                if tag.group('doc'):
+                    comments.append(tag.group('doc'))
                 group = ASG.Group(decl.file, decl.line, 'group', QualifiedName((label,)))
                 group.annotations['comments'] = comments
                 comments = []
