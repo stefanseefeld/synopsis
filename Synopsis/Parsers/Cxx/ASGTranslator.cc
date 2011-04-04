@@ -220,11 +220,12 @@ private:
 	// parameters aren't declared. We need them in the symbol table anyhow.
 	visitor->symbols_.declare(c, o);
         visitor->params_.append(o);
-        return CXChildVisit_Continue;
+	break;
       }
+      default:
+	break;
     }
-    // If we are here, we are past the parameters, and can abort.
-    return CXChildVisit_Break;
+    return CXChildVisit_Continue;
   }
 
   static CXChildVisitResult visit_template_parameters(CXCursor c, CXCursor p, CXClientData d)
@@ -241,11 +242,12 @@ private:
 	// parameters aren't declared. We need them in the symbol table anyhow.
 	visitor->symbols_.declare(c, o);
         visitor->params_.append(o);
-        return CXChildVisit_Continue;
+	break;
       }
+      default:
+	break;
     }
-    // If we are here, we are past the parameters, and can abort.
-    return CXChildVisit_Break;
+    return CXChildVisit_Continue;
   }
 
   bpl::object asg_module_;
