@@ -103,11 +103,18 @@ div.desc {
 
 .heading
 {
-  font-size: 1.5em;
+  clear:both;
   font-weight: bold;
   padding: 0.1em;
+  margin: 0.1em;
   border: 1px solid #aaaaaa;
   background: #f2f5f7;
+}
+.heading .toggle
+{
+  font-size: 1em;
+  font-weight: normal;
+  margin-right: 1em;
 }
 .FileIndex .heading
 {
@@ -116,12 +123,15 @@ div.desc {
 
 .links .file,
 .summary .item .synopsis,
-.detail .item .synopsis
+.detail .item .synopsis,
+.body .item .synopsis
 {
   float: left;
 }
 .links .xref,
 .links .source,
+.body .item .xref,
+.body .item .source,
 .summary .item .xref,
 .summary .item .source,
 .detail .item .xref,
@@ -136,9 +146,42 @@ div.desc {
 .doc /* This one refers to top-level class docs, which needs more qualification. */
 {
   clear:both;
+  /* Setting position: relative on this blocks allows to move the '+'/'-' 
+     toggle relative to this. */
+  position: relative;
   margin-left: 2em;
   font-size: smaller;
   padding: 0.5em;
+}
+.body .item .doc .expand-toggle,
+.body .item .doc .collapse-toggle,
+.heading .toggle
+{
+  cursor: pointer;
+  background-color: #f2f5f7;
+  color: #303030;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.body .item .doc .expand-toggle,
+.body .item .doc .collapse-toggle
+{
+  border: 1px solid #aaaaaa;
+}
+/* In case javascript is disabled, don't display those: */
+.collapsed,
+.toggle,
+.collapse-toggle { display: none;}
+
+.body .item .doc .collapse-toggle
+{
+  display: block;
+  position: absolute;
+  left: -2em;
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+  color: #303030;
+  cursor: pointer;
 }
 
 div.enumerator 
@@ -173,11 +216,13 @@ div.section
 
 div.logo
 {
+  clear: both;
   border-top: 1px solid #aaaaaa;
   margin-left: 2em;
   text-align: center;
   color: #dddddd;
 }
+img {  border: 0; }
 div.class-module
 {
   font-size: 1.5em;
@@ -211,13 +256,13 @@ pre.sxr
 }
 pre.sxr .lineno
 {
+  border-right: 1px solid #aaaaaa;
   font-style: italic;
   font-size: 90%;
   padding: .5em;
 }
 pre.sxr .line
 {
-  border-left: 1px solid #aaaaaa;
   margin-left: .2em;
   padding-left: .4em;
 }
@@ -231,3 +276,4 @@ pre.sxr .string { color: green;}
 pre.sxr .literal { color: blue;}
 
 .docutils dt { font-weight: bold;}
+.docutils .field-name { text-align: right;}
