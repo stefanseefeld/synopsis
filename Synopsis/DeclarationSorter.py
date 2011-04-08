@@ -16,6 +16,7 @@ _access_specs = {ASG.DEFAULT: '',
 
 # The predefined order for section names
 _section_order = ('Packages',
+                  'Macros',
                   'Modules',
                   'Namespaces',
                   'Class templates',
@@ -107,7 +108,8 @@ class DeclarationSorter(Parametrized, ASG.Visitor):
         self._add_declaration(decl, self._section_of(decl))
 
     def visit_builtin(self, decl): pass
-    def visit_macro(self, decl): pass
+    def visit_macro(self, decl):
+        self._add_declaration(decl, self._section_of(decl, 'Macro'))
     def visit_forward(self, decl):
         if decl.template:
             self.visit_class_template(decl)
