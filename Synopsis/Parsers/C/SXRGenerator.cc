@@ -9,6 +9,7 @@
 #include <cstring>
 #include <boost/filesystem/operations.hpp>
 #include <sstream>
+#include <iostream>
 
 namespace fs = boost::filesystem;
 
@@ -97,21 +98,35 @@ char const *SXRGenerator::token_kind_to_class(CXTokenKind k)
   }
 }
 
-char const *SXRGenerator::xref(CXCursor c)
+std::string SXRGenerator::xref(CXCursor c)
 {
   bpl::object decl = translator_.lookup(c);
   if (decl)
-    return bpl::extract<char const *>(bpl::str(decl.attr("name")));
+    return bpl::extract<std::string>(bpl::str(decl.attr("name")));
   else
   // throw std::runtime_error("Error: can't find definition for symbol " + cursor_info(c));
-    return 0;
+    return "";
 }
 
-char const *SXRGenerator::from(CXCursor c)
+std::string SXRGenerator::from(CXCursor c)
 {
   if (debug_)
     std::cout << "from " << cursor_info(c) << std::endl;
-  return 0;
+  if (clang_isDeclaration(c.kind))
+  {
+    bpl::object decl = translator_.lookup(c);
+    if (decl)
+      return bpl::extract<std::string>(bpl::str(decl.attr("name")));
+  }
+  else
+  {
+    CXCursor p = clang_getCursorSemanticParent(c);
+    if (clang_equalCursors(p, clang_getTranslationUnitCursor(tu_)))
+      return "global scope";
+    if (!clang_equalCursors(p, clang_getNullCursor()))
+      return from(p);
+  }
+  return "";
 }
 
 void SXRGenerator::write_comment(std::string const &comment, unsigned &line)
@@ -140,65 +155,47 @@ void SXRGenerator::write_xref(CXToken const &t)
   clang_disposeString(s);
   CXCursor c = clang_getCursor(tu_, l);
   CXCursor r = clang_getCursorReferenced(c);
-  if (clang_isCursorDefinition(c))
+  if (clang_isCursorDefinition(c) ||
+      clang_isDeclaration(c.kind) ||
+      c.kind == CXCursor_MacroDefinition)
   {
-    char const *xref = this->xref(c);
-    if (xref)
+    std::string xref = this->xref(c);
+    if (!xref.empty())
     {
       write("<a href=\"");
       write_esc(xref);
-      char const *from = this->from(c);
-      if (from)
+      std::string from = this->from(clang_getCursorSemanticParent(c));
+      if (!from.empty())
       {
 	write("\" from=\"");
-	write(from);
+	write_esc(from);
       }
       write("\" type=\"definition\">");
-      write_esc(text.c_str());
+      write_esc(text);
       write("</a>");
     }
     else
-      write_esc(text.c_str());
-  }
-  else if (clang_isDeclaration(c.kind))
-  {
-    char const *xref = this->xref(c);
-    if (xref)
-    {
-      write("<a href=\"");
-      write_esc(xref);
-      char const *from = this->from(c);
-      if (from)
-      {
-	write("\" from=\"");
-	write(from);
-      }
-      write("\" type=\"definition\">");
-      write_esc(text.c_str());
-      write("</a>");
-    }
-    else
-      write_esc(text.c_str());
+      write_esc(text);
   }
   else if (!clang_equalCursors(r, c))
   {
-    char const *xref = this->xref(r);
-    if (xref)
+    std::string xref = this->xref(r);
+    if (!xref.empty())
     {
       write("<a href=\"");
       write_esc(xref);
-      char const *from = this->from(c);
-      if (from)
+      std::string from = this->from(c);
+      if (!from.empty())
       {
 	write("\" from=\"");
-	write(from);
+	write_esc(from);
       }
       write("\" type=\"reference\">");
-      write_esc(text.c_str());
+      write_esc(text);
       write("</a>");
     }
     else
-      write_esc(text.c_str());
+      write_esc(text);
   }
   else 
     throw std::runtime_error("unimplemented: " + cursor_info(c));
@@ -239,5 +236,4 @@ void SXRGenerator::write_esc(char const *text)
     }
     ++text;
   }
-  while (*++text);
 };

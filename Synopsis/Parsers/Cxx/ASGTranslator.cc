@@ -29,6 +29,49 @@ void cv_qual(CXType t, bpl::list mods)
     mods.append("volatile");
 }
 
+// libclang doesn't report Macro definition details (such as parameters)
+// so we tokenize and 'parse' the range of the macro definition here.
+class MacroDefinition
+{
+public:
+  MacroDefinition(CXTranslationUnit tu, CXCursor c)
+    : is_function_(false)
+  {
+    CXToken *tokens;
+    unsigned num_tokens;
+    clang_tokenize(tu, clang_getCursorExtent(c), &tokens, &num_tokens);
+    if (!num_tokens) return;
+    // <macro-name> '(' <arg> [',' <args>] ')'
+    for (unsigned i = 1; i != num_tokens; ++i) 
+    {
+      is_function_ = true;
+      CXString t = clang_getTokenSpelling(tu, tokens[i]);
+      char const *s = clang_getCString(t);
+      // if we see a ')' it means we are done with the parameter list.
+      if (*s == ')')
+      {
+	clang_disposeString(t);
+	clang_disposeTokens(tu, tokens, num_tokens);  
+	return;
+      }
+      // every other token is punktuation: '(' ','...')'
+      else if (!(i%2))
+      {
+	parameters_.append(s);
+      }
+      clang_disposeString(t);
+    }
+    clang_disposeTokens(tu, tokens, num_tokens);  
+  }
+
+  bool is_function() const { return is_function_;}
+  bpl::list parameters() const { return parameters_;}
+private:
+  bool is_function_;
+  bpl::list parameters_;
+};
+
+
 class Stringifier
 {
 public:
@@ -303,9 +346,11 @@ void TypeRepository::declare(CXType t, bpl::object declaration, bool visible)
   bpl::object name = declaration.attr("name");
   bpl::object type;
   if (visible) type = asg_module_.attr("DeclaredTypeId")("C++", name, declaration);
-  else asg_module_.attr("UnknownTypeId")("C++", name, declaration);
+  else type = asg_module_.attr("UnknownTypeId")("C++", name, declaration);
   types_[name] = type;
-  cx_types_[t] = type;
+  // We also declare objects without a corresponding type, such as macro definitions.
+  if (t.kind != CXType_Invalid)
+    cx_types_[t] = type;
 }
 
 bpl::object TypeRepository::lookup(CXType t) const
@@ -486,6 +531,15 @@ bpl::object ASGTranslator::create(CXCursor c)
     name = make_anonymous_name(primary_filename_);
   switch (c.kind)
   {
+    case CXCursor_MacroDefinition:
+    {
+      MacroDefinition definition(tu_, c);
+      return asg_module_.attr("Macro")(source_file, line,
+				       "macro", // type
+				       qname(name),
+				       definition.parameters(),
+				       ""); // body
+    }
     case CXCursor_StructDecl:
       return asg_module_.attr("Class")(source_file, line, "struct", qname(name));
     case CXCursor_UnionDecl:
@@ -668,11 +722,12 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
   {
     case CXCursor_MacroDefinition:
     {
-      bpl::object declaration;
       bpl::list comments = get_comments(c);
-      if (declaration && comments)
-	bpl::extract<bpl::dict>(declaration.attr("annotations"))()["comments"] = comments;
-      comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
+      bpl::object d = create(c);
+      declare(c, d);
+      if (d && comments)
+	bpl::extract<bpl::dict>(d.attr("annotations"))()["comments"] = comments;
+      types_.declare(clang_getCursorType(c), d, true);
       break;
     }
     case CXCursor_MacroInstantiation:
@@ -682,6 +737,7 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
+  comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
   return CXChildVisit_Continue;
 }
 
@@ -824,7 +880,11 @@ bpl::list ASGTranslator::get_comments(CXCursor c)
   if (num_tokens) --num_tokens;
   // Walk backwards from the given cursor, stopping
   // at the first non-comment token
-  for (unsigned i = num_tokens; i; --i)
+  unsigned last = num_tokens;
+  // Macro definition cursors start after the 'define', so we need
+  // to step back two tokens to be able to see what comes before the pp directive.
+  if (c.kind == CXCursor_MacroDefinition && last > 2) last -= 2;
+  for (unsigned i = last; i; --i)
   {
     if (debug_)
       std::cout << token_info(tu_, tokens[i - 1]) << std::endl;

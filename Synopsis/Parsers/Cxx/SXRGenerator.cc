@@ -155,9 +155,11 @@ void SXRGenerator::write_xref(CXToken const &t)
   clang_disposeString(s);
   CXCursor c = clang_getCursor(tu_, l);
   CXCursor r = clang_getCursorReferenced(c);
-  if (clang_isCursorDefinition(c) &&
-      // template specializations can't be found via symbol lookup
-      c.kind != CXCursor_ClassTemplatePartialSpecialization)
+  if ((clang_isCursorDefinition(c) &&
+       // template specializations can't be found via symbol lookup
+       c.kind != CXCursor_ClassTemplatePartialSpecialization) ||
+      clang_isDeclaration(c.kind) ||
+      c.kind == CXCursor_MacroDefinition)
   {
     std::string xref = this->xref(c);
     if (!xref.empty())
@@ -165,26 +167,6 @@ void SXRGenerator::write_xref(CXToken const &t)
       write("<a href=\"");
       write_esc(xref);
       std::string from = this->from(clang_getCursorSemanticParent(c));
-      if (!from.empty())
-      {
-	write("\" from=\"");
-	write_esc(from);
-      }
-      write("\" type=\"definition\">");
-      write_esc(text);
-      write("</a>");
-    }
-    else
-      write_esc(text);
-  }
-  else if (clang_isDeclaration(c.kind))
-  {
-    std::string xref = this->xref(c);
-    if (!xref.empty())
-    {
-      write("<a href=\"");
-      write_esc(xref);
-      std::string from = this->from(c);
       if (!from.empty())
       {
 	write("\" from=\"");

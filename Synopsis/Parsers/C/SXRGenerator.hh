@@ -22,8 +22,8 @@ public:
 
 private:
   char const *token_kind_to_class(CXTokenKind);
-  char const *xref(CXCursor);
-  char const *from(CXCursor);
+  std::string xref(CXCursor);
+  std::string from(CXCursor);
   void write_comment(std::string const &, unsigned &line);
   void write_xref(CXToken const &);
   void write(char const *, size_t = 0);
