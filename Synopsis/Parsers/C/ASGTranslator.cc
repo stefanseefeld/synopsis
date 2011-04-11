@@ -392,6 +392,40 @@ bpl::object ASGTranslator::create(CXCursor c)
     name = make_anonymous_name(primary_filename_);
   switch (c.kind)
   {
+    case CXCursor_InclusionDirective:
+    {
+      CXToken *tokens;
+      unsigned num_tokens;
+      clang_tokenize(tu_, clang_getCursorExtent(c), &tokens, &num_tokens);
+      // The first token is '#', the second 'include' or 'include_next',
+      // and the third starts either with '"' or '<'
+      // Due to a libclang bug, in some cases the '<' is the last token.
+      // We extract the header name otherwise, and thus have all the info we need.
+      CXString i = clang_getTokenSpelling(tu_, tokens[1]);
+      bool is_next = std::string("include_next") == clang_getCString(i);
+      clang_disposeString(i);
+      CXString header_start = clang_getTokenSpelling(tu_, tokens[2]);
+      char s = clang_getCString(header_start)[0];
+      CXFile header = clang_getIncludedFile(c);
+      CXString h = clang_getFileName(header);
+      std::string file = clang_getCString(h);
+      clang_disposeString(h);
+      bpl::object target = get_source_file(file);
+      bool is_macro = false;
+      if (s == '"')
+	name = clang_getCString(header_start);
+      else if (s == '<')
+	name = '<' + name + '>';
+      else
+      {
+	name = clang_getCString(header_start);
+	is_macro = true;
+      }
+      clang_disposeString(header_start);
+      clang_disposeTokens(tu_, tokens, num_tokens);  
+      bpl::object include = sf_module_.attr("Include")(target, name, is_macro, is_next);
+      bpl::extract<bpl::list>(source_file.attr("includes"))().append(include);
+    }
     case CXCursor_MacroDefinition:
     {
       MacroDefinition definition(tu_, c);
@@ -499,7 +533,12 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
     case CXCursor_MacroInstantiation:      
       break;
     case CXCursor_InclusionDirective:
+    {
+      bpl::object d = create(c);
+      // Nothing to do here. The include directive was already added to the source file
+      // inside the create() function.
       break;
+    }
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }

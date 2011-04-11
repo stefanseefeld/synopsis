@@ -126,11 +126,8 @@ bpl::object parse(bpl::object ir,
       std::string abs_name = bpl::extract<char const *>(sf.attr("abs_name"))();
       std::string name = bpl::extract<char const *>(sf.attr("name"))();
       std::string sxr = std::string(sxr_prefix) + "/" + name + ".sxr";
-      if (!boost::filesystem::exists(sxr))
-      {
-	create_directories(fs::path(sxr).branch_path());
-	generator.generate(tu, sxr, abs_name, name);
-      }
+      create_directories(fs::path(sxr).branch_path());
+      generator.generate(tu, sxr, abs_name, name);
     }
     if (profile)
       std::cout << "SXR generation took " << timer.elapsed() 
