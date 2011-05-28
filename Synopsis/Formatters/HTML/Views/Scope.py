@@ -13,6 +13,7 @@ from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Parts import *
+from Synopsis.Formatters.HTML import Tags
 import time
 
 class Scope(View):
@@ -72,7 +73,7 @@ class Scope(View):
         self.scopes_queue = [module]
         while self.scopes_queue:
             scope = self.scopes_queue.pop(0)
-            self.process_scope(scope)
+            self.process_scope(scope, scope == module)
             scopes = [c for c in scope.declarations if isinstance(c, (ASG.Scope, ASG.Group))]
             self.scopes_queue.extend(scopes)
             forwards = [c for c in scope.declarations
@@ -98,13 +99,20 @@ class Scope(View):
             scopes = [c for c in scope.declarations if isinstance(c, ASG.Module)]
             self.scopes_queue.extend(scopes)
      
-    def process_scope(self, scope):
+    def process_scope(self, scope, is_root = False):
         """Creates a view for the given scope"""
 
         # Open file and setup scopes
         self.__scope = scope.name
         if self.__scope:
-            self.__filename = self.directory_layout.scope(self.__scope)
+            # Hack: if this is the toplevel scope in a no-frames context,
+            #       generate the index page. This of course is based on a number
+            #       of assumptions that may not be valid (such as this module producing
+            #       the 'main' view.
+            if is_root and not Tags.using_frames:
+                self.__filename, xxx = self.root()
+            else:
+                self.__filename = self.directory_layout.scope(self.__scope)
             self.__title = escape(str(self.__scope))
         else:
             self.__filename, self.__title = self.root()
