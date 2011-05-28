@@ -49,7 +49,8 @@ class DocBookTranslator(nodes.NodeVisitor):
     def __init__(self, document):
         nodes.NodeVisitor.__init__(self, document)
         self.language = languages.get_language(
-            document.settings.language_code)
+            document.settings.language_code,
+            document.reporter)
         self.doctype = document.settings.doctype
         self.body = []
         self.section = 0
