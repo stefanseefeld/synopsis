@@ -1,7 +1,7 @@
 prefix:= 
 synopsis:= python synopsis.py
 xsltproc:= xsltproc --novalid --path $(shell pwd) --xinclude
-fop	:= xmlroff --backend=cairo
+fop	:= fop
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
 syn	:= $(patsubst %.h, %.syn, $(src))
 
@@ -15,7 +15,7 @@ Paths: Paths.xml Reference.xml
 	cp images/*.png $@/images
 
 Paths.pdf: Paths.fo
-	$(fop) -o $@ $<
+	$(fop) $< $@
 
 Paths.fo: Paths.xml Reference.xml
 	$(xsltproc) -o $@ fo.xsl Reference.xml

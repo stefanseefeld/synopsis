@@ -1,5 +1,5 @@
-#ifndef _FactoryImpl_hh
-#define _FactoryImpl_hh
+#ifndef FactoryImpl_hh_
+#define FactoryImpl_hh_
 
 #include <Storage.hh>
 

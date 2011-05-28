@@ -1,5 +1,5 @@
-#ifndef _Storage_idl
-#define _Storage_idl
+#ifndef Storage_idl_
+#define Storage_idl_
 
 module Storage
 {

@@ -54,7 +54,7 @@ namespace Paths
 //.   circle.insert_control_point(0, Vertex(1., 1.), sqrt(2.)/2.);
 //.   ...
 //.
-template <size_t Order>
+template <std::size_t Order>
 class Nurbs : public Path
 {
 public:

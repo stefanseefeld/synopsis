@@ -23,9 +23,8 @@ namespace Storage
 
 namespace POA_Storage
 {
-
-  class Storable;
-  class Factory;
+  class Storable {};
+  class Factory {};
 }
 
 namespace OBV_Storage

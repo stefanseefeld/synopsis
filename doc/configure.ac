@@ -29,6 +29,6 @@ AC_SUBST(PYTHON)
 topdir=`$PYTHON -c "from os.path import *; print normpath(join('$srcdir', '..'))"`
 AC_SUBST(topdir)
 
-AC_CONFIG_FILES([Tutorial/Makefile Manual/Makefile Manual/synopsis.py])
+AC_CONFIG_FILES([Makefile tutorial/Makefile Manual/Makefile Manual/synopsis.py])
 
 AC_OUTPUT

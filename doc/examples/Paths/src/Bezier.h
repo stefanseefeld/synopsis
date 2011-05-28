@@ -11,7 +11,7 @@ namespace Paths
  * The Bezier class. It implements a Bezier curve
  * for the given order.
  */
-template <size_t Order>
+template <std::size_t Order>
 class Bezier : public Path
 {
 public:
@@ -30,7 +30,7 @@ public:
    * Remove the control point at index i.
    * @param i An index
    */
-  void remove_control_point(size_t i);
+  void remove_control_point(std::size_t i);
   /** }*/
   virtual void draw();
 private:

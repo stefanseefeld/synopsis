@@ -15,7 +15,7 @@ class Polygon : public Shape
 {
 public:
   Polygon();
-  virtual ~Polygone() {}
+  virtual ~Polygon() {}
   virtual void draw();
   virtual const Path &outline() { return outline_;}
 private:
@@ -30,7 +30,7 @@ public:
   virtual void draw();
   virtual const Path &outline() { return outline_;}
 private:
-  Paths::Nurbs outline_;
+  Paths::Nurbs<2> outline_;
 };
 
 #endif

@@ -20,7 +20,7 @@ public:
   // Add a new vertex.
   void add_vertex(const Vertex &);
   // Remove the vertex at index i.
-  void remove_vertex(size_t i);
+  void remove_vertex(std::size_t i);
   // }
   virtual void draw();
 private:

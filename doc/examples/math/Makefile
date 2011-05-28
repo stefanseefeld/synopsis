@@ -1,7 +1,7 @@
 prefix:= 
 synopsis:= python synopsis.py
 xsltproc:= xsltproc --novalid --path $(shell pwd) --xinclude
-fop	:= xmlroff --backend=cairo
+fop	:= fop
 src	:= math.h
 syn	:= $(patsubst %.h, %.syn, $(src))
 
@@ -13,7 +13,7 @@ math: math.xml Reference.xml
 	$(xsltproc) -o $@/ html.xsl Reference.xml
 
 %.pdf: %.fo
-	$(fop) -o $@ $<
+	$(fop) $< $@
 
 math.fo: math.xml Reference.xml
 	$(xsltproc) -o $@ fo.xsl Reference.xml

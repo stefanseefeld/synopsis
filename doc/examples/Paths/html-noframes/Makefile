@@ -1,4 +1,4 @@
-prefix=:=
+prefix:=
 synopsis:= python synopsis.py
 
 src	:= Path.h Polyline.h Bezier.h Nurbs.h

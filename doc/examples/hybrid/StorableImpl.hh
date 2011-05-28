@@ -1,5 +1,5 @@
-#ifndef _StorableImpl_hh
-#define _StorableImpl_hh
+#ifndef StorableImpl_hh_
+#define StorableImpl_hh_
 
 #include <Storage.hh>
 
@@ -24,7 +24,7 @@ private:
   //. Private data structure
   struct Private;
   //. Private data. The 'Private' type is only defined in the .cc file.
-  Private _m;
+  Private *m_;
 };
 
 #endif

@@ -26,7 +26,8 @@ cxx = Cxx.Parser(base_path = topdir + os.sep,
                              '-I%s'%(sysconfig.get_python_inc())],
                  sxr_prefix='sxr')
 
-html = HTML.Formatter(sxr_prefix='sxr')
+html = HTML.Formatter(sxr_prefix='sxr',
+                      index=[], detail=[])
 
 sxr = SXR.Formatter(url = '/sxr',
                     src_dir = '@topdir@',

@@ -42,7 +42,7 @@ vpath Manual.xml $(srcdir)
 
 all: html pdf info
 
-html: html/python html/cxx
+html: html/python
 sxr: html/sxr
 pdf: Manual.pdf
 
@@ -56,7 +56,7 @@ html/sxr: sxr.syn
 	$(synopsis) sxr --url=$(sxr) --output=$@ $<
 	touch $@
 
-sxr.syn: python.syn cxx-sxr.syn
+sxr.syn: python.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
 

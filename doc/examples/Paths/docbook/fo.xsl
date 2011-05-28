@@ -7,7 +7,6 @@
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl"/>
 
 <xsl:param name="shade.verbatim" select="1"/>
-<xsl:param name="use.extensions" select="'1'"/>
 <xsl:param name="segmentedlist.as.table" select="1"/>
 <xsl:param name="variablelist.as.block" select="1"/>
 <xsl:param name="index.on.type" select="1"/>

@@ -27,7 +27,7 @@ $(subdirs):
 install-html:
 ifdef prefix
 	mkdir -p $(prefix)
-	cp index.html $(prefix)
+	cp index.rst $(prefix)
 endif
 	$(MAKE) action="install-html" prefix=$(prefix)
 

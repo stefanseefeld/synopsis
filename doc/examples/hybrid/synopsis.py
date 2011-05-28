@@ -19,8 +19,9 @@ class Cxx2IDL(TypeMapper):
     """this processor maps a C++ external reference to an IDL interface
     if the name either starts with 'POA_' or ends in '_ptr'"""
 
-    def visit_unknown_type(self, unknown):
+    def visit_unknown_type_id(self, unknown):
 
+        print 'visiting unknown type', unknown.name, unknown.language
         name = unknown.name
         if unknown.language != "C++": return
         if name[0][0:4] == "POA_":
@@ -40,7 +41,7 @@ idl = Composite(IDL.Parser(),
                 Linker(Comments.Translator(filter = Comments.SSDFilter(),
                                            processor = Comments.Grouper())))
 
-cxx = Composite(Cxx.Parser(cppflags = ['-I.', '-D__x86__', '-I', '/usr/local/include/omniORB4/']),
+cxx = Composite(Cxx.Parser(cppflags = ['-I', '.']),
                 Linker(Cxx2IDL(),
                        Comments.Translator(filter = Comments.SSDFilter(),
                                            processor = Comments.Grouper())))

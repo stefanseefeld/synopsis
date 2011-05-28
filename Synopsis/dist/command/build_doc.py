@@ -46,7 +46,9 @@ class build_doc(build.build):
 
       # If no option was given, do all media.
       if not (self.html or self.printable or self.sxr):
-         self.html = self.printable = True
+         self.html = True
+      if not (self.man_page or self.ref_manual or self.tutorial or self.examples):
+         self.tutorial = True
       build.build.finalize_options(self)
 
    def run(self):
@@ -56,6 +58,8 @@ class build_doc(build.build):
          self.run_command('config')
 
       self.build_lib = '.'
+
+      rmtree('share/doc/synopsis/html', 1)
 
       if self.man_page: self.build_man_page()
       if self.ref_manual or self.sxr: self.build_ref_manual()
@@ -107,28 +111,6 @@ to query and browse cross-referenced source code."""
 
       make = os.environ.get('MAKE', 'make')
 
-      build_clib = self.distribution.get_command_obj('build_clib')
-      build_clib.ensure_finalized()
-
-      tmpdir = os.path.join(build_clib.build_ctemp, 'src')
-
-      # build the 'doc' target
-      spawn([make, '-C', tmpdir, 'doc'])
-
-      for d in ['cxx.syn', 'cxx-sxr.syn']:
-         src, dest = os.path.join(tmpdir, d), os.path.join(tmp_man_dir, d)
-         if os.path.exists(src) and newer(src, dest):
-            copy_file(src, dest)
-         else:
-            print 'not copying', src
-      src, dest = os.path.join(tmpdir, 'sxr'), os.path.join(tmp_man_dir, 'sxr')
-      if os.path.exists(src) and newer(src, dest):
-         copy_tree(src, dest)
-      else:
-         print 'not copying', src
-         
-      # now run make inside doc/Manual to do the rest
-
       srcdir = os.path.abspath('doc/Manual/')
 
       cwd = os.getcwd()
@@ -137,20 +119,19 @@ to query and browse cross-referenced source code."""
       if self.html:
          spawn([make, '-C', tmp_man_dir, 'html'])
       if self.printable:
-         spawn([make, '-C', tmp_man_dir, 'pdf'])
+         spawn([make, '-C', tmp_man_dir, 'latexpdf'])
       if self.sxr:
          spawn([make, '-C', tmp_man_dir, 'sxr', 'sxr=%s'%self.sxr])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/synopsis/html/Manual'))
       if self.html:
-         for d in ['python', 'cxx']:
-            src = os.path.join(tmp_man_dir, 'html', d)
-            dest = os.path.join(builddir, d)
+         src = os.path.join(tmp_man_dir, 'html', 'python')
+         dest = os.path.join(builddir, 'python')
 
-            if newer(src, dest):
-               rmtree(dest, True)
-               copy_tree(src, dest)
+         if newer(src, dest):
+            rmtree(dest, True)
+            copy_tree(src, dest)
 
       if self.sxr:
          src = os.path.join(tmp_man_dir, 'html', 'sxr')
@@ -173,13 +154,27 @@ to query and browse cross-referenced source code."""
       """Build the tutorial."""
 
       self.announce("building tutorial et al.")
-      srcdir = os.path.abspath('doc/Tutorial/')
-      tempdir = os.path.abspath(os.path.join(self.build_temp,
-                                             'doc/Tutorial'))
+      srcdir = os.path.abspath('doc')
+      tempdir = os.path.abspath(os.path.join(self.build_temp, 'doc'))
       cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
+      #copy_tree(srcdir, tempdir, update=True, verbose=False)
 
       self.build_examples()
+
+      # Copy examples sources into build tree.
+      src = []
+      def visit(arg, base, files):
+         if '.svn' in files: del files[files.index('.svn')]
+         arg.extend([os.path.join(base, f) for f in files
+                     if os.path.isfile(os.path.join(base, f)) and
+                     os.path.splitext(f)[1] in ('.rst', '.html', '.css', '.js', '.png', '.svg')])
+
+      os.path.walk('doc', visit, src)
+      for s in src:
+         dirname = os.path.dirname(os.path.join(self.build_temp, s))
+         mkpath(dirname, 0777, self.verbose, self.dry_run)
+         copy_file(s, dirname)
+      
 
       make = os.environ.get('MAKE', 'make')
 
@@ -191,12 +186,9 @@ to query and browse cross-referenced source code."""
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/synopsis'))
 
-      if self.html:
-         for component in ('Tutorial', 'DevGuide'):
-            if os.path.isdir(os.path.join(builddir, 'html', component)):
-               rmtree(os.path.join(builddir, 'html', component), 1)
-            copy_tree(os.path.join(tempdir, 'html', component),
-                      os.path.join(builddir, 'html', component))
+      copy_tree(os.path.join(tempdir, 'html'),
+                os.path.join(builddir, 'html'),
+                verbose=False)
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
@@ -211,10 +203,10 @@ to query and browse cross-referenced source code."""
    def build_examples(self):
 
       self.announce("building examples")
-      srcdir = os.path.abspath('doc/Tutorial/')
-      tempdir = os.path.abspath(os.path.join(self.build_temp, 'doc/Tutorial'))
+      srcdir = os.path.abspath('doc/examples')
+      tempdir = os.path.abspath(os.path.join(self.build_temp, 'doc/examples'))
       cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
+      mkpath(tempdir, int('777', 8), self.verbose, self.dry_run)
 
       # Copy examples sources into build tree.
       examples = []
@@ -223,7 +215,7 @@ to query and browse cross-referenced source code."""
          arg.extend([os.path.join(base, f) for f in files
                      if os.path.isfile(os.path.join(base, f))])
 
-      os.path.walk('doc/Tutorial/examples', visit, examples)
+      os.path.walk('doc/examples', visit, examples)
       for e in examples:
          dirname = os.path.dirname(os.path.join(self.build_temp, e))
          mkpath(dirname, 0777, self.verbose, self.dry_run)
@@ -232,31 +224,32 @@ to query and browse cross-referenced source code."""
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
-         spawn([make, '-C', tempdir, 'html/examples'])
-
          builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/synopsis'))
+                                                 'share/doc/synopsis/html/examples'))
+         spawn([make, '-C', tempdir, 'install-html', 'prefix=%s'%builddir])
 
-         # Copy examples output into installation directory
-         if os.path.isdir(os.path.join(builddir, 'html/examples')):
-            rmtree(os.path.join(builddir, 'html/examples'), 1)
-         copy_tree(os.path.join(tempdir, 'html/examples'),
-                   os.path.join(builddir, 'html/examples'))
+
+         ## Copy examples output into installation directory
+         #if os.path.isdir(os.path.join(builddir, 'html/examples')):
+         #   rmtree(os.path.join(builddir, 'html/examples'), 1)
+         #copy_tree(os.path.join(tempdir, 'html/examples'),
+         #          os.path.join(builddir, 'html/examples'))
 
       if self.printable:
-         spawn([make, '-C', tempdir, 'print/examples'])
-
          builddir = os.path.abspath(os.path.join(self.build_lib,
-                                                 'share/doc/synopsis'))
+                                                 'share/doc/synopsis/print/examples'))
+         spawn([make, '-C', tempdir, 'install-print', 'prefix=%s'%builddir])
 
-         # Copy examples output into installation directory
-         if os.path.isdir(os.path.join(builddir, 'print/examples')):
-            rmtree(os.path.join(builddir, 'print/examples'), 1)
-         copy_tree(os.path.join(tempdir, 'print/examples'),
-                   os.path.join(builddir, 'print/examples'))
+
+         ## Copy examples output into installation directory
+         #if os.path.isdir(os.path.join(builddir, 'print/examples')):
+         #   rmtree(os.path.join(builddir, 'print/examples'), 1)
+         #copy_tree(os.path.join(tempdir, 'print/examples'),
+         #          os.path.join(builddir, 'print/examples'))
 
       # Copy examples sources into installation directory.
-      spawn([make, '-C', os.path.join(tempdir, 'examples'),
-             'install-src', 'prefix=%s/examples'%builddir])
+      builddir = os.path.abspath(os.path.join(self.build_lib,
+                                              'share/doc/synopsis/examples'))
+      spawn([make, '-C', tempdir, 'install-src', 'prefix=%s'%builddir])
 
       
