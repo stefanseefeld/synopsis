@@ -49,7 +49,6 @@ $(TARGET): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
-	rm -f $(CTOOL_SO)
 	rm -rf $(OBJ) $(DEP)
 
 y.tab.h y.tab.cc: $(YYSRC)
