@@ -27,7 +27,7 @@ void SXRGenerator::generate(CXTranslationUnit tu,
   obuf_.open(sxr.c_str(), std::ios_base::out);
   // FIXME: This function is broken. Construct the range manually instead...
   // CXSourceRange range = clang_getCursorExtent(clang_getTranslationUnitCursor(tu));
-  fs::path path(abs_filename, fs::native);
+  fs::path path(abs_filename);
   size_t size = fs::file_size(path);
   CXFile f = clang_getFile(tu, abs_filename.c_str());
   CXSourceLocation begin = clang_getLocationForOffset(tu, f, 0);

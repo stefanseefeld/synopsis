@@ -35,7 +35,7 @@ class Parser(Processor):
                              emulate_compiler = self.emulate_compiler,
                              compiler_flags = self.compiler_flags)
 
-        base_path = self.base_path and os.path.join(os.path.abspath(self.base_path), os.sep) or ''
+        base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
 
         for file in self.input:
 
