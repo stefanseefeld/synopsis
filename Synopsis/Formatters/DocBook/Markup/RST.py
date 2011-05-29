@@ -7,6 +7,7 @@
 #
 
 from Synopsis.Formatters.DocBook.Markup import *
+import docutils
 from docutils import writers, nodes, languages
 from docutils.nodes import *
 from docutils.core import *
@@ -48,9 +49,15 @@ class DocBookTranslator(nodes.NodeVisitor):
 
     def __init__(self, document):
         nodes.NodeVisitor.__init__(self, document)
-        self.language = languages.get_language(
-            document.settings.language_code,
-            document.reporter)
+        # Why does backward compatibility have so little value
+        # in Python and its culture ? *sigh*
+        if docutils.__version__ < 0.8:
+            self.language = languages.get_language(
+                document.settings.language_code)
+        else:
+            self.language = languages.get_language(
+                document.settings.language_code,
+                document.reporter)
         self.doctype = document.settings.doctype
         self.body = []
         self.section = 0
