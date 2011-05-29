@@ -18,7 +18,7 @@ namespace Synopsis
 inline boost::filesystem::path get_path(std::string const &filename)
 {
   using namespace boost::filesystem;
-  return system_complete(path(filename, native)).normalize();
+  return system_complete(path(filename)).normalize();
 }
 
 //. Return true if base_path is set and path p contains base_path.
@@ -31,7 +31,7 @@ inline bool matches_path(std::string const &p, std::string const &base_path)
 //. nomenclature.
 inline std::string make_full_path(std::string const &p)
 {
-  return get_path(p).native_file_string();
+  return get_path(p).string();
 }
   
 //. Given a path, strip the base_path.
