@@ -65,11 +65,15 @@ bpl::object parse(bpl::object ir,
 
   if (!input_file || *input_file == '\0') throw std::runtime_error("no input file");
 
-  char const **args = new char const*[bpl::len(cpp_flags) + 2];
+  char const **args = new char const*[bpl::len(cpp_flags) + 3];
   args[0] = "-x";
   args[1] = "c";
   for (size_t i = 0; i != bpl::len(cpp_flags); ++i)
     args[i + 2] = bpl::extract<char const *>(cpp_flags[i]);
+  // Due to a bug in clang 2.9, the '-x c' option above only
+  // works if the input argument is passed in args, instead of
+  // the below 'input_file'. (Fixed in trunk)
+  args[bpl::len(cpp_flags) + 2] = input_file;
 
   Timer timer;
   // first arg: exclude declarations from PCH
@@ -77,7 +81,7 @@ bpl::object parse(bpl::object ir,
   CXIndex idx = clang_createIndex(0, 1);
   CXTranslationUnit_Flags flags = CXTranslationUnit_DetailedPreprocessingRecord;
   CXTranslationUnit tu = 
-    clang_parseTranslationUnit(idx, input_file,
+    clang_parseTranslationUnit(idx, 0,//input_file,
 			       args,
 			       bpl::len(cpp_flags) + 2,
 			       0,  // unsaved_files
