@@ -6,8 +6,6 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import Dump
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML.FileLayout import *
-from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 
 from distutils import sysconfig
@@ -22,11 +20,7 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.versi
                                 '-I%s'%(sysconfig.get_python_inc())],
                     base_path = 'boost/',
                     primary_file_only = False,
-                    syntax_prefix = 'links/',
-                    xref_prefix = 'xref/')
-
-xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
-
+                    sxr_prefix = 'sxr')
 
 translator = Comments.Translator(markup='rst',               # use restructured text markup in comments
                                  filter=Comments.SSFilter(), # filter out any non-'//' comments
@@ -35,30 +29,13 @@ translator = Comments.Translator(markup='rst',               # use restructured 
 
 linker = Linker(translator)
 
-html = HTML.Formatter(title = 'Boost Python Reference Manual',
-                      file_layout = FileLayout(), # bpl uses 'aux' module which would usually
-                                                  # map to an 'aux' directory, which silly windows
-                                                  # doesn't allow
-                      views = [FramesIndex(),
-                               Scope(),
-                               ModuleListing(),
-                               ModuleIndexer(),
-                               FileListing(),
-                               FileIndexer(),
-                               FileDetails(),
-                               InheritanceTree(),
-                               InheritanceGraph(),
-                               Source(prefix = 'links'),
-                               NameIndex(),
-                               XRef(xref_file = 'bpl.xref')])
+html = HTML.Formatter(title = 'Boost Python Reference Manual')
 
 sxr = SXR.Formatter(url = '/sxr.cgi',
                     src_dir = 'boost/',
-                    xref_prefix='xref',
-                    syntax_prefix='links')
+                    sxr_prefix='sxr')
 
 process(parse = Composite(parser, linker),
-        xref = xref,
         link = linker,
         dump = Dump.Formatter(),
         html = html,
