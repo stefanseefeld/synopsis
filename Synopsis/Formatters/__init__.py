@@ -5,6 +5,8 @@
 # see the file COPYING for details.
 #
 
+import codecs
+
 import os, stat
 try:
     import hashlib
@@ -51,6 +53,15 @@ def open_file(path, mode=511):
     if directory and not os.path.isdir(directory):
         os.makedirs(directory, mode)
     return open(path, 'w+')
+        
+
+def open_file_with_encoding(path, enc, mode=511):
+    """Open a file for writing. Create all intermediate directories."""
+
+    directory = os.path.dirname(path)
+    if directory and not os.path.isdir(directory):
+        os.makedirs(directory, mode)
+    return codecs.open(path, 'w+', encoding=enc)
         
 
 def copy_file(src, dest):
