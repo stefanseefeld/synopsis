@@ -328,8 +328,9 @@ bool ASGTranslator::is_visible(CXCursor c)
   CXFile sf;
   clang_getSpellingLocation(l, &sf, 0 /*line*/, /*column*/ 0, /*offset*/ 0);
   CXString f = clang_getFileName(sf);
-  char const *filename = clang_getCString(f);
-  bool visible = filename &&                              // not a builtin entity
+  char const *s = clang_getCString(f);
+  std::string filename = s ? make_full_path(s) : "";
+  bool visible = !filename.empty() &&                     // not a builtin entity
     (primary_file_only_ ? primary_filename_ == filename : // a primary file
      matches_path(filename, base_path_));                 // or inside the base_path
   clang_disposeString(f);

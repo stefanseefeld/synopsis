@@ -83,7 +83,7 @@ bpl::object parse(bpl::object ir,
   CXTranslationUnit tu = 
     clang_parseTranslationUnit(idx, 0,//input_file,
 			       args,
-			       bpl::len(cpp_flags) + 2,
+			       bpl::len(cpp_flags) + 3,
 			       0,  // unsaved_files
 			       0,  // num_unsaved_files
 			       flags);

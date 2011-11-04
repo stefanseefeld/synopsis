@@ -255,6 +255,7 @@ private:
     switch (c.kind)
     {
       case CXCursor_TemplateTypeParameter:
+      case CXCursor_TemplateTemplateParameter:
       case CXCursor_NonTypeTemplateParameter:
 	return CXChildVisit_Continue; // ignore template parameters
       case CXCursor_ParmDecl:
@@ -287,6 +288,8 @@ private:
         visitor->params_.append(o);
 	break;
       }
+      case CXCursor_TemplateTemplateParameter:
+	break; // TBD
       default:
 	break;
     }
@@ -395,6 +398,14 @@ bpl::object TypeRepository::lookup(CXType t) const
       bpl::object inner = lookup(i);
       return asg_module_.attr("ModifierTypeId")("C++", inner, bpl::list(), postmod);
     }
+    case CXType_ConstantArray:
+    {
+      CXType i = clang_getArrayElementType(t);
+      bpl::object inner = lookup(i);
+      bpl::list sizes;
+      sizes.append(clang_getArraySize(t));
+      return asg_module_.attr("ArrayTypeId")("C++", inner, sizes);
+    }
     case CXType_Unexposed:
     {
       // FIXME: Find a way to use the actual type name (stringified ?), instead of
@@ -404,6 +415,13 @@ bpl::object TypeRepository::lookup(CXType t) const
       // if (clang_isDependentType(t))
       // 	return asg_module_.attr("UnknownTypeId")("C++", qname("<dependent>"));
       return asg_module_.attr("UnknownTypeId")("C++", qname("<unknown>"));
+    }
+    case CXType_Dependent:
+    {
+      // FIXME: Find a way to use the actual type name (stringified ?), instead of
+      // just '<unknown>'
+
+      return asg_module_.attr("UnknownTypeId")("C++", qname("<dependent>"));
     }
     default:
     {
@@ -466,8 +484,9 @@ bool ASGTranslator::is_visible(CXCursor c)
   CXFile sf;
   clang_getSpellingLocation(l, &sf, 0 /*line*/, /*column*/ 0, /*offset*/ 0);
   CXString f = clang_getFileName(sf);
-  char const *filename = clang_getCString(f);
-  bool visible = filename &&                              // not a builtin entity
+  char const *s = clang_getCString(f);
+  std::string filename = s ? make_full_path(s) : "";
+  bool visible = !filename.empty() &&                     // not a builtin entity
     (primary_file_only_ ? primary_filename_ == filename : // a primary file
      matches_path(filename, base_path_));                 // or inside the base_path
   clang_disposeString(f);
@@ -717,6 +736,8 @@ bpl::object ASGTranslator::create(CXCursor c)
 	bpl::list premod;
 	if (clang_CXXMethod_isStatic(c))
 	  premod.append("static");
+	else if (clang_CXXMethod_isVirtual(c))
+	  premod.append("virtual");
 	f = asg_module_.attr("Operation")(source_file, line,
 					  type,
 					  premod,
@@ -773,7 +794,7 @@ CXChildVisitResult ASGTranslator::visit_pp_directive(CXCursor c, CXCursor p)
       // inside the create() function.
       break;
     }
-    default:
+  default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
   }
   comment_horizon_ = clang_getRangeEnd(clang_getCursorExtent(c));
@@ -812,7 +833,7 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
 	CXCursor p = clang_getSpecializedCursorTemplate(c);
 	bpl::object primary = lookup(p);
 	bpl::extract<bpl::list>(primary.attr("specializations"))().append(declaration);
-	declaration.attr("primary") = primary;
+	declaration.attr("primary_template") = primary;
       }
       // HACK: If this is an anonymous struct, class, etc., we look back to see
       //       whether this is part of a typedef declaration (with in-place construction)
@@ -864,7 +885,11 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     // These are dealt with elsewhere. Ignore them in this context.
     case CXCursor_ParmDecl:
     case CXCursor_TemplateTypeParameter:
+    case CXCursor_TemplateTemplateParameter:
     case CXCursor_NonTypeTemplateParameter:
+      break;
+      // TBD
+    case CXCursor_NamespaceAlias:
       break;
     case CXCursor_UnexposedDecl:
       if (debug_)
@@ -872,6 +897,8 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
       // clang reports 'extern "C" ...' as an unexposed decl, which we definitely
       // need to recurse into.
       visit_children(c);
+      break;
+    case CXCursor_CXXAccessSpecifier:
       break;
     default:
       throw std::runtime_error("unimplemented: " + cursor_info(c));
