@@ -187,6 +187,10 @@ class Part(Parametrized, ASG.Visitor):
         
         self.__type_label = type.name[-1]
         
+    def visit_array_type_id(self, type):
+
+        self.__type_label = '%s%s'%(type.alias,''.join(['[%d]'%s for s in type.sizes]))
+        
     def visit_modifier_type_id(self, type):
         "Adds modifiers to the formatted label of the modifier's alias"
         
