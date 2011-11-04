@@ -169,7 +169,7 @@ class ArrayTypeId(TypeId):
     """A modifier that adds array dimensions to a type-id."""
     
     def __init__(self, language, alias, sizes):
-        super(ArrayId, self).__init__(language)
+        super(ArrayTypeId, self).__init__(language)
         self.alias = alias
         self.sizes = sizes
     def accept(self, visitor): visitor.visit_array_type_id(self)
