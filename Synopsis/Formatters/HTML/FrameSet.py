@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Formatters.HTML.DirectoryLayout import open_file
+from Synopsis.Formatters import open_file
 from Synopsis.Formatters.HTML.Tags import *
 import os
 
@@ -21,7 +21,7 @@ class FrameSet:
         out.write('    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n')
         out.write('<html xmlns="http://www.w3.org/1999/xhtml" lang="en">\n')
         out.write('<head>\n')
-        out.write('<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type"/>\n')
+        out.write('<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>\n')
         out.write(element('title',title) + '\n')
         out.write(element('link', type='text/css', rel='stylesheet', href='style.css') + '\n')
         out.write('</head>\n')

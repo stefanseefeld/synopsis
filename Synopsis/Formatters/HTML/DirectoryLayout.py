@@ -9,7 +9,7 @@
 from Synopsis import config
 from Synopsis import ASG
 from Synopsis.Formatters import TOC
-from Synopsis.Formatters import quote_name, open_file, copy_file
+from Synopsis.Formatters import quote_name, copy_file
 from Tags import *
 import os, sys
 
