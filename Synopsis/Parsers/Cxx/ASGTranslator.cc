@@ -822,9 +822,27 @@ CXChildVisitResult ASGTranslator::visit_declaration(CXCursor c, CXCursor p)
     case CXCursor_Namespace:
     {
       declaration = create(c);
-      declare(c, declaration);
-      if (c.kind != CXCursor_Namespace)
+      // If this is a namespace, only add it the first time
+      if (c.kind == CXCursor_Namespace)
       {
+	bool reopened = false;
+	if (scope_.size())
+	{
+	  if (bpl::extract<bpl::list>(scope_.top().attr("declarations"))().contains(declaration))
+	    reopened = true;
+	}
+	else
+	{
+	  if (declarations_.contains(declaration))
+	    reopened = true;
+	}
+	if (!reopened)
+	  declare(c, declaration);
+      }
+      // If this is a class / struct, look for base specifiers
+      else
+      {
+	declare(c, declaration);
 	BaseSpecVisitor base_visitor(types_);
 	declaration.attr("parents") = base_visitor.find_bases(c);
       }
