@@ -8,7 +8,8 @@
 
 #include "Types.hh"
 
-using namespace Types;
+namespace Types
+{
 
 //
 // Class Types::Type
@@ -169,7 +170,7 @@ Parameterized::accept(Visitor* visitor)
 // Class Types::FuncPtr
 //
 
-FuncPtr::FuncPtr(Type::Type* ret, const Mods& premods, const Type::vector& params)
+FuncPtr::FuncPtr(Type* ret, const Mods& premods, const Type::vector& params)
         : m_return(ret), m_premod(premods), m_params(params)
 {}
 
@@ -236,4 +237,5 @@ const char* wrong_type_cast::what() const throw()
 {
     return "Type::wrong_type_cast";
 }
-// vim: set ts=8 sts=4 sw=4 et:
+
+}
