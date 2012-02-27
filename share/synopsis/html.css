@@ -279,8 +279,9 @@ pre.sxr .literal { color: blue;}
 .docutils dt { font-weight: bold;}
 .docutils .field-name { text-align: right;}
 
+#tree, #tree ul { padding: 0em;}
 #tree li 
 {
     list-style-type: none;
-    vertical-align: middle;
+    padding-left: 1em;
 }
