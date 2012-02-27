@@ -269,7 +269,7 @@ class View(Parametrized):
         prefix = rel(self.filename(), '')
         self.template.init(self.processor, prefix)
         if not body:
-            body = '<body class="%s" onload="load()">'%self.__class__.__name__
+            body = '<body class="%s" onload="javascript:load()">'%self.__class__.__name__
         self.template.view_header(self.__os, self.title(), body, headextra, self)
     
     def end_file(self, body='</body>'):

@@ -37,6 +37,7 @@ class ModuleTree(Tree):
 
         self.start_file()
         self.write_navigation_bar()
+        self.begin_tree()
         module = self.processor.root
         self.index_module(module, module.name)
         self.end_tree()

@@ -30,7 +30,6 @@ class Tree(View):
         self.tree_leaf = 'tree_leaf.png'
         # Copy resources across
         self.directory_layout.copy_file(open_img, self.tree_open)
-        self.directory_layout.copy_file(open_img, self.tree_open)
         self.directory_layout.copy_file(close_img, self.tree_close)
         self.directory_layout.copy_file(leaf_img, self.tree_leaf)
 
@@ -42,7 +41,7 @@ class Tree(View):
     def write_leaf(self, text):
         """Write a leaf node to the output at the current tree level."""
         i = img(src=self.tree_leaf, alt='leaf')
-        self.write(div(i + text, class_='module-section') + '\n')
+        self.write(element('li', i + text, class_='module-section') + '\n')
 
     def write_node_start(self, text):
         """Write a non-leaf node to the output at the current tree level, and
@@ -54,24 +53,24 @@ class Tree(View):
         # Get the scripted link for the image
         link = href("javascript:tree_node_toggle('%s');"%id, node)
         # Write the item
-        self.write('<div class="module-section">%s%s'%(link, text))
+        self.write('<li class="module-section">%s%s\n'%(link, text))
         # Start the (collapsible) section for the child nodes
-        self.write('<div id="%s" style="display:none;">\n'%id)
+        self.write('<ul id="%s" style="display:none;">\n'%id)
 
     def write_node_end(self):
         """Finish a non-leaf node, and close the current tree level."""
+        self.write('</ul>\n')
+        self.write('</li>\n')
 
-        self.write('</div>\n</div>\n')
+    def begin_tree(self):
+
+        self.write('<ul id="tree">\n')
 
     def end_tree(self):
         """Writes the end of the tree."""
 
-        js_end = """<script type="text/javascript" language="JavaScript1.2"><!--
-        tree_max_node = %d; // --></script>"""
-
-        self.write(js_end%self.__id)
-
-        self.write(div(href('javascript:tree_open_all()', 'Open All') +
-                       href('javascript:tree_close_all()', 'Close All'),
+        self.write('</ul>\n')
+        self.write(div(href('javascript:expand_all(\'tree\')', 'Open All') +
+                       href('javascript:collapse_all(\'tree\')', 'Close All'),
                        class_='tree-navigation'))
 
