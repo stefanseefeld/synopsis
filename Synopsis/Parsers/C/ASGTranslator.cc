@@ -148,7 +148,11 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
     function.parameters().extend(parameters);
     if (declaration_) add_comments(function, declaration_->get_comments());
     add_comments(function, declarator->get_comments());
-    if (visible) declare(function);
+    if (visible)
+    {
+      declare(function);
+      declare_type(sname, function);
+    }
   }
   else
   {
@@ -173,7 +177,11 @@ void ASGTranslator::visit(PTree::Declarator *declarator)
                                                       vtype, sname, t, false);
     if (declaration_) add_comments(variable, declaration_->get_comments());
     add_comments(variable, declarator->get_comments());
-    if (visible) declare(variable);
+    if (visible)
+    {
+      declare(variable);
+      declare_type(sname, variable);
+    }
   }
 }
 
