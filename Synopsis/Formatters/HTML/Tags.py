@@ -48,7 +48,7 @@ def element(_, body = None, **keys):
     attrs = attributes(keys)
     if body != None:
         if attrs:
-            return '<%s %s>%s</%s>'%(_, attrs, body, _)
+            return '<%s %s>\n%s\n</%s>'%(_, attrs, body, _)
         else:
             return '<%s>%s</%s>'%(_, body, _)
     else:

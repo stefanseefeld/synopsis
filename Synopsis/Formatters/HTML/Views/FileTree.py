@@ -37,6 +37,7 @@ class FileTree(Tree):
         # Start the file
         self.start_file()
         self.write_navigation_bar()
+        self.begin_tree()
         # recursively visit all nodes
         self.process_node(self.processor.file_tree)
         self.end_tree()

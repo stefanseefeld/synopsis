@@ -9,7 +9,8 @@ else if (parseInt(navigator.appVersion.charAt(0)) >= 4)
 }
 var isMoz = (isNav4 || isIE4) ? false : true;
 
-showImage = new Image(); hideImage = new Image();
+var showImage = new Image(); 
+var hideImage = new Image();
 
 /* The 'className' member only returns the entire (whitespace-separated) list
    of classes, while CSS selectors use individual classes. has_class allows to
@@ -20,20 +21,20 @@ function has_class(object, class_name)
   return (object.className.search('(^|\\s)' + class_name + '(\\s|$)') != -1);
 }
 
-function get_children_with_class(parent, class)
+function get_children_with_class(parent, cl)
 {
   var result = new Array();
   for (var i = 0; i < parent.childNodes.length; ++i)
   {
-    if (has_class(parent.childNodes[i], class))
+    if (has_class(parent.childNodes[i], cl))
       result[result.length] = parent.childNodes[i];
   }
   return result;
 }
 
-function get_child_with_class(parent, class)
+function get_child_with_class(parent, cl)
 {
-  var children = get_children_with_class(parent, class);
+  var children = get_children_with_class(parent, cl);
   if (children.length != 0) return children[0];
   else return false; /*??*/
 }
@@ -46,8 +47,8 @@ function tree_node_toggle(id)
 {
   if (isMoz)
   {
-    section = document.getElementById(id);
-    image = document.getElementById(id+"_img");
+    var section = document.getElementById(id);
+    var image = document.getElementById(id+"_img");
     if (section.style.display == "none") 
     {
       section.style.display = "";
@@ -90,25 +91,27 @@ function tree_node_toggle(id)
     }
   }
 }
-var tree_max_node = 0;
-function tree_open_all()
+
+function expand_all(tree)
 {
-  for (i = 1; i <= tree_max_node; i++)
+  var nodes = document.getElementById(tree).getElementsByTagName('ul');
+  for (var i = 1; i <= nodes.length; i++)
   {
-    id = "tree"+i;
-    section = document.getElementById(id);
-    image = document.getElementById(id+"_img");
+    var id = "tree"+i;
+    var section = document.getElementById(id);
+    var image = document.getElementById(id+"_img");
     section.style.display = "";
     image.src = showImage.src;
   }
 }
-function tree_close_all()
+function collapse_all(tree)
 {
-  for (i = 1; i <= tree_max_node; i++)
+  var nodes = document.getElementById(tree).getElementsByTagName('ul');
+  for (var i = 1; i <= nodes.length; i++)
   {
-    id = "tree"+i;
-    section = document.getElementById(id);
-    image = document.getElementById(id+"_img");
+    var id = "tree"+i;
+    var section = document.getElementById(id);
+    var image = document.getElementById(id+"_img");
     section.style.display = "none";
     image.src = hideImage.src;
   }
@@ -127,25 +130,25 @@ function go(frame1, url1, frame2, url2)
 
 function body_section_expand(id) 
 {
-  section = document.getElementById(id);
+  var section = document.getElementById(id);
   section.style.display = 'block';
-  toggle = document.getElementById('toggle_' + id);
+  var toggle = document.getElementById('toggle_' + id);
   toggle.firstChild.data = '-';
  }
 
 function body_section_collapse(id) 
 {
-  section = document.getElementById(id);
+  var section = document.getElementById(id);
   section.style.display = 'none';
-  toggle = document.getElementById('toggle_' + id);
+  var toggle = document.getElementById('toggle_' + id);
   toggle.firstChild.data = '+';
   toggle.style.display = 'inline';
 }
 
 function body_section_toggle(id) 
 {
-  section = document.getElementById(id);
-  toggle = document.getElementById('toggle_' + id);
+  var section = document.getElementById(id);
+  var toggle = document.getElementById('toggle_' + id);
   if (section.style.display == 'none') 
   {
     section.style.display = 'block';
@@ -160,7 +163,7 @@ function body_section_toggle(id)
 
 function body_section_collapse_all()
 {
-  divs = document.getElementsByTagName('div');
+  var divs = document.getElementsByTagName('div');
   for (var i = 0; i < divs.length; ++i)
   {
     if (has_class(divs[i], 'expanded') && divs[i].hasAttribute('id'))
@@ -172,44 +175,44 @@ function body_section_collapse_all()
 
 function body_section_init()
 {
-  divs = document.getElementsByTagName('div');
+  var divs = document.getElementsByTagName('div');
   for (var i = 0; i < divs.length; ++i)
   {
     if (has_class(divs[i], 'heading'))
     {
-      toggle = get_child_with_class(divs[i], 'toggle');
-      toggle.style.display='inline'
+      var toggle = get_child_with_class(divs[i], 'toggle');
+      if (toggle) toggle.style.display='inline'
     }
   }
 }
 
 function decl_doc_expand(id) 
 {
-  doc = document.getElementById(id);
-  collapsed = get_children_with_class(doc, 'collapsed');
+  var doc = document.getElementById(id);
+  var collapsed = get_children_with_class(doc, 'collapsed');
   for (var i = 0; i < collapsed.length; ++i)
   {
     collapsed[i].style.display='none';
   }
-  expanded = get_children_with_class(doc, 'expanded');
+  var expanded = get_children_with_class(doc, 'expanded');
   for (var i = 0; i < expanded.length; ++i)
   {
     expanded[i].style.display='block';
   }
-  collapse_toggle = get_child_with_class(doc, 'collapse-toggle');
+  var collapse_toggle = get_child_with_class(doc, 'collapse-toggle');
   collapse_toggle.style.display='block';
 }
 function decl_doc_collapse(id) 
 {
-  doc = document.getElementById(id);
-  expanded = get_children_with_class(doc, 'expanded');
+  var doc = document.getElementById(id);
+  var expanded = get_children_with_class(doc, 'expanded');
   for (var i = 0; i < expanded.length; ++i)
   {
     expanded[i].style.display='none';
   }
-  collapse_toggle = get_child_with_class(doc, 'collapse-toggle');
+  var collapse_toggle = get_child_with_class(doc, 'collapse-toggle');
   collapse_toggle.style.display='none';
-  collapsed = get_children_with_class(doc, 'collapsed');
+  var collapsed = get_children_with_class(doc, 'collapsed');
   for (var i = 0; i < collapsed.length; ++i)
   {
     collapsed[i].style.display='block';
@@ -218,7 +221,7 @@ function decl_doc_collapse(id)
 
 function decl_doc_collapse_all()
 {
-  divs = document.getElementsByTagName('div');
+  var divs = document.getElementsByTagName('div');
   for (var i = 0; i < divs.length; ++i)
   {
     if (has_class(divs[i], 'collapsible'))
