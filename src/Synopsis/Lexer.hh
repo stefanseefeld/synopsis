@@ -140,7 +140,7 @@ inline bool is_int_suffix(char c)
 
 inline bool is_float_suffix(char c)
 {
-  return c == 'F' || c == 'f' || c == 'L' || c == 'l';
+  return c == 'F' || c == 'f' || c == 'L' || c == 'l' || c == 'i';
 }
 
 }

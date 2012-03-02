@@ -19,6 +19,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
 {
   my_keywords["asm"] = Token::ATTRIBUTE;
   my_keywords["auto"] = Token::AUTO;
+  my_keywords["_Bool"] = Token::BOOLEAN;
   my_keywords["break"] = Token::BREAK;
   my_keywords["case"] = Token::CASE;
   my_keywords["char"] = Token::CHAR;
@@ -99,6 +100,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__signed"] = Token::SIGNED;
     my_keywords["__signed__"] = Token::SIGNED;
     my_keywords["typeof"] = Token::TYPEOF;
+    my_keywords["__thread"] = Token::Ignore;
     my_keywords["__typeof"] = Token::TYPEOF;
     my_keywords["__typeof__"] = Token::TYPEOF;
   }
