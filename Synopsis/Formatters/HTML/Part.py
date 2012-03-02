@@ -187,6 +187,10 @@ class Part(Parametrized, ASG.Visitor):
         
         self.__type_label = type.name[-1]
         
+    def visit_array_type_id(self, type):
+
+        self.__type_label = '%s%s'%(type.alias,''.join(['[%d]'%s for s in type.sizes]))
+        
     def visit_modifier_type_id(self, type):
         "Adds modifiers to the formatted label of the modifier's alias"
         
@@ -194,9 +198,9 @@ class Part(Parametrized, ASG.Visitor):
         def amp(x):
             if x == '&': return '&amp;'
             return x
-        pre = ''.join(['%s&#160;'%amp(x) for x in type.premod])
-        post = ''.join([amp(x) for x in type.postmod])
-        self.__type_label = "%s%s%s"%(pre,alias,post)
+        pre = ' '.join([amp(x) for x in type.premod])
+        post = ' '.join([amp(x) for x in type.postmod])
+        self.__type_label = '%s %s %s'%(pre,alias,post)
             
     def visit_parametrized_type_id(self, type):
         "Adds the parameters to the template name in angle brackets"

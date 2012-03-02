@@ -19,6 +19,7 @@ from Views import *
 from Frame import Frame
 from FrameSet import FrameSet
 from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
+from Synopsis.Formatters.HTML.Markup.Doxygen import Doxygen
 try:
     from Synopsis.Formatters.HTML.Markup.RST import RST
 except ImportError:
@@ -100,10 +101,13 @@ class Formatter(Processor):
                         'set of content views')
    
     markup_formatters = Parameter({'javadoc':Javadoc(),
+                                   'doxygen':Doxygen(),
                                    'rst':RST(),
                                    'reStructuredText':RST()},
                                   'Markup-specific formatters.')
     graph_color = Parameter('#ffcc99', 'base color for inheritance graphs')
+    struct_as_class = Parameter(False, 'Fuse structs and classes into the same section.') 
+    group_as_section = Parameter(True, 'Map group to section, instead of keeping it as a single declaration.')
 
     def process(self, ir, **kwds):
 
@@ -136,7 +140,8 @@ class Formatter(Processor):
         self.xref = XRefPager(self.ir)
 
         from Synopsis.DeclarationSorter import DeclarationSorter
-        self.sorter = DeclarationSorter()
+        self.sorter = DeclarationSorter(struct_as_class=self.struct_as_class,
+                                        group_as_section=self.group_as_section)
 
         # Make all views queryable through Formatter.has_view()
         self.views = self.content + self.index + self.detail
