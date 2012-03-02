@@ -521,7 +521,6 @@ bool ASGTranslator::update_position(PTree::Node *node)
       // raw_filename_ remains the primary file's name
       // and all declarations from elsewhere are ignored
       return false;
-    raw_filename_ = filename;
 
     // determine canonical filenames
     Path path = Path(filename).abs();
@@ -537,6 +536,11 @@ bool ASGTranslator::update_position(PTree::Node *node)
       file_ = sf_kit_.create_source_file(short_filename, long_filename);
       files_.set(short_filename, file_);
     }
+    size_t length = base_path_.size();
+    if (length > filename.size() ||
+	strncmp(long_filename.data(), base_path_.data(), length) != 0)
+      return false;
+    raw_filename_ = filename;
   }
   return true;
 }
