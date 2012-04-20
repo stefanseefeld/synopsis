@@ -106,8 +106,9 @@ def run():
         elif o in ['-p', '--port']:
             port = int(a)
         elif o in ['-r', '--document_root']:
-            env['SXR_ROOT_DIR'] = a
-            SXRConfig.document_root = a
+            root = os.path.abspath(a)
+            env['SXR_ROOT_DIR'] = root
+            SXRConfig.document_root = root
         elif o in ['-u', '--url']:
             env['SXR_CGI_URL'] = a
             SXRConfig.cgi_url = a

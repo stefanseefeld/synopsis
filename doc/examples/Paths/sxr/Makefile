@@ -7,8 +7,8 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 all: Paths
 
 Paths: Paths.syn
-	$(synopsis) sxr --url=http://localhost:8000/sxr --output=$@ $<
-	@echo "now run 'sxr-server -u /sxr -r `pwd`/Paths'"
+	$(synopsis) sxr --url=/sxr --output=$@ $<
+	@echo "now run 'sxr-server -u /sxr -r Paths'"
 
 Paths.syn: $(syn)
 	$(synopsis) link --output=$@ $^
@@ -34,7 +34,7 @@ endif
 install-print:
 
 clean:
-	rm -rf *.syn links xref
+	rm -rf *.syn sxr
 
 distclean: clean
 	rm -rf Paths
