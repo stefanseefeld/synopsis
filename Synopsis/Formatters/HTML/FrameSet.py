@@ -23,7 +23,7 @@ class FrameSet:
         out.write('<head>\n')
         out.write('<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>\n')
         out.write(element('title',title) + '\n')
-        out.write(element('link', type='text/css', rel='stylesheet', href='style.css') + '\n')
+        out.write(element('link', type='text/css', rel='stylesheet', href='synopsis.css') + '\n')
         out.write('</head>\n')
       
         index = rel(filename, index)

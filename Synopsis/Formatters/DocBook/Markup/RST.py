@@ -51,7 +51,7 @@ class DocBookTranslator(nodes.NodeVisitor):
         nodes.NodeVisitor.__init__(self, document)
         # Why does backward compatibility have so little value
         # in Python and its culture ? *sigh*
-        if float(docutils.__version__) < 0.8:
+        if docutils.__version__.startswith('0.') and int(docutils.__version__[2]) < 8:
             self.language = languages.get_language(
                 document.settings.language_code)
         else:
