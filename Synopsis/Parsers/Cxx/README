@@ -1,4 +1,0 @@
-This is a new implementation of the Synopsis.Parsers.Cxx module which
-eventually will replace the old one. This, however, requires more work
-on the C++ API. Until then it is mostly useful to measure the progress
-of the C++ API itself.

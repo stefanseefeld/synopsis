@@ -1,9 +1,0 @@
-This test suite covers clause 3 of the C++ ISO 14882 standard.
-
-It is based on a test suite described in
-
-"Testing C++ Compilers for ISO Language Conformance"
-(Brian A. Malloy, Scott A. Linde, Edward B.Duffy, James F. Power),
-
-which is available at http://www.cs.clemson.edu/~malloy/projects/ddj/
-together with the original testing framework.

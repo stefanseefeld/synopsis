@@ -1,9 +1,0 @@
-from Synopsis.process import process
-from Synopsis.Processor import Composite
-from Synopsis.Parsers import Cxx
-from Synopsis.Formatters import Dump
-import os
-
-process(parse = Composite(Cxx.Parser(base_path = '@abs_top_srcdir@' + os.sep),
-                          Dump.Formatter(show_ids = False, stylesheet = None)))
-
