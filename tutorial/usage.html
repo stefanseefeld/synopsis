@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using the synopsis tool - Synopsis 14 documentation</title>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+          URL_ROOT:    '../',
+          VERSION:     '14',
+          COLLAPSE_MODINDEX: false,
+          FILE_SUFFIX: '.html'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Synopsis 14 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="index.html" />
+    <link rel="next" title="Scripting and extending Synopsis" href="extending.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="navigation">
+      <a class="logo" href="../index.html">Synopsis</a>
+      
+      <div class="menu">
+       
+       <ul>
+	 <li><a title="index" href="../genindex.html" />Index</a></li>
+       </ul>
+      </div>
+    </div>
+    <div class="header">
+      <div id="searchbox" style="display: none">
+        <form class="search" action="../search.html" method="get">
+          <input type="text" name="q" size="18" />
+          <input type="submit" value="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </form>
+      </div>
+      <script type="text/javascript">$('#searchbox').show(0);</script>
+    </div>
+    <div class="content">
+      
+  <div class="section" id="using-the-synopsis-tool">
+<h1>Using the synopsis tool</h1>
+<p>In this section we are going to explore the possibilities to generate documentation from source code. We will demonstrate how to use synopsis standalone as well as in conjunction with existing build systems. Further, we will see how to adapt synopsis to your coding and commenting style, as well as how to generate the output in a format and style that fulfills your needs.</p>
+<div class="section" id="option-handling">
+<h2>Option handling</h2>
+<p>The synopsis tool combines three optional types of processors: parsers (specified with the -p option), linker processors (specified with the -l option, and formatters (specified with the -f option). If a parser is selected, any input is interpreted as source files of the respective language. Otherwise it will be read in as a stored IR. Similarly, if a formatter is selected, output is generated according to the formatter. Otherwise it will contain a stored IR.</p>
+<p>For all of the three main processors, arguments can be passed down using the -W. For example, to find out what parameters are available with the Cxx parser, use the –help option:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ synopsis -p Cxx -h
+Parameters for processor &#39;Synopsis.Parsers.Cxx.Parser&#39;:
+   profile               output profile data
+   cppflags              list of preprocessor flags such as -I or -D
+   preprocess            whether or not to preprocess the input
+   ...
+</pre></div>
+</div>
+<p>Then, to pass a preprocess option, either of:</p>
+<blockquote>
+<div><p>synopsis -p Cxx -Wp,–preprocess …</p>
+<p>synopsis -p Cxx -Wp,preprocess=True …</p>
+</div></blockquote>
+<p>The first form expects an optional string argument, while the second form expects a python expression, thus allowing to pass python objects such as lists. (But be careful to properly escape characters to get the expression through the shell !)</p>
+<p>But passing options via the command line has its limits, both, in terms of usability, as well as for the robustness of the interface (all data have to be passed as strings !). Therefor, for any tasks demanding more flexibility a scripting interface is provided, which will be discussed in the next chapter.</p>
+</div>
+<div class="section" id="parsing-source-code">
+<h2>Parsing source-code</h2>
+<p>Let’s assume a simple header file, containing some declarations:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#ifndef Path_h_</span>
+<span class="cp">#define Path_h_</span>
+
+<span class="c1">//. A Vertex is a 2D point.</span>
+<span class="k">struct</span> <span class="n">Vertex</span>
+<span class="p">{</span>
+  <span class="n">Vertex</span><span class="p">(</span><span class="kt">double</span> <span class="n">xx</span><span class="p">,</span> <span class="kt">double</span> <span class="n">yy</span><span class="p">)</span><span class="o">:</span> <span class="n">x</span><span class="p">(</span><span class="n">xx</span><span class="p">),</span> <span class="n">y</span><span class="p">(</span><span class="n">yy</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="kt">double</span> <span class="n">x</span><span class="p">;</span> <span class="c1">//.&lt; the x coordinate</span>
+  <span class="kt">double</span> <span class="n">y</span><span class="p">;</span> <span class="c1">//.&lt; the y coordinate</span>
+<span class="p">};</span>
+
+<span class="c1">//. Path is the basic abstraction</span>
+<span class="c1">//. used for drawing (curved) paths.</span>
+<span class="k">class</span> <span class="nc">Path</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">Path</span><span class="p">()</span> <span class="p">{}</span>
+  <span class="c1">//. Draw this path.</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="n">draw</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="c1">// temporarily commented out...</span>
+  <span class="c1">// bool intersects(const Path &amp;);</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="p">};</span>
+
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>Process this with:</p>
+<blockquote>
+<div>synopsis -p Cxx -f HTML -o Paths Path.h</div></blockquote>
+<p>to generate an html document in the directory specified using the -o option, i.e. Paths.</p>
+<p>The above represents the simplest way to use synopsis. A simple command is used to parse a source-file and to generate a document from it. The parser to be used is selected using the -p option, and the formatter with the -f option.</p>
+<p>If no formatter is specified, synopsis dumps its internal representation to the specified output file. Similarly, if no parser is specified, the input is interpreted as an IR dump. Thus, the processing can be split into multiple synopsis invocations.</p>
+<p>Each processor (including parsers and formatters) provides a number of parameters that can be set from the command line. For example the Cxx parser has a parameter base_path to specify a prefix to be stripped off of file names as they are stored in synopsis’ internal representation. Parser-specific options can be given that are passed through to the parser processor. To pass such an option, use the -Wp, prefix. For example, to set the parser’s base_path option, use:</p>
+<blockquote>
+<div>synopsis -p Cxx -Wp,–base-path=&lt;prefix&gt; -f HTML -o Paths Path.h</div></blockquote>
+</div>
+<div class="section" id="emulating-a-compiler">
+<h2>Emulating a compiler</h2>
+<p>Whenever the code to be parsed includes system headers, the parser needs to know about their location(s), and likely also about system macro definitions that may be in effect. For example, parsing:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;string&gt;</span><span class="cp"></span>
+
+<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">option_list</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>requires the parser to know where to find the vector and string headers.</p>
+<p>Synopsis will attempt to emulate a compiler for the current programming language. By default, synopsis -p Cxx will try to locate c++ or similar, to query system flags. However, the compiler can be specified via the –emulate-compiler option, e.g. synopsis -p Cxx -Wp,–emulate-compiler=/usr/local/gcc4/bin/g++.</p>
+<p>All languages that use the Cpp processor to preprocess the input accept the emulate-compiler argument, and pass it down to the Cpp parser. See the section called “The Cpp Parser” for a detailed discussion of this process.</p>
+</div>
+<div class="section" id="using-comments-for-documentation">
+<h2>Using comments for documentation</h2>
+<p>Until now the generated document didn’t contain any of the text from comments in the source code. To do that the comments have to be translated first. This translation consists of a filter that picks up a particular kind of comment, for example only lines starting with <code class="docutils literal"><span class="pre">//.</span></code>, or javadoc-style comments such as <code class="docutils literal"><span class="pre">/**...*/</span></code>, as well as some translator that converts the comments into actual documentation, possibly using some inline markup, such as Javadoc or ReST.</p>
+<p>The following source code snippet contains java-style comments, with javadoc-style markup. Further, an embedded processing instruction wants some declarations to be grouped.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#ifndef Bezier_h_</span>
+<span class="cp">#define Bezier_h_</span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;Path.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+
+<span class="k">namespace</span> <span class="n">Paths</span>
+<span class="p">{</span>
+
+<span class="cm">/**</span>
+<span class="cm">  * The Bezier class. It implements a Bezier curve</span>
+<span class="cm">  * for the given order.</span>
+<span class="cm">  */</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span> <span class="n">Order</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">Bezier</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Path</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="cm">/** Create a new Bezier.*/</span>
+  <span class="n">Bezier</span><span class="p">();</span>
+
+  <span class="cm">/** @group Manipulators {*/</span>
+
+  <span class="cm">/**</span>
+<span class="cm">    * Add a new control point.</span>
+<span class="cm">    * @param p A point</span>
+<span class="cm">    */</span>
+  <span class="kt">void</span> <span class="nf">add_control_point</span><span class="p">(</span><span class="k">const</span> <span class="n">Vertex</span> <span class="o">&amp;</span><span class="p">);</span>
+
+  <span class="cm">/**</span>
+<span class="cm">    * Remove the control point at index i.</span>
+<span class="cm">    * @param i An index</span>
+<span class="cm">    */</span>
+  <span class="kt">void</span> <span class="nf">remove_control_point</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span><span class="p">);</span>
+  <span class="cm">/** }*/</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">draw</span><span class="p">();</span>
+<span class="k">private</span><span class="o">:</span>
+  <span class="cm">/** The data...*/</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span> <span class="n">controls_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span>
+
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>The right combination of comment processing options for this code would be:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">synopsis</span> <span class="o">-</span><span class="n">p</span> <span class="n">Cxx</span> <span class="o">--</span><span class="n">cfilter</span><span class="o">=</span><span class="n">java</span> <span class="o">--</span><span class="n">translate</span><span class="o">=</span><span class="n">javadoc</span> <span class="o">-</span><span class="n">lComments</span><span class="o">.</span><span class="n">Grouper</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>The –cfilter option allows to specify a filter to select document comments, and the –translate option sets the kind of markup to expect. The -l option is somewhat more generic. It is a linker to which (almost) arbitrary post-processors can be attached. Here we pass the Comments.Grouper processor that injects Group nodes into the IR that cause the grouped declarations to be documented together.</p>
+</div>
+</div>
+
+
+    </div>
+  </body>
+</html>

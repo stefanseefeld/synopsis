@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scripting and extending Synopsis - Synopsis 14 documentation</title>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+          URL_ROOT:    '../',
+          VERSION:     '14',
+          COLLAPSE_MODINDEX: false,
+          FILE_SUFFIX: '.html'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Synopsis 14 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="index.html" />
+    <link rel="next" title="Examples" href="../examples/index.html" />
+    <link rel="prev" title="Using the synopsis tool" href="usage.html" /> 
+  </head>
+  <body>
+    <div class="navigation">
+      <a class="logo" href="../index.html">Synopsis</a>
+      
+      <div class="menu">
+       
+       <ul>
+	 <li><a title="index" href="../genindex.html" />Index</a></li>
+       </ul>
+      </div>
+    </div>
+    <div class="header">
+      <div id="searchbox" style="display: none">
+        <form class="search" action="../search.html" method="get">
+          <input type="text" name="q" size="18" />
+          <input type="submit" value="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </form>
+      </div>
+      <script type="text/javascript">$('#searchbox').show(0);</script>
+    </div>
+    <div class="content">
+      
+  <div class="section" id="scripting-and-extending-synopsis">
+<h1>Scripting and extending Synopsis</h1>
+<p>Often it isn’t enough to provide textual options to the synopsis tool. The processors that are at the core of the synopsis framework are highly configurable. They can be passed simple string / integer / boolean type parameters, but some of them are also composed of objects that could be passed along as parameters.</p>
+<p>While synopsis provides a lot of such building blocks already, you may want to extend them by subclassing your own.</p>
+<p>In all these cases scripting is a much more powerful way to let synopsis do what you want. This chapter explains the basic design of the framework, and demonstrates how to write scripts using the built-in building blocks as well as user extensions</p>
+<div class="section" id="the-abstract-semantic-graph">
+<h2>The Abstract Semantic Graph</h2>
+<p>At the core of synopsis is a representation of the source code to be analyzed called an Abstract Semantic Graph (ASG). Language-specific syntax gets translated into an abstract graph of statements, annotated with all the necessary metadata to recover the important details during further processing.</p>
+<p>At this time only one particular type of statements is translated into an ASG: declarations. This can be declarations of types, functions, variables, etc. Attached to a declaration is a set of comments that was found in the source code before the declaration. It is thus possible to provide other metadata (such as code documentation) as part of these comments. A variety of comment processors exist to extract such metadata from comments.</p>
+<img alt="../_images/asg.png" src="../_images/asg.png" />
+</div>
+<div class="section" id="the-processor-class">
+<h2>The Processor class</h2>
+<p>The Processor class is at the core of the Synopsis framework. It is the basic building block out of which processing pipelines can be composed.</p>
+<p>The requirement that processors can be composed into a pipeline has some important consequences for its design. The process method takes an ir argument, which it will operate on, and then return. It is this ir that forms the backbone of the pipeline, as it is passed along from one processor to the next. Additionally, parameters may be passed to the processor, such as input and output.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">keywords</span><span class="p">)</span>
+  <span class="bp">self</span><span class="o">.</span><span class="n">ir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_input</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span>
+
+  <span class="c1"># do the work here...</span>
+
+  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_and_return_ir</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Depending on the nature of the processor, it may parse the input file as source code, or simply read it in from a persistent state. In any case, the result of the input reading is merged in with the existing asg.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">keywords</span><span class="p">)</span>
+
+  <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ir</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">ir</span><span class="p">,</span> <span class="nb">file</span><span class="p">))</span>
+
+  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_and_return_ir</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Similarly with the output: if an output parameter is defined, the ir may be stored in that file before it is returned. Or, if the processor is a formatter, the output parameter may indicate the file / directory name to store the formatted output in.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">keywords</span><span class="p">)</span>
+  <span class="bp">self</span><span class="o">.</span><span class="n">ir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_input</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ir</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="composing-a-pipeline">
+<h2>Composing a pipeline</h2>
+<p>With such a design, processors can simply be chained together:</p>
+<p>A parser creates an IR, which is passed to the linker (creating a table of contents on the fly) which passes it further down to a formatter.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">parser</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">linker</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">formatter</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">ir</span> <span class="o">=</span> <span class="n">IR</span><span class="p">()</span>
+<span class="n">ir</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">ir</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;source.hh&#39;</span><span class="p">])</span>
+<span class="n">ir</span> <span class="o">=</span> <span class="n">linker</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span>
+<span class="n">ir</span> <span class="o">=</span> <span class="n">formatter</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">ir</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;html&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And, to be a little bit more scalable, and to allow the use of dependency tracking build tools such as make, the intermediate IRs can be persisted into files. Thus, the above pipeline is broken up into multiple pipelines, where the ‘output’ parameter of the parser is used to point to IR stores, and the ‘input’ parameter of the linker/formatter pipeline then contains a list of these IR store files.</p>
+<p>Parse source1.hh and write the IR to source1.syn:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">parser</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">IR</span><span class="p">(),</span> <span class="nb">input</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;source1.hh&#39;</span><span class="p">],</span> <span class="n">output</span> <span class="o">=</span> <span class="s1">&#39;source1.syn&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parse source2.hh and write the IR to source2.syn:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">parser</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">IR</span><span class="p">(),</span> <span class="nb">input</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;source2.hh&#39;</span><span class="p">],</span> <span class="n">output</span> <span class="o">=</span> <span class="s1">&#39;source2.syn&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read in source1.syn and source2.syn, then link and format into the html directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">formatter</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">linker</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">IR</span><span class="p">(),</span> <span class="nb">input</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;source1.syn&#39;</span><span class="p">,</span> <span class="s1">&#39;source2.syn&#39;</span><span class="p">]),</span> <span class="n">output</span> <span class="o">=</span> <span class="s1">&#39;html&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="writing-your-own-synopsis-script">
+<h2>Writing your own synopsis script</h2>
+<p>The synopsis framework provides a function process that lets you declare and expose processors as commands so they can be used per command line:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Copyright (C) 2006 Stefan Seefeld</span>
+<span class="c1"># All rights reserved.</span>
+<span class="c1"># Licensed to the public under the terms of the GNU LGPL (&gt;= 2),</span>
+<span class="c1"># see the file COPYING for details.</span>
+<span class="c1">#</span>
+
+<span class="kn">from</span> <span class="nn">Synopsis.process</span> <span class="kn">import</span> <span class="n">process</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Processor</span> <span class="kn">import</span> <span class="n">Processor</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Composite</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Parsers</span> <span class="kn">import</span> <span class="n">Cxx</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Parsers</span> <span class="kn">import</span> <span class="n">Python</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Processors</span> <span class="kn">import</span> <span class="n">Linker</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Processors</span> <span class="kn">import</span> <span class="n">Comments</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Formatters</span> <span class="kn">import</span> <span class="n">HTML</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Formatters</span> <span class="kn">import</span> <span class="n">Dot</span>
+<span class="kn">from</span> <span class="nn">Synopsis.Formatters</span> <span class="kn">import</span> <span class="n">Dump</span>
+
+<span class="k">class</span> <span class="nc">Joker</span><span class="p">(</span><span class="n">Processor</span><span class="p">):</span>
+
+    <span class="n">parameter</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;:-)&#39;</span><span class="p">,</span> <span class="s1">&#39;a friendly parameter&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ir</span><span class="p">,</span> <span class="o">**</span><span class="n">keywords</span><span class="p">):</span>
+        <span class="c1"># override default parameter values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">keywords</span><span class="p">)</span>
+        <span class="c1"># merge in IR from &#39;input&#39; parameter if given</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_input</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="s1">&#39;this processor is harmless...&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter</span>
+
+        <span class="c1"># write to output (if given) and return IR</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_and_return_ir</span><span class="p">()</span>
+
+<span class="n">cxx</span> <span class="o">=</span> <span class="n">Cxx</span><span class="o">.</span><span class="n">Parser</span><span class="p">(</span><span class="n">base_path</span><span class="o">=</span><span class="s1">&#39;../src&#39;</span><span class="p">)</span>
+
+<span class="n">ss</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Translator</span><span class="p">(</span><span class="nb">filter</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">SSFilter</span><span class="p">(),</span>
+                         <span class="n">processor</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Grouper</span><span class="p">())</span>
+<span class="n">ssd_prev</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Translator</span><span class="p">(</span><span class="nb">filter</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">SSDFilter</span><span class="p">(),</span>
+                               <span class="n">processor</span> <span class="o">=</span> <span class="n">Composite</span><span class="p">(</span><span class="n">Comments</span><span class="o">.</span><span class="n">Previous</span><span class="p">(),</span>
+                                                     <span class="n">Comments</span><span class="o">.</span><span class="n">Grouper</span><span class="p">()))</span>
+<span class="n">javadoc</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Translator</span><span class="p">(</span><span class="n">markup</span><span class="o">=</span><span class="s1">&#39;javadoc&#39;</span><span class="p">,</span>
+                              <span class="nb">filter</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">JavaFilter</span><span class="p">(),</span>
+                              <span class="n">processor</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Grouper</span><span class="p">())</span>
+<span class="n">rst</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Translator</span><span class="p">(</span><span class="n">markup</span><span class="o">=</span><span class="s1">&#39;rst&#39;</span><span class="p">,</span>
+                          <span class="nb">filter</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">SSDFilter</span><span class="p">(),</span>
+                          <span class="n">processor</span> <span class="o">=</span> <span class="n">Comments</span><span class="o">.</span><span class="n">Grouper</span><span class="p">())</span>
+
+<span class="n">process</span><span class="p">(</span><span class="n">cxx_ss</span> <span class="o">=</span> <span class="n">Composite</span><span class="p">(</span><span class="n">cxx</span><span class="p">,</span> <span class="n">ss</span><span class="p">),</span>
+        <span class="n">cxx_ssd_prev</span> <span class="o">=</span> <span class="n">Composite</span><span class="p">(</span><span class="n">cxx</span><span class="p">,</span> <span class="n">ssd_prev</span><span class="p">),</span>
+        <span class="n">cxx_javadoc</span> <span class="o">=</span> <span class="n">Composite</span><span class="p">(</span><span class="n">cxx</span><span class="p">,</span> <span class="n">javadoc</span><span class="p">),</span>
+        <span class="n">cxx_rst</span> <span class="o">=</span> <span class="n">Composite</span><span class="p">(</span><span class="n">cxx</span><span class="p">,</span> <span class="n">rst</span><span class="p">),</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="n">Linker</span><span class="p">(),</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="n">HTML</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(),</span>
+        <span class="n">dot</span> <span class="o">=</span> <span class="n">Dot</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(),</span>
+        <span class="n">joker</span> <span class="o">=</span> <span class="n">Joker</span><span class="p">(</span><span class="n">parameter</span> <span class="o">=</span> <span class="s1">&#39;(-;&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>With such a script synopsis.py it is possible to call:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">synopsis</span><span class="o">.</span><span class="n">py</span> <span class="n">cxx_ssd</span> <span class="o">--</span><span class="n">output</span><span class="o">=</span><span class="n">Bezier</span><span class="o">.</span><span class="n">syn</span> <span class="n">Bezier</span><span class="o">.</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>to do the same as in Chapter 2, Using the synopsis tool, but with much more flexibility. Let’s have a closer look at how this script works:
+Importing all desired processors</p>
+<p>As every conventional python script, the first thing to do is to pull in all the definitions that are used later on, in our case the definition of the process function, together with a number of predefined processors.
+Composing new processors</p>
+<p>As outlined in the section called “Composing A Pipeline”, processors can be composed into pipelines, which are themselfs new (composite) processors. Synopsis provides a Composite type for convenient pipeline construction. Its constructor takes a list of processors that the process method will iterate over.</p>
+<div class="section" id="defining-new-processors">
+<h3>Defining New Processors</h3>
+<p>New processors can be defined by deriving from Processor or any of its subclasses. As outlined in the section called “The Processor class”, it has only to respect the semantics of the process method.</p>
+</div>
+<div class="section" id="exposing-the-commands">
+<h3>Exposing The Commands</h3>
+<p>With all these new processrs defined, they need to be made accessible to be called per command line. That is done with the process function. It sets up a dictionary of named processors, with which the script can be invoked as:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">synopsis</span><span class="o">.</span><span class="n">py</span> <span class="n">joker</span>
+</pre></div>
+</div>
+<p>which will invoke the joker’s process method with any argument that was provided passed as a named value (keyword).</p>
+</div>
+</div>
+</div>
+
+
+    </div>
+  </body>
+</html>

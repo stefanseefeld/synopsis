@@ -1,0 +1,378 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API Reference - Synopsis 14 documentation</title>
+    <link rel="stylesheet" href="_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+          URL_ROOT:    './',
+          VERSION:     '14',
+          COLLAPSE_MODINDEX: false,
+          FILE_SUFFIX: '.html'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="Synopsis 14 documentation" href="index.html" />
+    <link rel="prev" title="Diagrams" href="examples/Paths/diagrams/index.html" /> 
+  </head>
+  <body>
+    <div class="navigation">
+      <a class="logo" href="index.html">Synopsis</a>
+      
+      <div class="menu">
+       <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#parsers">Parsers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#formatters">Formatters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linker-and-linker-scripts">Linker and linker scripts</a></li>
+</ul>
+</li>
+</ul>
+
+       <ul>
+	 <li><a title="index" href="genindex.html" />Index</a></li>
+       </ul>
+      </div>
+    </div>
+    <div class="header">
+      <div id="searchbox" style="display: none">
+        <form class="search" action="search.html" method="get">
+          <input type="text" name="q" size="18" />
+          <input type="submit" value="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </form>
+      </div>
+      <script type="text/javascript">$('#searchbox').show(0);</script>
+    </div>
+    <div class="content">
+      
+  <div class="section" id="api-reference">
+<h1>API Reference</h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="parsers">
+<h2>Parsers</h2>
+<div class="section" id="Synopsis.Parsers.Python">
+<h3>Synopsis.Parsers.Python</h3>
+<p id="index-0">Python Parser. See http://www.python.org/dev/peps/pep-0258 for additional
+    info.</p>
+<dl class="docutils">
+<dt>default_docformat</dt>
+<dd>default documentation format</dd>
+<dt>primary_file_only</dt>
+<dd>should only primary file be processed</dd>
+<dt>sxr_prefix</dt>
+<dd>Path prefix (directory) to contain sxr info.</dd>
+<dt>base_path</dt>
+<dd>Path prefix to strip off of input file names.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Parsers.IDL">
+<h3>Synopsis.Parsers.IDL</h3>
+<p id="index-1">None</p>
+<dl class="docutils">
+<dt>cppflags</dt>
+<dd>list of preprocessor flags such as -I or -D</dd>
+<dt>primary_file_only</dt>
+<dd>should only primary file be processed</dd>
+<dt>base_path</dt>
+<dd>path prefix to strip off of the file names</dd>
+<dt>preprocess</dt>
+<dd>whether or not to preprocess the input</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Parsers.Cpp">
+<h3>Synopsis.Parsers.Cpp</h3>
+<p id="index-2">None</p>
+<dl class="docutils">
+<dt>emulate_compiler</dt>
+<dd>a compiler to emulate</dd>
+<dt>language</dt>
+<dd>source code programming language of the given input file</dd>
+<dt>compiler_flags</dt>
+<dd>list of flags for the emulated compiler</dd>
+<dt>base_path</dt>
+<dd>path prefix to strip off of the filenames</dd>
+<dt>primary_file_only</dt>
+<dd>should only primary file be processed</dd>
+<dt>cpp_output</dt>
+<dd>filename for preprocessed file</dd>
+<dt>flags</dt>
+<dd>list of preprocessor flags such as -I or -D</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Parsers.C">
+<h3>Synopsis.Parsers.C</h3>
+<p id="index-3">None</p>
+<dl class="docutils">
+<dt>cppflags</dt>
+<dd>list of preprocessor flags such as -I or -D</dd>
+<dt>emulate_compiler</dt>
+<dd>a compiler to emulate</dd>
+<dt>sxr_prefix</dt>
+<dd>path prefix (directory) to contain sxr info</dd>
+<dt>compiler_flags</dt>
+<dd>list of flags for the emulated compiler</dd>
+<dt>base_path</dt>
+<dd>path prefix to strip off of the file names</dd>
+<dt>primary_file_only</dt>
+<dd>should only primary file be processed</dd>
+<dt>preprocess</dt>
+<dd>whether or not to preprocess the input</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Parsers.Cxx">
+<h3>Synopsis.Parsers.Cxx</h3>
+<p id="index-4">None</p>
+<dl class="docutils">
+<dt>cppflags</dt>
+<dd>list of preprocessor flags such as -I or -D</dd>
+<dt>emulate_compiler</dt>
+<dd>a compiler to emulate</dd>
+<dt>sxr_prefix</dt>
+<dd>path prefix (directory) to contain sxr info</dd>
+<dt>compiler_flags</dt>
+<dd>list of flags for the emulated compiler</dd>
+<dt>base_path</dt>
+<dd>path prefix to strip off of the file names</dd>
+<dt>primary_file_only</dt>
+<dd>should only primary file be processed</dd>
+<dt>preprocess</dt>
+<dd>whether or not to preprocess the input</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="formatters">
+<h2>Formatters</h2>
+<div class="section" id="Synopsis.Formatters.DocBook">
+<h3>Synopsis.Formatters.DocBook</h3>
+<p id="index-5">Generate a DocBook reference.</p>
+<dl class="docutils">
+<dt>secondary_index_terms</dt>
+<dd>add fully-qualified names to index</dd>
+<dt>inline_inherited_members</dt>
+<dd>show inherited members</dd>
+<dt>title</dt>
+<dd>title to be used in top-level section</dd>
+<dt>nested_modules</dt>
+<dd>Map the module tree to a tree of docbook sections.</dd>
+<dt>hide_undocumented</dt>
+<dd>hide declarations without a doc-string</dd>
+<dt>graph_color</dt>
+<dd>base color for inheritance graphs</dd>
+<dt>generate_summary</dt>
+<dd>generate scope summaries</dd>
+<dt>with_inheritance_graphs</dt>
+<dd>whether inheritance graphs should be generated</dd>
+<dt>markup_formatters</dt>
+<dd>Markup-specific formatters.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.HTML">
+<h3>Synopsis.Formatters.HTML</h3>
+<p id="index-6">None</p>
+<dl class="docutils">
+<dt>group_as_section</dt>
+<dd>Map group to section, instead of keeping it as a single declaration.</dd>
+<dt>index</dt>
+<dd>set of index views</dd>
+<dt>toc_in</dt>
+<dd>list of table of content files to use for symbol lookup</dd>
+<dt>title</dt>
+<dd>title to put into html header</dd>
+<dt>sxr_prefix</dt>
+<dd>path prefix (directory) under which to find sxr info</dd>
+<dt>detail</dt>
+<dd>set of detail views</dd>
+<dt>toc_out</dt>
+<dd>name of file into which to store the TOC</dd>
+<dt>stylesheet</dt>
+<dd>stylesheet to be used</dd>
+<dt>content</dt>
+<dd>set of content views</dd>
+<dt>graph_color</dt>
+<dd>base color for inheritance graphs</dd>
+<dt>struct_as_class</dt>
+<dd>Fuse structs and classes into the same section.</dd>
+<dt>markup_formatters</dt>
+<dd>Markup-specific formatters.</dd>
+<dt>directory_layout</dt>
+<dd>how to lay out the output files</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.BoostBook">
+<h3>Synopsis.Formatters.BoostBook</h3>
+<p id="index-7">
+   The type visitors should generate names relative to the current scope.
+   The generated references however are fully scoped names
+   </p>
+<dl class="docutils">
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.SXR">
+<h3>Synopsis.Formatters.SXR</h3>
+<p id="index-8">This is a facade to the HTML.Formatter. It adds an ‘url’ parameter and
+    dispatches it to various ‘views’.</p>
+<dl class="docutils">
+<dt>sxr_template</dt>
+<dd>html template to be used by the sxr.cgi script</dd>
+<dt>title</dt>
+<dd>title to put into html header</dd>
+<dt>url</dt>
+<dd>the base url to use for the sxr cgi</dd>
+<dt>sxr_prefix</dt>
+<dd>path prefix (directory) to contain sxr info</dd>
+<dt>stylesheet</dt>
+<dd>stylesheet to be used</dd>
+<dt>src_dir</dt>
+<dd>starting point for directory listing</dd>
+<dt>exclude</dt>
+<dd>TODO: define an exclusion mechanism (glob based ?)</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.List">
+<h3>Synopsis.Formatters.List</h3>
+<p id="index-9">Generate a high-level list of the content of a syn file.
+    This formatter can lists source files (by name), as well as
+    declarations (by name, type) contained in a given scope.</p>
+<dl class="docutils">
+<dt>show_scope</dt>
+<dd>list declarations in the given scope</dd>
+<dt>show_files</dt>
+<dd>list files</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.Dot">
+<h3>Synopsis.Formatters.Dot</h3>
+<p id="index-10">The Formatter class acts merely as a frontend to
+   the various InheritanceGenerators</p>
+<dl class="docutils">
+<dt>hide_operations</dt>
+<dd>hide operations</dd>
+<dt>layout</dt>
+<dd>Direction of graph</dd>
+<dt>toc_in</dt>
+<dd>list of table of content files to use for symbol lookup</dd>
+<dt>format</dt>
+<dd>Generate output in format “dot”, “ps”, “png”, “svg”, “gif”, “map”, “html”</dd>
+<dt>hide_attributes</dt>
+<dd>hide attributes</dd>
+<dt>base_url</dt>
+<dd>base url to use for generated links</dd>
+<dt>show_aggregation</dt>
+<dd>show aggregation</dd>
+<dt>bgcolor</dt>
+<dd>background color for nodes</dd>
+<dt>prefix</dt>
+<dd>Prefix to strip from all class names</dd>
+<dt>title</dt>
+<dd>the title of the graph</dd>
+<dt>type</dt>
+<dd>type of graph (one of “file”, “class”, “single”</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Formatters.Dump">
+<h3>Synopsis.Formatters.Dump</h3>
+<p id="index-11">None</p>
+<dl class="docutils">
+<dt>show_declarations</dt>
+<dd>output declarations</dd>
+<dt>stylesheet</dt>
+<dd>stylesheet to be referenced for rendering</dd>
+<dt>show_types</dt>
+<dd>output types</dd>
+<dt>show_ids</dt>
+<dd>output object ids as attributes</dd>
+<dt>show_files</dt>
+<dd>output files</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="linker-and-linker-scripts">
+<h2>Linker and linker scripts</h2>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-12">Visitor that removes duplicate declarations</p>
+<dl class="docutils">
+<dt>remove_empty_modules</dt>
+<dd>Remove empty modules.</dd>
+<dt>sxr_prefix</dt>
+<dd>Compile sxr data, if defined.</dd>
+<dt>sort_modules</dt>
+<dd>Sort module content alphabetically.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-13">A MacroFilter allows macros to be filtered, based on pattern matching.
+
+    Macros with matching names will be removed.</p>
+<dl class="docutils">
+<dt>pattern</dt>
+<dd>Regular expression to match macro names with.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-14">This class processes declarations, and removes those that need greated
+   access than the maximum passed to the constructor</p>
+<dl class="docutils">
+<dt>access</dt>
+<dd>specify up to which accessibility level the interface should be documented</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-15">A processor that filters modules.</p>
+<dl class="docutils">
+<dt>modules</dt>
+<dd>List of modules to be filtered out.</dd>
+<dt>remove_empty</dt>
+<dd>Whether or not to remove empty modules.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-16">Abstract base class for name mapping.</p>
+<dl class="docutils">
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-17">Fold (anonymous) types into enclosing typedefs.</p>
+<dl class="docutils">
+<dt>anonymous_only</dt>
+<dd>Whether or not folding should be restricted to unnamed types.</dd>
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors">
+<h3>Synopsis.Processors</h3>
+<p id="index-18">Base class for type mapping</p>
+<dl class="docutils">
+</dl>
+</div>
+<div class="section" id="Synopsis.Processors.Comments">
+<h3>Synopsis.Processors.Comments</h3>
+<p id="index-19">A class that detects grouping tags and moves the enclosed nodes
+    into a subnode (a ‘Group’)</p>
+<dl class="docutils">
+</dl>
+</div>
+</div>
+</div>
+
+
+    </div>
+  </body>
+</html>
